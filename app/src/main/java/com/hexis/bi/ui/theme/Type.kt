@@ -58,9 +58,9 @@ private val Urbanist = FontFamily(
 //  bodyLarge       → Medium   16  auto
 //  bodyMedium      → Regular  14  140%  (≈ 19.6 sp)
 //  bodySmall       → Regular  12  auto
-//  labelLarge      → Medium   14  auto
-//  labelMedium     → Medium   12  auto
-//  labelSmall      → Light    11  auto
+//  labelLarge      → Medium   15  auto
+//  labelMedium     → Medium   14  auto
+//  labelSmall      → Light    12  auto
 // ============================================================
 
 val Typography = Typography(
@@ -136,27 +136,27 @@ val Typography = Typography(
         lineHeight = 16.sp,
         letterSpacing = 0.sp,
     ),
-    // Medium - 14
+    // Medium - 15
     labelLarge = TextStyle(
         fontFamily = Urbanist,
         fontWeight = FontWeight.Medium,
-        fontSize = 14.sp,
+        fontSize = 15.sp,
         lineHeight = 18.sp,
         letterSpacing = 0.sp,
     ),
-    // Medium - 12
+    // Medium - 14
     labelMedium = TextStyle(
         fontFamily = Urbanist,
         fontWeight = FontWeight.Medium,
-        fontSize = 12.sp,
+        fontSize = 14.sp,
         lineHeight = 16.sp,
         letterSpacing = 0.sp,
     ),
-    // Light - 11
+    // Light - 12
     labelSmall = TextStyle(
         fontFamily = Urbanist,
         fontWeight = FontWeight.Light,
-        fontSize = 11.sp,
+        fontSize = 12.sp,
         lineHeight = 14.sp,
         letterSpacing = 0.sp,
     ),

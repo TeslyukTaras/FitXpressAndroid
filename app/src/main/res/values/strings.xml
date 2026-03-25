@@ -9,6 +9,35 @@
     <string name="action_skip">Skip</string>
     <string name="action_next">Next</string>
     <string name="action_start">Start</string>
+    <string name="action_login">Log In</string>
+    <string name="action_signup">Sign Up</string>
+    <string name="action_forgot_password">Forgot Password?</string>
+
+    <!-- Auth screens -->
+    <string name="login_title">Log In</string>
+    <string name="login_subtitle">Welcome back!</string>
+    <string name="signup_title">Sign Up</string>
+    <string name="signup_subtitle">Create an account to continue!</string>
+    <string name="label_first_name">First Name</string>
+    <string name="label_last_name">Last Name</string>
+    <string name="label_email">Email</string>
+    <string name="label_password">Password</string>
+    <string name="label_confirm_password">Confirm Password</string>
+    <string name="placeholder_first_name">Your first name</string>
+    <string name="placeholder_last_name">Your last name</string>
+    <string name="placeholder_email">Your email</string>
+    <string name="placeholder_password">Your password</string>
+    <string name="placeholder_confirm_password">Confirm your password</string>
+    <string name="or_continue_with">Or Continue with</string>
+    <string name="terms_text">I agree with the </string>
+    <string name="terms_link">Terms</string>
+    <string name="terms_and"> and </string>
+    <string name="privacy_link">Privacy Policy</string>
+    <string name="no_account">Don\'t have an account? </string>
+    <string name="have_account">Already have an account? </string>
+    <string name="cd_toggle_password">Toggle password visibility</string>
+    <string name="cd_google_signin">Sign in with Google</string>
+    <string name="cd_apple_signin">Sign in with Apple</string>
 
     <!-- App info screen -->
     <string name="app_info_page_indicator">%1$d/%2$d</string>
