@@ -1,54 +1,88 @@
 package com.hexis.bi.ui.theme
 
-import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
-
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = Blue100,
+    onPrimary = White,
+    primaryContainer = Gray600,
+    onPrimaryContainer = Black,
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    secondary = Gray200,
+    onSecondary = White,
+    secondaryContainer = Gray600,
+    onSecondaryContainer = Black,
+
+    tertiary = Gray300,
+    onTertiary = White,
+    tertiaryContainer = Gray600,
+    onTertiaryContainer = Black,
+
+    background = White,
+    onBackground = Black,
+
+    surface = White,
+    onSurface = Black,
+    surfaceVariant = Gray600,
+    onSurfaceVariant = SubtitleBlue,
+
+    outline = Gray500,
+    outlineVariant = Gray600,
+
+    error = Red100,
+    onError = White,
+
+    inverseSurface = Black,
+    inverseOnSurface = White,
+    inversePrimary = White,
+)
+
+// Dark theme mirrors light theme — reserved for future use
+private val DarkColorScheme = darkColorScheme(
+    primary = Blue100,
+    onPrimary = White,
+    primaryContainer = Gray600,
+    onPrimaryContainer = Black,
+
+    secondary = Gray200,
+    onSecondary = White,
+    secondaryContainer = Gray600,
+    onSecondaryContainer = Black,
+
+    tertiary = Gray300,
+    onTertiary = White,
+    tertiaryContainer = Gray600,
+    onTertiaryContainer = Black,
+
+    background = White,
+    onBackground = Black,
+
+    surface = White,
+    onSurface = Black,
+    surfaceVariant = Gray600,
+    onSurfaceVariant = SubtitleBlue,
+
+    outline = Gray500,
+    outlineVariant = Gray600,
+
+    error = Red100,
+    onError = White,
+
+    inverseSurface = Black,
+    inverseOnSurface = White,
+    inversePrimary = White,
 )
 
 @Composable
 fun FitXpressTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,
