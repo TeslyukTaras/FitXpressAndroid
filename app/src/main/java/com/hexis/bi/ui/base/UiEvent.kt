@@ -3,7 +3,7 @@ package com.hexis.bi.ui.base
 /**
  * One-shot UI events emitted from a ViewModel via [BaseViewModel.events].
  *
- * Extend this sealed interface to add screen-specific events:
+ * Extend this interface to add screen-specific events:
  *
  * ```
  * sealed interface MyEvent : UiEvent {
@@ -12,7 +12,7 @@ package com.hexis.bi.ui.base
  * }
  * ```
  */
-sealed interface UiEvent {
+interface UiEvent {
     /** Navigate back to the previous destination. */
     data object NavigateBack : UiEvent
 

@@ -3,12 +3,12 @@ package com.hexis.bi.ui.base
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
 abstract class BaseViewModel : ViewModel() {
@@ -19,9 +19,13 @@ abstract class BaseViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    // One-shot events (navigation, toasts, etc.) that survive recomposition
-    private val _events = MutableSharedFlow<UiEvent>()
-    val events: SharedFlow<UiEvent> = _events.asSharedFlow()
+    private val _message = MutableStateFlow<String?>(null)
+    val message: StateFlow<String?> = _message.asStateFlow()
+
+    // One-shot events (navigation, toasts, etc.) — Channel guarantees delivery
+    // even if emitted before the collector is active (unlike SharedFlow with replay=0)
+    private val _events = Channel<UiEvent>(Channel.BUFFERED)
+    val events: Flow<UiEvent> = _events.receiveAsFlow()
 
     protected fun setLoading(loading: Boolean) {
         _isLoading.value = loading
@@ -35,8 +39,16 @@ abstract class BaseViewModel : ViewModel() {
         _error.value = null
     }
 
+    protected fun setMessage(msg: String?) {
+        _message.value = msg
+    }
+
+    fun clearMessage() {
+        _message.value = null
+    }
+
     protected fun emitEvent(event: UiEvent) {
-        viewModelScope.launch { _events.emit(event) }
+        viewModelScope.launch { _events.send(event) }
     }
 
     /**

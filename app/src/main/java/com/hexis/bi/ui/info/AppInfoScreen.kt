@@ -1,4 +1,4 @@
-package com.hexis.bi.ui.main.info
+package com.hexis.bi.ui.info
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -12,14 +12,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -31,10 +27,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
-import com.hexis.bi.ui.theme.FitXpressTheme
+import com.hexis.bi.ui.components.AppLogo
+import com.hexis.bi.ui.components.AppTopBar
 import kotlinx.coroutines.launch
 
 data class AppInfoPage(
@@ -57,11 +53,10 @@ fun AppInfoScreen(
     BaseScreen(
         modifier = modifier,
         topBar = {
-            AppInfoTopBar(
-                currentPage = pagerState.currentPage,
-                onBack = {
+            AppTopBar(
+                onBack = if (pagerState.currentPage > 0) ({
                     scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
-                },
+                }) else null,
             )
         },
         bottomBar = {
@@ -84,34 +79,6 @@ fun AppInfoScreen(
             AppInfoPageContent(page = pages[index], pageIndex = index)
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun AppInfoTopBar(
-    currentPage: Int,
-    onBack: () -> Unit,
-) {
-    CenterAlignedTopAppBar(
-        title = { AppInfoLogo() },
-        navigationIcon = {
-            if (currentPage > 0) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        modifier = Modifier
-                            .size(dimensionResource(R.dimen.icon_medium))
-                            .rotate(180f),
-                        painter = painterResource(R.drawable.ic_arrow),
-                        contentDescription = stringResource(R.string.cd_back),
-                        tint = MaterialTheme.colorScheme.onBackground,
-                    )
-                }
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background,
-        ),
-    )
 }
 
 @Composable
@@ -166,25 +133,6 @@ private fun AppInfoBottomBar(
     }
 }
 
-@Composable
-private fun AppInfoLogo() {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_medium)),
-    ) {
-        Icon(
-            painter = painterResource(R.drawable.ic_logo_icon),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
-        )
-        Text(
-            text = stringResource(R.string.logo_name),
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-    }
-}
 
 @Composable
 private fun AppInfoPageContent(page: AppInfoPage, pageIndex: Int) {
