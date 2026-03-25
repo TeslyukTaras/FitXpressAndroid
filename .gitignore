@@ -1,15 +1,29 @@
+# IDE
+.idea/
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+
+# Gradle
+.gradle/
+gradle/wrapper/gradle-wrapper.jar
+
+# Local config
 local.properties
+local.defaults.properties
+
+# Build output
+/build
+app/build
+**/build/
+
+# Native
+.externalNativeBuild/
+.cxx/
+
+# macOS
+.DS_Store
+
+# Captures / profiling
+/captures
+
+# Kotlin cache
+.kotlin/
