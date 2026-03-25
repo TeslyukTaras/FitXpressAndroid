@@ -81,7 +81,7 @@ fun AppInfoScreen(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
         ) { index ->
-            AppInfoPageContent(page = pages[index])
+            AppInfoPageContent(page = pages[index], pageIndex = index)
         }
     }
 }
@@ -152,12 +152,12 @@ private fun AppInfoBottomBar(
             Text(
                 text = if (isLastPage) stringResource(R.string.action_start) else stringResource(R.string.action_next),
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onBackground,
+                color = MaterialTheme.colorScheme.primary,
             )
             Icon(
                 painter = painterResource(R.drawable.ic_arrow),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onBackground,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .padding(start = dimensionResource(R.dimen.spacer_small))
                     .size(dimensionResource(R.dimen.icon_medium)),
@@ -187,7 +187,14 @@ private fun AppInfoLogo() {
 }
 
 @Composable
-private fun AppInfoPageContent(page: AppInfoPage) {
+private fun AppInfoPageContent(page: AppInfoPage, pageIndex: Int) {
+    // Page 1: subtitle=gray/normal, emphasis=black/medium
+    // Page 2: subtitle=black/medium, emphasis=gray/normal
+    val subtitleColor = if (pageIndex == 0) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onBackground
+    val subtitleStyle = if (pageIndex == 0) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.labelLarge
+    val emphasisColor = if (pageIndex == 0) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.secondary
+    val emphasisStyle = if (pageIndex == 0) MaterialTheme.typography.labelLarge else MaterialTheme.typography.bodyMedium
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -197,6 +204,7 @@ private fun AppInfoPageContent(page: AppInfoPage) {
         Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_xl)))
 
         Text(
+            modifier = Modifier.fillMaxWidth(),
             text = page.title,
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground,
@@ -206,19 +214,20 @@ private fun AppInfoPageContent(page: AppInfoPage) {
         Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_small)))
 
         Text(
+            modifier = Modifier.fillMaxWidth(),
             text = page.subtitle,
-            minLines = 2,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = subtitleStyle,
+            color = subtitleColor,
             textAlign = TextAlign.Center,
         )
 
         Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_large)))
 
         Text(
+            modifier = Modifier.fillMaxWidth(),
             text = page.emphasis,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground,
+            style = emphasisStyle,
+            color = emphasisColor,
             textAlign = TextAlign.Center,
         )
 
@@ -242,13 +251,13 @@ private fun rememberAppInfoPages(): List<AppInfoPage> = listOf(
     AppInfoPage(
         title = stringResource(R.string.app_info_page1_title),
         subtitle = stringResource(R.string.app_info_page1_subtitle),
-        emphasis = stringResource(R.string.app_info_emphasis),
+        emphasis = stringResource(R.string.app_info_page1_emphasis),
         imageRes = R.drawable.img_app_info1,
     ),
     AppInfoPage(
         title = stringResource(R.string.app_info_page2_title),
         subtitle = stringResource(R.string.app_info_page2_subtitle),
-        emphasis = stringResource(R.string.app_info_emphasis),
+        emphasis = stringResource(R.string.app_info_page2_emphasis),
         imageRes = R.drawable.img_app_info2,
     ),
 )

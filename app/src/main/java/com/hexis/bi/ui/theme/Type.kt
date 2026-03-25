@@ -15,6 +15,12 @@ import com.hexis.bi.R
 private val Urbanist = FontFamily(
     Font(
         resId = R.font.urbanist_variable_font,
+        weight = FontWeight.Light,
+        style = FontStyle.Normal,
+        variationSettings = FontVariation.Settings(FontVariation.weight(300)),
+    ),
+    Font(
+        resId = R.font.urbanist_variable_font,
         weight = FontWeight.Normal,
         style = FontStyle.Normal,
         variationSettings = FontVariation.Settings(FontVariation.weight(400)),
@@ -39,64 +45,90 @@ private val Urbanist = FontFamily(
     ),
 )
 
+// ============================================================
+// Typography — mapped from Figma text styles
+// ============================================================
+//
+//  headlineLarge   → Medium   28  auto
+//  headlineMedium  → SemiBold 22  auto
+//  headlineSmall   → SemiBold 20  auto
+//  titleLarge      → Bold     20  auto
+//  titleMedium     → SemiBold 18  auto
+//  titleSmall      → SemiBold 16  auto
+//  bodyLarge       → Medium   16  auto
+//  bodyMedium      → Regular  14  140%  (≈ 19.6 sp)
+//  bodySmall       → Regular  12  auto
+//  labelLarge      → Medium   14  auto
+//  labelMedium     → Medium   12  auto
+//  labelSmall      → Light    11  auto
+// ============================================================
+
 val Typography = Typography(
-    // Screen titles
+    // Medium - 28
+    headlineLarge = TextStyle(
+        fontFamily = Urbanist,
+        fontWeight = FontWeight.Medium,
+        fontSize = 28.sp,
+        lineHeight = 34.sp,
+        letterSpacing = 0.sp,
+    ),
+    // SemiBold - 22
+    headlineMedium = TextStyle(
+        fontFamily = Urbanist,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 22.sp,
+        lineHeight = 28.sp,
+        letterSpacing = 0.sp,
+    ),
+    // SemiBold - 20
+    headlineSmall = TextStyle(
+        fontFamily = Urbanist,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 20.sp,
+        lineHeight = 26.sp,
+        letterSpacing = 0.sp,
+    ),
+    // Bold - 20
     titleLarge = TextStyle(
         fontFamily = Urbanist,
         fontWeight = FontWeight.Bold,
         fontSize = 20.sp,
+        lineHeight = 26.sp,
+        letterSpacing = 0.sp,
+    ),
+    // SemiBold - 18
+    titleMedium = TextStyle(
+        fontFamily = Urbanist,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 18.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.sp,
     ),
-    // Section headers
-    titleMedium = TextStyle(
+    // SemiBold - 16
+    titleSmall = TextStyle(
         fontFamily = Urbanist,
         fontWeight = FontWeight.SemiBold,
         fontSize = 16.sp,
         lineHeight = 22.sp,
         letterSpacing = 0.sp,
     ),
-    // Card sub-headers, row labels
-    titleSmall = TextStyle(
-        fontFamily = Urbanist,
-        fontWeight = FontWeight.Medium,
-        fontSize = 14.sp,
-        lineHeight = 20.sp,
-        letterSpacing = 0.sp,
-    ),
-    // Large metric values
-    headlineMedium = TextStyle(
-        fontFamily = Urbanist,
-        fontWeight = FontWeight.Bold,
-        fontSize = 28.sp,
-        lineHeight = 34.sp,
-        letterSpacing = 0.sp,
-    ),
-    // Medium metric values
-    headlineSmall = TextStyle(
-        fontFamily = Urbanist,
-        fontWeight = FontWeight.Bold,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
-        letterSpacing = 0.sp,
-    ),
-    // Body text, descriptions
+    // Medium - 16
     bodyLarge = TextStyle(
         fontFamily = Urbanist,
         fontWeight = FontWeight.Medium,
         fontSize = 16.sp,
-        lineHeight = 24.sp,
+        lineHeight = 22.sp,
         letterSpacing = 0.sp,
     ),
-    // Secondary body, goal text
+    // Regular - 14  ·  140%
     bodyMedium = TextStyle(
         fontFamily = Urbanist,
-        fontWeight = FontWeight.Medium,
+        fontWeight = FontWeight.Normal,
         fontSize = 14.sp,
         lineHeight = 19.6.sp,
-        letterSpacing = (-0.14).sp,
+        letterSpacing = 0.sp,
     ),
-    // Small captions, legend labels
+    // Regular - 12
     bodySmall = TextStyle(
         fontFamily = Urbanist,
         fontWeight = FontWeight.Normal,
@@ -104,7 +136,15 @@ val Typography = Typography(
         lineHeight = 16.sp,
         letterSpacing = 0.sp,
     ),
-    // Nav bar labels, chips
+    // Medium - 14
+    labelLarge = TextStyle(
+        fontFamily = Urbanist,
+        fontWeight = FontWeight.Medium,
+        fontSize = 14.sp,
+        lineHeight = 18.sp,
+        letterSpacing = 0.sp,
+    ),
+    // Medium - 12
     labelMedium = TextStyle(
         fontFamily = Urbanist,
         fontWeight = FontWeight.Medium,
@@ -112,11 +152,11 @@ val Typography = Typography(
         lineHeight = 16.sp,
         letterSpacing = 0.sp,
     ),
-    // Tiny labels, timeline timestamps
+    // Light - 11
     labelSmall = TextStyle(
         fontFamily = Urbanist,
-        fontWeight = FontWeight.Normal,
-        fontSize = 10.sp,
+        fontWeight = FontWeight.Light,
+        fontSize = 11.sp,
         lineHeight = 14.sp,
         letterSpacing = 0.sp,
     ),
