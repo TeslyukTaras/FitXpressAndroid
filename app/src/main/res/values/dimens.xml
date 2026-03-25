@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Spacers -->
+    <dimen name="spacer_xs">4dp</dimen>
+    <dimen name="spacer_small">8dp</dimen>
+    <dimen name="spacer_medium">12dp</dimen>
+    <dimen name="spacer_large">16dp</dimen>
+    <dimen name="spacer_xl">24dp</dimen>
+    <dimen name="spacer_xxl">48dp</dimen>
+
+    <!-- Icons -->
+    <dimen name="icon_small">16dp</dimen>
+    <dimen name="icon_medium">24dp</dimen>
+    <dimen name="icon_large">32dp</dimen>
+
+    <!-- Padding -->
+    <dimen name="padding_small">8dp</dimen>
+    <dimen name="padding_medium">16dp</dimen>
+    <dimen name="padding_large">24dp</dimen>
+
+</resources>

@@ -1,0 +1,254 @@
+package com.hexis.bi.ui.main.info
+
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import com.hexis.bi.R
+import com.hexis.bi.ui.base.BaseScreen
+import com.hexis.bi.ui.theme.FitXpressTheme
+import kotlinx.coroutines.launch
+
+data class AppInfoPage(
+    val title: String,
+    val subtitle: String,
+    val emphasis: String,
+    val imageRes: Int,
+)
+
+@Composable
+fun AppInfoScreen(
+    modifier: Modifier = Modifier,
+    onFinish: () -> Unit = {},
+) {
+    val pages = rememberAppInfoPages()
+    val pagerState = rememberPagerState { pages.size }
+    val scope = rememberCoroutineScope()
+    val isLastPage = pagerState.currentPage == pages.lastIndex
+
+    BaseScreen(
+        modifier = modifier,
+        topBar = {
+            AppInfoTopBar(
+                currentPage = pagerState.currentPage,
+                onBack = {
+                    scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
+                },
+            )
+        },
+        bottomBar = {
+            AppInfoBottomBar(
+                currentPage = pagerState.currentPage,
+                pageCount = pages.size,
+                isLastPage = isLastPage,
+                onSkip = onFinish,
+                onNext = {
+                    scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
+                },
+                onFinish = onFinish,
+            )
+        },
+    ) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize(),
+        ) { index ->
+            AppInfoPageContent(page = pages[index])
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AppInfoTopBar(
+    currentPage: Int,
+    onBack: () -> Unit,
+) {
+    CenterAlignedTopAppBar(
+        title = { AppInfoLogo() },
+        navigationIcon = {
+            if (currentPage > 0) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        modifier = Modifier
+                            .size(dimensionResource(R.dimen.icon_medium))
+                            .rotate(180f),
+                        painter = painterResource(R.drawable.ic_arrow),
+                        contentDescription = stringResource(R.string.cd_back),
+                        tint = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.background,
+        ),
+    )
+}
+
+@Composable
+private fun AppInfoBottomBar(
+    currentPage: Int,
+    pageCount: Int,
+    isLastPage: Boolean,
+    onSkip: () -> Unit,
+    onNext: () -> Unit,
+    onFinish: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                bottom = dimensionResource(R.dimen.spacer_xxl),
+                start = dimensionResource(R.dimen.padding_medium),
+                end = dimensionResource(R.dimen.padding_medium),
+            ),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TextButton(onClick = onSkip) {
+            Text(
+                text = stringResource(R.string.action_skip),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+        }
+
+        Text(
+            text = stringResource(R.string.app_info_page_indicator, currentPage + 1, pageCount),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+
+        TextButton(onClick = if (isLastPage) onFinish else onNext) {
+            Text(
+                text = if (isLastPage) stringResource(R.string.action_start) else stringResource(R.string.action_next),
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Icon(
+                painter = painterResource(R.drawable.ic_arrow),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier
+                    .padding(start = dimensionResource(R.dimen.spacer_small))
+                    .size(dimensionResource(R.dimen.icon_medium)),
+            )
+        }
+    }
+}
+
+@Composable
+private fun AppInfoLogo() {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_medium)),
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_logo_icon),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+        )
+        Text(
+            text = stringResource(R.string.logo_name),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+    }
+}
+
+@Composable
+private fun AppInfoPageContent(page: AppInfoPage) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+
+        Text(
+            text = page.title,
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
+        )
+
+        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_small)))
+
+        Text(
+            text = page.subtitle,
+            minLines = 2,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+
+        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_large)))
+
+        Text(
+            text = page.emphasis,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
+        )
+
+        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+
+        Image(
+            painter = painterResource(page.imageRes),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+        )
+
+        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_xxl)))
+    }
+}
+
+@Composable
+private fun rememberAppInfoPages(): List<AppInfoPage> = listOf(
+    AppInfoPage(
+        title = stringResource(R.string.app_info_page1_title),
+        subtitle = stringResource(R.string.app_info_page1_subtitle),
+        emphasis = stringResource(R.string.app_info_emphasis),
+        imageRes = R.drawable.img_app_info1,
+    ),
+    AppInfoPage(
+        title = stringResource(R.string.app_info_page2_title),
+        subtitle = stringResource(R.string.app_info_page2_subtitle),
+        emphasis = stringResource(R.string.app_info_emphasis),
+        imageRes = R.drawable.img_app_info2,
+    ),
+)

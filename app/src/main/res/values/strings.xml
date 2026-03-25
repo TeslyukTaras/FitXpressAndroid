@@ -1,3 +1,23 @@
 <resources>
     <string name="app_name">FitXpress</string>
+    <string name="logo_name">Logo</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_back">Back</string>
+
+    <!-- Actions -->
+    <string name="action_skip">Skip</string>
+    <string name="action_next">Next</string>
+    <string name="action_start">Start</string>
+
+    <!-- App info screen -->
+    <string name="app_info_page_indicator">%1$d/%2$d</string>
+
+    <string name="app_info_page1_title">Track body changes, not just weight</string>
+    <string name="app_info_page1_subtitle">See how your body changes over time using AI-powered body measurements.</string>
+
+    <string name="app_info_page2_title">See real body changes over time</string>
+    <string name="app_info_page2_subtitle">Use your camera to scan your body and follow your progress.</string>
+
+    <string name="app_info_emphasis">No scales. No tape measures.</string>
 </resources>

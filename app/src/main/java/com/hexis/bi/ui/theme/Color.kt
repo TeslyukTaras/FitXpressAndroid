@@ -2,10 +2,24 @@ package com.hexis.bi.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// Primary - near-black (buttons, active states, nav indicator)
+val Black = Color(0xFF1A1A1A)
+val BlackVariant = Color(0xFF3D3D3D)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// Backgrounds
+val BackgroundLight = Color(0xFFFFFFFF)  // main screen background
+val SurfaceLight = Color(0xFFFFFFFF)      // cards, dialogs, bottom sheet
+val SurfaceVariantLight = Color(0xFFF0F0F0) // secondary card bg, chips, toggle track
+
+// Text
+val TextPrimary = Color(0xFF1A1A1A)
+val TextSecondary = Color(0xFF686868)
+val TextTertiary = Color(0xFF9E9E9E)
+
+// Borders / dividers
+val Outline = Color(0xFFE0E0E0)
+val OutlineVariant = Color(0xFFEBEBEB)
+
+// Inverse (for snackbars etc.)
+val InverseSurface = Color(0xFF1A1A1A)
+val InverseOnSurface = Color(0xFFFFFFFF)
