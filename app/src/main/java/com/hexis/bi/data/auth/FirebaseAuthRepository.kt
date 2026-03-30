@@ -12,12 +12,21 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.OAuthProvider
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.hexis.bi.R
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
 class FirebaseAuthRepository(
     private val auth: FirebaseAuth,
     private val credentialManager: CredentialManager,
 ) : AuthRepository {
+
+    override val authState: Flow<Boolean> = callbackFlow {
+        val listener = FirebaseAuth.AuthStateListener { trySend(it.currentUser != null) }
+        auth.addAuthStateListener(listener)
+        awaitClose { auth.removeAuthStateListener(listener) }
+    }
 
     override suspend fun signInWithEmail(email: String, password: String): Result<Unit> =
         runCatching {
@@ -64,6 +73,10 @@ class FirebaseAuthRepository(
         auth.sendPasswordResetEmail(email).await()
         Unit
     }.mapAuthError()
+
+    override suspend fun signOut() {
+        auth.signOut()
+    }
 }
 
 private fun <T> Result<T>.mapAuthError(): Result<T> {
