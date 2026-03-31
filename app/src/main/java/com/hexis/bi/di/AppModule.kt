@@ -15,9 +15,9 @@ import org.koin.dsl.module
 val appModule = module {
     single { FirebaseAuth.getInstance() }
     single { CredentialManager.create(androidContext()) }
-    single<AuthRepository> { FirebaseAuthRepository(get(), get()) }
+    single<AuthRepository> { FirebaseAuthRepository(get(), get(), androidContext()) }
     single { UserPreferencesRepository(androidContext()) }
-    viewModel { LoginViewModel(get()) }
-    viewModel { SignUpViewModel(get()) }
-    viewModel { HomeViewModel(get()) }
+    viewModel { LoginViewModel(get(), androidApplication()) }
+    viewModel { SignUpViewModel(get(), androidApplication()) }
+    viewModel { HomeViewModel(get(), androidApplication()) }
 }

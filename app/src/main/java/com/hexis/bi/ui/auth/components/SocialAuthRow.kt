@@ -29,12 +29,15 @@ internal fun SocialAuthRow(
             contentDescription = stringResource(R.string.cd_google_signin),
             onClick = onGoogleClick,
         )
+        // TODO: unhide when Apple Sign-In is configured
+        /*
         Spacer(Modifier.width(dimensionResource(R.dimen.spacer_large)))
         SocialButton(
             iconRes = R.drawable.ic_apple,
             contentDescription = stringResource(R.string.cd_apple_signin),
             onClick = onAppleClick,
         )
+        */
     }
 }
 

@@ -1,7 +1,9 @@
 package com.hexis.bi.ui.auth.login
 
 import android.app.Activity
+import android.app.Application
 import android.content.Context
+import com.hexis.bi.R
 import com.hexis.bi.data.auth.AuthRepository
 import com.hexis.bi.ui.auth.LoginEvent
 import com.hexis.bi.ui.base.BaseViewModel
@@ -18,7 +20,10 @@ data class LoginUiState(
     val passwordError: String? = null,
 )
 
-class LoginViewModel(private val authRepository: AuthRepository) : BaseViewModel() {
+class LoginViewModel(
+    private val authRepository: AuthRepository,
+    application: Application,
+) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(LoginUiState())
     val state: StateFlow<LoginUiState> = _state.asStateFlow()
@@ -30,11 +35,11 @@ class LoginViewModel(private val authRepository: AuthRepository) : BaseViewModel
     fun login() {
         val s = _state.value
         val emailError = when {
-            s.email.isBlank() -> "Email is required"
-            !s.email.contains('@') -> "Enter a valid email address"
+            s.email.isBlank() -> appContext.getString(R.string.error_email_required)
+            !s.email.contains('@') -> appContext.getString(R.string.error_email_invalid)
             else -> null
         }
-        val passwordError = if (s.password.isBlank()) "Password is required" else null
+        val passwordError = if (s.password.isBlank()) appContext.getString(R.string.error_password_required) else null
 
         if (emailError != null || passwordError != null) {
             _state.update { it.copy(emailError = emailError, passwordError = passwordError) }
@@ -63,11 +68,11 @@ class LoginViewModel(private val authRepository: AuthRepository) : BaseViewModel
     fun forgotPassword() = launch {
         val email = _state.value.email
         if (email.isBlank()) {
-            _state.update { it.copy(emailError = "Enter your email address first") }
+            _state.update { it.copy(emailError = appContext.getString(R.string.error_email_required_for_reset)) }
             return@launch
         }
         authRepository.sendPasswordResetEmail(email)
-            .onSuccess { setMessage("Password reset link sent to $email") }
+            .onSuccess { setMessage(appContext.getString(R.string.msg_password_reset_sent, email)) }
             .onFailure { setError(it.message) }
     }
 

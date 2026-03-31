@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
@@ -45,7 +46,7 @@ fun HomeScreen(
             contentAlignment = Alignment.Center,
         ) {
             AppButton(
-                text = "Log Out",
+                text = stringResource(R.string.action_logout),
                 onClick = viewModel::logout,
             )
         }

@@ -1,7 +1,9 @@
 package com.hexis.bi.ui.auth.signup
 
 import android.app.Activity
+import android.app.Application
 import android.content.Context
+import com.hexis.bi.R
 import com.hexis.bi.data.auth.AuthRepository
 import com.hexis.bi.ui.auth.SignUpEvent
 import com.hexis.bi.ui.base.BaseViewModel
@@ -26,7 +28,10 @@ data class SignUpUiState(
     val confirmPasswordError: String? = null,
 )
 
-class SignUpViewModel(private val authRepository: AuthRepository) : BaseViewModel() {
+class SignUpViewModel(
+    private val authRepository: AuthRepository,
+    application: Application,
+) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(SignUpUiState())
     val state: StateFlow<SignUpUiState> = _state.asStateFlow()
@@ -43,17 +48,17 @@ class SignUpViewModel(private val authRepository: AuthRepository) : BaseViewMode
     fun signUp() {
         val s = _state.value
 
-        val firstNameError = if (s.firstName.isBlank()) "First name is required" else null
-        val lastNameError = if (s.lastName.isBlank()) "Last name is required" else null
+        val firstNameError = if (s.firstName.isBlank()) appContext.getString(R.string.error_first_name_required) else null
+        val lastNameError = if (s.lastName.isBlank()) appContext.getString(R.string.error_last_name_required) else null
         val emailError = when {
-            s.email.isBlank() -> "Email is required"
-            !s.email.contains('@') -> "Enter a valid email address"
+            s.email.isBlank() -> appContext.getString(R.string.error_email_required)
+            !s.email.contains('@') -> appContext.getString(R.string.error_email_invalid)
             else -> null
         }
         val passwordError = validatePassword(s.password)
         val confirmPasswordError = when {
-            s.confirmPassword.isBlank() -> "Please confirm your password"
-            s.confirmPassword != s.password -> "Passwords do not match"
+            s.confirmPassword.isBlank() -> appContext.getString(R.string.error_confirm_password_required)
+            s.confirmPassword != s.password -> appContext.getString(R.string.error_passwords_do_not_match)
             else -> null
         }
 
@@ -73,7 +78,7 @@ class SignUpViewModel(private val authRepository: AuthRepository) : BaseViewMode
         }
 
         if (!s.isTermsAccepted) {
-            setError("Please accept the Terms & Privacy Policy to continue")
+            setError(appContext.getString(R.string.error_terms_not_accepted))
             return
         }
 
@@ -97,14 +102,14 @@ class SignUpViewModel(private val authRepository: AuthRepository) : BaseViewMode
     }
 
     fun navigateToLogin() = emitEvent(SignUpEvent.NavigateToLogin)
-}
 
-private fun validatePassword(password: String): String? = when {
-    password.isBlank() -> "Password is required"
-    password.length < 6 -> "Must be at least 6 characters"
-    !password.any { it.isUpperCase() } -> "Must contain an uppercase letter"
-    !password.any { it.isLowerCase() } -> "Must contain a lowercase letter"
-    !password.any { it.isDigit() } -> "Must contain a number"
-    !password.any { !it.isLetterOrDigit() } -> "Must contain a special character"
-    else -> null
+    private fun validatePassword(password: String): String? = when {
+        password.isBlank() -> appContext.getString(R.string.error_password_required)
+        password.length < 6 -> appContext.getString(R.string.error_password_too_short)
+        !password.any { it.isUpperCase() } -> appContext.getString(R.string.error_password_no_uppercase)
+        !password.any { it.isLowerCase() } -> appContext.getString(R.string.error_password_no_lowercase)
+        !password.any { it.isDigit() } -> appContext.getString(R.string.error_password_no_digit)
+        !password.any { !it.isLetterOrDigit() } -> appContext.getString(R.string.error_password_no_special)
+        else -> null
+    }
 }
