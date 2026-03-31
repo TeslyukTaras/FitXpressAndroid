@@ -9,6 +9,70 @@
     <string name="action_skip">Skip</string>
     <string name="action_next">Next</string>
     <string name="action_start">Start</string>
+    <string name="action_login">Log In</string>
+    <string name="action_signup">Sign Up</string>
+    <string name="action_forgot_password">Forgot Password?</string>
+
+    <!-- Auth screens -->
+    <string name="login_title">Log In</string>
+    <string name="login_subtitle">Welcome back!</string>
+    <string name="signup_title">Sign Up</string>
+    <string name="signup_subtitle">Create an account to continue!</string>
+    <string name="label_first_name">First Name</string>
+    <string name="label_last_name">Last Name</string>
+    <string name="label_email">Email</string>
+    <string name="label_password">Password</string>
+    <string name="label_confirm_password">Confirm Password</string>
+    <string name="placeholder_first_name">Your first name</string>
+    <string name="placeholder_last_name">Your last name</string>
+    <string name="placeholder_email">Your email</string>
+    <string name="placeholder_password">Your password</string>
+    <string name="placeholder_confirm_password">Confirm your password</string>
+    <string name="or_continue_with">Or Continue with</string>
+    <string name="terms_text">I agree with the </string>
+    <string name="terms_link">Terms</string>
+    <string name="terms_and"> and </string>
+    <string name="privacy_link">Privacy Policy</string>
+    <string name="no_account">Don\'t have an account? </string>
+    <string name="have_account">Already have an account? </string>
+    <string name="cd_toggle_password">Toggle password visibility</string>
+    <string name="cd_google_signin">Sign in with Google</string>
+    <string name="cd_apple_signin">Sign in with Apple</string>
+
+    <!-- Home screen -->
+    <string name="action_logout">Log Out</string>
+
+    <!-- Validation errors -->
+    <string name="error_email_required">Email is required</string>
+    <string name="error_email_invalid">Enter a valid email address</string>
+    <string name="error_email_required_for_reset">Enter your email address first</string>
+    <string name="error_password_required">Password is required</string>
+    <string name="error_first_name_required">First name is required</string>
+    <string name="error_last_name_required">Last name is required</string>
+    <string name="error_confirm_password_required">Please confirm your password</string>
+    <string name="error_passwords_do_not_match">Passwords do not match</string>
+    <string name="error_terms_not_accepted">Please accept the Terms &amp; Privacy Policy to continue</string>
+
+    <!-- Password strength errors -->
+    <string name="error_password_too_short">Must be at least 6 characters</string>
+    <string name="error_password_no_uppercase">Must contain an uppercase letter</string>
+    <string name="error_password_no_lowercase">Must contain a lowercase letter</string>
+    <string name="error_password_no_digit">Must contain a number</string>
+    <string name="error_password_no_special">Must contain a special character</string>
+
+    <!-- Firebase auth errors -->
+    <string name="error_auth_invalid_email">Please enter a valid email address</string>
+    <string name="error_auth_wrong_password">Incorrect email or password</string>
+    <string name="error_auth_user_not_found">No account found with this email</string>
+    <string name="error_auth_email_in_use">An account with this email already exists</string>
+    <string name="error_auth_weak_password">Password must be at least 6 characters</string>
+    <string name="error_auth_user_disabled">This account has been disabled. Contact support</string>
+    <string name="error_auth_too_many_requests">Too many attempts. Please try again later</string>
+    <string name="error_auth_network">Network error. Check your connection and try again</string>
+    <string name="error_auth_operation_not_allowed">This sign-in method is not enabled</string>
+
+    <!-- Success messages -->
+    <string name="msg_password_reset_sent">Password reset link sent to %1$s</string>
 
     <!-- App info screen -->
     <string name="app_info_page_indicator">%1$d/%2$d</string>

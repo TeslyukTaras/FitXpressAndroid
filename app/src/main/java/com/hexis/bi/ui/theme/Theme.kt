@@ -9,11 +9,13 @@ import androidx.compose.runtime.Composable
 private val LightColorScheme = lightColorScheme(
     primary = Blue100,
     onPrimary = White,
+    primaryFixed = Gray200,
     primaryContainer = Gray600,
     onPrimaryContainer = Black,
 
-    secondary = Gray200,
+    secondary = Gray100,
     onSecondary = White,
+    secondaryFixed = Gray400,
     secondaryContainer = Gray600,
     onSecondaryContainer = Black,
 
@@ -45,11 +47,13 @@ private val LightColorScheme = lightColorScheme(
 private val DarkColorScheme = darkColorScheme(
     primary = Blue100,
     onPrimary = White,
+    primaryFixed = Gray200,
     primaryContainer = Gray600,
     onPrimaryContainer = Black,
 
-    secondary = Gray200,
+    secondary = Gray100,
     onSecondary = White,
+    secondaryFixed = Gray400,
     secondaryContainer = Gray600,
     onSecondaryContainer = Black,
 
@@ -87,6 +91,7 @@ fun FitXpressTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
-        content = content
+        shapes = AppShapes,
+        content = content,
     )
 }
