@@ -16,20 +16,20 @@ private val LightColorScheme = lightColorScheme(
     secondary = Gray100,
     onSecondary = White,
     secondaryFixed = Gray400,
-    secondaryContainer = Gray600,
-    onSecondaryContainer = Black,
+    secondaryContainer = Blue300,
+    onSecondaryContainer = White,
 
     tertiary = Gray300,
     onTertiary = White,
     tertiaryContainer = Gray600,
-    onTertiaryContainer = Black,
+    onTertiaryContainer = Blue300,
 
     background = White,
     onBackground = Black,
 
     surface = White,
     onSurface = Black,
-    surfaceVariant = Gray600,
+    surfaceVariant = Bg,
     onSurfaceVariant = SubtitleBlue,
 
     outline = Gray500,
@@ -54,20 +54,20 @@ private val DarkColorScheme = darkColorScheme(
     secondary = Gray100,
     onSecondary = White,
     secondaryFixed = Gray400,
-    secondaryContainer = Gray600,
-    onSecondaryContainer = Black,
+    secondaryContainer = Blue300,
+    onSecondaryContainer = White,
 
     tertiary = Gray300,
     onTertiary = White,
     tertiaryContainer = Gray600,
-    onTertiaryContainer = Black,
+    onTertiaryContainer = Blue300,
 
     background = White,
     onBackground = Black,
 
     surface = White,
     onSurface = Black,
-    surfaceVariant = Gray600,
+    surfaceVariant = Bg,
     onSurfaceVariant = SubtitleBlue,
 
     outline = Gray500,

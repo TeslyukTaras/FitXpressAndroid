@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 @Composable
 fun BaseScreen(
     modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.background,
     isLoading: Boolean = false,
     error: String? = null,
     onDismissError: () -> Unit = {},
@@ -82,7 +83,7 @@ fun BaseScreen(
             topBar = topBar,
             bottomBar = bottomBar,
             snackbarHost = { SnackbarHost(snackbarHostState, modifier = Modifier.imePadding()) },
-            containerColor = MaterialTheme.colorScheme.background,
+            containerColor = containerColor,
         ) { innerPadding ->
             Box(
                 modifier = Modifier
@@ -97,7 +98,7 @@ fun BaseScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.4f)),
+                    .background(MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.4f)),
             ) {
                 CircularProgressIndicator(
                     color = MaterialTheme.colorScheme.primary,

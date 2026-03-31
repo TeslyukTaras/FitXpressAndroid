@@ -1,4 +1,4 @@
-package com.hexis.bi.ui.info
+package com.hexis.bi.ui.auth.info
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement

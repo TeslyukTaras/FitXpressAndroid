@@ -1,19 +1,21 @@
 package com.hexis.bi.ui.base
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.hexis.bi.R
 
 /**
@@ -35,42 +37,41 @@ import com.hexis.bi.R
  * )
  * ```
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BaseTopBar(
     title: String,
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
-    actions: @Composable () -> Unit = {},
+    actions: @Composable (RowScope.() -> Unit) = {},
 ) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .statusBarsPadding()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (onBack != null) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier.align(Alignment.CenterStart),
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_arrow),
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.onBackground,
-                )
+    CenterAlignedTopAppBar(
+        title = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center,
+            )
+        },
+        navigationIcon = {
+            if (onBack != null) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        modifier = Modifier
+                            .size(dimensionResource(R.dimen.icon_medium))
+                            .rotate(180f),
+                        painter = painterResource(R.drawable.ic_arrow),
+                        contentDescription = stringResource(R.string.cd_back),
+                        tint = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
             }
-        }
-
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center,
-        )
-
-        Box(modifier = Modifier.align(Alignment.CenterEnd)) {
-            actions()
-        }
-    }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.background,
+        ),
+        modifier = modifier,
+        actions = actions
+    )
 }

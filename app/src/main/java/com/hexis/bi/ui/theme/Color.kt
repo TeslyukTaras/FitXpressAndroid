@@ -19,7 +19,7 @@ val Gray400 = Color(0xFFEFF0F6)
 val Gray500 = Color(0xFFEDF1F3)
 val Gray600 = Color(0xFFF0F0F0)
 
-val Bg = Color(0xFFF5F5F5)
+val Bg = Color(0xFFF7F7FA)
 val White = Color(0xFFFFFFFF)
 
 // Red
@@ -27,13 +27,16 @@ val Red100 = Color(0xFFFF3A3A)   // vivid red — errors, delete actions
 val Red200 = Color(0xFFFF7070)   // muted red
 
 // Lime
-val Lime100 = Color(0xFFDEFF1A)  // bright lime — highlights, active tabs
-val Lime200 = Color(0xFFBCDD00)  // slightly muted lime
+val Lime100 = Color(0xFFF2FF91)  // slightly muted lime
+val Lime200 = Color(0xFFE8FE3F)  // bright lime — highlights, active tabs
 
 // Other
 val LightBlue = Color(0xFFA8C8FF) // light blue — secondary accents
-val Green = Color(0xFF0E8716)
+val Green = Color(0xFF22C55E)
 val Yellow = Color(0xFFFFD700)
 
 // Subtitle/description text (blue-purple muted — onSurfaceVariant)
 val SubtitleBlue = Color(0xFF7272A8)
+
+// Shadow
+val ShadowGray = Color(0xFFC8C8C8)
