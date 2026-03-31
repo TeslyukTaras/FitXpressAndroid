@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.input.VisualTransformation
@@ -29,6 +30,7 @@ fun AppTextField(
     label: String? = null,
     placeholder: String? = null,
     error: String? = null,
+    reserveErrorSpace: Boolean = false,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     trailingIcon: @Composable (() -> Unit)? = null,
@@ -112,11 +114,14 @@ fun AppTextField(
             },
         )
 
-        if (error != null) Text(
-                text = error,
+        if (error != null || reserveErrorSpace) {
+            Text(
+                text = error.orEmpty(),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.error,
+                color = if (error != null) MaterialTheme.colorScheme.error else Color.Transparent,
                 modifier = Modifier.padding(top = dimensionResource(R.dimen.spacer_s)),
+                minLines = 1,
             )
+        }
     }
 }

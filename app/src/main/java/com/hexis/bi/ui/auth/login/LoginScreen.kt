@@ -50,6 +50,7 @@ import org.koin.androidx.compose.koinViewModel
 fun LoginScreen(
     onNavigateToSignUp: () -> Unit,
     onLoginSuccess: () -> Unit,
+    onForgotPassword: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LoginViewModel = koinViewModel(),
 ) {
@@ -144,7 +145,7 @@ fun LoginScreen(
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .align(Alignment.End)
-                    .clickable { viewModel.forgotPassword() },
+                    .clickable { onForgotPassword() },
             )
 
             Spacer(Modifier.weight(1f))
