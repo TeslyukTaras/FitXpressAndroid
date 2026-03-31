@@ -49,11 +49,11 @@ fun AppTextField(
 
     Column(modifier = modifier) {
         if (label != null) Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.padding(bottom = dimensionResource(R.dimen.spacer_s)),
-            )
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.padding(bottom = dimensionResource(R.dimen.spacer_2xs)),
+        )
 
         BasicTextField(
             value = value,
@@ -65,7 +65,8 @@ fun AppTextField(
                         Modifier.border(
                             dimensionResource(R.dimen.border_thin),
                             borderColor,
-                            shape)
+                            shape
+                        )
                     else Modifier
                 ),
             visualTransformation = visualTransformation,
@@ -109,7 +110,7 @@ fun AppTextField(
                         unfocusedTrailingIconColor = MaterialTheme.colorScheme.secondary,
                         errorTrailingIconColor = MaterialTheme.colorScheme.error,
                     ),
-                    contentPadding = PaddingValues(dimensionResource(R.dimen.spacer_medium)),
+                    contentPadding = PaddingValues(dimensionResource(R.dimen.spacer_m)),
                 )
             },
         )
@@ -119,7 +120,7 @@ fun AppTextField(
                 text = error.orEmpty(),
                 style = MaterialTheme.typography.labelSmall,
                 color = if (error != null) MaterialTheme.colorScheme.error else Color.Transparent,
-                modifier = Modifier.padding(top = dimensionResource(R.dimen.spacer_s)),
+                modifier = Modifier.padding(top = dimensionResource(R.dimen.spacer_2xs)),
                 minLines = 1,
             )
         }

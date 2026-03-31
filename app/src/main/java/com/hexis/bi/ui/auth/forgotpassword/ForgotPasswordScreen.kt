@@ -76,21 +76,21 @@ fun ForgotPasswordScreen(
                     .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
                 Text(
                     text = stringResource(R.string.forgot_password_title),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_small)))
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
                 Text(
                     text = stringResource(R.string.forgot_password_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.secondary,
                 )
 
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
                 AppTextField(
                     value = state.email,
@@ -103,7 +103,7 @@ fun ForgotPasswordScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxl)))
 
                 AppButton(
                     text = stringResource(R.string.action_send_code),
@@ -113,7 +113,7 @@ fun ForgotPasswordScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxl)))
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
             }
         }
 
@@ -182,7 +182,7 @@ private fun ForgotPasswordSuccessDialog(
                         )
                     }
 
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_dialog_icon)))
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
 
                     Text(
                         text = stringResource(R.string.forgot_password_success_title),
@@ -191,7 +191,7 @@ private fun ForgotPasswordSuccessDialog(
                         textAlign = TextAlign.Center,
                     )
 
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_dialog_text)))
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
 
                     Text(
                         text = email,
@@ -200,7 +200,7 @@ private fun ForgotPasswordSuccessDialog(
                         textAlign = TextAlign.Center,
                     )
 
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_dialog_text)))
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
 
                     Text(
                         text = stringResource(R.string.forgot_password_success_body),

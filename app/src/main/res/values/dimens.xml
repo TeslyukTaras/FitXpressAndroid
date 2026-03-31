@@ -2,14 +2,17 @@
 <resources>
 
     <!-- Spacers -->
-    <dimen name="spacer_xs">4dp</dimen>
-    <dimen name="spacer_s">6dp</dimen>
-    <dimen name="spacer_small">8dp</dimen>
-    <dimen name="spacer_medium">12dp</dimen>
-    <dimen name="spacer_large">16dp</dimen>
-    <dimen name="spacer_xl">24dp</dimen>
-    <dimen name="spacer_2xl">32dp</dimen>
-    <dimen name="spacer_xxl">48dp</dimen>
+    <dimen name="spacer_3xs">2dp</dimen>
+    <dimen name="spacer_xxs">4dp</dimen>
+    <dimen name="spacer_2xs">6dp</dimen>
+    <dimen name="spacer_xs">8dp</dimen>
+    <dimen name="spacer_s">10dp</dimen>
+    <dimen name="spacer_m">12dp</dimen>
+    <dimen name="spacer_l">16dp</dimen>
+    <dimen name="spacer_xl">20dp</dimen>
+    <dimen name="spacer_2xl">24dp</dimen>
+    <dimen name="spacer_xxl">32dp</dimen>
+    <dimen name="spacer_3xl">48dp</dimen>
 
     <!-- Icons -->
     <dimen name="icon_small">16dp</dimen>
@@ -26,10 +29,6 @@
     <dimen name="height_button">48dp</dimen>
     <dimen name="size_loading_indicator">20dp</dimen>
     <dimen name="size_tick_icon">44dp</dimen>
-
-    <!-- Dialog spacers -->
-    <dimen name="spacer_dialog_text">10dp</dimen>
-    <dimen name="spacer_dialog_icon">20dp</dimen>
 
     <!-- Effects -->
     <dimen name="blur_dialog_backdrop">2dp</dimen>

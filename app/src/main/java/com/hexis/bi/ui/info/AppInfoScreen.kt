@@ -20,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -29,7 +28,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
-import com.hexis.bi.ui.components.AppLogo
 import com.hexis.bi.ui.components.AppTopBar
 import kotlinx.coroutines.launch
 
@@ -94,7 +92,7 @@ private fun AppInfoBottomBar(
         modifier = Modifier
             .fillMaxWidth()
             .padding(
-                bottom = dimensionResource(R.dimen.spacer_xxl),
+                bottom = dimensionResource(R.dimen.spacer_3xl),
                 start = dimensionResource(R.dimen.padding_medium),
                 end = dimensionResource(R.dimen.padding_medium),
             ),
@@ -126,7 +124,7 @@ private fun AppInfoBottomBar(
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
-                    .padding(start = dimensionResource(R.dimen.spacer_small))
+                    .padding(start = dimensionResource(R.dimen.spacer_xs))
                     .size(dimensionResource(R.dimen.icon_medium)),
             )
         }
@@ -138,10 +136,14 @@ private fun AppInfoBottomBar(
 private fun AppInfoPageContent(page: AppInfoPage, pageIndex: Int) {
     // Page 1: subtitle=gray/normal, emphasis=black/medium
     // Page 2: subtitle=black/medium, emphasis=gray/normal
-    val subtitleColor = if (pageIndex == 0) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onBackground
-    val subtitleStyle = if (pageIndex == 0) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.labelLarge
-    val emphasisColor = if (pageIndex == 0) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.secondary
-    val emphasisStyle = if (pageIndex == 0) MaterialTheme.typography.labelLarge else MaterialTheme.typography.bodyMedium
+    val subtitleColor =
+        if (pageIndex == 0) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onBackground
+    val subtitleStyle =
+        if (pageIndex == 0) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.labelLarge
+    val emphasisColor =
+        if (pageIndex == 0) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.secondary
+    val emphasisStyle =
+        if (pageIndex == 0) MaterialTheme.typography.labelLarge else MaterialTheme.typography.bodyMedium
 
     Column(
         modifier = Modifier
@@ -149,7 +151,7 @@ private fun AppInfoPageContent(page: AppInfoPage, pageIndex: Int) {
             .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
         Text(
             modifier = Modifier.fillMaxWidth(),
@@ -159,7 +161,7 @@ private fun AppInfoPageContent(page: AppInfoPage, pageIndex: Int) {
             textAlign = TextAlign.Center,
         )
 
-        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_small)))
+        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_xs)))
 
         Text(
             modifier = Modifier.fillMaxWidth(),
@@ -169,7 +171,7 @@ private fun AppInfoPageContent(page: AppInfoPage, pageIndex: Int) {
             textAlign = TextAlign.Center,
         )
 
-        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_large)))
+        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
         Text(
             modifier = Modifier.fillMaxWidth(),
@@ -179,7 +181,7 @@ private fun AppInfoPageContent(page: AppInfoPage, pageIndex: Int) {
             textAlign = TextAlign.Center,
         )
 
-        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
         Image(
             painter = painterResource(page.imageRes),
@@ -190,7 +192,7 @@ private fun AppInfoPageContent(page: AppInfoPage, pageIndex: Int) {
                 .weight(1f),
         )
 
-        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_xxl)))
+        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
     }
 }
 
