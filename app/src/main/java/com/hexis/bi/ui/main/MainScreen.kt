@@ -47,7 +47,10 @@ fun MainScreen(
                     NotificationsScreen(onBack = { navController.popBackStack() })
                 }
                 composable(Route.Main.SETTINGS) {
-                    SettingsScreen(onBack = { navController.popBackStack() })
+                    SettingsScreen(
+                        onBack = { navController.popBackStack() },
+                        onLogout = onLogout,
+                    )
                 }
             }
         }
