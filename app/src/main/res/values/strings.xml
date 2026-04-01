@@ -39,8 +39,43 @@
     <string name="cd_google_signin">Sign in with Google</string>
     <string name="cd_apple_signin">Sign in with Apple</string>
 
+    <!-- Notifications screen -->
+    <string name="screen_notifications">Notifications</string>
+    <string name="notifications_empty">To be implemented</string>
+
+    <!-- Settings screen -->
+    <string name="screen_settings">Settings</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_privacy">Privacy</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_help">Help &amp; Support</string>
+    <string name="settings_about">About</string>
+
     <!-- Home screen -->
     <string name="action_logout">Log Out</string>
+    <string name="home_welcome">Welcome Back!</string>
+    <string name="home_stat_weight">Weight</string>
+    <string name="home_stat_height">Height</string>
+    <string name="home_stat_age">Age</string>
+    <string name="home_banner_title">Get more accurate measurements</string>
+    <string name="home_banner_body">Clearer results - better progress tracking.</string>
+    <string name="home_action_buy_suit">Buy suit</string>
+    <string name="home_overview_title">Overview</string>
+    <string name="home_card_sleep">Sleep</string>
+    <string name="home_card_activity">Activity</string>
+    <string name="home_card_recovery">Recovery</string>
+    <string name="home_card_scan">Scan</string>
+    <string name="home_sleep_value">%1$s h</string>
+    <string name="home_sleep_goal">Goal: %1$s h</string>
+    <string name="home_activity_value">%1$s steps</string>
+    <string name="home_activity_goal">Goal: %1$s</string>
+    <string name="home_nav_home">Home</string>
+    <string name="home_nav_body">Body</string>
+    <string name="cd_avatar">User avatar</string>
+    <string name="cd_notification">Notifications</string>
+    <string name="cd_settings">Settings</string>
+    <string name="cd_scan_action">Scan</string>
 
     <!-- Forgot password screen -->
     <string name="forgot_password_title">Forgot password?</string>
