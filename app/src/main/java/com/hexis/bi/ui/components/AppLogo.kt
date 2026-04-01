@@ -19,7 +19,7 @@ fun AppLogo(modifier: Modifier = Modifier) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_medium)),
+        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_m)),
     ) {
         Icon(
             painter = painterResource(R.drawable.ic_logo_icon),

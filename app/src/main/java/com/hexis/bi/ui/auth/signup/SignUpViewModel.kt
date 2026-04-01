@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.Context
 import com.hexis.bi.R
 import com.hexis.bi.data.auth.AuthRepository
+import com.hexis.bi.utils.isValidEmail
 import com.hexis.bi.ui.auth.SignUpEvent
 import com.hexis.bi.ui.base.BaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,7 +53,7 @@ class SignUpViewModel(
         val lastNameError = if (s.lastName.isBlank()) appContext.getString(R.string.error_last_name_required) else null
         val emailError = when {
             s.email.isBlank() -> appContext.getString(R.string.error_email_required)
-            !s.email.contains('@') -> appContext.getString(R.string.error_email_invalid)
+            !s.email.isValidEmail() -> appContext.getString(R.string.error_email_invalid)
             else -> null
         }
         val passwordError = validatePassword(s.password)

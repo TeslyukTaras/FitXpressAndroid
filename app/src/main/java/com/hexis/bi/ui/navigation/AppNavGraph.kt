@@ -11,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.hexis.bi.data.auth.AuthRepository
 import com.hexis.bi.data.preferences.UserPreferencesRepository
+import com.hexis.bi.ui.auth.forgotpassword.ForgotPasswordScreen
 import com.hexis.bi.ui.auth.login.LoginScreen
 import com.hexis.bi.ui.auth.signup.SignUpScreen
 import com.hexis.bi.ui.home.HomeScreen
@@ -24,6 +25,7 @@ private object Route {
     const val LOGIN = "login"
     const val SIGN_UP = "sign_up"
     const val HOME = "home"
+    const val FORGOT_PASSWORD = "forgot_password"
 }
 
 @Composable
@@ -73,6 +75,12 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
                         popUpTo(Route.LOGIN) { inclusive = true }
                     }
                 },
+                onForgotPassword = { navController.navigate(Route.FORGOT_PASSWORD) },
+            )
+        }
+        composable(Route.FORGOT_PASSWORD) {
+            ForgotPasswordScreen(
+                onNavigateBack = { navController.popBackStack() },
             )
         }
         composable(Route.SIGN_UP) {

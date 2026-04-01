@@ -32,8 +32,8 @@ val Lime200 = Color(0xFFBCDD00)  // slightly muted lime
 
 // Other
 val LightBlue = Color(0xFFA8C8FF) // light blue — secondary accents
-val FigmaGreen = Color(0xFF22C55E)
-val FigmaYellow = Color(0xFFFFD700)
+val Green = Color(0xFF0E8716)
+val Yellow = Color(0xFFFFD700)
 
 // Subtitle/description text (blue-purple muted — onSurfaceVariant)
 val SubtitleBlue = Color(0xFF7272A8)

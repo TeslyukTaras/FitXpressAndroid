@@ -73,7 +73,7 @@ fun AppButton(
                 style = MaterialTheme.typography.bodyLarge,
             )
             if (trailingIcon != null) {
-                Spacer(Modifier.width(dimensionResource(R.dimen.spacer_small)))
+                Spacer(Modifier.width(dimensionResource(R.dimen.spacer_xs)))
                 trailingIcon()
             }
         }
@@ -113,7 +113,7 @@ fun AppOutlinedButton(
                 style = MaterialTheme.typography.bodyLarge,
             )
             if (trailingIcon != null) {
-                Spacer(Modifier.width(dimensionResource(R.dimen.spacer_small)))
+                Spacer(Modifier.width(dimensionResource(R.dimen.spacer_xs)))
                 trailingIcon()
             }
         }

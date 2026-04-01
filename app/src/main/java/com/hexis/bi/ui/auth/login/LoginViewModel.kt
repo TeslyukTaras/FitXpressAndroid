@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.Context
 import com.hexis.bi.R
 import com.hexis.bi.data.auth.AuthRepository
+import com.hexis.bi.utils.isValidEmail
 import com.hexis.bi.ui.auth.LoginEvent
 import com.hexis.bi.ui.base.BaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,7 +37,7 @@ class LoginViewModel(
         val s = _state.value
         val emailError = when {
             s.email.isBlank() -> appContext.getString(R.string.error_email_required)
-            !s.email.contains('@') -> appContext.getString(R.string.error_email_invalid)
+            !s.email.isValidEmail() -> appContext.getString(R.string.error_email_invalid)
             else -> null
         }
         val passwordError = if (s.password.isBlank()) appContext.getString(R.string.error_password_required) else null
@@ -62,17 +63,6 @@ class LoginViewModel(
     fun loginWithApple(activity: Activity) = launch {
         authRepository.signInWithApple(activity)
             .onSuccess { emitEvent(LoginEvent.NavigateToHome) }
-            .onFailure { setError(it.message) }
-    }
-
-    fun forgotPassword() = launch {
-        val email = _state.value.email
-        if (email.isBlank()) {
-            _state.update { it.copy(emailError = appContext.getString(R.string.error_email_required_for_reset)) }
-            return@launch
-        }
-        authRepository.sendPasswordResetEmail(email)
-            .onSuccess { setMessage(appContext.getString(R.string.msg_password_reset_sent, email)) }
             .onFailure { setError(it.message) }
     }
 

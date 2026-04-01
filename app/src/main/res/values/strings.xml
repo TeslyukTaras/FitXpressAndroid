@@ -42,6 +42,14 @@
     <!-- Home screen -->
     <string name="action_logout">Log Out</string>
 
+    <!-- Forgot password screen -->
+    <string name="forgot_password_title">Forgot password?</string>
+    <string name="forgot_password_subtitle">Type your email and we\'ll send you a reset code.</string>
+    <string name="action_send_code">Send code</string>
+    <string name="forgot_password_success_title">Check your email</string>
+    <string name="forgot_password_success_body">We\'ve sent you a link to reset your password.</string>
+    <string name="cd_close_dialog">Close</string>
+
     <!-- Validation errors -->
     <string name="error_email_required">Email is required</string>
     <string name="error_email_invalid">Enter a valid email address</string>

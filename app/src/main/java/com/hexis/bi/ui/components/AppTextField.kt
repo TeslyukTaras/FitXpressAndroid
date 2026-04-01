@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.input.VisualTransformation
@@ -29,6 +30,7 @@ fun AppTextField(
     label: String? = null,
     placeholder: String? = null,
     error: String? = null,
+    reserveErrorSpace: Boolean = false,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     trailingIcon: @Composable (() -> Unit)? = null,
@@ -47,11 +49,11 @@ fun AppTextField(
 
     Column(modifier = modifier) {
         if (label != null) Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.padding(bottom = dimensionResource(R.dimen.spacer_s)),
-            )
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.padding(bottom = dimensionResource(R.dimen.spacer_2xs)),
+        )
 
         BasicTextField(
             value = value,
@@ -63,7 +65,8 @@ fun AppTextField(
                         Modifier.border(
                             dimensionResource(R.dimen.border_thin),
                             borderColor,
-                            shape)
+                            shape
+                        )
                     else Modifier
                 ),
             visualTransformation = visualTransformation,
@@ -107,16 +110,19 @@ fun AppTextField(
                         unfocusedTrailingIconColor = MaterialTheme.colorScheme.secondary,
                         errorTrailingIconColor = MaterialTheme.colorScheme.error,
                     ),
-                    contentPadding = PaddingValues(dimensionResource(R.dimen.spacer_medium)),
+                    contentPadding = PaddingValues(dimensionResource(R.dimen.spacer_m)),
                 )
             },
         )
 
-        if (error != null) Text(
-                text = error,
+        if (error != null || reserveErrorSpace) {
+            Text(
+                text = error.orEmpty(),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(top = dimensionResource(R.dimen.spacer_s)),
+                color = if (error != null) MaterialTheme.colorScheme.error else Color.Transparent,
+                modifier = Modifier.padding(top = dimensionResource(R.dimen.spacer_2xs)),
+                minLines = 1,
             )
+        }
     }
 }

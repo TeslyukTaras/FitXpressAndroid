@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -31,7 +32,6 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -85,21 +85,21 @@ fun SignUpScreen(
                 .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
             Text(
                 text = stringResource(R.string.signup_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_small)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
             Text(
                 text = stringResource(R.string.signup_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.secondary,
             )
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
             AppTextField(
                 value = state.firstName,
@@ -109,7 +109,7 @@ fun SignUpScreen(
                 error = state.firstNameError,
                 modifier = Modifier.fillMaxWidth(),
             )
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_large)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
             AppTextField(
                 value = state.lastName,
@@ -119,7 +119,7 @@ fun SignUpScreen(
                 error = state.lastNameError,
                 modifier = Modifier.fillMaxWidth(),
             )
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_large)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
             AppTextField(
                 value = state.email,
@@ -130,7 +130,7 @@ fun SignUpScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 modifier = Modifier.fillMaxWidth(),
             )
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_large)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
             AppTextField(
                 value = state.password,
@@ -152,7 +152,7 @@ fun SignUpScreen(
                 },
                 modifier = Modifier.fillMaxWidth(),
             )
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_large)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
             AppTextField(
                 value = state.confirmPassword,
@@ -174,14 +174,14 @@ fun SignUpScreen(
                 },
                 modifier = Modifier.fillMaxWidth(),
             )
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_large)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
             TermsRow(
                 accepted = state.isTermsAccepted,
                 onToggle = viewModel::toggleTerms,
             )
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
             AppButton(
                 text = stringResource(R.string.action_signup),
@@ -190,18 +190,18 @@ fun SignUpScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_large)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
             ContinueDivider()
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_large)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
             SocialAuthRow(
                 onGoogleClick = { viewModel.signUpWithGoogle(context) },
                 onAppleClick = { viewModel.signUpWithApple(context as Activity) },
             )
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
             val haveAccountText = buildAnnotatedString {
                 append(stringResource(R.string.have_account))
@@ -209,10 +209,12 @@ fun SignUpScreen(
                 withLink(
                     LinkAnnotation.Clickable(
                         tag = "LOGIN",
-                        styles = TextLinkStyles(SpanStyle(
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.SemiBold,
-                        )),
+                        styles = TextLinkStyles(
+                            SpanStyle(
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        ),
                         linkInteractionListener = { viewModel.navigateToLogin() },
                     )
                 ) {
@@ -226,7 +228,7 @@ fun SignUpScreen(
                 ),
             )
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
         }
     }
 }
@@ -249,7 +251,7 @@ private fun TermsRow(accepted: Boolean, onToggle: () -> Unit) {
                 tint = if (accepted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
             )
         }
-        Spacer(Modifier.size(dimensionResource(R.dimen.spacer_small)))
+        Spacer(Modifier.size(dimensionResource(R.dimen.spacer_xs)))
         val termsText = buildAnnotatedString {
             append(stringResource(R.string.terms_text))
             append(" ")

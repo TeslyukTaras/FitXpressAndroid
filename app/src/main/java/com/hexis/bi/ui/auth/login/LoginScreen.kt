@@ -50,6 +50,7 @@ import org.koin.androidx.compose.koinViewModel
 fun LoginScreen(
     onNavigateToSignUp: () -> Unit,
     onLoginSuccess: () -> Unit,
+    onForgotPassword: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LoginViewModel = koinViewModel(),
 ) {
@@ -87,21 +88,21 @@ fun LoginScreen(
                 .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
             Text(
                 text = stringResource(R.string.login_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_small)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
             Text(
                 text = stringResource(R.string.login_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.secondary,
             )
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
             AppTextField(
                 value = state.email,
@@ -113,7 +114,7 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_large)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
             AppTextField(
                 value = state.password,
@@ -136,7 +137,7 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_large)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
             Text(
                 text = stringResource(R.string.action_forgot_password),
@@ -144,11 +145,11 @@ fun LoginScreen(
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .align(Alignment.End)
-                    .clickable { viewModel.forgotPassword() },
+                    .clickable { onForgotPassword() },
             )
 
             Spacer(Modifier.weight(1f))
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_large)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
             AppButton(
                 text = stringResource(R.string.action_login),
@@ -157,18 +158,18 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_large)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
             ContinueDivider()
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_large)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
             SocialAuthRow(
                 onGoogleClick = { viewModel.loginWithGoogle(context) },
                 onAppleClick = { viewModel.loginWithApple(context as Activity) },
             )
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
             val noAccountText = buildAnnotatedString {
                 append(stringResource(R.string.no_account))
@@ -176,10 +177,12 @@ fun LoginScreen(
                 withLink(
                     LinkAnnotation.Clickable(
                         tag = "SIGNUP",
-                        styles = TextLinkStyles(SpanStyle(
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.SemiBold,
-                        )),
+                        styles = TextLinkStyles(
+                            SpanStyle(
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        ),
                         linkInteractionListener = { viewModel.navigateToSignUp() },
                     )
                 ) {
@@ -193,7 +196,7 @@ fun LoginScreen(
                 ),
             )
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
         }
     }
 }
