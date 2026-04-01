@@ -83,16 +83,16 @@ class FirebaseAuthRepository(
 private fun <T> Result<T>.mapAuthError(context: Context): Result<T> {
     val error = exceptionOrNull() ?: return this
     val friendly = when ((error as? FirebaseAuthException)?.errorCode) {
-        "ERROR_INVALID_EMAIL" -> context.getString(R.string.error_auth_invalid_email)
-        "ERROR_WRONG_PASSWORD",
-        "ERROR_INVALID_CREDENTIAL" -> context.getString(R.string.error_auth_wrong_password)
-        "ERROR_USER_NOT_FOUND" -> context.getString(R.string.error_auth_user_not_found)
-        "ERROR_EMAIL_ALREADY_IN_USE" -> context.getString(R.string.error_auth_email_in_use)
-        "ERROR_WEAK_PASSWORD" -> context.getString(R.string.error_auth_weak_password)
-        "ERROR_USER_DISABLED" -> context.getString(R.string.error_auth_user_disabled)
-        "ERROR_TOO_MANY_REQUESTS" -> context.getString(R.string.error_auth_too_many_requests)
-        "ERROR_NETWORK_REQUEST_FAILED" -> context.getString(R.string.error_auth_network)
-        "ERROR_OPERATION_NOT_ALLOWED" -> context.getString(R.string.error_auth_operation_not_allowed)
+        FirebaseAuthErrorCodes.INVALID_EMAIL -> context.getString(R.string.error_auth_invalid_email)
+        FirebaseAuthErrorCodes.WRONG_PASSWORD,
+        FirebaseAuthErrorCodes.INVALID_CREDENTIAL -> context.getString(R.string.error_auth_wrong_password)
+        FirebaseAuthErrorCodes.USER_NOT_FOUND -> context.getString(R.string.error_auth_user_not_found)
+        FirebaseAuthErrorCodes.EMAIL_ALREADY_IN_USE -> context.getString(R.string.error_auth_email_in_use)
+        FirebaseAuthErrorCodes.WEAK_PASSWORD -> context.getString(R.string.error_auth_weak_password)
+        FirebaseAuthErrorCodes.USER_DISABLED -> context.getString(R.string.error_auth_user_disabled)
+        FirebaseAuthErrorCodes.TOO_MANY_REQUESTS -> context.getString(R.string.error_auth_too_many_requests)
+        FirebaseAuthErrorCodes.NETWORK_REQUEST_FAILED -> context.getString(R.string.error_auth_network)
+        FirebaseAuthErrorCodes.OPERATION_NOT_ALLOWED -> context.getString(R.string.error_auth_operation_not_allowed)
         else -> return this
     }
     return Result.failure(Exception(friendly))
