@@ -1,7 +1,5 @@
 package com.hexis.bi.ui.main.home.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
@@ -21,15 +18,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
+import com.hexis.bi.ui.components.AppAvatar
 
 @Composable
 fun HomeHeader(
     userName: String,
+    avatarUrl: String?,
     onNotificationClick: () -> Unit,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -38,20 +36,7 @@ fun HomeHeader(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier = Modifier
-                .size(dimensionResource(R.dimen.size_avatar))
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.secondaryFixed),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_user),
-                contentDescription = stringResource(R.string.cd_avatar),
-                tint = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.size(dimensionResource(R.dimen.icon_large)),
-            )
-        }
+        AppAvatar(imageUrl = avatarUrl)
 
         Spacer(Modifier.width(dimensionResource(R.dimen.spacer_m)))
 

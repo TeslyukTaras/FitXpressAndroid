@@ -31,20 +31,26 @@
     <dimen name="height_button">48dp</dimen>
     <dimen name="size_loading_indicator">20dp</dimen>
     <dimen name="size_header_button">40dp</dimen>
+    <dimen name="size_avatar_button">28dp</dimen>
+    <dimen name="size_avatar_button_icon">20dp</dimen>
     <dimen name="size_avatar">60dp</dimen>
+    <dimen name="size_avatar_large">100dp</dimen>
     <dimen name="size_tick_icon">44dp</dimen>
-    <dimen name="size_bottom_nav_center">60dp</dimen>
+    <dimen name="size_bottom_nav_center">56dp</dimen>
     <dimen name="promo_button_width">120dp</dimen>
     <dimen name="promo_button_height">32dp</dimen>
+    <dimen name="slider_track_height">6dp</dimen>
 
     <!-- Corner radii -->
     <dimen name="corner_sheet">20dp</dimen>
 
     <!-- Borders -->
     <dimen name="border_thin">1dp</dimen>
+    <dimen name="border_thumb">3dp</dimen>
 
     <!-- Elevation -->
     <dimen name="elevation_none">0dp</dimen>
+    <dimen name="elevation_box">1dp</dimen>
     <dimen name="elevation_card">2dp</dimen>
     <dimen name="elevation_nav_bar">5dp</dimen>
 

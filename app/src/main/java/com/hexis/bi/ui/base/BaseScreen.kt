@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.compose.LocalLifecycleOwner
 
 /**
  * Standard screen scaffold used across the app.
@@ -51,10 +52,16 @@ fun BaseScreen(
     onDismissError: () -> Unit = {},
     message: String? = null,
     onDismissMessage: () -> Unit = {},
+    onInitialization: (() -> Unit)? = null,
     topBar: @Composable () -> Unit = {},
     bottomBar: @Composable () -> Unit = {},
     content: @Composable BoxScope.() -> Unit,
 ) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    if (onInitialization != null) LaunchedEffect(lifecycleOwner) {
+        onInitialization()
+    }
+
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(error) {

@@ -17,6 +17,7 @@ import com.hexis.bi.ui.auth.login.LoginScreen
 import com.hexis.bi.ui.auth.signup.SignUpScreen
 import com.hexis.bi.ui.main.MainScreen
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -37,7 +38,7 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
                 isSignedIn -> Route.MAIN
                 else -> Route.LOGIN
             }
-        }
+        }.take(1)
     }.collectAsState(initial = null)
 
     val destination = startDestination ?: return
@@ -89,6 +90,7 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
         composable(Route.MAIN) {
             MainScreen(
                 onLogout = {
+                    scope.launch { authRepository.signOut() }
                     navController.navigate(Route.LOGIN) {
                         popUpTo(Route.MAIN) { inclusive = true }
                     }

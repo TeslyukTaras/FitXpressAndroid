@@ -15,6 +15,7 @@ import com.hexis.bi.ui.main.body.BodyScreen
 import com.hexis.bi.ui.main.home.HomeScreen
 import com.hexis.bi.ui.main.notifications.NotificationsScreen
 import com.hexis.bi.ui.main.settings.SettingsScreen
+import com.hexis.bi.ui.main.settings.editprofile.EditProfileScreen
 import com.hexis.bi.ui.navigation.Route
 
 @Composable
@@ -50,7 +51,11 @@ fun MainScreen(
                     SettingsScreen(
                         onBack = { navController.popBackStack() },
                         onLogout = onLogout,
+                        onNavigateToEditProfile = { navController.navigate(Route.Main.EDIT_PROFILE) },
                     )
+                }
+                composable(Route.Main.EDIT_PROFILE) {
+                    EditProfileScreen(onBack = { navController.popBackStack() })
                 }
             }
         }
