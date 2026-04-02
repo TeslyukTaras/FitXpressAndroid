@@ -8,7 +8,7 @@ import com.hexis.bi.data.user.UserProfile
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.ui.base.BaseViewModel
-import com.hexis.bi.utils.ProfileConstants
+import com.hexis.bi.utils.constants.ProfileConstants
 import com.hexis.bi.utils.formatDob
 import com.hexis.bi.utils.parseDob
 import kotlinx.coroutines.flow.MutableStateFlow

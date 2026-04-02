@@ -43,6 +43,9 @@
     <dimen name="switch_track_width">45dp</dimen>
     <dimen name="switch_track_height">24dp</dimen>
     <dimen name="switch_thumb_size">18dp</dimen>
+    <dimen name="picker_height">200dp</dimen>
+    <dimen name="picker_highlight_height">45dp</dimen>
+    <dimen name="picker_item_padding">80dp</dimen>
 
     <!-- Corner radii -->
     <dimen name="corner_sheet">20dp</dimen>

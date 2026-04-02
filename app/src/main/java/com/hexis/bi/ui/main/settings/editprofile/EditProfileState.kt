@@ -2,7 +2,7 @@ package com.hexis.bi.ui.main.settings.editprofile
 
 import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.ui.base.UiEvent
-import com.hexis.bi.utils.ProfileConstants
+import com.hexis.bi.utils.constants.ProfileConstants
 import kotlin.math.roundToInt
 
 sealed interface EditProfileEvent : UiEvent {

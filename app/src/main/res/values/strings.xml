@@ -48,6 +48,7 @@
     <string name="notifications_remind_to_scan_subtitle">Get reminders to do your next body scan.</string>
     <string name="notifications_day">Day:</string>
     <string name="notifications_time">Time:</string>
+    <string name="notifications_select_time">Select time</string>
 
     <!-- Edit profile screen -->
     <string name="edit_profile_title">Edit profile</string>
