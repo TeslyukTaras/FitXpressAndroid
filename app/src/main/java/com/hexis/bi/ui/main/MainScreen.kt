@@ -16,6 +16,7 @@ import com.hexis.bi.ui.main.home.HomeScreen
 import com.hexis.bi.ui.main.notifications.NotificationsScreen
 import com.hexis.bi.ui.main.settings.SettingsScreen
 import com.hexis.bi.ui.main.settings.editprofile.EditProfileScreen
+import com.hexis.bi.ui.main.settings.healthconnections.HealthConnectionsScreen
 import com.hexis.bi.ui.navigation.Route
 
 @Composable
@@ -52,10 +53,14 @@ fun MainScreen(
                         onBack = { navController.popBackStack() },
                         onLogout = onLogout,
                         onNavigateToEditProfile = { navController.navigate(Route.Main.EDIT_PROFILE) },
+                        onNavigateToHealthConnections = { navController.navigate(Route.Main.HEALTH_CONNECTIONS) },
                     )
                 }
                 composable(Route.Main.EDIT_PROFILE) {
                     EditProfileScreen(onBack = { navController.popBackStack() })
+                }
+                composable(Route.Main.HEALTH_CONNECTIONS) {
+                    HealthConnectionsScreen(onBack = { navController.popBackStack() })
                 }
             }
         }

@@ -13,6 +13,7 @@ internal object Route {
         const val NOTIFICATIONS = "main/notifications"
         const val SETTINGS = "main/settings"
         const val EDIT_PROFILE = "main/edit_profile"
+        const val HEALTH_CONNECTIONS = "main/health_connections"
 
         /** Routes that show the bottom navigation bar. */
         val tabRoutes = setOf(HOME, BODY)

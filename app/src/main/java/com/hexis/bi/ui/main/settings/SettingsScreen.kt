@@ -44,18 +44,32 @@ private data class SettingsGroup(
 
 @Composable
 fun SettingsScreen(
+    modifier: Modifier = Modifier,
     onBack: () -> Unit,
     onLogout: () -> Unit,
     onNavigateToEditProfile: () -> Unit = {},
-    modifier: Modifier = Modifier,
+    onNavigateToNotificationSettings: () -> Unit = {},
+    onNavigateToHealthConnections: () -> Unit = {},
 ) {
     val groups = listOf(
         SettingsGroup(
             titleRes = R.string.settings_group_account,
             items = listOf(
-                SettingsRow(R.drawable.ic_user, R.string.settings_edit_profile, onClick = onNavigateToEditProfile),
-                SettingsRow(R.drawable.ic_bell, R.string.settings_notifications),
-                SettingsRow(R.drawable.ic_connect, R.string.settings_health_connections),
+                SettingsRow(
+                    R.drawable.ic_user,
+                    R.string.settings_edit_profile,
+                    onClick = onNavigateToEditProfile
+                ),
+                SettingsRow(
+                    R.drawable.ic_bell,
+                    R.string.settings_notifications,
+                    onClick = onNavigateToNotificationSettings
+                ),
+                SettingsRow(
+                    R.drawable.ic_connect,
+                    R.string.settings_health_connections,
+                    onClick = onNavigateToHealthConnections
+                ),
             ),
         ),
         SettingsGroup(

@@ -157,6 +157,13 @@
     <string name="app_info_page_indicator">%1$d/%2$d</string>
 
     <string name="app_info_page1_title">Track body changes, not just weight</string>
+    <string name="screen_health_connections">Health connections</string>
+    <string name="health_connections_subtitle">Sync sleep, recovery, and activity for insights.</string>
+    <string name="health_connection_apple">Apple Health</string>
+    <string name="health_connection_google">Google Health</string>
+    <string name="health_connection_status_connected">Connected</string>
+    <string name="health_connection_status_not_connected">Not connected</string>
+
     <string name="app_info_page1_subtitle">Understand your body\'s intelligence — and the changes shaping it — like never before.</string>
     <string name="app_info_page1_emphasis">No scales. No tape measures.</string>
 
