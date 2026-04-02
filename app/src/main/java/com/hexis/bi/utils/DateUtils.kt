@@ -22,3 +22,9 @@ fun String.parseDob(): Date? =
     SimpleDateFormat(ProfileConstants.DOB_DATE_FORMAT, Locale.US)
         .runCatching { parse(this@parseDob) }
         .getOrNull()
+
+fun Int.formatHour(): String {
+    val h = if (this % 12 == 0) 12 else this % 12
+    val amPm = if (this < 12) "am" else "pm"
+    return "$h $amPm"
+}

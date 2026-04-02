@@ -42,6 +42,12 @@
     <!-- Notifications screen -->
     <string name="screen_notifications">Notifications</string>
     <string name="notifications_empty">To be implemented</string>
+    <string name="notifications_toggle">Notifications</string>
+    <string name="notifications_voice">Voice</string>
+    <string name="notifications_remind_to_scan">Remind me to scan</string>
+    <string name="notifications_remind_to_scan_subtitle">Get reminders to do your next body scan.</string>
+    <string name="notifications_day">Day:</string>
+    <string name="notifications_time">Time:</string>
 
     <!-- Edit profile screen -->
     <string name="edit_profile_title">Edit profile</string>

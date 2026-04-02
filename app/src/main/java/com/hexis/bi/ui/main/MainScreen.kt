@@ -13,9 +13,10 @@ import androidx.navigation.compose.rememberNavController
 import com.hexis.bi.ui.components.MainNavBottomBar
 import com.hexis.bi.ui.main.body.BodyScreen
 import com.hexis.bi.ui.main.home.HomeScreen
-import com.hexis.bi.ui.main.notifications.NotificationsScreen
 import com.hexis.bi.ui.main.settings.SettingsScreen
 import com.hexis.bi.ui.main.settings.editprofile.EditProfileScreen
+import com.hexis.bi.ui.main.notifications.NotificationsScreen
+import com.hexis.bi.ui.main.settings.notifications.NotificationsSettingsScreen
 import com.hexis.bi.ui.navigation.Route
 
 @Composable
@@ -52,10 +53,14 @@ fun MainScreen(
                         onBack = { navController.popBackStack() },
                         onLogout = onLogout,
                         onNavigateToEditProfile = { navController.navigate(Route.Main.EDIT_PROFILE) },
+                        onNavigateToNotificationSettings = { navController.navigate(Route.Main.NOTIFICATION_SETTINGS) },
                     )
                 }
                 composable(Route.Main.EDIT_PROFILE) {
                     EditProfileScreen(onBack = { navController.popBackStack() })
+                }
+                composable(Route.Main.NOTIFICATION_SETTINGS) {
+                    NotificationsSettingsScreen(onBack = { navController.popBackStack() })
                 }
             }
         }

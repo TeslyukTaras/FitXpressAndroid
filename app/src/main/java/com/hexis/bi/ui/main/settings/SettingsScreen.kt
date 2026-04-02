@@ -47,6 +47,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onLogout: () -> Unit,
     onNavigateToEditProfile: () -> Unit = {},
+    onNavigateToNotificationSettings: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val groups = listOf(
@@ -54,7 +55,7 @@ fun SettingsScreen(
             titleRes = R.string.settings_group_account,
             items = listOf(
                 SettingsRow(R.drawable.ic_user, R.string.settings_edit_profile, onClick = onNavigateToEditProfile),
-                SettingsRow(R.drawable.ic_bell, R.string.settings_notifications),
+                SettingsRow(R.drawable.ic_bell, R.string.settings_notifications, onClick = onNavigateToNotificationSettings),
                 SettingsRow(R.drawable.ic_connect, R.string.settings_health_connections),
             ),
         ),

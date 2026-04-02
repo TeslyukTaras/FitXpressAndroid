@@ -40,6 +40,9 @@
     <dimen name="promo_button_width">120dp</dimen>
     <dimen name="promo_button_height">32dp</dimen>
     <dimen name="slider_track_height">6dp</dimen>
+    <dimen name="switch_track_width">45dp</dimen>
+    <dimen name="switch_track_height">24dp</dimen>
+    <dimen name="switch_thumb_size">18dp</dimen>
 
     <!-- Corner radii -->
     <dimen name="corner_sheet">20dp</dimen>
