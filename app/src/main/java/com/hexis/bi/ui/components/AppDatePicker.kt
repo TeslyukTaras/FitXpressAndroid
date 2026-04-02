@@ -10,9 +10,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.hexis.bi.utils.millisToDobString
 
 @Composable
 fun AppDatePicker(
@@ -55,10 +53,7 @@ fun AppDatePicker(
         confirmButton = {
             TextButton(onClick = {
                 val millis = state.selectedDateMillis
-                if (millis != null) onSelect(
-                    SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                        .format(Date(millis))
-                )
+                if (millis != null) onSelect(millis.millisToDobString())
                 onDismissRequest()
             }) {
                 Text(

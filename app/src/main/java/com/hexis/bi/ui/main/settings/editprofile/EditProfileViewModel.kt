@@ -7,12 +7,13 @@ import com.google.firebase.storage.FirebaseStorage
 import com.hexis.bi.data.user.UserProfile
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.base.BaseViewModel
+import com.hexis.bi.utils.ProfileConstants
+import com.hexis.bi.utils.formatDob
+import com.hexis.bi.utils.parseDob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.tasks.await
-import java.text.SimpleDateFormat
-import java.util.Locale
 import kotlin.math.roundToInt
 
 class EditProfileViewModel(
@@ -27,8 +28,7 @@ class EditProfileViewModel(
 
     fun loadUser() = launch {
         userRepository.getUser().onSuccess { profile ->
-            val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.US)
-            val dobString = profile.dateOfBirth?.let { dateFormat.format(it) }.orEmpty()
+            val dobString = profile.dateOfBirth?.formatDob().orEmpty()
             val gender = GenderOption.entries.firstOrNull { it.name == profile.gender }
             _state.update {
                 it.copy(
@@ -38,7 +38,7 @@ class EditProfileViewModel(
                     avatarUrl = profile.avatarUrl,
                     dateOfBirth = dobString,
                     gender = gender ?: it.gender,
-                    isMetric = if (profile.unitSystem != null) profile.unitSystem == "Metric" else it.isMetric,
+                    isMetric = if (profile.unitSystem != null) profile.unitSystem == ProfileConstants.UNIT_SYSTEM_METRIC else it.isMetric,
                     heightCm = profile.heightCm?.toFloat() ?: it.heightCm,
                     weightKg = profile.weightKg?.toFloat() ?: it.weightKg,
                 )
@@ -55,15 +55,20 @@ class EditProfileViewModel(
 
     fun selectMetric() = _state.update { it.copy(isMetric = true) }
     fun selectImperial() = _state.update { it.copy(isMetric = false) }
-    fun updateHeight(value: Float) = _state.update { it.copy(heightCm = value) }
-    fun updateWeight(value: Float) = _state.update { it.copy(weightKg = value) }
+    fun updateHeight(sliderValue: Float) = _state.update {
+        it.copy(heightCm = if (it.isMetric) sliderValue else sliderValue * ProfileConstants.CM_TO_IN)
+    }
+
+    fun updateWeight(sliderValue: Float) = _state.update {
+        it.copy(weightKg = if (it.isMetric) sliderValue else sliderValue / ProfileConstants.KG_TO_LB)
+    }
 
     fun showDatePicker() = _state.update { it.copy(showDatePicker = true) }
     fun hideDatePicker() = _state.update { it.copy(showDatePicker = false) }
 
     fun uploadAvatar(uri: Uri) = launch {
         val uid = firebaseAuth.currentUser?.uid ?: return@launch
-        val ref = storage.reference.child("avatars/$uid/${System.currentTimeMillis()}.jpg")
+        val ref = storage.reference.child("${ProfileConstants.AVATAR_STORAGE_DIR}/$uid/${System.currentTimeMillis()}.jpg")
         ref.putFile(uri).await()
         val url = ref.downloadUrl.await().toString()
         userRepository.updateAvatarUrl(url)
@@ -80,8 +85,7 @@ class EditProfileViewModel(
 }
 
 private fun EditProfileState.toUserProfile(uid: String): UserProfile {
-    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.US)
-    val dob = dateFormat.runCatching { parse(dateOfBirth) }.getOrNull()
+    val dob = dateOfBirth.parseDob()
     val heightCmInt = heightCm.toInt()
     val weightKgInt = weightKg.toInt()
     return UserProfile(
@@ -93,9 +97,9 @@ private fun EditProfileState.toUserProfile(uid: String): UserProfile {
         gender = gender.name,
         heightCm = heightCmInt,
         weightKg = weightKgInt,
-        heightIn = (heightCmInt / 2.54).roundToInt(),
-        weightLb = (weightKgInt * 2.20462).roundToInt(),
-        unitSystem = if (isMetric) "Metric" else "Imperial",
+        heightIn = (heightCmInt / ProfileConstants.CM_TO_IN).roundToInt(),
+        weightLb = (weightKgInt * ProfileConstants.KG_TO_LB).roundToInt(),
+        unitSystem = if (isMetric) ProfileConstants.UNIT_SYSTEM_METRIC else ProfileConstants.UNIT_SYSTEM_IMPERIAL,
         dateOfBirth = dob,
     )
 }

@@ -111,6 +111,13 @@
     <string name="forgot_password_success_body">We\'ve sent you a link to reset your password.</string>
     <string name="cd_close_dialog">Close</string>
 
+    <!-- Measurement unit format strings -->
+    <string name="unit_height_cm">%1$d cm</string>
+    <string name="unit_height_in">%1$d in</string>
+    <string name="unit_weight_kg">%1$d kg</string>
+    <string name="unit_weight_lb">%1$d lb</string>
+    <string name="unit_age_years">%1$d years</string>
+
     <!-- Validation errors -->
     <string name="error_email_required">Email is required</string>
     <string name="error_email_invalid">Enter a valid email address</string>

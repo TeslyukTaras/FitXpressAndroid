@@ -2,9 +2,11 @@ package com.hexis.bi.ui.main.home
 
 import android.app.Application
 import androidx.lifecycle.viewModelScope
+import com.hexis.bi.R
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.base.UiEvent
+import com.hexis.bi.utils.ProfileConstants
 import com.hexis.bi.utils.calculateAge
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,9 +34,16 @@ class HomeViewModel(
                     current.copy(
                         userName = "${profile.firstName} ${profile.lastName}".trim(),
                         avatarUrl = profile.avatarUrl,
-                        weight = if (profile.unitSystem == "Metric") "${profile.weightKg} kg" else "${profile.weightLb} lb",
-                        height = if (profile.unitSystem == "Metric") "${profile.heightCm} cm" else "${profile.heightIn} in",
-                        age = "${profile.dateOfBirth?.calculateAge() ?: "n/a"} years",
+                        weight = if (profile.unitSystem == ProfileConstants.UNIT_SYSTEM_METRIC)
+                            profile.weightKg?.let { appContext.getString(R.string.unit_weight_kg, it) } ?: current.weight
+                        else
+                            profile.weightLb?.let { appContext.getString(R.string.unit_weight_lb, it) } ?: current.weight,
+                        height = if (profile.unitSystem == ProfileConstants.UNIT_SYSTEM_METRIC)
+                            profile.heightCm?.let { appContext.getString(R.string.unit_height_cm, it) } ?: current.height
+                        else
+                            profile.heightIn?.let { appContext.getString(R.string.unit_height_in, it) } ?: current.height,
+                        age = profile.dateOfBirth?.calculateAge()
+                            ?.let { appContext.getString(R.string.unit_age_years, it) } ?: current.age,
                     )
                 }
             }

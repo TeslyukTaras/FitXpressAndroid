@@ -50,9 +50,8 @@ import com.hexis.bi.ui.components.AppDropdown
 import com.hexis.bi.ui.components.AppSlider
 import com.hexis.bi.ui.components.AppTextField
 import org.koin.androidx.compose.koinViewModel
-import java.text.SimpleDateFormat
-import java.util.Locale
-import kotlin.math.roundToInt
+import com.hexis.bi.utils.millisToDobString
+import com.hexis.bi.utils.parseDob
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,9 +80,7 @@ fun EditProfileScreen(
     val datePickerState = rememberDatePickerState()
     LaunchedEffect(state.dateOfBirth) {
         if (state.dateOfBirth.isNotEmpty()) {
-            datePickerState.selectedDateMillis = SimpleDateFormat("dd/MM/yyyy", Locale.US)
-                .runCatching { parse(state.dateOfBirth)?.time }
-                .getOrNull()
+            datePickerState.selectedDateMillis = state.dateOfBirth.parseDob()?.time
         }
     }
 
@@ -335,26 +332,22 @@ private fun PersonalInfoSection(
             }
         }
 
-        // Height — state always stores cm; convert for display and slider when imperial
-        val heightSliderValue = if (state.isMetric) state.heightCm else state.heightCm / 2.54f
-        val heightRange = if (state.isMetric) 130f..230f else 130f / 2.54f..230f / 2.54f
         MeasurementSlider(
             label = stringResource(R.string.edit_profile_height),
-            valueText = if (state.isMetric) "${state.heightCm.roundToInt()} cm" else "${(state.heightCm / 2.54f).roundToInt()} in",
-            value = heightSliderValue,
-            valueRange = heightRange,
-            onValueChange = { v -> viewModel.updateHeight(if (state.isMetric) v else v * 2.54f) },
+            valueText = if (state.isMetric) stringResource(R.string.unit_height_cm, state.heightDisplayValue)
+            else stringResource(R.string.unit_height_in, state.heightDisplayValue),
+            value = state.heightSliderValue,
+            valueRange = state.heightSliderRange,
+            onValueChange = viewModel::updateHeight,
         )
 
-        // Weight — state always stores kg; convert for display and slider when imperial
-        val weightSliderValue = if (state.isMetric) state.weightKg else state.weightKg * 2.20462f
-        val weightRange = if (state.isMetric) 40f..180f else 40f * 2.20462f..180f * 2.20462f
         MeasurementSlider(
             label = stringResource(R.string.edit_profile_weight),
-            valueText = if (state.isMetric) "${state.weightKg.roundToInt()} kg" else "${(state.weightKg * 2.20462f).roundToInt()} lb",
-            value = weightSliderValue,
-            valueRange = weightRange,
-            onValueChange = { v -> viewModel.updateWeight(if (state.isMetric) v else v / 2.20462f) },
+            valueText = if (state.isMetric) stringResource(R.string.unit_weight_kg, state.weightDisplayValue)
+            else stringResource(R.string.unit_weight_lb, state.weightDisplayValue),
+            value = state.weightSliderValue,
+            valueRange = state.weightSliderRange,
+            onValueChange = viewModel::updateWeight,
         )
     }
 }
