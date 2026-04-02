@@ -78,10 +78,11 @@ fun HomeScreen(
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
+            val unknown = stringResource(R.string.stat_unknown)
             UserStatsCard(
-                weight = state.weight,
-                height = state.height,
-                age = state.age,
+                weight = state.weight ?: unknown,
+                height = state.height ?: unknown,
+                age = state.age ?: unknown,
             )
 
             if (state.showBanner) {

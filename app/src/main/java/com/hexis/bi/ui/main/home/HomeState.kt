@@ -49,9 +49,9 @@ private val defaultOverviewCards = listOf(
 data class HomeState(
     val userName: String = "",
     val avatarUrl: String? = null,
-    val weight: String = "n/a",
-    val height: String = "n/a",
-    val age: String = "n/a",
+    val weight: String? = null,
+    val height: String? = null,
+    val age: String? = null,
     val showBanner: Boolean = true,
     val overviewCards: List<OverviewCardData> = defaultOverviewCards,
 )

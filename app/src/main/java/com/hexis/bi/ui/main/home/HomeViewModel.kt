@@ -35,15 +35,15 @@ class HomeViewModel(
                         userName = "${profile.firstName} ${profile.lastName}".trim(),
                         avatarUrl = profile.avatarUrl,
                         weight = if (profile.unitSystem == ProfileConstants.UNIT_SYSTEM_METRIC)
-                            profile.weightKg?.let { appContext.getString(R.string.unit_weight_kg, it) } ?: current.weight
+                            profile.weightKg?.let { appContext.getString(R.string.unit_weight_kg, it) }
                         else
-                            profile.weightLb?.let { appContext.getString(R.string.unit_weight_lb, it) } ?: current.weight,
+                            profile.weightLb?.let { appContext.getString(R.string.unit_weight_lb, it) },
                         height = if (profile.unitSystem == ProfileConstants.UNIT_SYSTEM_METRIC)
-                            profile.heightCm?.let { appContext.getString(R.string.unit_height_cm, it) } ?: current.height
+                            profile.heightCm?.let { appContext.getString(R.string.unit_height_cm, it) }
                         else
-                            profile.heightIn?.let { appContext.getString(R.string.unit_height_in, it) } ?: current.height,
+                            profile.heightIn?.let { appContext.getString(R.string.unit_height_in, it) },
                         age = profile.dateOfBirth?.calculateAge()
-                            ?.let { appContext.getString(R.string.unit_age_years, it) } ?: current.age,
+                            ?.let { appContext.getString(R.string.unit_age_years, it) },
                     )
                 }
             }

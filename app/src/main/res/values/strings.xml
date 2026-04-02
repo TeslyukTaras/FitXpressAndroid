@@ -111,6 +111,9 @@
     <string name="forgot_password_success_body">We\'ve sent you a link to reset your password.</string>
     <string name="cd_close_dialog">Close</string>
 
+    <!-- Generic stat placeholder shown before data loads or when value is unavailable -->
+    <string name="stat_unknown">—</string>
+
     <!-- Measurement unit format strings -->
     <string name="unit_height_cm">%1$d cm</string>
     <string name="unit_height_in">%1$d in</string>
