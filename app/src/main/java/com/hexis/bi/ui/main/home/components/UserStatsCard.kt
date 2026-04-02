@@ -43,13 +43,13 @@ fun UserStatsCard(
                 value = weight,
                 modifier = Modifier.weight(1f),
             )
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.weight(0.5f))
             StatItem(
                 label = stringResource(R.string.home_stat_height),
                 value = height,
                 modifier = Modifier.weight(1f),
             )
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.weight(0.5f))
             StatItem(
                 label = stringResource(R.string.home_stat_age),
                 value = age,

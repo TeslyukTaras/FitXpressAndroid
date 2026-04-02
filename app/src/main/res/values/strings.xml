@@ -43,6 +43,23 @@
     <string name="screen_notifications">Notifications</string>
     <string name="notifications_empty">To be implemented</string>
 
+    <!-- Edit profile screen -->
+    <string name="edit_profile_title">Edit profile</string>
+    <string name="edit_profile_personal_info">Personal information</string>
+    <string name="edit_profile_units">Units</string>
+    <string name="edit_profile_metric">Metric</string>
+    <string name="edit_profile_imperial">Imperial</string>
+    <string name="edit_profile_height">Height</string>
+    <string name="edit_profile_weight">Weight</string>
+    <string name="label_date_of_birth">Date of birth</string>
+    <string name="placeholder_date_of_birth">00/00/0000</string>
+    <string name="label_gender">Gender</string>
+    <string name="gender_male">Male</string>
+    <string name="gender_female">Female</string>
+    <string name="gender_other">Other</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+
     <!-- Settings screen -->
     <string name="screen_settings">Settings</string>
     <string name="settings_group_account">Account</string>
@@ -93,6 +110,16 @@
     <string name="forgot_password_success_title">Check your email</string>
     <string name="forgot_password_success_body">We\'ve sent you a link to reset your password.</string>
     <string name="cd_close_dialog">Close</string>
+
+    <!-- Generic stat placeholder shown before data loads or when value is unavailable -->
+    <string name="stat_unknown">—</string>
+
+    <!-- Measurement unit format strings -->
+    <string name="unit_height_cm">%1$d cm</string>
+    <string name="unit_height_in">%1$d in</string>
+    <string name="unit_weight_kg">%1$d kg</string>
+    <string name="unit_weight_lb">%1$d lb</string>
+    <string name="unit_age_years">%1$d years</string>
 
     <!-- Validation errors -->
     <string name="error_email_required">Email is required</string>

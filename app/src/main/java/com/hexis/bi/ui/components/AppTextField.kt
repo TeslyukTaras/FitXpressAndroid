@@ -31,6 +31,7 @@ fun AppTextField(
     placeholder: String? = null,
     error: String? = null,
     reserveErrorSpace: Boolean = false,
+    readOnly: Boolean = false,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     trailingIcon: @Composable (() -> Unit)? = null,
@@ -69,6 +70,7 @@ fun AppTextField(
                         )
                     else Modifier
                 ),
+            readOnly = readOnly,
             visualTransformation = visualTransformation,
             interactionSource = interactionSource,
             keyboardOptions = keyboardOptions,

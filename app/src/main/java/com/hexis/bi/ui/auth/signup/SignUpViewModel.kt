@@ -3,8 +3,11 @@ package com.hexis.bi.ui.auth.signup
 import android.app.Activity
 import android.app.Application
 import android.content.Context
+import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.R
 import com.hexis.bi.data.auth.AuthRepository
+import com.hexis.bi.data.user.UserProfile
+import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.utils.isValidEmail
 import com.hexis.bi.ui.auth.SignUpEvent
 import com.hexis.bi.ui.base.BaseViewModel
@@ -31,6 +34,8 @@ data class SignUpUiState(
 
 class SignUpViewModel(
     private val authRepository: AuthRepository,
+    private val userRepository: UserRepository,
+    private val firebaseAuth: FirebaseAuth,
     application: Application,
 ) : BaseViewModel(application) {
 
@@ -84,22 +89,51 @@ class SignUpViewModel(
         }
 
         launch {
-            authRepository.signUpWithEmail(s.firstName, s.lastName, s.email, s.password)
-                .onSuccess { emitEvent(SignUpEvent.NavigateToHome) }
-                .onFailure { setError(it.message) }
+            val authResult = authRepository.signUpWithEmail(s.firstName, s.lastName, s.email, s.password)
+            if (authResult.isFailure) {
+                setError(authResult.exceptionOrNull()?.message)
+                return@launch
+            }
+            val uid = firebaseAuth.currentUser?.uid ?: return@launch
+            val createResult = userRepository.createUser(
+                UserProfile(uid = uid, firstName = s.firstName, lastName = s.lastName, email = s.email)
+            )
+            if (createResult.isFailure) {
+                setError(createResult.exceptionOrNull()?.message)
+                return@launch
+            }
+            emitEvent(SignUpEvent.NavigateToHome)
         }
     }
 
     fun signUpWithGoogle(context: Context) = launch {
-        authRepository.signInWithGoogle(context)
-            .onSuccess { emitEvent(SignUpEvent.NavigateToHome) }
-            .onFailure { setError(it.message) }
+        val result = authRepository.signInWithGoogle(context)
+        if (result.isFailure) { setError(result.exceptionOrNull()?.message); return@launch }
+        provisionUserIfNeeded()
     }
 
     fun signUpWithApple(activity: Activity) = launch {
-        authRepository.signInWithApple(activity)
-            .onSuccess { emitEvent(SignUpEvent.NavigateToHome) }
-            .onFailure { setError(it.message) }
+        val result = authRepository.signInWithApple(activity)
+        if (result.isFailure) { setError(result.exceptionOrNull()?.message); return@launch }
+        provisionUserIfNeeded()
+    }
+
+    private suspend fun provisionUserIfNeeded() {
+        val user = firebaseAuth.currentUser ?: return
+        val result = userRepository.createUserIfAbsent(
+            UserProfile(
+                uid = user.uid,
+                firstName = user.displayName?.substringBefore(" ").orEmpty(),
+                lastName = user.displayName?.substringAfter(" ", "").orEmpty(),
+                email = user.email.orEmpty(),
+                avatarUrl = user.photoUrl?.toString(),
+            )
+        )
+        if (result.isFailure) {
+            setError(result.exceptionOrNull()?.message)
+            return
+        }
+        emitEvent(SignUpEvent.NavigateToHome)
     }
 
     fun navigateToLogin() = emitEvent(SignUpEvent.NavigateToLogin)
