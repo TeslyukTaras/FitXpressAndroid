@@ -6,8 +6,8 @@ import com.hexis.bi.R
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.base.UiEvent
-import com.hexis.bi.utils.ProfileConstants
 import com.hexis.bi.utils.calculateAge
+import com.hexis.bi.utils.constants.ProfileConstants
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -35,13 +35,33 @@ class HomeViewModel(
                         userName = "${profile.firstName} ${profile.lastName}".trim(),
                         avatarUrl = profile.avatarUrl,
                         weight = if (profile.unitSystem == ProfileConstants.UNIT_SYSTEM_METRIC)
-                            profile.weightKg?.let { appContext.getString(R.string.unit_weight_kg, it) }
+                            profile.weightKg?.let {
+                                appContext.getString(
+                                    R.string.unit_weight_kg,
+                                    it
+                                )
+                            }
                         else
-                            profile.weightLb?.let { appContext.getString(R.string.unit_weight_lb, it) },
+                            profile.weightLb?.let {
+                                appContext.getString(
+                                    R.string.unit_weight_lb,
+                                    it
+                                )
+                            },
                         height = if (profile.unitSystem == ProfileConstants.UNIT_SYSTEM_METRIC)
-                            profile.heightCm?.let { appContext.getString(R.string.unit_height_cm, it) }
+                            profile.heightCm?.let {
+                                appContext.getString(
+                                    R.string.unit_height_cm,
+                                    it
+                                )
+                            }
                         else
-                            profile.heightIn?.let { appContext.getString(R.string.unit_height_in, it) },
+                            profile.heightIn?.let {
+                                appContext.getString(
+                                    R.string.unit_height_in,
+                                    it
+                                )
+                            },
                         age = profile.dateOfBirth?.calculateAge()
                             ?.let { appContext.getString(R.string.unit_age_years, it) },
                     )

@@ -6,8 +6,9 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
 import com.hexis.bi.data.user.UserProfile
 import com.hexis.bi.data.user.UserRepository
+import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.ui.base.BaseViewModel
-import com.hexis.bi.utils.ProfileConstants
+import com.hexis.bi.utils.constants.ProfileConstants
 import com.hexis.bi.utils.formatDob
 import com.hexis.bi.utils.parseDob
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -68,7 +69,8 @@ class EditProfileViewModel(
 
     fun uploadAvatar(uri: Uri) = launch {
         val uid = firebaseAuth.currentUser?.uid ?: return@launch
-        val ref = storage.reference.child("${ProfileConstants.AVATAR_STORAGE_DIR}/$uid/${System.currentTimeMillis()}.jpg")
+        val ref =
+            storage.reference.child("${ProfileConstants.AVATAR_STORAGE_DIR}/$uid/${System.currentTimeMillis()}.jpg")
         ref.putFile(uri).await()
         val url = ref.downloadUrl.await().toString()
         userRepository.updateAvatarUrl(url)

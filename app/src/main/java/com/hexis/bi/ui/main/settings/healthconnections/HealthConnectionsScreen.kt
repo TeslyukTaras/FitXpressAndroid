@@ -112,8 +112,8 @@ private fun HealthConnectionRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
             .clip(MaterialTheme.shapes.medium)
+            .clickable(onClick = onClick)
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(all = dimensionResource(R.dimen.spacer_l)),
         verticalAlignment = Alignment.CenterVertically,

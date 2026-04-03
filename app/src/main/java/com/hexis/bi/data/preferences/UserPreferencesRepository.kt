@@ -14,14 +14,25 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 class UserPreferencesRepository(private val context: Context) {
 
     private val onboardingShownKey = booleanPreferencesKey("onboarding_shown")
+    private val voiceGuidanceEnabledKey = booleanPreferencesKey("voice_guidance_enabled")
 
     val onboardingShown: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[onboardingShownKey] ?: false
     }
 
+    val voiceGuidanceEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[voiceGuidanceEnabledKey] ?: true
+    }
+
     suspend fun setOnboardingShown() {
         context.dataStore.edit { prefs ->
             prefs[onboardingShownKey] = true
+        }
+    }
+
+    suspend fun setVoiceGuidanceEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[voiceGuidanceEnabledKey] = enabled
         }
     }
 }
