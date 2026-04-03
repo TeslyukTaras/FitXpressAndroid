@@ -1,5 +1,6 @@
 package com.hexis.bi.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -97,7 +98,11 @@ fun AppOutlinedButton(
             contentColor = MaterialTheme.colorScheme.primary,
             disabledContentColor = MaterialTheme.colorScheme.secondary,
         ),
-        border = ButtonDefaults.outlinedButtonBorder(enabled = enabled && !isLoading),
+        border = BorderStroke(
+            width = dimensionResource(R.dimen.border_thin),
+            color = if (enabled && !isLoading) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.secondary,
+        ),
         modifier = modifier
             .fillMaxWidth()
             .height(dimensionResource(R.dimen.height_button)),

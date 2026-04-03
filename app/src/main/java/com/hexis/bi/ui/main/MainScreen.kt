@@ -17,6 +17,7 @@ import com.hexis.bi.ui.main.notifications.NotificationsScreen
 import com.hexis.bi.ui.main.settings.SettingsScreen
 import com.hexis.bi.ui.main.settings.editprofile.EditProfileScreen
 import com.hexis.bi.ui.main.settings.healthconnections.HealthConnectionsScreen
+import com.hexis.bi.ui.main.settings.mysuit.MySuitScreen
 import com.hexis.bi.ui.main.settings.notifications.NotificationsSettingsScreen
 import com.hexis.bi.ui.main.settings.scanpreferences.ScanPreferencesScreen
 import com.hexis.bi.ui.navigation.Route
@@ -58,6 +59,7 @@ fun MainScreen(
                         onNavigateToNotificationSettings = { navController.navigate(Route.Main.NOTIFICATION_SETTINGS) },
                         onNavigateToHealthConnections = { navController.navigate(Route.Main.HEALTH_CONNECTIONS) },
                         onNavigateToScanPreferences = { navController.navigate(Route.Main.SCAN_PREFERENCES) },
+                        onNavigateToMySuit = { navController.navigate(Route.Main.MY_SUIT) },
                     )
                 }
                 composable(Route.Main.EDIT_PROFILE) {
@@ -71,6 +73,9 @@ fun MainScreen(
                 }
                 composable(Route.Main.SCAN_PREFERENCES) {
                     ScanPreferencesScreen(onBack = { navController.popBackStack() })
+                }
+                composable(Route.Main.MY_SUIT) {
+                    MySuitScreen(onBack = { navController.popBackStack() })
                 }
             }
         }
