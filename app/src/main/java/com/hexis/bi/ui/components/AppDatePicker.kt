@@ -54,7 +54,7 @@ fun AppDatePicker(
         dateTextFieldColors = null,
     )
 
-    AppDialog {
+    AppDialog(hasCloseButton = false) {
         Column(modifier = Modifier.fillMaxWidth()) {
             DatePicker(
                 state = state,

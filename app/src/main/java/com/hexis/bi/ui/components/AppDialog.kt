@@ -6,13 +6,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
 
 /**
@@ -46,6 +51,8 @@ import com.hexis.bi.R
 @Composable
 fun AppDialog(
     modifier: Modifier = Modifier,
+    hasCloseButton: Boolean = true,
+    onDismiss: (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     Box(
@@ -62,7 +69,22 @@ fun AppDialog(
                 .fillMaxWidth()
                 .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
         ) {
-            content()
+            Box {
+                content()
+                if (hasCloseButton && onDismiss != null) {
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.align(Alignment.TopEnd),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_cross),
+                            contentDescription = stringResource(R.string.cd_close_dialog),
+                            tint = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+                        )
+                    }
+                }
+            }
         }
     }
 }

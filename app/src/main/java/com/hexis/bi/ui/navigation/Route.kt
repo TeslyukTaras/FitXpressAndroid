@@ -16,6 +16,7 @@ internal object Route {
         const val HEALTH_CONNECTIONS = "main/health_connections"
         const val NOTIFICATION_SETTINGS = "main/notification_settings"
         const val SCAN_PREFERENCES = "main/scan_preferences"
+        const val MY_SUIT = "main/my_suit"
 
         /** Routes that show the bottom navigation bar. */
         val tabRoutes = setOf(HOME, BODY)
