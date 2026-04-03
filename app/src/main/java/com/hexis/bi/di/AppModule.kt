@@ -17,6 +17,7 @@ import com.hexis.bi.ui.main.home.HomeViewModel
 import com.hexis.bi.ui.main.settings.editprofile.EditProfileViewModel
 import com.hexis.bi.ui.main.settings.healthconnections.HealthConnectionsViewModel
 import com.hexis.bi.ui.main.settings.notifications.NotificationsSettingsViewModel
+import com.hexis.bi.ui.main.settings.scanpreferences.ScanPreferencesViewModel
 import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
@@ -36,6 +37,7 @@ val appModule = module {
     viewModel { HomeViewModel(androidApplication(), get()) }
     viewModel { EditProfileViewModel(androidApplication(), get(), get(), get()) }
     viewModel { ForgotPasswordViewModel(get(), androidApplication()) }
+    viewModel { ScanPreferencesViewModel(androidApplication(), get()) }
     viewModel { HealthConnectionsViewModel(androidApplication()) }
     viewModel { NotificationsSettingsViewModel(androidApplication()) }
 }
