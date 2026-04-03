@@ -4,6 +4,8 @@
 
     <!-- Content descriptions -->
     <string name="cd_back">Back</string>
+    <string name="semicolon">;</string>
+    <string name="colon">:</string>
 
     <!-- Actions -->
     <string name="action_skip">Skip</string>
@@ -66,6 +68,25 @@
     <string name="gender_other">Other</string>
     <string name="action_save">Save</string>
     <string name="action_cancel">Cancel</string>
+
+    <!-- My Suit screen -->
+    <string name="my_suit_title">My Suit</string>
+    <string name="my_suit_connect_title">Connect your scanning suit</string>
+    <string name="my_suit_connect_subtitle">Your scanning suit provides the most accurate body measurements.</string>
+    <string name="label_suit_id">Suit ID</string>
+    <string name="my_suit_id_hint">You can find the ID on your suit tag or packaging</string>
+    <string name="action_connect">Connect</string>
+    <string name="my_suit_no_suit">No scanning suit yet? </string>
+    <string name="my_suit_buy_one">Buy one</string>
+    <string name="my_suit_connected_banner_title">Suit connected</string>
+    <string name="my_suit_connected_banner_body">Your scanning suit is successfully linked to your profile.</string>
+    <string name="my_suit_status">Status</string>
+    <string name="action_reconnect_suit">Reconnect suit</string>
+    <string name="my_suit_reconnect_dialog_title">Reconnect suit?</string>
+    <string name="my_suit_reconnect_dialog_body">This will disconnect the suit from your profile.</string>
+    <string name="my_suit_reconnect_dialog_note">Your progress and scan history\nwill stay saved.</string>
+    <string name="action_reconnect">Reconnect</string>
+    <string name="cd_suit_connected">Suit connected</string>
 
     <!-- Settings screen -->
     <string name="screen_settings">Settings</string>

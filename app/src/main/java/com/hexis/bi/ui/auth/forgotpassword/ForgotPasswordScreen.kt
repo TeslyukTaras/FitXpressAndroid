@@ -1,10 +1,8 @@
 package com.hexis.bi.ui.auth.forgotpassword
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,7 +16,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -116,84 +113,64 @@ fun ForgotPasswordScreen(
             }
         }
 
-        if (state.showSuccessDialog) AppDialog {
-            ForgotPasswordSuccessDialogContent(
-                email = state.email,
-                onDismiss = {
-                    viewModel.dismissSuccessDialog()
-                    onNavigateBack()
-                },
-            )
+        if (state.showSuccessDialog) AppDialog(
+            onDismiss = {
+                viewModel.dismissSuccessDialog()
+                onNavigateBack()
+            },
+        ) {
+            ForgotPasswordSuccessDialogContent(email = state.email)
         }
     }
 }
 
 @Composable
-private fun ForgotPasswordSuccessDialogContent(
-    email: String,
-    onDismiss: () -> Unit,
-) {
-    Box {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
+private fun ForgotPasswordSuccessDialogContent(email: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(dimensionResource(R.dimen.padding_large)),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            Modifier
+                .size(dimensionResource(R.dimen.size_tick_icon))
+                .clip(CircleShape)
+                .background(Green)
         ) {
-            IconButton(onClick = onDismiss) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_cross),
-                    contentDescription = stringResource(R.string.cd_close_dialog),
-                    tint = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
-                )
-            }
+            Icon(
+                painter = painterResource(R.drawable.ic_tick),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.background,
+                modifier = Modifier.size(dimensionResource(R.dimen.size_tick_icon)),
+            )
         }
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(dimensionResource(R.dimen.padding_large)),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Box(
-                Modifier
-                    .size(dimensionResource(R.dimen.size_tick_icon))
-                    .clip(CircleShape)
-                    .background(Green)
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_tick),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.background,
-                    modifier = Modifier.size(dimensionResource(R.dimen.size_tick_icon)),
-                )
-            }
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+        Text(
+            text = stringResource(R.string.forgot_password_success_title),
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
+        )
 
-            Text(
-                text = stringResource(R.string.forgot_password_success_title),
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center,
-            )
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
+        Text(
+            text = email,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
+        )
 
-            Text(
-                text = email,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center,
-            )
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
-
-            Text(
-                text = stringResource(R.string.forgot_password_success_body),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.secondary,
-                textAlign = TextAlign.Center,
-            )
-        }
+        Text(
+            text = stringResource(R.string.forgot_password_success_body),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.secondary,
+            textAlign = TextAlign.Center,
+        )
     }
 }
