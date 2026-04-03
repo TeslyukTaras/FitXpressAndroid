@@ -1,4 +1,4 @@
-package com.hexis.bi.utils
+package com.hexis.bi.utils.constants
 
 object ProfileConstants {
 

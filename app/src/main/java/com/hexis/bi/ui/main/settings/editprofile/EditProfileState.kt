@@ -1,10 +1,9 @@
 package com.hexis.bi.ui.main.settings.editprofile
 
+import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.ui.base.UiEvent
-import com.hexis.bi.utils.ProfileConstants
+import com.hexis.bi.utils.constants.ProfileConstants
 import kotlin.math.roundToInt
-
-enum class GenderOption { Male, Female, Other }
 
 sealed interface EditProfileEvent : UiEvent {
     data object SaveSuccess : EditProfileEvent

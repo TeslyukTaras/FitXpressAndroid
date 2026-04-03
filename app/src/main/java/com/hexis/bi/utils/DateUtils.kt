@@ -1,5 +1,6 @@
 package com.hexis.bi.utils
 
+import com.hexis.bi.utils.constants.ProfileConstants
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.Period
@@ -22,3 +23,23 @@ fun String.parseDob(): Date? =
     SimpleDateFormat(ProfileConstants.DOB_DATE_FORMAT, Locale.US)
         .runCatching { parse(this@parseDob) }
         .getOrNull()
+
+fun Int.formatHour(): String {
+    val h = if (this % 12 == 0) 12 else this % 12
+    val amPm = if (this < 12) "am" else "pm"
+    return "$h $amPm"
+}
+
+fun Int.hour24ToHour12(): Int = when {
+    this == 0 -> 12
+    this > 12 -> this - 12
+    else -> this
+}
+
+fun Int.isHour24Pm(): Boolean = this >= 12
+
+fun hour12ToHour24(hour12: Int, isPm: Boolean): Int = when {
+    isPm && hour12 < 12 -> hour12 + 12
+    !isPm && hour12 == 12 -> 0
+    else -> hour12
+}
