@@ -44,11 +44,13 @@ private data class SettingsGroup(
 
 @Composable
 fun SettingsScreen(
+    modifier: Modifier = Modifier,
     onBack: () -> Unit,
     onLogout: () -> Unit,
     onNavigateToEditProfile: () -> Unit = {},
     onNavigateToNotificationSettings: () -> Unit = {},
-    modifier: Modifier = Modifier,
+    onNavigateToHealthConnections: () -> Unit = {},
+    onNavigateToScanPreferences: () -> Unit = {},
 ) {
     val groups = listOf(
         SettingsGroup(
@@ -56,14 +58,14 @@ fun SettingsScreen(
             items = listOf(
                 SettingsRow(R.drawable.ic_user, R.string.settings_edit_profile, onClick = onNavigateToEditProfile),
                 SettingsRow(R.drawable.ic_bell, R.string.settings_notifications, onClick = onNavigateToNotificationSettings),
-                SettingsRow(R.drawable.ic_connect, R.string.settings_health_connections),
+                SettingsRow(R.drawable.ic_connect, R.string.settings_health_connections, onClick = onNavigateToHealthConnections),
             ),
         ),
         SettingsGroup(
             titleRes = R.string.settings_group_suit_scanning,
             items = listOf(
                 SettingsRow(R.drawable.ic_body, R.string.settings_my_suit),
-                SettingsRow(R.drawable.ic_scan, R.string.settings_scan_preferences),
+                SettingsRow(R.drawable.ic_scan, R.string.settings_scan_preferences, onClick = onNavigateToScanPreferences),
             ),
         ),
         SettingsGroup(
