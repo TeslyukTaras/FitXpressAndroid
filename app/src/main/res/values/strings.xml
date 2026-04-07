@@ -110,6 +110,10 @@
     <string name="settings_group_actions">Actions</string>
     <string name="settings_delete_account">Delete account</string>
     <string name="settings_logout">Log out</string>
+    <string name="delete_account_dialog_title">Delete account?</string>
+    <string name="delete_account_dialog_body_password">For security reasons, enter your password to continue.</string>
+    <string name="delete_account_dialog_body_confirm">Are you sure you want to delete your account? This action cannot be undone.</string>
+    <string name="delete_account_dialog_action_delete">Delete</string>
 
     <!-- Home screen -->
     <string name="action_logout">Log Out</string>

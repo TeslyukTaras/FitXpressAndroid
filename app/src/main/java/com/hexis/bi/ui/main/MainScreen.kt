@@ -25,6 +25,7 @@ import com.hexis.bi.ui.navigation.Route
 @Composable
 fun MainScreen(
     onLogout: () -> Unit,
+    onDeleteAccount: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
@@ -55,6 +56,7 @@ fun MainScreen(
                     SettingsScreen(
                         onBack = { navController.popBackStack() },
                         onLogout = onLogout,
+                        onDeleteAccount = onDeleteAccount,
                         onNavigateToEditProfile = { navController.navigate(Route.Main.EDIT_PROFILE) },
                         onNavigateToNotificationSettings = { navController.navigate(Route.Main.NOTIFICATION_SETTINGS) },
                         onNavigateToHealthConnections = { navController.navigate(Route.Main.HEALTH_CONNECTIONS) },

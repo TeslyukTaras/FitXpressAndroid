@@ -50,4 +50,9 @@ class FirestoreUserRepository(
         val uid = firebaseAuth.currentUser?.uid ?: error("User not authenticated")
         collection.document(uid).update("avatarUrl", url).await()
     }
+
+    override suspend fun deleteUser(): Result<Unit> = runCatching {
+        val uid = firebaseAuth.currentUser?.uid ?: error("User not authenticated")
+        collection.document(uid).delete().await()
+    }
 }

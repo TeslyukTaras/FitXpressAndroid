@@ -7,6 +7,7 @@ import com.hexis.bi.R
 import androidx.credentials.GetCredentialRequest
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.GoogleAuthProvider
@@ -72,6 +73,40 @@ class FirebaseAuthRepository(
 
     override suspend fun sendPasswordResetEmail(email: String): Result<Unit> = runCatching {
         auth.sendPasswordResetEmail(email).await()
+        Unit
+    }.mapAuthError(context)
+
+    override suspend fun deleteAccountWithPassword(password: String): Result<Unit> = runCatching {
+        val user = auth.currentUser ?: error("No authenticated user")
+        val email = user.email ?: error("No email associated with this account")
+        val credential = EmailAuthProvider.getCredential(email, password)
+        user.reauthenticate(credential).await()
+        user.delete().await()
+        Unit
+    }.mapAuthError(context)
+
+    override suspend fun deleteAccountWithGoogle(context: Context): Result<Unit> = runCatching {
+        val user = auth.currentUser ?: error("No authenticated user")
+        val googleIdOption = GetGoogleIdOption.Builder()
+            .setFilterByAuthorizedAccounts(true)
+            .setServerClientId(this.context.getString(R.string.default_web_client_id))
+            .build()
+        val request = GetCredentialRequest.Builder()
+            .addCredentialOption(googleIdOption)
+            .build()
+        val result = credentialManager.getCredential(context = context, request = request)
+        val idToken = GoogleIdTokenCredential.createFrom(result.credential.data).idToken
+        val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
+        user.reauthenticate(firebaseCredential).await()
+        user.delete().await()
+        Unit
+    }.mapAuthError(context)
+
+    override suspend fun deleteAccountWithApple(activity: Activity): Result<Unit> = runCatching {
+        val user = auth.currentUser ?: error("No authenticated user")
+        val provider = OAuthProvider.newBuilder("apple.com").build()
+        user.startActivityForReauthenticateWithProvider(activity, provider).await()
+        user.delete().await()
         Unit
     }.mapAuthError(context)
 

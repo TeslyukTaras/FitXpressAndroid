@@ -17,6 +17,7 @@ import com.hexis.bi.ui.main.home.HomeViewModel
 import com.hexis.bi.ui.main.settings.editprofile.EditProfileViewModel
 import com.hexis.bi.ui.main.settings.healthconnections.HealthConnectionsViewModel
 import com.hexis.bi.ui.main.settings.mysuit.MySuitViewModel
+import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountViewModel
 import com.hexis.bi.ui.main.settings.notifications.NotificationsSettingsViewModel
 import com.hexis.bi.ui.main.settings.scanpreferences.ScanPreferencesViewModel
 import org.koin.android.ext.koin.androidApplication
@@ -42,4 +43,5 @@ val appModule = module {
     viewModel { HealthConnectionsViewModel(androidApplication()) }
     viewModel { MySuitViewModel(androidApplication()) }
     viewModel { NotificationsSettingsViewModel(androidApplication()) }
+    viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get()) }
 }

@@ -16,5 +16,8 @@ interface AuthRepository {
     suspend fun signInWithGoogle(context: Context): Result<Unit>
     suspend fun signInWithApple(activity: Activity): Result<Unit>
     suspend fun sendPasswordResetEmail(email: String): Result<Unit>
+    suspend fun deleteAccountWithPassword(password: String): Result<Unit>
+    suspend fun deleteAccountWithGoogle(context: Context): Result<Unit>
+    suspend fun deleteAccountWithApple(activity: Activity): Result<Unit>
     suspend fun signOut()
 }

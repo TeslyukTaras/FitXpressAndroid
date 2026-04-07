@@ -25,6 +25,7 @@ val White = Color(0xFFFFFFFF)
 // Red
 val Red100 = Color(0xFFFF3A3A)   // vivid red — errors, delete actions
 val Red200 = Color(0xFFFF7070)   // muted red
+val Red300 = Color(0xFFE62020)   // deep red — destructive action buttons
 
 // Lime
 val Lime100 = Color(0xFFF2FF91)  // slightly muted lime

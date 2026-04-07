@@ -22,6 +22,12 @@ import com.hexis.bi.ui.theme.Blue100
 import com.hexis.bi.ui.theme.Blue200
 import com.hexis.bi.utils.gradientBackground
 
+/**
+ * Primary action button.
+ *
+ * By default renders a blue gradient background. Pass [containerColor] to replace the gradient
+ * with a solid colour (e.g. [com.hexis.bi.ui.theme.Red300] for destructive actions).
+ */
 @Composable
 fun AppButton(
     text: String,
@@ -29,29 +35,34 @@ fun AppButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     isLoading: Boolean = false,
+    containerColor: Color? = null,
+    contentColor: Color = MaterialTheme.colorScheme.onPrimary,
     trailingIcon: @Composable (() -> Unit)? = null,
 ) {
     val isActive = enabled && !isLoading
 
-    // Gradient is applied via drawBehind on the modifier; container stays transparent
-    // so it shows through. When disabled, gradient modifier is not applied and
-    // Button falls back to disabledContainerColor automatically.
-    val gradientModifier = if (isActive) {
+    // When a custom containerColor is provided use it as a solid fill and skip the gradient.
+    // Otherwise fall back to the standard blue gradient drawn behind a transparent container.
+    val backgroundModifier = if (containerColor == null && isActive) {
         Modifier.gradientBackground(
             brush = Brush.verticalGradient(listOf(Blue100, Blue200)),
             shape = MaterialTheme.shapes.small,
         )
     } else Modifier
 
+    val resolvedContainerColor = containerColor ?: Color.Transparent
+    val disabledContainerColor = containerColor?.copy(alpha = 0.5f)
+        ?: MaterialTheme.colorScheme.primaryFixed
+
     Button(
         onClick = onClick,
         enabled = isActive,
         shape = MaterialTheme.shapes.small,
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color.Transparent,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-            disabledContainerColor = MaterialTheme.colorScheme.primaryFixed,
-            disabledContentColor = MaterialTheme.colorScheme.onPrimary,
+            containerColor = resolvedContainerColor,
+            contentColor = contentColor,
+            disabledContainerColor = disabledContainerColor,
+            disabledContentColor = contentColor,
         ),
         elevation = ButtonDefaults.buttonElevation(
             defaultElevation = dimensionResource(R.dimen.elevation_none),
@@ -61,10 +72,10 @@ fun AppButton(
         modifier = modifier
             .fillMaxWidth()
             .height(dimensionResource(R.dimen.height_button))
-            .then(gradientModifier),
+            .then(backgroundModifier),
     ) {
         if (isLoading) CircularProgressIndicator(
-            color = MaterialTheme.colorScheme.onPrimary,
+            color = contentColor,
             strokeWidth = dimensionResource(R.dimen.border_thin),
             modifier = Modifier.size(dimensionResource(R.dimen.size_loading_indicator)),
         )
