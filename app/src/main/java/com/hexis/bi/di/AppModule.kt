@@ -32,7 +32,7 @@ val appModule = module {
     single { CredentialManager.create(androidContext()) }
     single { UserPreferencesRepository(androidContext()) }
     single<AuthRepository> { FirebaseAuthRepository(get(), get(), androidContext()) }
-    single<UserRepository> { FirestoreUserRepository(get(), get()) }
+    single<UserRepository> { FirestoreUserRepository(get(), get(), androidContext()) }
     viewModel { MainViewModel(get(), get()) }
     viewModel { LoginViewModel(get(), get(), get(), androidApplication()) }
     viewModel { SignUpViewModel(get(), get(), get(), androidApplication()) }

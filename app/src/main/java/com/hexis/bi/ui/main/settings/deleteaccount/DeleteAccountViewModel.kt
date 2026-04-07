@@ -6,6 +6,7 @@ import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.R
 import com.hexis.bi.data.auth.AuthRepository
+import com.hexis.bi.data.auth.FirebaseAuthProviders
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,9 +26,9 @@ class DeleteAccountViewModel(
     fun showDialog() {
         val providerIds = firebaseAuth.currentUser?.providerData?.map { it.providerId }.orEmpty()
         val provider = when {
-            "google.com" in providerIds -> AuthProvider.GOOGLE
-            "apple.com" in providerIds -> AuthProvider.APPLE
-            "password" in providerIds -> AuthProvider.EMAIL
+            FirebaseAuthProviders.GOOGLE in providerIds -> AuthProvider.GOOGLE
+            FirebaseAuthProviders.APPLE in providerIds -> AuthProvider.APPLE
+            FirebaseAuthProviders.EMAIL_PASSWORD in providerIds -> AuthProvider.EMAIL
             else -> AuthProvider.UNKNOWN
         }
         _state.update {

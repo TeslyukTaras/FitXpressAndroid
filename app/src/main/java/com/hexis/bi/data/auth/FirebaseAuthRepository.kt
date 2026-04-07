@@ -66,7 +66,7 @@ class FirebaseAuthRepository(
     }.mapAuthError(context)
 
     override suspend fun signInWithApple(activity: Activity): Result<Unit> = runCatching {
-        val provider = OAuthProvider.newBuilder("apple.com").build()
+        val provider = OAuthProvider.newBuilder(FirebaseAuthProviders.APPLE).build()
         auth.startActivityForSignInWithProvider(activity, provider).await()
         Unit
     }.mapAuthError(context)
@@ -77,8 +77,10 @@ class FirebaseAuthRepository(
     }.mapAuthError(context)
 
     override suspend fun deleteAccountWithPassword(password: String): Result<Unit> = runCatching {
-        val user = auth.currentUser ?: error("No authenticated user")
-        val email = user.email ?: error("No email associated with this account")
+        val user = auth.currentUser
+            ?: throw FirebaseAuthCodeException(FirebaseAuthErrorCodes.NO_CURRENT_USER)
+        val email = user.email
+            ?: throw FirebaseAuthCodeException(FirebaseAuthErrorCodes.NO_EMAIL_ON_ACCOUNT)
         val credential = EmailAuthProvider.getCredential(email, password)
         user.reauthenticate(credential).await()
         user.delete().await()
@@ -86,7 +88,8 @@ class FirebaseAuthRepository(
     }.mapAuthError(context)
 
     override suspend fun deleteAccountWithGoogle(context: Context): Result<Unit> = runCatching {
-        val user = auth.currentUser ?: error("No authenticated user")
+        val user = auth.currentUser
+            ?: throw FirebaseAuthCodeException(FirebaseAuthErrorCodes.NO_CURRENT_USER)
         val googleIdOption = GetGoogleIdOption.Builder()
             .setFilterByAuthorizedAccounts(true)
             .setServerClientId(this.context.getString(R.string.default_web_client_id))
@@ -103,8 +106,9 @@ class FirebaseAuthRepository(
     }.mapAuthError(context)
 
     override suspend fun deleteAccountWithApple(activity: Activity): Result<Unit> = runCatching {
-        val user = auth.currentUser ?: error("No authenticated user")
-        val provider = OAuthProvider.newBuilder("apple.com").build()
+        val user = auth.currentUser
+            ?: throw FirebaseAuthCodeException(FirebaseAuthErrorCodes.NO_CURRENT_USER)
+        val provider = OAuthProvider.newBuilder(FirebaseAuthProviders.APPLE).build()
         user.startActivityForReauthenticateWithProvider(activity, provider).await()
         user.delete().await()
         Unit
@@ -117,7 +121,14 @@ class FirebaseAuthRepository(
 
 private fun <T> Result<T>.mapAuthError(context: Context): Result<T> {
     val error = exceptionOrNull() ?: return this
-    val friendly = when ((error as? FirebaseAuthException)?.errorCode) {
+    val errorCode = when (error) {
+        is FirebaseAuthException -> error.errorCode
+        is FirebaseAuthCodeException -> error.errorCode
+        else -> return this
+    }
+    val friendly = when (errorCode) {
+        FirebaseAuthErrorCodes.NO_CURRENT_USER -> context.getString(R.string.error_session_expired)
+        FirebaseAuthErrorCodes.NO_EMAIL_ON_ACCOUNT -> context.getString(R.string.error_no_email_on_account)
         FirebaseAuthErrorCodes.INVALID_EMAIL -> context.getString(R.string.error_auth_invalid_email)
         FirebaseAuthErrorCodes.WRONG_PASSWORD,
         FirebaseAuthErrorCodes.INVALID_CREDENTIAL -> context.getString(R.string.error_auth_wrong_password)
