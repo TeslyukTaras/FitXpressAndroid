@@ -73,7 +73,7 @@
     <string name="scan_preferences_title">Scan preferences</string>
     <string name="scan_preferences_voice_guidance">Voice guidance</string>
     <string name="scan_preferences_voice_guidance_subtitle">Enabled by default.\nYou can turn it off during the scan.</string>
-  
+
     <!-- My Suit screen -->
     <string name="my_suit_title">My Suit</string>
     <string name="my_suit_connect_title">Connect your scanning suit</string>
@@ -125,10 +125,16 @@
     <string name="home_banner_body">Clearer results - better progress tracking.</string>
     <string name="home_action_buy_suit">Buy suit</string>
     <string name="home_overview_title">Overview</string>
+    <string name="home_intelligence_scores_title">Intelligence Scores</string>
     <string name="home_card_sleep">Sleep</string>
+    <string name="home_card_sleep_score">Sleep Score</string>
     <string name="home_card_activity">Activity</string>
+    <string name="home_card_activity_score">Activity Score</string>
     <string name="home_card_recovery">Recovery</string>
     <string name="home_card_scan">Scan</string>
+    <string name="home_score_vbi">VBI Score</string>
+    <string name="home_score_vli">VLI Score</string>
+    <string name="home_score_poa">POA Score</string>
     <string name="home_sleep_value">%1$s h</string>
     <string name="home_sleep_goal">Goal: %1$s h</string>
     <string name="home_activity_value">%1$s steps</string>

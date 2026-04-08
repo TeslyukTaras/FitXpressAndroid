@@ -34,7 +34,7 @@ val Lime200 = Color(0xFFE8FE3F)  // bright lime — highlights, active tabs
 // Other
 val LightBlue = Color(0xFFA8C8FF) // light blue — secondary accents
 val Green = Color(0xFF0E8716)
-val Yellow = Color(0xFFFFD700)
+val Yellow = Color(0xFFF2B705)
 
 // Subtitle/description text (blue-purple muted — onSurfaceVariant)
 val SubtitleBlue = Color(0xFF7272A8)

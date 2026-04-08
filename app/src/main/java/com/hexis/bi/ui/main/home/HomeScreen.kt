@@ -26,6 +26,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.main.home.components.HomeHeader
+import com.hexis.bi.ui.main.home.components.IntelligenceScoresCard
 import com.hexis.bi.ui.main.home.components.OverviewCard
 import com.hexis.bi.ui.main.home.components.PromoBanner
 import com.hexis.bi.ui.main.home.components.UserStatsCard
@@ -37,6 +38,10 @@ fun HomeScreen(
     onNotificationClick: () -> Unit,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onSleepClick: () -> Unit = {},
+    onActivityClick: () -> Unit = {},
+    onRecoveryClick: () -> Unit = {},
+    onScanClick: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -50,6 +55,8 @@ fun HomeScreen(
             }
         }
     }
+
+    val cardClicks = listOf(onSleepClick, onActivityClick, onRecoveryClick, onScanClick)
 
     BaseScreen(
         modifier = modifier,
@@ -85,7 +92,7 @@ fun HomeScreen(
                 age = state.age ?: unknown,
             )
 
-            if (state.showBanner) {
+            if (!state.isSuitConnected) {
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
                 PromoBanner(onBuyClick = { /* TODO */ })
             }
@@ -100,7 +107,24 @@ fun HomeScreen(
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
 
-            OverviewGrid(cards = state.overviewCards)
+            OverviewGrid(
+                cards = state.overviewCards,
+                cardClicks = cardClicks,
+            )
+
+            if (state.isSuitConnected) {
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+                Text(
+                    text = stringResource(R.string.home_intelligence_scores_title),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium),
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+
+                IntelligenceScoresCard(scores = state.intelligenceScores)
+            }
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
         }
@@ -108,8 +132,12 @@ fun HomeScreen(
 }
 
 @Composable
-private fun OverviewGrid(cards: List<OverviewCardData>) {
+private fun OverviewGrid(
+    cards: List<OverviewCardData>,
+    cardClicks: List<() -> Unit>,
+) {
     val rows = cards.chunked(2)
+    var index = 0
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_m))) {
         rows.forEach { rowCards ->
             Row(
@@ -119,6 +147,7 @@ private fun OverviewGrid(cards: List<OverviewCardData>) {
                 horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_s)),
             ) {
                 rowCards.forEach { card ->
+                    val cardIndex = index++
                     OverviewCard(
                         title = card.title,
                         iconRes = card.iconRes,
@@ -126,12 +155,12 @@ private fun OverviewGrid(cards: List<OverviewCardData>) {
                         subtitle = card.subtitle,
                         variant = card.variant,
                         valueLabel = card.valueLabel,
+                        onClick = cardClicks.getOrElse(cardIndex) { {} },
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight(),
                     )
                 }
-                // Pad last row if odd number of cards
                 if (rowCards.size < 2) {
                     Spacer(Modifier.weight(1f))
                 }

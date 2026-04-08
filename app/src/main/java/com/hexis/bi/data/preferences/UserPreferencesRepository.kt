@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -15,6 +16,7 @@ class UserPreferencesRepository(private val context: Context) {
 
     private val onboardingShownKey = booleanPreferencesKey("onboarding_shown")
     private val voiceGuidanceEnabledKey = booleanPreferencesKey("voice_guidance_enabled")
+    private val connectedSuitIdKey = stringPreferencesKey("connected_suit_id")
 
     val onboardingShown: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[onboardingShownKey] ?: false
@@ -33,6 +35,22 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun setVoiceGuidanceEnabled(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[voiceGuidanceEnabledKey] = enabled
+        }
+    }
+
+    val connectedSuitId: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[connectedSuitIdKey] ?: ""
+    }
+
+    suspend fun setConnectedSuitId(id: String) {
+        context.dataStore.edit { prefs ->
+            prefs[connectedSuitIdKey] = id
+        }
+    }
+
+    suspend fun clearConnectedSuitId() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(connectedSuitIdKey)
         }
     }
 }

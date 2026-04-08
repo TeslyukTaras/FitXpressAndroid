@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.viewModelScope
 import com.hexis.bi.R
 import com.hexis.bi.data.user.UserRepository
+import com.hexis.bi.domain.suit.SuitRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.base.UiEvent
 import com.hexis.bi.utils.calculateAge
@@ -22,6 +23,7 @@ sealed interface HomeEvent : UiEvent {
 class HomeViewModel(
     application: Application,
     private val userRepository: UserRepository,
+    private val suitRepository: SuitRepository,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(HomeState())
@@ -65,6 +67,15 @@ class HomeViewModel(
                         age = profile.dateOfBirth?.calculateAge()
                             ?.let { appContext.getString(R.string.unit_age_years, it) },
                     )
+                }
+            }
+            .catch { setError(it.message) }
+            .launchIn(viewModelScope)
+
+        suitRepository.connectionState
+            .onEach { info ->
+                _state.update { current ->
+                    current.copy(isSuitConnected = info != null)
                 }
             }
             .catch { setError(it.message) }
