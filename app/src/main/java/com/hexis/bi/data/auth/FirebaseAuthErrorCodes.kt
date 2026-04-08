@@ -11,4 +11,14 @@ internal object FirebaseAuthErrorCodes {
     const val TOO_MANY_REQUESTS = "ERROR_TOO_MANY_REQUESTS"
     const val NETWORK_REQUEST_FAILED = "ERROR_NETWORK_REQUEST_FAILED"
     const val OPERATION_NOT_ALLOWED = "ERROR_OPERATION_NOT_ALLOWED"
+
+    // Custom codes for precondition failures not covered by FirebaseAuthException
+    const val NO_CURRENT_USER = "ERROR_NO_CURRENT_USER"
+    const val NO_EMAIL_ON_ACCOUNT = "ERROR_NO_EMAIL_ON_ACCOUNT"
 }
+
+/**
+ * Thrown for auth preconditions that have no matching [com.google.firebase.auth.FirebaseAuthException].
+ * Processed by [mapAuthError] alongside Firebase SDK exceptions.
+ */
+internal class FirebaseAuthCodeException(val errorCode: String) : Exception(errorCode)

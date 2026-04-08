@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,16 +19,27 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import android.app.Activity
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
+import com.hexis.bi.ui.main.settings.deleteaccount.AuthProvider
+import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountDialog
+import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountEvent
+import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountViewModel
+import org.koin.androidx.compose.koinViewModel
 
 private data class SettingsRow(
     @DrawableRes val iconRes: Int,
@@ -47,12 +59,32 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     onBack: () -> Unit,
     onLogout: () -> Unit,
+    onDeleteAccount: () -> Unit = {},
     onNavigateToEditProfile: () -> Unit = {},
     onNavigateToNotificationSettings: () -> Unit = {},
     onNavigateToHealthConnections: () -> Unit = {},
     onNavigateToScanPreferences: () -> Unit = {},
     onNavigateToMySuit: () -> Unit = {},
+    viewModel: DeleteAccountViewModel = koinViewModel(),
 ) {
+    val context = LocalContext.current
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            if (event is DeleteAccountEvent.DeleteSuccess) onDeleteAccount()
+        }
+    }
+
+    val onDelete: () -> Unit = when (state.provider) {
+        AuthProvider.EMAIL -> viewModel::deleteAccountWithPassword
+        AuthProvider.GOOGLE -> { { viewModel.deleteAccountWithGoogle(context) } }
+        AuthProvider.APPLE -> { { viewModel.deleteAccountWithApple(context as Activity) } }
+        AuthProvider.UNKNOWN -> { {} }
+    }
+
     val groups = listOf(
         SettingsGroup(
             titleRes = R.string.settings_group_account,
@@ -96,6 +128,7 @@ fun SettingsScreen(
                     labelRes = R.string.settings_delete_account,
                     showChevron = false,
                     tint = { MaterialTheme.colorScheme.error },
+                    onClick = viewModel::showDialog,
                 ),
                 SettingsRow(
                     iconRes = R.drawable.ic_log_out,
@@ -108,21 +141,39 @@ fun SettingsScreen(
         ),
     )
 
-    BaseScreen(
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            BaseTopBar(
-                title = stringResource(R.string.screen_settings),
-                onBack = onBack,
-            )
-        },
-    ) {
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(groups) { group ->
-                SettingsGroupSection(group)
+    Box(modifier = modifier) {
+        BaseScreen(
+            modifier = Modifier.then(
+                if (state.showDialog) Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
+                else Modifier
+            ),
+            containerColor = MaterialTheme.colorScheme.background,
+            topBar = {
+                BaseTopBar(
+                    title = stringResource(R.string.screen_settings),
+                    onBack = onBack,
+                )
+            },
+        ) {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(groups) { group ->
+                    SettingsGroupSection(group)
+                }
+                item { Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl))) }
             }
-            item { Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl))) }
+        }
+
+        if (state.showDialog) {
+            DeleteAccountDialog(
+                state = state,
+                isLoading = isLoading,
+                error = error,
+                onDismiss = viewModel::dismissDialog,
+                onPasswordChange = viewModel::updatePassword,
+                onTogglePasswordVisibility = viewModel::togglePasswordVisibility,
+                onCancel = viewModel::dismissDialog,
+                onDelete = onDelete,
+            )
         }
     }
 }
