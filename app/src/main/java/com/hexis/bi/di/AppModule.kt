@@ -17,6 +17,7 @@ import com.hexis.bi.ui.main.home.HomeViewModel
 import com.hexis.bi.ui.main.settings.editprofile.EditProfileViewModel
 import com.hexis.bi.ui.main.settings.healthconnections.HealthConnectionsViewModel
 import com.hexis.bi.ui.main.settings.mysuit.MySuitViewModel
+import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountViewModel
 import com.hexis.bi.ui.main.settings.notifications.NotificationsSettingsViewModel
 import com.hexis.bi.ui.main.settings.scanpreferences.ScanPreferencesViewModel
 import org.koin.android.ext.koin.androidApplication
@@ -31,7 +32,7 @@ val appModule = module {
     single { CredentialManager.create(androidContext()) }
     single { UserPreferencesRepository(androidContext()) }
     single<AuthRepository> { FirebaseAuthRepository(get(), get(), androidContext()) }
-    single<UserRepository> { FirestoreUserRepository(get(), get()) }
+    single<UserRepository> { FirestoreUserRepository(get(), get(), androidContext()) }
     viewModel { MainViewModel(get(), get()) }
     viewModel { LoginViewModel(get(), get(), get(), androidApplication()) }
     viewModel { SignUpViewModel(get(), get(), get(), androidApplication()) }
@@ -42,4 +43,5 @@ val appModule = module {
     viewModel { HealthConnectionsViewModel(androidApplication()) }
     viewModel { MySuitViewModel(androidApplication()) }
     viewModel { NotificationsSettingsViewModel(androidApplication()) }
+    viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get()) }
 }

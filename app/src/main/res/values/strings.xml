@@ -110,6 +110,10 @@
     <string name="settings_group_actions">Actions</string>
     <string name="settings_delete_account">Delete account</string>
     <string name="settings_logout">Log out</string>
+    <string name="delete_account_dialog_title">Delete account?</string>
+    <string name="delete_account_dialog_body_password">For security reasons, enter your password to continue.</string>
+    <string name="delete_account_dialog_body_confirm">Are you sure you want to delete your account? This action cannot be undone.</string>
+    <string name="delete_account_dialog_action_delete">Delete</string>
 
     <!-- Home screen -->
     <string name="action_logout">Log Out</string>
@@ -171,6 +175,11 @@
     <string name="error_password_no_lowercase">Must contain a lowercase letter</string>
     <string name="error_password_no_digit">Must contain a number</string>
     <string name="error_password_no_special">Must contain a special character</string>
+
+    <!-- Data layer errors -->
+    <string name="error_session_expired">Session expired. Please sign in again.</string>
+    <string name="error_no_email_on_account">No email address is linked to this account.</string>
+    <string name="error_profile_not_found">Your profile could not be found.</string>
 
     <!-- Firebase auth errors -->
     <string name="error_auth_invalid_email">Please enter a valid email address</string>

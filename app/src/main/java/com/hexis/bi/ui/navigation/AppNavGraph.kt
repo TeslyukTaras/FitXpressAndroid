@@ -95,6 +95,11 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
                         popUpTo(Route.MAIN) { inclusive = true }
                     }
                 },
+                onDeleteAccount = {
+                    navController.navigate(Route.LOGIN) {
+                        popUpTo(Route.MAIN) { inclusive = true }
+                    }
+                },
             )
         }
     }
