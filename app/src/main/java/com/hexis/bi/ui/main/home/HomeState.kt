@@ -5,6 +5,8 @@ import com.hexis.bi.R
 
 enum class OverviewCardVariant { Default, Accent, Primary }
 
+enum class ScoreLevel { Low, Medium, High }
+
 data class OverviewCardData(
     val title: String,
     @DrawableRes val iconRes: Int,
@@ -14,9 +16,15 @@ data class OverviewCardData(
     val variant: OverviewCardVariant = OverviewCardVariant.Default,
 )
 
+data class IntelligenceScoreData(
+    val title: String,
+    val value: String,
+    val level: ScoreLevel,
+)
+
 private val defaultOverviewCards = listOf(
     OverviewCardData(
-        title = "Sleep",
+        title = "Sleep Score",
         iconRes = R.drawable.ic_moon,
         value = "7.5",
         valueLabel = "h",
@@ -24,7 +32,7 @@ private val defaultOverviewCards = listOf(
         variant = OverviewCardVariant.Accent,
     ),
     OverviewCardData(
-        title = "Activity",
+        title = "Activity Score",
         iconRes = R.drawable.ic_steps,
         value = "9,500",
         valueLabel = "steps",
@@ -46,6 +54,12 @@ private val defaultOverviewCards = listOf(
     ),
 )
 
+private val defaultIntelligenceScores = listOf(
+    IntelligenceScoreData(title = "VBI Score", value = "20", level = ScoreLevel.Low),
+    IntelligenceScoreData(title = "VLI Score", value = "60", level = ScoreLevel.Medium),
+    IntelligenceScoreData(title = "POA Score", value = "100", level = ScoreLevel.High),
+)
+
 data class HomeState(
     val userName: String = "",
     val avatarUrl: String? = null,
@@ -54,4 +68,5 @@ data class HomeState(
     val age: String? = null,
     val isSuitConnected: Boolean = false,
     val overviewCards: List<OverviewCardData> = defaultOverviewCards,
+    val intelligenceScores: List<IntelligenceScoreData> = defaultIntelligenceScores,
 )

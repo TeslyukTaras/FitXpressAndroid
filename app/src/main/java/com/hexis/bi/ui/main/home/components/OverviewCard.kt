@@ -1,6 +1,7 @@
 package com.hexis.bi.ui.main.home.components
 
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -42,6 +43,7 @@ fun OverviewCard(
     modifier: Modifier = Modifier,
     variant: OverviewCardVariant = OverviewCardVariant.Default,
     valueLabel: String? = null,
+    onClick: () -> Unit = {},
 ) {
     val isPrimary = variant == OverviewCardVariant.Primary
     val primaryGradient = Brush.verticalGradient(listOf(Blue300, Blue200))
@@ -80,6 +82,7 @@ fun OverviewCard(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .clickable(onClick = onClick)
                 .padding(dimensionResource(R.dimen.spacer_m)),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
