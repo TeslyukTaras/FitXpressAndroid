@@ -85,7 +85,7 @@ fun HomeScreen(
                 age = state.age ?: unknown,
             )
 
-            if (state.showBanner) {
+            if (!state.isSuitConnected) {
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
                 PromoBanner(onBuyClick = { /* TODO */ })
             }

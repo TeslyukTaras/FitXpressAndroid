@@ -73,7 +73,7 @@
     <string name="scan_preferences_title">Scan preferences</string>
     <string name="scan_preferences_voice_guidance">Voice guidance</string>
     <string name="scan_preferences_voice_guidance_subtitle">Enabled by default.\nYou can turn it off during the scan.</string>
-  
+
     <!-- My Suit screen -->
     <string name="my_suit_title">My Suit</string>
     <string name="my_suit_connect_title">Connect your scanning suit</string>

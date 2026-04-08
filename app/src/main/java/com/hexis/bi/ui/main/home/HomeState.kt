@@ -52,6 +52,6 @@ data class HomeState(
     val weight: String? = null,
     val height: String? = null,
     val age: String? = null,
-    val showBanner: Boolean = true,
+    val isSuitConnected: Boolean = false,
     val overviewCards: List<OverviewCardData> = defaultOverviewCards,
 )

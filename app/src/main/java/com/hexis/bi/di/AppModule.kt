@@ -7,8 +7,10 @@ import com.google.firebase.storage.FirebaseStorage
 import com.hexis.bi.data.auth.AuthRepository
 import com.hexis.bi.data.auth.FirebaseAuthRepository
 import com.hexis.bi.data.preferences.UserPreferencesRepository
+import com.hexis.bi.data.suit.MockSuitRepository
 import com.hexis.bi.data.user.FirestoreUserRepository
 import com.hexis.bi.data.user.UserRepository
+import com.hexis.bi.domain.suit.SuitRepository
 import com.hexis.bi.ui.MainViewModel
 import com.hexis.bi.ui.auth.forgotpassword.ForgotPasswordViewModel
 import com.hexis.bi.ui.auth.login.LoginViewModel
@@ -32,14 +34,15 @@ val appModule = module {
     single { UserPreferencesRepository(androidContext()) }
     single<AuthRepository> { FirebaseAuthRepository(get(), get(), androidContext()) }
     single<UserRepository> { FirestoreUserRepository(get(), get()) }
+    single<SuitRepository> { MockSuitRepository(get()) }
     viewModel { MainViewModel(get(), get()) }
     viewModel { LoginViewModel(get(), get(), get(), androidApplication()) }
     viewModel { SignUpViewModel(get(), get(), get(), androidApplication()) }
-    viewModel { HomeViewModel(androidApplication(), get()) }
+    viewModel { HomeViewModel(androidApplication(), get(), get()) }
     viewModel { EditProfileViewModel(androidApplication(), get(), get(), get()) }
     viewModel { ForgotPasswordViewModel(get(), androidApplication()) }
     viewModel { ScanPreferencesViewModel(androidApplication(), get()) }
     viewModel { HealthConnectionsViewModel(androidApplication()) }
-    viewModel { MySuitViewModel(androidApplication()) }
+    viewModel { MySuitViewModel(androidApplication(), get()) }
     viewModel { NotificationsSettingsViewModel(androidApplication()) }
 }
