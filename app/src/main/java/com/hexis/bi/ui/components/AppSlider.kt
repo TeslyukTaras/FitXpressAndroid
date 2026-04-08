@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import com.hexis.bi.R
@@ -23,16 +24,17 @@ import com.hexis.bi.utils.gradientBackground
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppSlider(
+    modifier: Modifier = Modifier,
     value: Float,
     onValueChange: (Float) -> Unit,
-    modifier: Modifier = Modifier,
+    background: Color = MaterialTheme.colorScheme.background,
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f
 ) {
     val sliderColors = SliderDefaults.colors(
-        thumbColor = Blue300,
+        thumbColor = MaterialTheme.colorScheme.background,
         activeTrackColor = Blue300,
         activeTickColor = Blue300,
-        inactiveTrackColor = MaterialTheme.colorScheme.background,
+        inactiveTrackColor = background,
         inactiveTickColor = Blue300,
     )
 

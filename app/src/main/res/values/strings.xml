@@ -14,6 +14,7 @@
     <string name="action_login">Log In</string>
     <string name="action_signup">Sign Up</string>
     <string name="action_forgot_password">Forgot Password?</string>
+    <string name="action_got_it">Got it</string>
 
     <!-- Auth screens -->
     <string name="login_title">Log In</string>
@@ -145,6 +146,43 @@
     <string name="cd_notification">Notifications</string>
     <string name="cd_settings">Settings</string>
     <string name="cd_scan_action">Scan</string>
+    <string name="cd_info">Info</string>
+
+    <!-- Sleep screen -->
+    <string name="sleep_screen_title">Sleep</string>
+    <string name="sleep_status_title">Sleep status</string>
+    <string name="sleep_stage_deep">Deep</string>
+    <string name="sleep_stage_rem">REM</string>
+    <string name="sleep_stage_light">Light</string>
+    <string name="sleep_stage_awake">Awake</string>
+    <string name="sleep_quality_good">Good</string>
+    <string name="sleep_quality_fair">Fair</string>
+    <string name="sleep_quality_poor">Poor</string>
+    <string name="sleep_duration_hours_minutes">%1$dh %2$02dm</string>
+    <string name="sleep_duration_minutes">%1$dm</string>
+    <string name="sleep_goal_hours">Goal: %1$d h</string>
+    <string name="sleep_time_am">%1$d am</string>
+    <string name="sleep_time_pm">%1$d pm</string>
+    <string name="health_provider_google_health">Google Health</string>
+    <string name="health_provider_apple_health">Apple Health</string>
+    <string name="unit_percent">%</string>
+    <string name="unit_ms">ms</string>
+    <string name="unit_bpm">bpm</string>
+    <string name="sleep_metrics_title">Sleep metrics</string>
+    <string name="sleep_metric_restfulness">Restfulness</string>
+    <string name="sleep_metric_hrv">HRV</string>
+    <string name="sleep_metric_resting_heart_rate">Resting heart rate</string>
+    <string name="sleep_timeline_title">Sleep timeline</string>
+    <string name="sleep_recovery_title">Sleep and body recovery</string>
+    <string name="sleep_recovery_subtitle">Better sleep consistency often improves recovery.</string>
+    <string name="sleep_settings_title">Sleep settings</string>
+    <string name="sleep_settings_goal">Sleep goal</string>
+    <string name="sleep_settings_data_source">Data source</string>
+    <string name="sleep_summary_placeholder">Summary coming soon</string>
+    <string name="sleep_recovery_sheet_heading_1">1. Lorem ipsum dolor</string>
+    <string name="sleep_recovery_sheet_body_1">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\nDuis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident.</string>
+    <string name="sleep_recovery_sheet_heading_2">2. Lorem ipsum</string>
+    <string name="sleep_recovery_sheet_body_3">Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae.\n\nNemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit.</string>
 
     <!-- Forgot password screen -->
     <string name="forgot_password_title">Forgot password?</string>

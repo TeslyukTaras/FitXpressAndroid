@@ -12,6 +12,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -42,6 +43,7 @@ import com.hexis.bi.R
 fun BaseTopBar(
     title: String,
     modifier: Modifier = Modifier,
+    background: Color = MaterialTheme.colorScheme.background,
     onBack: (() -> Unit)? = null,
     actions: @Composable (RowScope.() -> Unit) = {},
 ) {
@@ -69,7 +71,7 @@ fun BaseTopBar(
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background,
+            containerColor = background,
         ),
         modifier = modifier,
         actions = actions

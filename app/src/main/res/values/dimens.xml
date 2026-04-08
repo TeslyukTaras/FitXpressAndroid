@@ -25,8 +25,18 @@
     <dimen name="padding_large">24dp</dimen>
     <dimen name="padding_top">20dp</dimen>
 
+    <!-- Sleep arc chart -->
+    <dimen name="sleep_arc_width">145dp</dimen>
+    <dimen name="sleep_arc_height">118dp</dimen>
+    <dimen name="sleep_arc_stroke_width">10dp</dimen>
+    <dimen name="sleep_arc_text_offset">12dp</dimen>
+    <dimen name="sleep_timeline_chart_height">155dp</dimen>
+    <dimen name="sleep_timeline_corner_radius">4dp</dimen>
+    <dimen name="sleep_timeline_connector_width">1dp</dimen>
+
     <!-- Component sizes -->
     <dimen name="size_indicator">4dp</dimen>
+    <dimen name="size_sleep_indicator">6dp</dimen>
     <dimen name="size_social_button">48dp</dimen>
     <dimen name="height_button">48dp</dimen>
     <dimen name="size_loading_indicator">20dp</dimen>
@@ -48,7 +58,7 @@
     <dimen name="picker_item_padding">80dp</dimen>
 
     <!-- Corner radii -->
-    <dimen name="corner_sheet">20dp</dimen>
+    <dimen name="corner_sheet">24dp</dimen>
 
     <!-- Borders -->
     <dimen name="border_thin">1dp</dimen>
@@ -62,5 +72,8 @@
 
     <!-- Effects -->
     <dimen name="blur_dialog_backdrop">2dp</dimen>
+
+    <!-- Dividers -->
+    <dimen name="divider_size">1dp</dimen>
 
 </resources>

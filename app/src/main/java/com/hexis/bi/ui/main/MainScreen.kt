@@ -13,6 +13,7 @@ import androidx.navigation.compose.rememberNavController
 import com.hexis.bi.ui.components.MainNavBottomBar
 import com.hexis.bi.ui.main.body.BodyScreen
 import com.hexis.bi.ui.main.home.HomeScreen
+import com.hexis.bi.ui.main.home.sleep.SleepScreen
 import com.hexis.bi.ui.main.notifications.NotificationsScreen
 import com.hexis.bi.ui.main.settings.SettingsScreen
 import com.hexis.bi.ui.main.settings.editprofile.EditProfileScreen
@@ -44,7 +45,11 @@ fun MainScreen(
                         onLogout = onLogout,
                         onNotificationClick = { navController.navigate(Route.Main.NOTIFICATIONS) },
                         onSettingsClick = { navController.navigate(Route.Main.SETTINGS) },
+                        onSleepClick = { navController.navigate(Route.Main.SLEEP) },
                     )
+                }
+                composable(Route.Main.SLEEP) {
+                    SleepScreen(onBack = { navController.popBackStack() })
                 }
                 composable(Route.Main.BODY) {
                     BodyScreen()

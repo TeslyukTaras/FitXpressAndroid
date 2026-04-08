@@ -18,14 +18,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.Blue100
 import com.hexis.bi.ui.theme.Blue200
+import com.hexis.bi.ui.theme.Blue300
 import com.hexis.bi.utils.gradientBackground
 
 /**
  * Primary action button.
  *
- * By default renders a blue gradient background. Pass [containerColor] to replace the gradient
+ * By default, renders a blue gradient background. Pass [containerColor] to replace the gradient
  * with a solid colour (e.g. [com.hexis.bi.ui.theme.Red300] for destructive actions).
  */
 @Composable
@@ -42,10 +42,10 @@ fun AppButton(
     val isActive = enabled && !isLoading
 
     // When a custom containerColor is provided use it as a solid fill and skip the gradient.
-    // Otherwise fall back to the standard blue gradient drawn behind a transparent container.
+    // Otherwise, fall back to the standard blue gradient drawn behind a transparent container.
     val backgroundModifier = if (containerColor == null && isActive) {
         Modifier.gradientBackground(
-            brush = Brush.verticalGradient(listOf(Blue100, Blue200)),
+            brush = Brush.verticalGradient(listOf(Blue300, Blue200)),
             shape = MaterialTheme.shapes.small,
         )
     } else Modifier
