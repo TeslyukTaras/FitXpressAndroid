@@ -37,7 +37,10 @@ val Lime100 = Color(0xFFF2FF91)  // slightly muted lime
 val Lime200 = Color(0xFFE8FE3F)  // bright lime — highlights, active tabs
 
 // Other
-val LightBlue = Color(0xFFA8C8FF) // light blue — secondary accents
+val LightBlue = Color(0xFFDDE9F5) // light blue — secondary accents
+val LightGradientBlue = Color(0xFF75A4FF)
+val LightBlueBackground = Color(0xFFE6E6E6)
+
 val Green = Color(0xFF0E8716)
 val Yellow = Color(0xFFF2B705)
 

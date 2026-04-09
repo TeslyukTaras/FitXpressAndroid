@@ -34,6 +34,8 @@ enum class SleepQuality {
     }
 }
 
+enum class StageTrend { Up, Down }
+
 @StringRes
 fun HealthProvider.nameRes(): Int = when (this) {
     HealthProvider.GoogleHealth -> R.string.health_provider_google_health
@@ -50,6 +52,18 @@ data class TimelineSegment(
     val stage: SleepStage,
     val startFraction: Float,
     val endFraction: Float,
+)
+
+data class DailySleepEntry(
+    val dayLabel: String,
+    val durationMinutes: Int,
+    val isHighlighted: Boolean = false,
+)
+
+data class WeeklyStageData(
+    val stage: SleepStage,
+    val durationMinutes: Int,
+    val trend: StageTrend,
 )
 
 private val defaultStages = listOf(
@@ -80,26 +94,33 @@ private val defaultTimelineSegments = listOf(
 data class SleepState(
     val selectedTab: SleepTab = SleepTab.Day,
 
-    // Sleep status
-    val totalSleepMinutes: Int = 450,           // 7h 30m
+    // Day tab — sleep status
+    val totalSleepMinutes: Int = 450,
     val sleepQuality: SleepQuality = SleepQuality.Good,
     val sleepGoalHours: Int = 8,
     val stages: List<SleepStageData> = defaultStages,
 
-    // Sleep metrics
+    // Day tab — sleep metrics
     val restfulness: Int = 78,
     val restfulnessMax: Int = 100,
     val hrv: Int = 52,
     val restingHeartRate: Int = 58,
 
-    // Timeline
-    val timelineStartHour: Int = 23,            // 11 pm
-    val timelineEndHour: Int = 6,               // 6 am
+    // Day tab — timeline
+    val timelineStartHour: Int = 23,
+    val timelineEndHour: Int = 6,
     val timelineSegments: List<TimelineSegment> = defaultTimelineSegments,
+
+    // Summary tab
+    val weekLabel: String = "",
+    val weeklyEntries: List<DailySleepEntry> = emptyList(),
+    val avgSleepMinutes: Int = 0,
+    val weeklyStages: List<WeeklyStageData> = emptyList(),
+    val canGoNextWeek: Boolean = false,
 
     // Settings dialog
     val showSettingsDialog: Boolean = false,
-    val sleepGoalHoursDraft: Int = 8,           // editable copy while dialog is open
+    val sleepGoalHoursDraft: Int = 8,
     val dataSource: HealthProvider = HealthProvider.GoogleHealth,
 
     // Recovery bottom sheet
