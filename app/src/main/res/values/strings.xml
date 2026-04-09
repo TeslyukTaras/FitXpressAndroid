@@ -178,6 +178,12 @@
     <string name="sleep_settings_title">Sleep settings</string>
     <string name="sleep_settings_goal">Sleep goal</string>
     <string name="sleep_settings_data_source">Data source</string>
+    <string name="sleep_summary_total_sleep">Total sleep</string>
+    <string name="sleep_summary_last_7_days">Last 7 days</string>
+    <string name="sleep_summary_avg">Avg: %1$s</string>
+    <string name="sleep_weekly_stages_title">Sleep stages</string>
+    <string name="sleep_summary_trend_note">Arrows show change vs previous week.</string>
+    <string name="sleep_duration_hours_only">%1$dh</string>
     <string name="sleep_summary_placeholder">Summary coming soon</string>
     <string name="sleep_recovery_sheet_heading_1">1. Lorem ipsum dolor</string>
     <string name="sleep_recovery_sheet_body_1">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\nDuis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident.</string>

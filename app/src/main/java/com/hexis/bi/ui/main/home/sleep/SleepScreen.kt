@@ -24,7 +24,6 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseBottomSheet
@@ -89,21 +88,22 @@ fun SleepScreen(
                     onTabSelected = viewModel::selectTab,
                 )
 
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
-
                 when (state.selectedTab) {
-                    SleepTab.Day -> SleepDayContent(
-                        state = state,
-                        onInfoClick = viewModel::showRecoverySheet,
-                    )
+                    SleepTab.Day -> {
+                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+                        SleepDayContent(
+                            state = state,
+                            onInfoClick = viewModel::showRecoverySheet,
+                        )
+                    }
 
                     SleepTab.Summary -> {
-                        // Placeholder for Summary tab
-                        Text(
-                            text = stringResource(R.string.sleep_summary_placeholder),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.secondary,
-                            textAlign = TextAlign.Center,
+                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
+                        SleepSummaryContent(
+                            state = state,
+                            onInfoClick = viewModel::showRecoverySheet,
+                            onPreviousWeek = viewModel::previousWeek,
+                            onNextWeek = viewModel::nextWeek,
                         )
                     }
                 }
