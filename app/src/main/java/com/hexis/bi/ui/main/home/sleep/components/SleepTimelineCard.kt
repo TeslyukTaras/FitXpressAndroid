@@ -39,17 +39,17 @@ import com.hexis.bi.utils.formatHour
 import com.hexis.bi.utils.formatSleepDuration
 
 private val stageYIndex = mapOf(
-    SleepStage.Deep to 0,
-    SleepStage.REM to 1,
-    SleepStage.Light to 2,
-    SleepStage.Awake to 3,
+    SleepStage.Deep to 3,
+    SleepStage.REM to 2,
+    SleepStage.Light to 1,
+    SleepStage.Awake to 0,
 )
 
 private fun stageColor(stage: SleepStage): Color = when (stage) {
-    SleepStage.Awake -> Blue300
-    SleepStage.Light -> BlueFadedIndicator300
-    SleepStage.REM -> BlueFadedIndicator200
-    SleepStage.Deep -> BlueFadedIndicator100
+    SleepStage.Awake -> BlueFadedIndicator100
+    SleepStage.Light -> BlueFadedIndicator200
+    SleepStage.REM -> BlueFadedIndicator300
+    SleepStage.Deep -> Blue300
 }
 
 @Composable
