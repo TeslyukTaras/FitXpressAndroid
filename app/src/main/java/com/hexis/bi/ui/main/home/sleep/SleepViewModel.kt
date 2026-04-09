@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import com.hexis.bi.domain.enums.WeekDay
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -97,14 +98,14 @@ class SleepViewModel(application: Application) : BaseViewModel(application) {
         val today = LocalDate.now()
         val random = Random(monday.toEpochDay())
 
-        val entries = DAY_LABELS.mapIndexed { index, label ->
+        val entries = WeekDay.entries.mapIndexed { index, weekDay ->
             val day = monday.plusDays(index.toLong())
             val minutes = when {
                 day.isAfter(today) -> 0
                 day == today && todayMinutes >= 0 -> todayMinutes
                 else -> random.nextInt(SLEEP_MIN_MINUTES, SLEEP_MAX_MINUTES + 1)
             }
-            DailySleepEntry(label, minutes, isHighlighted = day == today)
+            DailySleepEntry(weekDay.abbreviation, minutes, isHighlighted = day == today)
         }
 
         val avgNightMinutes = avgMinutes(entries)
@@ -158,8 +159,6 @@ class SleepViewModel(application: Application) : BaseViewModel(application) {
     }
 
     companion object {
-        private val DAY_LABELS = listOf("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su")
-
         private const val SLEEP_MIN_MINUTES = 300  // 5 h
         private const val SLEEP_MAX_MINUTES = 540  // 9 h
 
