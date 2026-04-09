@@ -1,6 +1,10 @@
 package com.hexis.bi.utils
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.hexis.bi.R
 import com.hexis.bi.utils.constants.ProfileConstants
+import com.hexis.bi.utils.constants.SleepConstants
 import com.hexis.bi.utils.constants.TimeConstants
 import java.text.SimpleDateFormat
 import java.time.LocalDate
@@ -45,3 +49,27 @@ fun hour12ToHour24(hour12: Int, isPm: Boolean): Int = when {
     !isPm && hour12 == TimeConstants.HOURS_IN_HALF_DAY -> 0
     else -> hour12
 }
+
+@Composable
+fun formatSleepDuration(minutes: Int): String =
+    if (minutes >= SleepConstants.MINUTES_PER_HOUR)
+        stringResource(
+            R.string.sleep_duration_hours_minutes,
+            minutes / SleepConstants.MINUTES_PER_HOUR,
+            minutes % SleepConstants.MINUTES_PER_HOUR,
+        )
+    else
+        stringResource(R.string.sleep_duration_minutes, minutes)
+
+@Composable
+fun formatHour(hour: Int): String =
+    if (hour < TimeConstants.HOURS_IN_HALF_DAY)
+        stringResource(
+            R.string.sleep_time_am,
+            if (hour == 0) TimeConstants.HOURS_IN_HALF_DAY else hour
+        )
+    else
+        stringResource(
+            R.string.sleep_time_pm,
+            if (hour == TimeConstants.HOURS_IN_HALF_DAY) TimeConstants.HOURS_IN_HALF_DAY else hour - TimeConstants.HOURS_IN_HALF_DAY
+        )

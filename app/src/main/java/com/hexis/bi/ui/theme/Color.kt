@@ -8,8 +8,13 @@ val Black = Color(0xFF060611)
 
 // Blue (100 = vivid primary, higher = darker)
 val Blue100 = Color(0xFF005AFF)   // vivid primary — buttons, active states, highlights
+
 val Blue200 = Color(0xFF001D99)   // deeper blue — strong backgrounds
 val Blue300 = Color(0xFF0030FF)   // darkest blue
+
+val BlueFadedIndicator300 = Color(0xFF4B6BFB)
+val BlueFadedIndicator200 = Color(0xFFA8C5FF)
+val BlueFadedIndicator100 = Color(0xFFD1E2FF)
 
 // Gray (100 = darkest, 600 = lightest)
 val Gray100 = Color(0xFF64748B)

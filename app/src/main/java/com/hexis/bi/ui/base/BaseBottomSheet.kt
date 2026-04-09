@@ -1,5 +1,7 @@
 package com.hexis.bi.ui.base
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +19,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import com.hexis.bi.R
@@ -57,10 +60,9 @@ fun BaseBottomSheet(
         shape = RoundedCornerShape(topStart = cornerRadius, topEnd = cornerRadius),
         containerColor = MaterialTheme.colorScheme.surface,
         dragHandle = { BottomSheetDragHandle() },
-        modifier = modifier,
     ) {
         Column(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxWidth()
                 .padding(horizontal = dimensionResource(R.dimen.padding_large))
                 .navigationBarsPadding(),
@@ -77,29 +79,29 @@ fun BaseBottomSheet(
 
             content()
 
-            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_l)))
+            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_xl)))
         }
     }
 }
 
 @Composable
 private fun BottomSheetDragHandle() {
-    val handleColor = MaterialTheme.colorScheme.outlineVariant
-    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_m)))
-    androidx.compose.foundation.layout.Box(
+    val handleColor = MaterialTheme.colorScheme.secondary
+    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_l)))
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = dimensionResource(R.dimen.spacer_l)),
+            .height(dimensionResource(R.dimen.size_header_button)),
         contentAlignment = Alignment.Center,
     ) {
-        androidx.compose.foundation.Canvas(
+        Canvas(
             modifier = Modifier
                 .height(dimensionResource(R.dimen.size_indicator))
-                .fillMaxWidth(0.1f)
+                .fillMaxWidth(0.2f)
         ) {
             drawRoundRect(
                 color = handleColor,
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.dp.toPx()),
+                cornerRadius = CornerRadius(2.dp.toPx()),
             )
         }
     }
