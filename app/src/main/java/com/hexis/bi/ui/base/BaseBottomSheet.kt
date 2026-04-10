@@ -91,7 +91,7 @@ private fun BottomSheetDragHandle() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(dimensionResource(R.dimen.size_header_button)),
+            .height(dimensionResource(R.dimen.icon_normalized)),
         contentAlignment = Alignment.Center,
     ) {
         Canvas(

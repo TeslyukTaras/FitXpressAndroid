@@ -110,7 +110,7 @@ private fun StageRow(stage: SleepStageData) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
-                    .size(dimensionResource(R.dimen.size_sleep_indicator))
+                    .size(dimensionResource(R.dimen.size_indicator_bigger))
                     .clip(CircleShape)
                     .background(stage.color)
             )

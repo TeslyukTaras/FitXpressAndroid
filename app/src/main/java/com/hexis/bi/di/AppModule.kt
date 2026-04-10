@@ -17,6 +17,9 @@ import com.hexis.bi.ui.auth.login.LoginViewModel
 import com.hexis.bi.ui.auth.signup.SignUpViewModel
 import com.hexis.bi.ui.main.home.HomeViewModel
 import com.hexis.bi.ui.main.home.sleep.SleepViewModel
+import com.hexis.bi.ui.main.scan.ScanViewModel
+import com.hexis.bi.ui.main.scan.results.ResultsViewModel
+import com.hexis.bi.ui.main.scan.startscan.StartScanViewModel
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountViewModel
 import com.hexis.bi.ui.main.settings.editprofile.EditProfileViewModel
 import com.hexis.bi.ui.main.settings.healthconnections.HealthConnectionsViewModel
@@ -48,5 +51,8 @@ val appModule = module {
     viewModel { MySuitViewModel(androidApplication(), get()) }
     viewModel { NotificationsSettingsViewModel(androidApplication()) }
     viewModel { SleepViewModel(androidApplication()) }
+    viewModel { ScanViewModel(androidApplication(), get()) }
+    viewModel { StartScanViewModel(androidApplication()) }
+    viewModel { ResultsViewModel(androidApplication()) }
     viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get()) }
 }

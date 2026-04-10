@@ -39,7 +39,7 @@ fun <T> AppListPicker(
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(end = dimensionResource(R.dimen.size_header_button)),
+                    .padding(end = dimensionResource(R.dimen.icon_normalized)),
             )
             items.forEach { item ->
                 val selected = item == selectedItem

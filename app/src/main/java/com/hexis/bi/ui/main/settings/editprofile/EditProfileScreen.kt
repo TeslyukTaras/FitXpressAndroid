@@ -257,7 +257,7 @@ private fun AvatarPicker(
                 painter = painterResource(R.drawable.ic_edit),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.size(dimensionResource(R.dimen.size_avatar_button_icon)),
+                modifier = Modifier.size(dimensionResource(R.dimen.icon_medium_small)),
             )
         }
     }

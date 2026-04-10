@@ -56,7 +56,7 @@ fun HomeHeader(
 
         IconButton(
             modifier = Modifier
-                .size(dimensionResource(R.dimen.size_header_button))
+                .size(dimensionResource(R.dimen.icon_normalized))
                 .align(Alignment.Top),
             onClick = onNotificationClick,
             colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.background)
@@ -81,7 +81,7 @@ fun HomeHeader(
         Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacer_2xs)))
         IconButton(
             modifier = Modifier
-                .size(dimensionResource(R.dimen.size_header_button))
+                .size(dimensionResource(R.dimen.icon_normalized))
                 .align(Alignment.Top),
             onClick = onSettingsClick,
             colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.background)
