@@ -59,9 +59,11 @@ class HomeViewModel(
                             }
                         else
                             profile.heightIn?.let {
+                                val (ft, inches) = ProfileConstants.inchesToFeetAndInches(it)
                                 appContext.getString(
-                                    R.string.unit_height_in,
-                                    it
+                                    R.string.unit_height_ft_in,
+                                    ft,
+                                    inches
                                 )
                             },
                         age = profile.dateOfBirth?.calculateAge()

@@ -3,6 +3,21 @@ package com.hexis.bi.utils.constants
 object ProfileConstants {
 
     const val CM_TO_IN = 2.54f
+    private const val INCHES_PER_FOOT = 12
+
+    /** Converts centimeters to a (feet, inches) pair. */
+    fun cmToFeetAndInches(cm: Float): Pair<Int, Float> {
+        val totalInches = cm / CM_TO_IN
+        val feet = (totalInches / INCHES_PER_FOOT).toInt()
+        val inches = totalInches % INCHES_PER_FOOT
+        return feet to inches
+    }
+
+    /** Converts total inches to a (feet, inches) pair. */
+    fun inchesToFeetAndInches(inches: Int): Pair<Int, Int> {
+        return (inches / INCHES_PER_FOOT) to (inches % INCHES_PER_FOOT)
+    }
+
     const val KG_TO_LB = 2.20462f
     const val HEIGHT_CM_MIN = 130f
     const val HEIGHT_CM_MAX = 230f

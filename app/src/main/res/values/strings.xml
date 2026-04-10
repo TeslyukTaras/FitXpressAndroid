@@ -206,7 +206,7 @@
 
     <!-- Measurement unit format strings -->
     <string name="unit_height_cm">%1$d cm</string>
-    <string name="unit_height_in">%1$d in</string>
+    <string name="unit_height_ft_in">%1$d ft %2$d in</string>
     <string name="unit_weight_kg">%1$d kg</string>
     <string name="unit_weight_lb">%1$d lb</string>
     <string name="unit_age_years">%1$d years</string>
@@ -296,8 +296,14 @@
     <string name="scan_results_previous">Previous</string>
     <string name="scan_results_today_date">Dec 24</string>
     <string name="scan_results_previous_date">Dec 10</string>
-    <string name="scan_measurement_value_cm">%1$.1f cm</string>
-    <string name="scan_measurement_delta_cm">%1$+.1f cm</string>
+    <string name="unit_cm">cm</string>
+    <string name="unit_ft">ft</string>
+    <string name="unit_in">in</string>
+    <string name="format_value_decimal">%1$.1f</string>
+    <string name="format_value_int">%1$d</string>
+    <string name="format_delta_up">%1$+.1f %2$s ↑</string>
+    <string name="format_delta_down">%1$+.1f %2$s ↓</string>
+    <string name="format_delta_neutral">%1$+.1f %2$s</string>
     <string name="scan_measurement_neck">Neck</string>
     <string name="scan_measurement_shoulders">Shoulders</string>
     <string name="scan_measurement_chest">Chest</string>

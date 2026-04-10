@@ -47,7 +47,6 @@
     <dimen name="scan_corner_stroke_width">4dp</dimen>
     <dimen name="scan_corner_radius">6dp</dimen>
     <dimen name="scanner_line_stroke_width">3dp</dimen>
-    <dimen name="scan_results_body_card_height">260dp</dimen>
 
     <!-- Component sizes -->
     <dimen name="size_indicator">4dp</dimen>
