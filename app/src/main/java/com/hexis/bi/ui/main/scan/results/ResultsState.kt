@@ -15,10 +15,15 @@ enum class ResultsTab {
         }
 }
 
+enum class MeasurementChange {
+    Positive, Negative
+}
+
 /** A single measurement cell: the value and the delta vs the prior reading. */
 data class MeasurementValue(
     val cm: Float,
     val deltaCm: Float,
+    val change: MeasurementChange? = null,
 )
 
 data class MeasurementRow(
@@ -30,18 +35,19 @@ data class MeasurementRow(
 data class ResultsState(
     val selectedTab: ResultsTab = ResultsTab.Visual,
     val colorAnalysisEnabled: Boolean = false,
+    val isMetric: Boolean = true,
     val measurements: List<MeasurementRow> = defaultMeasurements,
 )
 
 private val defaultMeasurements = listOf(
-    MeasurementRow(R.string.scan_measurement_neck, MeasurementValue(118.0f, 1.2f), MeasurementValue(118.0f, 1.2f)),
-    MeasurementRow(R.string.scan_measurement_shoulders, MeasurementValue(118.0f, 1.2f), MeasurementValue(118.0f, 1.2f)),
-    MeasurementRow(R.string.scan_measurement_chest, MeasurementValue(102.0f, 1.2f), MeasurementValue(104.0f, 1.2f)),
-    MeasurementRow(R.string.scan_measurement_forearms, MeasurementValue(89.0f, 1.2f), MeasurementValue(89.0f, -1.1f)),
-    MeasurementRow(R.string.scan_measurement_biceps, MeasurementValue(89.0f, 1.2f), MeasurementValue(89.0f, -1.1f)),
-    MeasurementRow(R.string.scan_measurement_upper_waist, MeasurementValue(96.5f, 1.2f), MeasurementValue(96.5f, 1.2f)),
-    MeasurementRow(R.string.scan_measurement_mid_waist, MeasurementValue(96.5f, 1.2f), MeasurementValue(96.5f, 1.2f)),
-    MeasurementRow(R.string.scan_measurement_lower_waist, MeasurementValue(96.5f, 1.2f), MeasurementValue(96.5f, 1.2f)),
-    MeasurementRow(R.string.scan_measurement_thigh, MeasurementValue(52.2f, -1.1f), MeasurementValue(52.4f, 1.2f)),
-    MeasurementRow(R.string.scan_measurement_calf, MeasurementValue(38.5f, 1.2f), MeasurementValue(38.6f, 1.3f)),
+    MeasurementRow(R.string.scan_measurement_neck, MeasurementValue(118.0f, 1.2f, MeasurementChange.Positive), MeasurementValue(118.0f, 1.2f)),
+    MeasurementRow(R.string.scan_measurement_shoulders, MeasurementValue(118.0f, 1.2f, MeasurementChange.Negative), MeasurementValue(118.0f, 1.2f)),
+    MeasurementRow(R.string.scan_measurement_chest, MeasurementValue(102.0f, 1.2f, MeasurementChange.Positive), MeasurementValue(104.0f, 1.2f)),
+    MeasurementRow(R.string.scan_measurement_forearms, MeasurementValue(89.0f, 1.2f, MeasurementChange.Negative), MeasurementValue(89.0f, -1.1f)),
+    MeasurementRow(R.string.scan_measurement_biceps, MeasurementValue(89.0f, 1.2f, MeasurementChange.Positive), MeasurementValue(89.0f, -1.1f)),
+    MeasurementRow(R.string.scan_measurement_upper_waist, MeasurementValue(96.5f, 1.2f, MeasurementChange.Positive), MeasurementValue(96.5f, 1.2f)),
+    MeasurementRow(R.string.scan_measurement_mid_waist, MeasurementValue(96.5f, 1.2f, MeasurementChange.Negative), MeasurementValue(96.5f, 1.2f)),
+    MeasurementRow(R.string.scan_measurement_lower_waist, MeasurementValue(96.5f, 1.2f, MeasurementChange.Positive), MeasurementValue(96.5f, 1.2f)),
+    MeasurementRow(R.string.scan_measurement_thigh, MeasurementValue(52.2f, -1.1f, MeasurementChange.Negative), MeasurementValue(52.4f, 1.2f)),
+    MeasurementRow(R.string.scan_measurement_calf, MeasurementValue(38.5f, 1.2f, MeasurementChange.Positive), MeasurementValue(38.6f, 1.3f)),
 )

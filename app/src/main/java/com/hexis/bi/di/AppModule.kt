@@ -53,6 +53,6 @@ val appModule = module {
     viewModel { SleepViewModel(androidApplication()) }
     viewModel { ScanViewModel(androidApplication(), get()) }
     viewModel { StartScanViewModel(androidApplication()) }
-    viewModel { ResultsViewModel(androidApplication()) }
+    viewModel { ResultsViewModel(androidApplication(), get()) }
     viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get()) }
 }

@@ -347,7 +347,7 @@ private fun PersonalInfoSection(
                 R.string.unit_height_cm,
                 state.heightDisplayValue
             )
-            else stringResource(R.string.unit_height_in, state.heightDisplayValue),
+            else stringResource(R.string.unit_height_ft_in, state.heightFeet, state.heightInches),
             value = state.heightSliderValue,
             valueRange = state.heightSliderRange,
             onValueChange = viewModel::updateHeight,

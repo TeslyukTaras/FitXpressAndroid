@@ -30,8 +30,13 @@ data class EditProfileState(
         else ProfileConstants.HEIGHT_IN_MIN..ProfileConstants.HEIGHT_IN_MAX
 
     val heightDisplayValue: Int
-        get() = if (isMetric) heightCm.roundToInt()
-        else (heightCm / ProfileConstants.CM_TO_IN).roundToInt()
+        get() = heightCm.roundToInt()
+
+    val heightFeet: Int
+        get() = ProfileConstants.cmToFeetAndInches(heightCm).first
+
+    val heightInches: Int
+        get() = ProfileConstants.cmToFeetAndInches(heightCm).second.roundToInt()
 
     val weightSliderValue: Float
         get() = if (isMetric) weightKg else weightKg * ProfileConstants.KG_TO_LB
