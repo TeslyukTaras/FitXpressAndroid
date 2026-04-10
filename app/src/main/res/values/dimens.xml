@@ -16,8 +16,10 @@
 
     <!-- Icons -->
     <dimen name="icon_small">16dp</dimen>
+    <dimen name="icon_medium_small">20dp</dimen>
     <dimen name="icon_medium">24dp</dimen>
     <dimen name="icon_large">32dp</dimen>
+    <dimen name="icon_normalized">40dp</dimen>
 
     <!-- Padding -->
     <dimen name="padding_small">8dp</dimen>
@@ -40,15 +42,20 @@
     <dimen name="sleep_timeline_corner_radius">4dp</dimen>
     <dimen name="sleep_timeline_connector_width">1dp</dimen>
 
+    <!-- Scan -->
+    <dimen name="scan_corner_length">68dp</dimen>
+    <dimen name="scan_corner_stroke_width">4dp</dimen>
+    <dimen name="scan_corner_radius">6dp</dimen>
+    <dimen name="scanner_line_stroke_width">3dp</dimen>
+    <dimen name="scan_results_body_card_height">260dp</dimen>
+
     <!-- Component sizes -->
     <dimen name="size_indicator">4dp</dimen>
-    <dimen name="size_sleep_indicator">6dp</dimen>
+    <dimen name="size_indicator_bigger">6dp</dimen>
     <dimen name="size_social_button">48dp</dimen>
     <dimen name="height_button">48dp</dimen>
     <dimen name="size_loading_indicator">20dp</dimen>
-    <dimen name="size_header_button">40dp</dimen>
     <dimen name="size_avatar_button">28dp</dimen>
-    <dimen name="size_avatar_button_icon">20dp</dimen>
     <dimen name="size_avatar">60dp</dimen>
     <dimen name="size_avatar_large">100dp</dimen>
     <dimen name="size_tick_icon">44dp</dimen>
@@ -82,5 +89,6 @@
 
     <!-- Dividers -->
     <dimen name="divider_size">1dp</dimen>
+
 
 </resources>

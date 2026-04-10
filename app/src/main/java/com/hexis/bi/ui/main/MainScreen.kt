@@ -15,6 +15,8 @@ import com.hexis.bi.ui.main.body.BodyScreen
 import com.hexis.bi.ui.main.home.HomeScreen
 import com.hexis.bi.ui.main.home.sleep.SleepScreen
 import com.hexis.bi.ui.main.notifications.NotificationsScreen
+import com.hexis.bi.ui.main.scan.ScanScreen
+import com.hexis.bi.ui.main.scan.results.ResultsScreen
 import com.hexis.bi.ui.main.settings.SettingsScreen
 import com.hexis.bi.ui.main.settings.editprofile.EditProfileScreen
 import com.hexis.bi.ui.main.settings.healthconnections.HealthConnectionsScreen
@@ -22,6 +24,7 @@ import com.hexis.bi.ui.main.settings.mysuit.MySuitScreen
 import com.hexis.bi.ui.main.settings.notifications.NotificationsSettingsScreen
 import com.hexis.bi.ui.main.settings.scanpreferences.ScanPreferencesScreen
 import com.hexis.bi.ui.navigation.Route
+import com.hexis.bi.ui.navigation.popBackStackOnce
 
 @Composable
 fun MainScreen(
@@ -49,17 +52,32 @@ fun MainScreen(
                     )
                 }
                 composable(Route.Main.SLEEP) {
-                    SleepScreen(onBack = { navController.popBackStack() })
+                    SleepScreen(onBack = { navController.popBackStackOnce() })
+                }
+                composable(Route.Main.SCAN) {
+                    ScanScreen(
+                        onBack = { navController.popBackStackOnce() },
+                        onScanComplete = {
+                            navController.navigate(Route.Main.SCAN_RESULTS) {
+                                popUpTo(Route.Main.SCAN) { inclusive = true }
+                            }
+                        },
+                        onConnectSuit = { navController.navigate(Route.Main.MY_SUIT) },
+                        onBuySuit = {},
+                    )
+                }
+                composable(Route.Main.SCAN_RESULTS) {
+                    ResultsScreen(onBack = { navController.popBackStackOnce() })
                 }
                 composable(Route.Main.BODY) {
                     BodyScreen()
                 }
                 composable(Route.Main.NOTIFICATIONS) {
-                    NotificationsScreen(onBack = { navController.popBackStack() })
+                    NotificationsScreen(onBack = { navController.popBackStackOnce() })
                 }
                 composable(Route.Main.SETTINGS) {
                     SettingsScreen(
-                        onBack = { navController.popBackStack() },
+                        onBack = { navController.popBackStackOnce() },
                         onLogout = onLogout,
                         onDeleteAccount = onDeleteAccount,
                         onNavigateToEditProfile = { navController.navigate(Route.Main.EDIT_PROFILE) },
@@ -70,19 +88,19 @@ fun MainScreen(
                     )
                 }
                 composable(Route.Main.EDIT_PROFILE) {
-                    EditProfileScreen(onBack = { navController.popBackStack() })
+                    EditProfileScreen(onBack = { navController.popBackStackOnce() })
                 }
                 composable(Route.Main.NOTIFICATION_SETTINGS) {
-                    NotificationsSettingsScreen(onBack = { navController.popBackStack() })
+                    NotificationsSettingsScreen(onBack = { navController.popBackStackOnce() })
                 }
                 composable(Route.Main.HEALTH_CONNECTIONS) {
-                    HealthConnectionsScreen(onBack = { navController.popBackStack() })
+                    HealthConnectionsScreen(onBack = { navController.popBackStackOnce() })
                 }
                 composable(Route.Main.SCAN_PREFERENCES) {
-                    ScanPreferencesScreen(onBack = { navController.popBackStack() })
+                    ScanPreferencesScreen(onBack = { navController.popBackStackOnce() })
                 }
                 composable(Route.Main.MY_SUIT) {
-                    MySuitScreen(onBack = { navController.popBackStack() })
+                    MySuitScreen(onBack = { navController.popBackStackOnce() })
                 }
             }
         }
@@ -103,7 +121,11 @@ fun MainScreen(
                         popUpTo(Route.Main.HOME) { inclusive = false }
                     }
                 },
-                onScanClick = { /* TODO: navigate to scan */ },
+                onScanClick = {
+                    navController.navigate(Route.Main.SCAN) {
+                        launchSingleTop = true
+                    }
+                },
             )
         }
     }

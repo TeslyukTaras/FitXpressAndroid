@@ -24,8 +24,11 @@ val Gray400 = Color(0xFFEFF0F6)
 val Gray500 = Color(0xFFEDF1F3)
 val Gray600 = Color(0xFFF0F0F0)
 
+val OneTimeGrey = Color(0xFFF3F3F3)
 val Bg = Color(0xFFF7F7FA)
 val White = Color(0xFFFFFFFF)
+
+val ShadowColor = Color(0x33A7A7A7)
 
 // Red
 val Red100 = Color(0xFFFF3A3A)   // vivid red — errors, delete actions

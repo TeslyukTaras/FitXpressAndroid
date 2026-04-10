@@ -4,8 +4,11 @@
 
     <!-- Content descriptions -->
     <string name="cd_back">Back</string>
+    <string name="cd_close">Close</string>
     <string name="semicolon">;</string>
     <string name="colon">:</string>
+    <string name="space">" "</string>
+    <string name="slash">/</string>
 
     <!-- Actions -->
     <string name="action_skip">Skip</string>
@@ -262,4 +265,53 @@
     <string name="app_info_page2_title">See real body changes over time</string>
     <string name="app_info_page2_subtitle">clearly, visually, and accurately</string>
     <string name="app_info_page2_emphasis">No scales. No tape measures. Connect your wearable and reveal your body\'s true intelligence.</string>
+
+    <!-- Scan screen -->
+    <string name="scan_title">Scan</string>
+    <string name="how_to_scan_title">How to scan?</string>
+    <string name="scan_results_title">Results</string>
+    <string name="scan_suit_not_detected_title">Suit is not detected</string>
+    <string name="scan_suit_not_detected_body">You’re not wearing the suit right now. Put it on to continue, or switch to Regular Scan.</string>
+    <string name="action_connect_suit">Connect suit</string>
+    <string name="action_buy_suit">Buy suit</string>
+    <string name="action_start_scan">Start scan</string>
+    <string name="scan_voice_guidance_auto">Voice guidance plays automatically during scans</string>
+    <string name="scan_step_label">Step</string>
+    <string name="scan_step_1_a">Place your phone at a 90° angle.</string>
+    <string name="scan_step_1_b">Keep your whole body in the frame</string>
+    <string name="scan_step_2_a">Stand facing the camera</string>
+    <string name="scan_step_2_b">Keep arms slightly away from your body</string>
+    <string name="scan_step_3_a">Turn to Your Left Side, Feet Together.</string>
+    <string name="scan_step_3_b">Hold still while your body scan is being captured.</string>
+    <string name="cd_flip_camera">Flip camera</string>
+    <string name="cd_scan_warning">Warning</string>
+    <string name="scan_results_tab_visual">Visual</string>
+    <string name="scan_results_tab_posture">Posture</string>
+    <string name="scan_results_tab_compare">Compare</string>
+    <string name="scan_results_color_analysis">Color analysis</string>
+    <string name="scan_results_color_analysis_subtitle">Visualize changes by body areas</string>
+    <string name="scan_results_measurements_title">Measurements</string>
+    <string name="scan_results_body_part">Body part</string>
+    <string name="scan_results_today">Today</string>
+    <string name="scan_results_previous">Previous</string>
+    <string name="scan_results_today_date">Dec 24</string>
+    <string name="scan_results_previous_date">Dec 10</string>
+    <string name="scan_measurement_value_cm">%1$.1f cm</string>
+    <string name="scan_measurement_delta_cm">%1$+.1f cm</string>
+    <string name="scan_measurement_neck">Neck</string>
+    <string name="scan_measurement_shoulders">Shoulders</string>
+    <string name="scan_measurement_chest">Chest</string>
+    <string name="scan_measurement_forearms">Forearms</string>
+    <string name="scan_measurement_biceps">Biceps (Upper arm)</string>
+    <string name="scan_measurement_upper_waist">Upper Waist</string>
+    <string name="scan_measurement_mid_waist">Mid Waist</string>
+    <string name="scan_measurement_lower_waist">Lower Waist</string>
+    <string name="scan_measurement_thigh">Thigh</string>
+    <string name="scan_measurement_calf">Calf</string>
+    <string name="scan_measurement_label_shoulders">Shoulders\n505</string>
+    <string name="scan_measurement_label_chest">Chest\n505</string>
+    <string name="scan_measurement_label_muscles">Muscles\n505</string>
+    <string name="scan_measurement_label_hips">Hips\n505</string>
+    <string name="scan_measurement_label_thigh">Thigh\n505</string>
+    <string name="scan_measurement_label_calf">Calf\n505</string>
 </resources>

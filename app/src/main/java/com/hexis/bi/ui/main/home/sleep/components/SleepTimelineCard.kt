@@ -196,7 +196,7 @@ private fun TimelineLegend() {
             ) {
                 Box(
                     modifier = Modifier
-                        .size(dimensionResource(R.dimen.size_sleep_indicator))
+                        .size(dimensionResource(R.dimen.size_indicator_bigger))
                         .clip(CircleShape)
                         .background(stageColor(stage))
                 )
