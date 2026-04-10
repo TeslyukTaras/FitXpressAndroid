@@ -1,4 +1,4 @@
-package com.hexis.bi.ui.main.scan
+package com.hexis.bi.ui.main.scan.error
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background

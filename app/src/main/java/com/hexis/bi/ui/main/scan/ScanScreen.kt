@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.hexis.bi.ui.main.scan.error.ScanErrorScreen
 import com.hexis.bi.ui.main.scan.startscan.StartScanScreen
 import org.koin.androidx.compose.koinViewModel
 
@@ -18,18 +19,15 @@ fun ScanScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    if (state.suitConnected) {
-        StartScanScreen(
-            onBack = onBack,
-            onScanComplete = onScanComplete,
-            modifier = modifier,
-        )
-    } else {
-        ScanErrorScreen(
-            onBack = onBack,
-            onConnectSuit = onConnectSuit,
-            onBuySuit = onBuySuit,
-            modifier = modifier,
-        )
-    }
+    if (state.suitConnected) StartScanScreen(
+        onBack = onBack,
+        onScanComplete = onScanComplete,
+        modifier = modifier,
+    )
+    else ScanErrorScreen(
+        onBack = onBack,
+        onConnectSuit = onConnectSuit,
+        onBuySuit = onBuySuit,
+        modifier = modifier,
+    )
 }
