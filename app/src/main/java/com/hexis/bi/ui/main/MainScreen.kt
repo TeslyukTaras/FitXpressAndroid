@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -17,9 +16,7 @@ import com.hexis.bi.ui.main.home.HomeScreen
 import com.hexis.bi.ui.main.home.sleep.SleepScreen
 import com.hexis.bi.ui.main.notifications.NotificationsScreen
 import com.hexis.bi.ui.main.scan.ScanScreen
-import com.hexis.bi.ui.main.scan.ScanViewModel
 import com.hexis.bi.ui.main.scan.results.ResultsScreen
-import com.hexis.bi.ui.main.scan.startscan.StartScanScreen
 import com.hexis.bi.ui.main.settings.SettingsScreen
 import com.hexis.bi.ui.main.settings.editprofile.EditProfileScreen
 import com.hexis.bi.ui.main.settings.healthconnections.HealthConnectionsScreen
@@ -28,7 +25,6 @@ import com.hexis.bi.ui.main.settings.notifications.NotificationsSettingsScreen
 import com.hexis.bi.ui.main.settings.scanpreferences.ScanPreferencesScreen
 import com.hexis.bi.ui.navigation.Route
 import com.hexis.bi.ui.navigation.popBackStackOnce
-import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun MainScreen(
@@ -59,24 +55,16 @@ fun MainScreen(
                     SleepScreen(onBack = { navController.popBackStackOnce() })
                 }
                 composable(Route.Main.SCAN) {
-                    val scanViewModel: ScanViewModel = koinViewModel()
-                    val scanState by scanViewModel.state.collectAsStateWithLifecycle()
-                    if (scanState.suitConnected) {
-                        StartScanScreen(
-                            onBack = { navController.popBackStackOnce() },
-                            onScanComplete = {
-                                navController.navigate(Route.Main.SCAN_RESULTS) {
-                                    popUpTo(Route.Main.SCAN) { inclusive = true }
-                                }
-                            },
-                        )
-                    } else {
-                        ScanScreen(
-                            onBack = { navController.popBackStackOnce() },
-                            onConnectSuit = { navController.navigate(Route.Main.MY_SUIT) },
-                            onBuySuit = {},
-                        )
-                    }
+                    ScanScreen(
+                        onBack = { navController.popBackStackOnce() },
+                        onScanComplete = {
+                            navController.navigate(Route.Main.SCAN_RESULTS) {
+                                popUpTo(Route.Main.SCAN) { inclusive = true }
+                            }
+                        },
+                        onConnectSuit = { navController.navigate(Route.Main.MY_SUIT) },
+                        onBuySuit = {},
+                    )
                 }
                 composable(Route.Main.SCAN_RESULTS) {
                     ResultsScreen(onBack = { navController.popBackStackOnce() })
