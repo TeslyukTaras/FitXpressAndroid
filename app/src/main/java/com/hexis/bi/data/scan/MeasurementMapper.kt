@@ -40,25 +40,33 @@ object MeasurementMapper {
     fun map(
         current: MeasurementResponse,
         previous: ScanRecord?,
+        beforePrevious: ScanRecord?,
     ): List<MeasurementRow> {
         val currentMap = extractMeasurements(current)
         val previousMap = previous?.measurements
+        val beforePreviousMap = beforePrevious?.measurements
 
         return entries.mapNotNull { entry ->
             val todayCm = currentMap[entry.apiKey] ?: return@mapNotNull null
             val prevCm = previousMap?.get(entry.apiKey)
-
-            val todayDelta = if (prevCm != null) todayCm - prevCm else 0f
-            val todayChange = if (prevCm != null) classifyChange(todayDelta, entry.decreaseIsPositive) else null
+            val beforePrevCm = beforePreviousMap?.get(entry.apiKey)
 
             val todayValue = MeasurementValue(
                 cm = todayCm,
-                deltaCm = todayDelta,
-                change = todayChange,
+                deltaCm = if (prevCm != null) todayCm - prevCm else 0f,
+                change = if (prevCm != null) {
+                    classifyChange(todayCm - prevCm, entry.decreaseIsPositive)
+                } else null,
             )
 
             val previousValue = prevCm?.let {
-                MeasurementValue(cm = it, deltaCm = 0f, change = null)
+                MeasurementValue(
+                    cm = it,
+                    deltaCm = if (beforePrevCm != null) it - beforePrevCm else 0f,
+                    change = if (beforePrevCm != null) {
+                        classifyChange(it - beforePrevCm, entry.decreaseIsPositive)
+                    } else null,
+                )
             }
 
             MeasurementRow(

@@ -37,14 +37,18 @@ class ResultsViewModel(
     private fun loadMeasurements() = launch(showLoading = false) {
         val result = scanResultRepository.latestResult ?: return@launch
 
-        // The current scan is already persisted, so the "previous" one is the 2nd most recent.
-        val previousScan = scanHistoryRepository.getPreviousScan()
-            .getOrNull()
-            ?.takeIf { it.measurements.isNotEmpty() }
+        // The current scan is already persisted, so the prior readings start at index 1.
+        val (previousScan, beforePreviousScan) = scanHistoryRepository.getPreviousTwoScans()
+            .getOrElse { null to null }
+            .let { (prev, beforePrev) ->
+                prev?.takeIf { it.measurements.isNotEmpty() } to
+                    beforePrev?.takeIf { it.measurements.isNotEmpty() }
+            }
 
         val rows = MeasurementMapper.map(
             current = result.response,
             previous = previousScan,
+            beforePrevious = beforePreviousScan,
         )
 
         _state.update {

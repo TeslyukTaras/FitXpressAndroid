@@ -84,11 +84,16 @@ class ScanHistoryRepository(
         getRecentScans(limit = 1).map { it.firstOrNull() }
 
     /**
-     * Returns the second-most-recent scan. Call this after a fresh scan has been
-     * persisted to fetch the prior reading for delta comparison.
+     * Returns the two scans that precede the just-persisted current scan, in order
+     * `(previous, beforePrevious)`. Call after saving a fresh scan so the Results
+     * screen can show deltas for both the latest and the prior reading.
+     *
+     * Either side may be null if the user doesn't have enough history yet.
      */
-    suspend fun getPreviousScan(): Result<ScanRecord?> =
-        getRecentScans(limit = 2).map { it.getOrNull(1) }
+    suspend fun getPreviousTwoScans(): Result<Pair<ScanRecord?, ScanRecord?>> =
+        getRecentScans(limit = 3).map { scans ->
+            scans.getOrNull(1) to scans.getOrNull(2)
+        }
 
     private suspend fun getRecentScans(limit: Long): Result<List<ScanRecord>> = runCatching {
         val snapshot = scansCollection()
