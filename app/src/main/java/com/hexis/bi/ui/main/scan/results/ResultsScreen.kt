@@ -43,7 +43,8 @@ import com.hexis.bi.ui.components.AppSwitch
 import com.hexis.bi.ui.theme.Green
 import com.hexis.bi.ui.theme.Lime100
 import com.hexis.bi.ui.theme.Red100
-import com.hexis.bi.utils.constants.ProfileConstants
+import com.hexis.bi.utils.cmToFeetAndInches
+import com.hexis.bi.utils.cmToInches
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -92,6 +93,8 @@ fun ResultsScreen(
                 modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium)),
                 measurements = state.measurements,
                 isMetric = state.isMetric,
+                todayDate = state.todayDate,
+                previousDate = state.previousDate,
             )
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
@@ -187,6 +190,8 @@ private fun ColorAnalysisCard(
 private fun MeasurementsCard(
     measurements: List<MeasurementRow>,
     isMetric: Boolean,
+    todayDate: String,
+    previousDate: String?,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -245,7 +250,7 @@ private fun MeasurementsCard(
             )
             HeaderCell(
                 title = stringResource(R.string.scan_results_today),
-                date = stringResource(R.string.scan_results_today_date),
+                date = todayDate,
                 modifier = Modifier.weight(1f),
             )
             VerticalDivider(
@@ -254,7 +259,7 @@ private fun MeasurementsCard(
             )
             HeaderCell(
                 title = stringResource(R.string.scan_results_previous),
-                date = stringResource(R.string.scan_results_previous_date),
+                date = previousDate ?: stringResource(R.string.scan_results_no_value),
                 modifier = Modifier.weight(1f),
             )
         }
@@ -340,7 +345,25 @@ private fun MeasurementTableRow(
             modifier = Modifier.fillMaxHeight(),
             color = MaterialTheme.colorScheme.secondaryFixed,
         )
-        ValueCell(value = row.previous, isMetric = isMetric, modifier = Modifier.weight(1f))
+        if (row.previous != null) {
+            ValueCell(value = row.previous, isMetric = isMetric, modifier = Modifier.weight(1f))
+        } else {
+            EmptyValueCell(modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun EmptyValueCell(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = stringResource(R.string.scan_results_no_value),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.secondary,
+        )
     }
 }
 
@@ -357,7 +380,7 @@ private fun ValueCell(
     }
 
     val unit = stringResource(if (isMetric) R.string.unit_cm else R.string.unit_in)
-    val deltaValue = if (isMetric) value.deltaCm else value.deltaCm / ProfileConstants.CM_TO_IN
+    val deltaValue = if (isMetric) value.deltaCm else value.deltaCm.cmToInches()
     val deltaText = when {
         value.deltaCm > 0 -> stringResource(R.string.format_delta_up, deltaValue, unit)
         value.deltaCm < 0 -> stringResource(R.string.format_delta_down, deltaValue, unit)
@@ -384,7 +407,7 @@ private fun ValueCell(
                 style = MaterialTheme.typography.bodyMedium,
             )
         } else {
-            val (feet, inches) = ProfileConstants.cmToFeetAndInches(value.cm)
+            val (feet, inches) = value.cm.cmToFeetAndInches()
             val feetText = stringResource(R.string.format_value_int, feet)
             val ftUnit = stringResource(R.string.unit_ft)
             val inchesText = stringResource(R.string.format_value_decimal, inches)

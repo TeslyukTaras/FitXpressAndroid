@@ -1,3 +1,11 @@
+import java.io.FileInputStream
+import java.util.Properties
+
+val githubProperties = Properties().apply {
+    val propsFile = File(rootDir, "github.properties")
+    if (propsFile.exists()) load(FileInputStream(propsFile))
+}
+
 pluginManagement {
     repositories {
         google {
@@ -19,6 +27,14 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/3dlook-me/android_sdk_public")
+            credentials {
+                username = githubProperties["gpr.usr"] as String? ?: System.getenv("GPR_USER")
+                password = githubProperties["gpr.key"] as String? ?: System.getenv("GPR_API_KEY")
+            }
+        }
     }
 }
 

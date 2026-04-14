@@ -283,6 +283,8 @@
     <string name="scan_step_2_b">Keep arms slightly away from your body</string>
     <string name="scan_step_3_a">Turn to Your Left Side, Feet Together.</string>
     <string name="scan_step_3_b">Hold still while your body scan is being captured.</string>
+    <string name="scan_progress_submitting">Submitting your photos…</string>
+    <string name="scan_progress_processing">Processing your scan…</string>
     <string name="cd_flip_camera">Flip camera</string>
     <string name="cd_scan_warning">Warning</string>
     <string name="scan_results_tab_visual">Visual</string>
@@ -294,8 +296,7 @@
     <string name="scan_results_body_part">Body part</string>
     <string name="scan_results_today">Today</string>
     <string name="scan_results_previous">Previous</string>
-    <string name="scan_results_today_date">Dec 24</string>
-    <string name="scan_results_previous_date">Dec 10</string>
+    <string name="scan_results_no_value">-</string>
     <string name="unit_cm">cm</string>
     <string name="unit_ft">ft</string>
     <string name="unit_in">in</string>
@@ -320,4 +321,16 @@
     <string name="scan_measurement_label_hips">Hips\n505</string>
     <string name="scan_measurement_label_thigh">Thigh\n505</string>
     <string name="scan_measurement_label_calf">Calf\n505</string>
+
+    <!-- Scan error messages -->
+    <string name="scan_error_profile_load">Failed to load profile: %1$s</string>
+    <string name="scan_error_missing_height">Height is required for scanning. Please update your profile.</string>
+    <string name="scan_error_missing_weight">Weight is required for scanning. Please update your profile.</string>
+    <string name="scan_error_missing_gender">Gender is required for scanning. Please update your profile.</string>
+    <string name="scan_error_missing_age">Date of birth is required for scanning. Please update your profile.</string>
+    <string name="scan_error_submit_failed">Failed to submit scan</string>
+    <string name="scan_error_retrieve_failed">Failed to retrieve scan results</string>
+    <string name="scan_error_processing_failed">Scan processing failed</string>
+    <string name="scan_error_timeout">Scan timed out. Please try again.</string>
+    <string name="scan_error_with_detail">%1$s: %2$s</string>
 </resources>

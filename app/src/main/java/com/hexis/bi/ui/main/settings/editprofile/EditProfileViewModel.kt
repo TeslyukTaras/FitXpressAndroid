@@ -8,8 +8,14 @@ import com.hexis.bi.data.user.UserProfile
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.ui.base.BaseViewModel
+import com.hexis.bi.utils.cmToInches
+import com.hexis.bi.utils.constants.MeasurementConstants
 import com.hexis.bi.utils.constants.ProfileConstants
 import com.hexis.bi.utils.formatDob
+import com.hexis.bi.utils.inchesToCm
+import com.hexis.bi.utils.isMetricUnitSystem
+import com.hexis.bi.utils.kgToLb
+import com.hexis.bi.utils.lbToKg
 import com.hexis.bi.utils.parseDob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,7 +45,7 @@ class EditProfileViewModel(
                     avatarUrl = profile.avatarUrl,
                     dateOfBirth = dobString,
                     gender = gender ?: it.gender,
-                    isMetric = if (profile.unitSystem != null) profile.unitSystem == ProfileConstants.UNIT_SYSTEM_METRIC else it.isMetric,
+                    isMetric = profile.unitSystem.isMetricUnitSystem(fallback = it.isMetric),
                     heightCm = profile.heightCm?.toFloat() ?: it.heightCm,
                     weightKg = profile.weightKg?.toFloat() ?: it.weightKg,
                 )
@@ -57,11 +63,11 @@ class EditProfileViewModel(
     fun selectMetric() = _state.update { it.copy(isMetric = true) }
     fun selectImperial() = _state.update { it.copy(isMetric = false) }
     fun updateHeight(sliderValue: Float) = _state.update {
-        it.copy(heightCm = if (it.isMetric) sliderValue else sliderValue * ProfileConstants.CM_TO_IN)
+        it.copy(heightCm = if (it.isMetric) sliderValue else sliderValue.inchesToCm())
     }
 
     fun updateWeight(sliderValue: Float) = _state.update {
-        it.copy(weightKg = if (it.isMetric) sliderValue else sliderValue / ProfileConstants.KG_TO_LB)
+        it.copy(weightKg = if (it.isMetric) sliderValue else sliderValue.lbToKg())
     }
 
     fun showDatePicker() = _state.update { it.copy(showDatePicker = true) }
@@ -99,9 +105,9 @@ private fun EditProfileState.toUserProfile(uid: String): UserProfile {
         gender = gender.name,
         heightCm = heightCmInt,
         weightKg = weightKgInt,
-        heightIn = (heightCmInt / ProfileConstants.CM_TO_IN).roundToInt(),
-        weightLb = (weightKgInt * ProfileConstants.KG_TO_LB).roundToInt(),
-        unitSystem = if (isMetric) ProfileConstants.UNIT_SYSTEM_METRIC else ProfileConstants.UNIT_SYSTEM_IMPERIAL,
+        heightIn = heightCmInt.toFloat().cmToInches().roundToInt(),
+        weightLb = weightKgInt.toFloat().kgToLb().roundToInt(),
+        unitSystem = if (isMetric) MeasurementConstants.UNIT_SYSTEM_METRIC else MeasurementConstants.UNIT_SYSTEM_IMPERIAL,
         dateOfBirth = dob,
     )
 }

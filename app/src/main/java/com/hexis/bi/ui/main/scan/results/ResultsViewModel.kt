@@ -1,9 +1,13 @@
 package com.hexis.bi.ui.main.scan.results
 
 import android.app.Application
+import com.hexis.bi.data.scan.MeasurementMapper
+import com.hexis.bi.data.scan.ScanHistoryRepository
+import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.base.BaseViewModel
-import com.hexis.bi.utils.constants.ProfileConstants
+import com.hexis.bi.utils.isMetricUnitSystem
+import com.hexis.bi.utils.millisToShortMonthDay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,6 +16,8 @@ import kotlinx.coroutines.flow.update
 class ResultsViewModel(
     application: Application,
     private val userRepository: UserRepository,
+    private val scanResultRepository: ScanResultRepository,
+    private val scanHistoryRepository: ScanHistoryRepository,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(ResultsState())
@@ -19,13 +25,39 @@ class ResultsViewModel(
 
     init {
         loadUnitSystem()
+        loadMeasurements()
     }
 
-    private fun loadUnitSystem() = launch {
+    private fun loadUnitSystem() = launch(showLoading = false) {
         userRepository.getUser().onSuccess { profile ->
-            _state.update {
-                it.copy(isMetric = profile.unitSystem != ProfileConstants.UNIT_SYSTEM_IMPERIAL)
+            _state.update { it.copy(isMetric = profile.unitSystem.isMetricUnitSystem()) }
+        }
+    }
+
+    private fun loadMeasurements() = launch(showLoading = false) {
+        val result = scanResultRepository.latestResult ?: return@launch
+
+        // The current scan is already persisted, so the prior readings start at index 1.
+        val (previousScan, beforePreviousScan) = scanHistoryRepository.getPreviousTwoScans()
+            .getOrElse { null to null }
+            .let { (prev, beforePrev) ->
+                prev?.takeIf { it.measurements.isNotEmpty() } to
+                    beforePrev?.takeIf { it.measurements.isNotEmpty() }
             }
+
+        val rows = MeasurementMapper.map(
+            current = result.response,
+            previous = previousScan,
+            beforePrevious = beforePreviousScan,
+        )
+
+        _state.update {
+            it.copy(
+                measurements = rows,
+                model3dUrl = result.response.model3dUrl,
+                todayDate = System.currentTimeMillis().millisToShortMonthDay(),
+                previousDate = previousScan?.timestamp?.millisToShortMonthDay(),
+            )
         }
     }
 
