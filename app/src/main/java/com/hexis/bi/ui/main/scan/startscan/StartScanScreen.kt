@@ -108,7 +108,7 @@ fun StartScanScreen(
         onDismissError = { viewModel.onErrorDismissed() },
         topBar = {
             BaseTopBar(
-                title = stringResource(R.string.how_to_scan_title),
+                title = stringResource(R.string.scan_title),
                 onBack = onBack,
                 actions = {
                     IconButton(onClick = {}) {
