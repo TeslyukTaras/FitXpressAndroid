@@ -345,11 +345,13 @@ private fun MeasurementTableRow(
             modifier = Modifier.fillMaxHeight(),
             color = MaterialTheme.colorScheme.secondaryFixed,
         )
-        if (row.previous != null) {
-            ValueCell(value = row.previous, isMetric = isMetric, modifier = Modifier.weight(1f))
-        } else {
-            EmptyValueCell(modifier = Modifier.weight(1f))
-        }
+        if (row.previous != null) ValueCell(
+            value = row.previous,
+            colorDelta = false,
+            isMetric = isMetric,
+            modifier = Modifier.weight(1f)
+        )
+        else EmptyValueCell(modifier = Modifier.weight(1f))
     }
 }
 
@@ -369,15 +371,16 @@ private fun EmptyValueCell(modifier: Modifier = Modifier) {
 
 @Composable
 private fun ValueCell(
-    value: MeasurementValue,
-    isMetric: Boolean,
     modifier: Modifier = Modifier,
+    value: MeasurementValue,
+    colorDelta: Boolean = true,
+    isMetric: Boolean,
 ) {
-    val deltaColor = when (value.change) {
+    val deltaColor = if (colorDelta) when (value.change) {
         MeasurementChange.Positive -> Green
         MeasurementChange.Negative -> Red100
         null -> MaterialTheme.colorScheme.primaryFixed
-    }
+    } else MaterialTheme.colorScheme.primaryFixed
 
     val unit = stringResource(if (isMetric) R.string.unit_cm else R.string.unit_in)
     val deltaValue = if (isMetric) value.deltaCm else value.deltaCm.cmToInches()
