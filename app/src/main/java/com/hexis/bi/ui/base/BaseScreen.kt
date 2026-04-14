@@ -55,6 +55,7 @@ fun BaseScreen(
     onInitialization: (() -> Unit)? = null,
     topBar: @Composable () -> Unit = {},
     bottomBar: @Composable () -> Unit = {},
+    loadingContent: (@Composable BoxScope.() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -107,12 +108,16 @@ fun BaseScreen(
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.4f)),
             ) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .imePadding(),
-                )
+                if (loadingContent != null) {
+                    loadingContent()
+                } else {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .imePadding(),
+                    )
+                }
             }
         }
     }

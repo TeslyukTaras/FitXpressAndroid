@@ -7,10 +7,15 @@ import com.google.firebase.storage.FirebaseStorage
 import com.hexis.bi.data.auth.AuthRepository
 import com.hexis.bi.data.auth.FirebaseAuthRepository
 import com.hexis.bi.data.preferences.UserPreferencesRepository
+import com.hexis.bi.data.scan.ScanHistoryRepository
+import com.hexis.bi.data.scan.ScanResultRepository
+import com.hexis.bi.data.scan.ThreeDLookRepository
+import com.hexis.bi.data.scan.api.ThreeDLookApi
 import com.hexis.bi.data.suit.MockSuitRepository
 import com.hexis.bi.data.user.FirestoreUserRepository
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.suit.SuitRepository
+import okhttp3.OkHttpClient
 import com.hexis.bi.ui.MainViewModel
 import com.hexis.bi.ui.auth.forgotpassword.ForgotPasswordViewModel
 import com.hexis.bi.ui.auth.login.LoginViewModel
@@ -40,6 +45,11 @@ val appModule = module {
     single<AuthRepository> { FirebaseAuthRepository(get(), get(), androidContext()) }
     single<SuitRepository> { MockSuitRepository(get()) }
     single<UserRepository> { FirestoreUserRepository(get(), get(), androidContext()) }
+    single { OkHttpClient() }
+    single { ThreeDLookApi(get(), androidContext()) }
+    single { ThreeDLookRepository(get()) }
+    single { ScanResultRepository() }
+    single { ScanHistoryRepository(get(), get()) }
     viewModel { MainViewModel(get(), get()) }
     viewModel { LoginViewModel(get(), get(), get(), androidApplication()) }
     viewModel { SignUpViewModel(get(), get(), get(), androidApplication()) }
@@ -52,7 +62,7 @@ val appModule = module {
     viewModel { NotificationsSettingsViewModel(androidApplication()) }
     viewModel { SleepViewModel(androidApplication()) }
     viewModel { ScanViewModel(androidApplication(), get()) }
-    viewModel { StartScanViewModel(androidApplication()) }
-    viewModel { ResultsViewModel(androidApplication(), get()) }
+    viewModel { StartScanViewModel(androidApplication(), get(), get(), get(), get()) }
+    viewModel { ResultsViewModel(androidApplication(), get(), get(), get()) }
     viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get()) }
 }

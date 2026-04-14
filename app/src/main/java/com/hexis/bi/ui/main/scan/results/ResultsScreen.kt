@@ -92,6 +92,8 @@ fun ResultsScreen(
                 modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium)),
                 measurements = state.measurements,
                 isMetric = state.isMetric,
+                todayDate = state.todayDate,
+                previousDate = state.previousDate,
             )
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
@@ -187,6 +189,8 @@ private fun ColorAnalysisCard(
 private fun MeasurementsCard(
     measurements: List<MeasurementRow>,
     isMetric: Boolean,
+    todayDate: String,
+    previousDate: String?,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -245,7 +249,7 @@ private fun MeasurementsCard(
             )
             HeaderCell(
                 title = stringResource(R.string.scan_results_today),
-                date = stringResource(R.string.scan_results_today_date),
+                date = todayDate,
                 modifier = Modifier.weight(1f),
             )
             VerticalDivider(
@@ -254,7 +258,7 @@ private fun MeasurementsCard(
             )
             HeaderCell(
                 title = stringResource(R.string.scan_results_previous),
-                date = stringResource(R.string.scan_results_previous_date),
+                date = previousDate ?: stringResource(R.string.scan_results_no_value),
                 modifier = Modifier.weight(1f),
             )
         }
@@ -340,7 +344,25 @@ private fun MeasurementTableRow(
             modifier = Modifier.fillMaxHeight(),
             color = MaterialTheme.colorScheme.secondaryFixed,
         )
-        ValueCell(value = row.previous, isMetric = isMetric, modifier = Modifier.weight(1f))
+        if (row.previous != null) {
+            ValueCell(value = row.previous, isMetric = isMetric, modifier = Modifier.weight(1f))
+        } else {
+            EmptyValueCell(modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun EmptyValueCell(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = stringResource(R.string.scan_results_no_value),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.secondary,
+        )
     }
 }
 

@@ -1,9 +1,15 @@
 package com.hexis.bi.ui.main.scan.startscan
 
+import android.app.Activity
+import android.util.Log
+import android.view.WindowManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,33 +20,40 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
+import com.hexis.bi.data.scan.ScanProgress
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppSlider
-import com.hexis.bi.ui.main.scan.components.ScanViewfinder
 import com.hexis.bi.ui.theme.Blue200
 import com.hexis.bi.ui.theme.Blue300
 import com.hexis.bi.ui.theme.Green
 import com.hexis.bi.utils.gradientBackground
+import com.look.camera.sdk.SdkActivity
+import com.look.camera.sdk.data.LaunchOption
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -51,14 +64,59 @@ fun StartScanScreen(
     viewModel: StartScanViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val view = LocalView.current
+
+    DisposableEffect(view) {
+        val window = (view.context as? Activity)?.window
+        window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        onDispose {
+            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        Log.d("StartScanScreen", "camera result code=${result.resultCode} data=${result.data}")
+        if (result.resultCode == Activity.RESULT_OK) {
+            val frontUri = SdkActivity.getFrontPhotoUri(result.data)
+            val sideUri = SdkActivity.getSidePhotoUri(result.data)
+            Log.d("StartScanScreen", "extracted front=$frontUri side=$sideUri")
+            if (frontUri != null && sideUri != null) {
+                viewModel.onPhotosReceived(frontUri, sideUri)
+            } else {
+                viewModel.onPhotoError()
+            }
+        } else {
+            viewModel.onCameraCancelled()
+        }
+    }
+
+    LaunchedEffect(state.shouldLaunchCamera) {
+        if (state.shouldLaunchCamera) {
+            viewModel.onCameraLaunched()
+            val intent = SdkActivity.start(context, LaunchOption.FRONT_AND_SIDE_ONLY)
+            cameraLauncher.launch(intent)
+        }
+    }
 
     LaunchedEffect(state.isComplete) {
         if (state.isComplete) onScanComplete()
     }
 
+    LaunchedEffect(state.shouldNavigateBack) {
+        if (state.shouldNavigateBack) onBack()
+    }
+
     BaseScreen(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
+        isLoading = isLoading,
+        error = error,
+        onDismissError = { viewModel.onErrorDismissed() },
         topBar = {
             BaseTopBar(
                 title = stringResource(R.string.how_to_scan_title),
@@ -75,43 +133,36 @@ fun StartScanScreen(
                 },
             )
         },
+        loadingContent = {
+            ScanProgressIndicator(progress = state.scanProgress)
+        },
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
-        ) {
-            ScanViewfinder(
-                modifier = Modifier.weight(1f),
-                onClick = viewModel::advance,
-            )
+        Box(modifier = Modifier.fillMaxSize())
+    }
+}
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
-
-            VoiceGuidanceCard(
-                volume = state.voiceVolume,
-                onVolumeChange = viewModel::updateVolume,
-            )
-
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-            StepIndicator(
-                currentStep = state.currentStep,
-                totalSteps = state.steps.size,
-            )
-
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
-
-            state.currentInstructions.forEach { instruction ->
-                InstructionRow(
-                    text = stringResource(instruction.textRes),
-                    completed = instruction.completed,
-                )
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
-            }
-
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
-        }
+@Composable
+private fun BoxScope.ScanProgressIndicator(
+    progress: ScanProgress?,
+) {
+    Column(
+        modifier = Modifier.align(Alignment.Center),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        CircularProgressIndicator(
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+        Text(
+            text = when (progress) {
+                is ScanProgress.Submitting -> stringResource(R.string.scan_progress_submitting)
+                is ScanProgress.Processing -> stringResource(R.string.scan_progress_processing)
+                else -> ""
+            },
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 

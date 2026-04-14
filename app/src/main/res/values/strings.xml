@@ -283,6 +283,8 @@
     <string name="scan_step_2_b">Keep arms slightly away from your body</string>
     <string name="scan_step_3_a">Turn to Your Left Side, Feet Together.</string>
     <string name="scan_step_3_b">Hold still while your body scan is being captured.</string>
+    <string name="scan_progress_submitting">Submitting your photos…</string>
+    <string name="scan_progress_processing">Processing your scan…</string>
     <string name="cd_flip_camera">Flip camera</string>
     <string name="cd_scan_warning">Warning</string>
     <string name="scan_results_tab_visual">Visual</string>
@@ -294,8 +296,7 @@
     <string name="scan_results_body_part">Body part</string>
     <string name="scan_results_today">Today</string>
     <string name="scan_results_previous">Previous</string>
-    <string name="scan_results_today_date">Dec 24</string>
-    <string name="scan_results_previous_date">Dec 10</string>
+    <string name="scan_results_no_value">-</string>
     <string name="unit_cm">cm</string>
     <string name="unit_ft">ft</string>
     <string name="unit_in">in</string>
