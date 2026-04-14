@@ -1,14 +1,15 @@
 package com.hexis.bi.data.scan
 
-import android.util.Log
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.hexis.bi.data.scan.api.MeasurementResponse
+import com.hexis.bi.utils.snakeToCamel
 import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -77,18 +78,18 @@ class ScanHistoryRepository(
         }
 
         batch.commit().await()
-        Log.d(TAG, "saveScan: wrote $docId with ${mainData.size} fields")
+        Timber.d("saveScan: wrote %s with %d fields", docId, mainData.size)
     }
 
     suspend fun getLatestScan(): Result<ScanRecord?> =
         getRecentScans(limit = 1).map { it.firstOrNull() }
 
-    /** Returns the second most recent scan (i.e. the one before the just-saved result). */
-    suspend fun getPreviousScan(excludeId: String? = null): Result<ScanRecord?> =
-        getRecentScans(limit = 2).map { scans ->
-            if (excludeId != null) scans.firstOrNull { it.id != excludeId }
-            else scans.getOrNull(1)
-        }
+    /**
+     * Returns the second-most-recent scan. Call this after a fresh scan has been
+     * persisted to fetch the prior reading for delta comparison.
+     */
+    suspend fun getPreviousScan(): Result<ScanRecord?> =
+        getRecentScans(limit = 2).map { it.getOrNull(1) }
 
     private suspend fun getRecentScans(limit: Long): Result<List<ScanRecord>> = runCatching {
         val snapshot = scansCollection()
@@ -98,13 +99,13 @@ class ScanHistoryRepository(
             .await()
 
         snapshot.documents.map { doc ->
-            val measurements = mutableMapOf<String, Float>()
+            val measurements = LinkedHashMap<String, Float>()
             listOf("circumferenceParams", "frontLinearParams", "sideLinearParams").forEach { sub ->
                 val subDoc = doc.reference.collection(sub).document("data").get().await()
                 subDoc.data?.forEach { (key, value) ->
                     val f = (value as? Number)?.toFloat()
                         ?: (value as? String)?.toFloatOrNull()
-                    if (f != null) measurements[key] = f
+                    if (f != null) measurements.putIfAbsent(key, f)
                 }
             }
 
@@ -121,25 +122,17 @@ class ScanHistoryRepository(
         obj.mapNotNull { (key, value) ->
             val prim = value as? JsonPrimitive ?: return@mapNotNull null
             val d = prim.content.toDoubleOrNull() ?: return@mapNotNull null
-            snakeToCamel(key) to d
+            key.snakeToCamel() to d
         }.toMap()
 
     private fun jsonObjectToAnyMap(obj: JsonObject): Map<String, Any> =
         obj.mapNotNull { (key, value) ->
             val prim = value as? JsonPrimitive ?: return@mapNotNull null
             val converted: Any = prim.content.toDoubleOrNull() ?: prim.content
-            snakeToCamel(key) to converted
+            key.snakeToCamel() to converted
         }.toMap()
 
-    private fun snakeToCamel(input: String): String {
-        if (!input.contains('_')) return input
-        return input.split('_').mapIndexed { i, part ->
-            if (i == 0) part else part.replaceFirstChar { it.uppercase() }
-        }.joinToString("")
-    }
-
     companion object {
-        private const val TAG = "ScanHistoryRepo"
         private val docIdFormat = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US)
     }
 }

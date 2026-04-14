@@ -15,7 +15,6 @@ import com.hexis.bi.data.suit.MockSuitRepository
 import com.hexis.bi.data.user.FirestoreUserRepository
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.suit.SuitRepository
-import okhttp3.OkHttpClient
 import com.hexis.bi.ui.MainViewModel
 import com.hexis.bi.ui.auth.forgotpassword.ForgotPasswordViewModel
 import com.hexis.bi.ui.auth.login.LoginViewModel
@@ -31,10 +30,13 @@ import com.hexis.bi.ui.main.settings.healthconnections.HealthConnectionsViewMode
 import com.hexis.bi.ui.main.settings.mysuit.MySuitViewModel
 import com.hexis.bi.ui.main.settings.notifications.NotificationsSettingsViewModel
 import com.hexis.bi.ui.main.settings.scanpreferences.ScanPreferencesViewModel
+import com.hexis.bi.utils.constants.NetworkConstants.HTTP_TIMEOUT_SECONDS
+import okhttp3.OkHttpClient
 import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
+import java.util.concurrent.TimeUnit
 
 val appModule = module {
     single { FirebaseAuth.getInstance() }
@@ -45,7 +47,13 @@ val appModule = module {
     single<AuthRepository> { FirebaseAuthRepository(get(), get(), androidContext()) }
     single<SuitRepository> { MockSuitRepository(get()) }
     single<UserRepository> { FirestoreUserRepository(get(), get(), androidContext()) }
-    single { OkHttpClient() }
+    single {
+        OkHttpClient.Builder()
+            .connectTimeout(HTTP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(HTTP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .writeTimeout(HTTP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .build()
+    }
     single { ThreeDLookApi(get(), androidContext()) }
     single { ThreeDLookRepository(get()) }
     single { ScanResultRepository() }

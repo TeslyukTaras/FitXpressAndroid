@@ -1,18 +1,29 @@
 package com.hexis.bi.data.scan
 
 import android.net.Uri
-import android.util.Log
+import androidx.annotation.StringRes
+import com.hexis.bi.R
 import com.hexis.bi.data.scan.api.MeasurementResponse
 import com.hexis.bi.data.scan.api.ThreeDLookApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import timber.log.Timber
 
 sealed interface ScanProgress {
     data object Submitting : ScanProgress
     data object Processing : ScanProgress
     data class Success(val response: MeasurementResponse) : ScanProgress
-    data class Failed(val message: String) : ScanProgress
+
+    /**
+     * @param messageRes user-facing fallback message (resolved at the VM boundary)
+     * @param detail optional extra context from the API (already human-readable, e.g.
+     *               "The body is not full") — may be appended to the message verbatim
+     */
+    data class Failed(
+        @StringRes val messageRes: Int,
+        val detail: String? = null,
+    ) : ScanProgress
 }
 
 class ThreeDLookRepository(private val api: ThreeDLookApi) {
@@ -25,7 +36,7 @@ class ThreeDLookRepository(private val api: ThreeDLookApi) {
         gender: String,
         age: Int,
     ): Flow<ScanProgress> = flow {
-        Log.d(TAG, "submitScan: emitting Submitting")
+        Timber.d("submitScan: emitting Submitting")
         emit(ScanProgress.Submitting)
 
         val id = api.createMeasurement(
@@ -36,11 +47,11 @@ class ThreeDLookRepository(private val api: ThreeDLookApi) {
             gender = gender,
             age = age,
         ).getOrElse { e ->
-            Log.e(TAG, "submitScan: createMeasurement failed", e)
-            emit(ScanProgress.Failed(e.message ?: "Failed to submit scan"))
+            Timber.e(e, "submitScan: createMeasurement failed")
+            emit(ScanProgress.Failed(R.string.scan_error_submit_failed, e.message))
             return@flow
         }
-        Log.d(TAG, "submitScan: created measurement id=$id")
+        Timber.d("submitScan: created measurement id=%s", id)
 
         emit(ScanProgress.Processing)
 
@@ -50,12 +61,12 @@ class ThreeDLookRepository(private val api: ThreeDLookApi) {
             delay(POLL_INTERVAL_MS)
 
             val measurement = api.getMeasurement(id).getOrElse { e ->
-                Log.e(TAG, "submitScan: poll #$attempts failed", e)
-                emit(ScanProgress.Failed(e.message ?: "Failed to retrieve results"))
+                Timber.e(e, "submitScan: poll #%d failed", attempts)
+                emit(ScanProgress.Failed(R.string.scan_error_retrieve_failed, e.message))
                 return@flow
             }
 
-            Log.d(TAG, "submitScan: poll #$attempts status=${measurement.status}")
+            Timber.d("submitScan: poll #%d status=%s", attempts, measurement.status)
             when (measurement.status.lowercase()) {
                 STATUS_SUCCESSFUL -> {
                     emit(ScanProgress.Success(measurement))
@@ -67,19 +78,17 @@ class ThreeDLookRepository(private val api: ThreeDLookApi) {
                         ?.distinct()
                         ?.joinToString("\n")
                         ?.takeIf { it.isNotBlank() }
-                    val message = details ?: "Scan processing failed (${measurement.status})"
-                    emit(ScanProgress.Failed(message))
+                    emit(ScanProgress.Failed(R.string.scan_error_processing_failed, details))
                     return@flow
                 }
                 // pending, in_progress — keep polling
             }
         }
-        Log.e(TAG, "submitScan: timed out after $MAX_POLL_ATTEMPTS polls")
-        emit(ScanProgress.Failed("Scan timed out"))
+        Timber.e("submitScan: timed out after %d polls", MAX_POLL_ATTEMPTS)
+        emit(ScanProgress.Failed(R.string.scan_error_timeout))
     }
 
     companion object {
-        private const val TAG = "ThreeDLookRepo"
         private const val POLL_INTERVAL_MS = 4_000L
         private const val MAX_POLL_ATTEMPTS = 60
         private const val STATUS_SUCCESSFUL = "successful"

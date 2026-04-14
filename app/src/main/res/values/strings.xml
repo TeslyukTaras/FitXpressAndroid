@@ -321,4 +321,16 @@
     <string name="scan_measurement_label_hips">Hips\n505</string>
     <string name="scan_measurement_label_thigh">Thigh\n505</string>
     <string name="scan_measurement_label_calf">Calf\n505</string>
+
+    <!-- Scan error messages -->
+    <string name="scan_error_profile_load">Failed to load profile: %1$s</string>
+    <string name="scan_error_missing_height">Height is required for scanning. Please update your profile.</string>
+    <string name="scan_error_missing_weight">Weight is required for scanning. Please update your profile.</string>
+    <string name="scan_error_missing_gender">Gender is required for scanning. Please update your profile.</string>
+    <string name="scan_error_missing_age">Date of birth is required for scanning. Please update your profile.</string>
+    <string name="scan_error_submit_failed">Failed to submit scan</string>
+    <string name="scan_error_retrieve_failed">Failed to retrieve scan results</string>
+    <string name="scan_error_processing_failed">Scan processing failed</string>
+    <string name="scan_error_timeout">Scan timed out. Please try again.</string>
+    <string name="scan_error_with_detail">%1$s: %2$s</string>
 </resources>

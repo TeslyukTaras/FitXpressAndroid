@@ -2,8 +2,8 @@ package com.hexis.bi.data.scan.api
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
 import com.hexis.bi.BuildConfig
+import timber.log.Timber
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -28,10 +28,8 @@ class ThreeDLookApi(
         age: Int,
     ): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
-            val frontBytes =
-                context.contentResolver.openInputStream(frontPhoto)!!.use { it.readBytes() }
-            val sideBytes =
-                context.contentResolver.openInputStream(sidePhoto)!!.use { it.readBytes() }
+            val frontBytes = readPhoto(frontPhoto)
+            val sideBytes = readPhoto(sidePhoto)
 
             val body = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
@@ -57,17 +55,17 @@ class ThreeDLookApi(
                 .post(body)
                 .build()
 
-            Log.d(TAG, "createMeasurement: POST ${BASE_URL}measurements/ (front=${frontBytes.size}B side=${sideBytes.size}B)")
-            val response = client.newCall(request).execute()
-            val responseBody = response.body.string()
-                ?: error("Empty response body")
-            Log.d(TAG, "createMeasurement: ${response.code} body=$responseBody")
+            Timber.d("createMeasurement: POST %smeasurements/ (front=%dB side=%dB)", BASE_URL, frontBytes.size, sideBytes.size)
+            client.newCall(request).execute().use { response ->
+                val responseBody = response.body.string()
+                Timber.d("createMeasurement: %d body=%s", response.code, responseBody)
 
-            if (!response.isSuccessful) {
-                error("Create measurement failed (${response.code}): $responseBody")
+                if (!response.isSuccessful) {
+                    error("Create measurement failed (${response.code}): $responseBody")
+                }
+
+                json.decodeFromString<CreateMeasurementResponse>(responseBody).id
             }
-
-            json.decodeFromString<CreateMeasurementResponse>(responseBody).id
         }
     }
 
@@ -80,21 +78,25 @@ class ThreeDLookApi(
                     .get()
                     .build()
 
-                val response = client.newCall(request).execute()
-                val responseBody = response.body.string()
-                    ?: error("Empty response body")
-                Log.d(TAG, "getMeasurement: ${response.code} body=$responseBody")
+                client.newCall(request).execute().use { response ->
+                    val responseBody = response.body.string()
+                    Timber.d("getMeasurement: %d body=%s", response.code, responseBody)
 
-                if (!response.isSuccessful) {
-                    error("Get measurement failed (${response.code}): $responseBody")
+                    if (!response.isSuccessful) {
+                        error("Get measurement failed (${response.code}): $responseBody")
+                    }
+
+                    json.decodeFromString<MeasurementResponse>(responseBody)
                 }
-
-                json.decodeFromString<MeasurementResponse>(responseBody)
             }
         }
 
+    private fun readPhoto(uri: Uri): ByteArray =
+        context.contentResolver.openInputStream(uri)
+            ?.use { it.readBytes() }
+            ?: error("Unable to open photo: $uri")
+
     companion object {
-        private const val TAG = "ThreeDLookApi"
         private const val BASE_URL = "https://backend.fitxpress.3dlook.me/api/1.0/"
     }
 }

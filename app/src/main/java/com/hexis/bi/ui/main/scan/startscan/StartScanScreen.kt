@@ -1,7 +1,6 @@
 package com.hexis.bi.ui.main.scan.startscan
 
 import android.app.Activity
-import android.util.Log
 import android.view.WindowManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,12 +28,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -55,6 +54,7 @@ import com.hexis.bi.utils.gradientBackground
 import com.look.camera.sdk.SdkActivity
 import com.look.camera.sdk.data.LaunchOption
 import org.koin.androidx.compose.koinViewModel
+import timber.log.Timber
 
 @Composable
 fun StartScanScreen(
@@ -72,27 +72,20 @@ fun StartScanScreen(
     DisposableEffect(view) {
         val window = (view.context as? Activity)?.window
         window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        onDispose {
-            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        }
+        onDispose { window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
     }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
     ) { result ->
-        Log.d("StartScanScreen", "camera result code=${result.resultCode} data=${result.data}")
+        Timber.d("camera result code=%d data=%s", result.resultCode, result.data)
         if (result.resultCode == Activity.RESULT_OK) {
             val frontUri = SdkActivity.getFrontPhotoUri(result.data)
             val sideUri = SdkActivity.getSidePhotoUri(result.data)
-            Log.d("StartScanScreen", "extracted front=$frontUri side=$sideUri")
-            if (frontUri != null && sideUri != null) {
-                viewModel.onPhotosReceived(frontUri, sideUri)
-            } else {
-                viewModel.onPhotoError()
-            }
-        } else {
-            viewModel.onCameraCancelled()
-        }
+            Timber.d("extracted front=%s side=%s", frontUri, sideUri)
+            if (frontUri != null && sideUri != null) viewModel.onPhotosReceived(frontUri, sideUri)
+            else viewModel.onPhotoError()
+        } else viewModel.onCameraCancelled()
     }
 
     LaunchedEffect(state.shouldLaunchCamera) {
@@ -103,13 +96,9 @@ fun StartScanScreen(
         }
     }
 
-    LaunchedEffect(state.isComplete) {
-        if (state.isComplete) onScanComplete()
-    }
+    LaunchedEffect(state.isComplete) { if (state.isComplete) onScanComplete() }
 
-    LaunchedEffect(state.shouldNavigateBack) {
-        if (state.shouldNavigateBack) onBack()
-    }
+    LaunchedEffect(state.shouldNavigateBack) { if (state.shouldNavigateBack) onBack() }
 
     BaseScreen(
         modifier = modifier,

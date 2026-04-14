@@ -9,24 +9,27 @@ import com.look.camera.sdk.SdkActivity
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
+import timber.log.Timber
 
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
+        if (BuildConfig.DEBUG) {
+            Timber.plant(Timber.DebugTree())
+        }
         startKoin {
             androidLogger()
             androidContext(this@App)
             modules(appModule)
         }
-        registerActivityLifecycleCallbacks(KeepScreenOnForSdk)
+        registerActivityLifecycleCallbacks(KeepScreenOn)
     }
 }
 
-private object KeepScreenOnForSdk : Application.ActivityLifecycleCallbacks {
+private object KeepScreenOn : Application.ActivityLifecycleCallbacks {
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-        if (activity is SdkActivity) {
+        if (activity is SdkActivity)
             activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        }
     }
 
     override fun onActivityStarted(activity: Activity) {}

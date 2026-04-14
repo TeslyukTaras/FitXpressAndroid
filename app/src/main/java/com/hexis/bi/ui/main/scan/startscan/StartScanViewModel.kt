@@ -2,7 +2,7 @@ package com.hexis.bi.ui.main.scan.startscan
 
 import android.app.Application
 import android.net.Uri
-import android.util.Log
+import com.hexis.bi.R
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanProgress
 import com.hexis.bi.data.scan.ScanResult
@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import timber.log.Timber
 
 class StartScanViewModel(
     application: Application,
@@ -32,10 +33,18 @@ class StartScanViewModel(
     }
 
     /**
-     * Advances the scan one tick. Each tap marks the next pending instruction
-     * of the current step as completed. Once every instruction in a step is
-     * complete, the next tap jumps to the next step. The final tap after the
-     * last step triggers the camera SDK launch.
+     * DEAD CODE — retained temporarily.
+     *
+     * This method (plus [updateVolume], [StartScanState.currentStep]/`steps`/`voiceVolume`,
+     * and the `VoiceGuidanceCard` / `StepIndicator` / `InstructionRow` composables in
+     * [StartScanScreen]) drives a manual "how to scan" instruction flow that used to
+     * precede the camera launch.
+     *
+     * The current design immediately launches the 3DLOOK SDK on screen entry
+     * (`shouldLaunchCamera` defaults to true), so nothing calls `advance()` anymore.
+     * We're keeping the code in place until the product decides whether the pre-scan
+     * instructions flow is coming back; if it's abandoned, delete all of the above
+     * and the matching fields on [StartScanState].
      */
     fun advance() {
         _state.update { state ->
@@ -66,19 +75,19 @@ class StartScanViewModel(
     }
 
     fun onPhotosReceived(frontUri: Uri, sideUri: Uri) {
-        Log.d(TAG, "onPhotosReceived front=$frontUri side=$sideUri")
+        Timber.d("onPhotosReceived front=%s side=%s", frontUri, sideUri)
         submitPhotos(frontUri, sideUri)
     }
 
     /** SDK returned OK but photos were missing — relaunch camera. */
     fun onPhotoError() {
-        Log.w(TAG, "onPhotoError — relaunching camera")
+        Timber.w("onPhotoError — relaunching camera")
         _state.update { it.copy(shouldLaunchCamera = true) }
     }
 
     /** User backed out of the camera — leave the screen. */
     fun onCameraCancelled() {
-        Log.d(TAG, "onCameraCancelled — navigating back")
+        Timber.d("onCameraCancelled — navigating back")
         _state.update { it.copy(shouldNavigateBack = true) }
     }
 
@@ -87,7 +96,7 @@ class StartScanViewModel(
      * from a rejected scan we relaunch the camera for a retake; otherwise we
      * back out of the screen.
      */
-    fun onErrorDismissed(): Boolean {
+    fun onErrorDismissed() {
         val retake = _state.value.retakeOnErrorDismiss
         clearError()
         _state.update {
@@ -98,30 +107,41 @@ class StartScanViewModel(
                 shouldNavigateBack = !retake,
             )
         }
-        return retake
     }
 
     private fun submitPhotos(frontUri: Uri, sideUri: Uri) = launch {
-        Log.d(TAG, "submitPhotos: loading user profile")
+        Timber.d("submitPhotos: loading user profile")
         val profile = userRepository.getUser().getOrElse {
-            Log.e(TAG, "submitPhotos: failed to load profile", it)
-            setError("Failed to load profile: ${it.message}")
+            Timber.e(it, "submitPhotos: failed to load profile")
+            failWithMissingProfileField(
+                appContext.getString(R.string.scan_error_profile_load, it.message.orEmpty()),
+            )
             return@launch
         }
 
-        val heightCm = profile.heightCm?.toFloat() ?: run {
-            Log.e(TAG, "submitPhotos: missing height")
-            setError("Height is required for scanning")
-            return@launch
-        }
-        val weightKg = profile.weightKg?.toFloat() ?: run {
-            Log.e(TAG, "submitPhotos: missing weight")
-            setError("Weight is required for scanning")
-            return@launch
-        }
-        val gender = profile.gender?.lowercase() ?: "male"
-        val age = profile.dateOfBirth?.calculateAge() ?: 25
-        Log.d(TAG, "submitPhotos: h=$heightCm w=$weightKg gender=$gender age=$age — submitting")
+        val heightCm = profile.heightCm?.toFloat()
+            ?: return@launch failWithMissingProfileField(
+                appContext.getString(R.string.scan_error_missing_height),
+            )
+        val weightKg = profile.weightKg?.toFloat()
+            ?: return@launch failWithMissingProfileField(
+                appContext.getString(R.string.scan_error_missing_weight),
+            )
+        val gender = profile.gender?.lowercase()
+            ?: return@launch failWithMissingProfileField(
+                appContext.getString(R.string.scan_error_missing_gender),
+            )
+        val age = profile.dateOfBirth?.calculateAge()
+            ?: return@launch failWithMissingProfileField(
+                appContext.getString(R.string.scan_error_missing_age),
+            )
+        Timber.d(
+            "submitPhotos: h=%s w=%s gender=%s age=%d — submitting",
+            heightCm,
+            weightKg,
+            gender,
+            age
+        )
 
         threeDLookRepository.submitScan(
             frontPhoto = frontUri,
@@ -131,7 +151,7 @@ class StartScanViewModel(
             gender = gender,
             age = age,
         ).collect { progress ->
-            Log.d(TAG, "submitPhotos: progress=$progress")
+            Timber.d("submitPhotos: progress=%s", progress)
             _state.update { it.copy(scanProgress = progress) }
 
             when (progress) {
@@ -147,16 +167,29 @@ class StartScanViewModel(
 
                     _state.update { it.copy(isComplete = true) }
                 }
+
                 is ScanProgress.Failed -> {
                     _state.update { it.copy(retakeOnErrorDismiss = true) }
-                    setError(progress.message)
+                    setError(resolveFailureMessage(progress))
                 }
-                else -> { /* Submitting, Processing — UI shows progress */ }
+
+                else -> {} // Submitting, Processing — UI shows progress
             }
         }
     }
 
-    private companion object {
-        const val TAG = "StartScanVM"
+    /**
+     * Missing-profile failures cannot be retried by retaking the scan, so dismissing
+     * the snackbar should leave the screen rather than relaunch the camera.
+     */
+    private fun failWithMissingProfileField(message: String) {
+        _state.update { it.copy(retakeOnErrorDismiss = false) }
+        setError(message)
+    }
+
+    private fun resolveFailureMessage(failure: ScanProgress.Failed): String {
+        val base = appContext.getString(failure.messageRes)
+        val detail = failure.detail?.takeIf { it.isNotBlank() } ?: return base
+        return appContext.getString(R.string.scan_error_with_detail, base, detail)
     }
 }

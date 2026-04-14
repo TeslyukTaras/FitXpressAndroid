@@ -5,6 +5,7 @@ import com.hexis.bi.data.scan.api.MeasurementResponse
 import com.hexis.bi.ui.main.scan.results.MeasurementChange
 import com.hexis.bi.ui.main.scan.results.MeasurementRow
 import com.hexis.bi.ui.main.scan.results.MeasurementValue
+import com.hexis.bi.utils.snakeToCamel
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.math.abs
@@ -80,15 +81,8 @@ object MeasurementMapper {
         obj.mapNotNull { (key, value) ->
             val prim = value as? JsonPrimitive ?: return@mapNotNull null
             val f = prim.content.toFloatOrNull() ?: return@mapNotNull null
-            snakeToCamel(key) to f
+            key.snakeToCamel() to f
         }.toMap()
-
-    private fun snakeToCamel(input: String): String {
-        if (!input.contains('_')) return input
-        return input.split('_').mapIndexed { i, part ->
-            if (i == 0) part else part.replaceFirstChar { it.uppercase() }
-        }.joinToString("")
-    }
 
     private fun classifyChange(delta: Float, decreaseIsPositive: Boolean): MeasurementChange? {
         if (abs(delta) < 0.01f) return null
