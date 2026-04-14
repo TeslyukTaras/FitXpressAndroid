@@ -6,14 +6,12 @@ import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.base.BaseViewModel
-import com.hexis.bi.utils.constants.ProfileConstants
+import com.hexis.bi.utils.isMetricUnitSystem
+import com.hexis.bi.utils.millisToShortMonthDay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class ResultsViewModel(
     application: Application,
@@ -32,9 +30,7 @@ class ResultsViewModel(
 
     private fun loadUnitSystem() = launch(showLoading = false) {
         userRepository.getUser().onSuccess { profile ->
-            _state.update {
-                it.copy(isMetric = profile.unitSystem != ProfileConstants.UNIT_SYSTEM_IMPERIAL)
-            }
+            _state.update { it.copy(isMetric = profile.unitSystem.isMetricUnitSystem()) }
         }
     }
 
@@ -51,13 +47,12 @@ class ResultsViewModel(
             previous = previousScan,
         )
 
-        val formatter = SimpleDateFormat("MMM d", Locale.getDefault())
         _state.update {
             it.copy(
                 measurements = rows,
                 model3dUrl = result.response.model3dUrl,
-                todayDate = formatter.format(Date(System.currentTimeMillis())),
-                previousDate = previousScan?.timestamp?.let { ts -> formatter.format(Date(ts)) },
+                todayDate = System.currentTimeMillis().millisToShortMonthDay(),
+                previousDate = previousScan?.timestamp?.millisToShortMonthDay(),
             )
         }
     }

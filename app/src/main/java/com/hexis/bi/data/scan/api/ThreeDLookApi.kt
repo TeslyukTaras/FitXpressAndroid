@@ -34,28 +34,28 @@ class ThreeDLookApi(
             val body = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart(
-                    "front_photo",
-                    "front.jpg",
-                    frontBytes.toRequestBody("image/jpeg".toMediaType()),
+                    FIELD_FRONT_PHOTO,
+                    FRONT_PHOTO_FILENAME,
+                    frontBytes.toRequestBody(MEDIA_TYPE_JPEG.toMediaType()),
                 )
                 .addFormDataPart(
-                    "side_photo",
-                    "side.jpg",
-                    sideBytes.toRequestBody("image/jpeg".toMediaType()),
+                    FIELD_SIDE_PHOTO,
+                    SIDE_PHOTO_FILENAME,
+                    sideBytes.toRequestBody(MEDIA_TYPE_JPEG.toMediaType()),
                 )
-                .addFormDataPart("height", heightCm.toInt().toString())
-                .addFormDataPart("weight", weightKg.toInt().toString())
-                .addFormDataPart("gender", gender)
-                .addFormDataPart("age", age.toString())
+                .addFormDataPart(FIELD_HEIGHT, heightCm.toInt().toString())
+                .addFormDataPart(FIELD_WEIGHT, weightKg.toInt().toString())
+                .addFormDataPart(FIELD_GENDER, gender)
+                .addFormDataPart(FIELD_AGE, age.toString())
                 .build()
 
             val request = Request.Builder()
-                .url("${BASE_URL}measurements/")
-                .addHeader("Authorization", "Token ${BuildConfig.THREEDLOOK_API_TOKEN}")
+                .url("$BASE_URL$PATH_MEASUREMENTS")
+                .addHeader(HEADER_AUTHORIZATION, "$AUTH_SCHEME ${BuildConfig.THREEDLOOK_API_TOKEN}")
                 .post(body)
                 .build()
 
-            Timber.d("createMeasurement: POST %smeasurements/ (front=%dB side=%dB)", BASE_URL, frontBytes.size, sideBytes.size)
+            Timber.d("createMeasurement: POST %s%s (front=%dB side=%dB)", BASE_URL, PATH_MEASUREMENTS, frontBytes.size, sideBytes.size)
             client.newCall(request).execute().use { response ->
                 val responseBody = response.body.string()
                 Timber.d("createMeasurement: %d body=%s", response.code, responseBody)
@@ -73,8 +73,8 @@ class ThreeDLookApi(
         withContext(Dispatchers.IO) {
             runCatching {
                 val request = Request.Builder()
-                    .url("${BASE_URL}measurements/$id/")
-                    .addHeader("Authorization", "Token ${BuildConfig.THREEDLOOK_API_TOKEN}")
+                    .url("$BASE_URL$PATH_MEASUREMENTS$id/")
+                    .addHeader(HEADER_AUTHORIZATION, "$AUTH_SCHEME ${BuildConfig.THREEDLOOK_API_TOKEN}")
                     .get()
                     .build()
 
@@ -98,5 +98,21 @@ class ThreeDLookApi(
 
     companion object {
         private const val BASE_URL = "https://backend.fitxpress.3dlook.me/api/1.0/"
+        private const val PATH_MEASUREMENTS = "measurements/"
+
+        private const val HEADER_AUTHORIZATION = "Authorization"
+        private const val AUTH_SCHEME = "Token"
+
+        private const val MEDIA_TYPE_JPEG = "image/jpeg"
+
+        private const val FIELD_FRONT_PHOTO = "front_photo"
+        private const val FIELD_SIDE_PHOTO = "side_photo"
+        private const val FIELD_HEIGHT = "height"
+        private const val FIELD_WEIGHT = "weight"
+        private const val FIELD_GENDER = "gender"
+        private const val FIELD_AGE = "age"
+
+        private const val FRONT_PHOTO_FILENAME = "front.jpg"
+        private const val SIDE_PHOTO_FILENAME = "side.jpg"
     }
 }

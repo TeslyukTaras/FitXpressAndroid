@@ -3,6 +3,7 @@ package com.hexis.bi.utils
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
+import com.hexis.bi.utils.constants.DateFormatConstants
 import com.hexis.bi.utils.constants.ProfileConstants
 import com.hexis.bi.utils.constants.SleepConstants
 import com.hexis.bi.utils.constants.TimeConstants
@@ -28,6 +29,16 @@ fun String.parseDob(): Date? =
     SimpleDateFormat(ProfileConstants.DOB_DATE_FORMAT, Locale.US)
         .runCatching { parse(this@parseDob) }
         .getOrNull()
+
+/** Short "Apr 14" label used on the Results screen header. Locale-aware. */
+fun Date.formatShortMonthDay(): String =
+    SimpleDateFormat(DateFormatConstants.SHORT_MONTH_DAY, Locale.getDefault()).format(this)
+
+fun Long.millisToShortMonthDay(): String = Date(this).formatShortMonthDay()
+
+/** Sortable timestamp used as the Firestore document ID for a saved scan. */
+fun Date.formatAsScanDocId(): String =
+    SimpleDateFormat(DateFormatConstants.SCAN_DOC_ID_TIMESTAMP, Locale.US).format(this)
 
 fun Int.formatHour(): String {
     val h = if (this % TimeConstants.HOURS_IN_HALF_DAY == 0) TimeConstants.HOURS_IN_HALF_DAY

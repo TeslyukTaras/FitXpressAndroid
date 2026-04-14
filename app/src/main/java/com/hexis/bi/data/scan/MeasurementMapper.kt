@@ -85,8 +85,11 @@ object MeasurementMapper {
         }.toMap()
 
     private fun classifyChange(delta: Float, decreaseIsPositive: Boolean): MeasurementChange? {
-        if (abs(delta) < 0.01f) return null
+        if (abs(delta) < CHANGE_EPSILON_CM) return null
         val isDesirable = if (decreaseIsPositive) delta < 0 else delta > 0
         return if (isDesirable) MeasurementChange.Positive else MeasurementChange.Negative
     }
+
+    /** Below this cm delta we treat the measurement as unchanged (rounding noise). */
+    private const val CHANGE_EPSILON_CM = 0.01f
 }

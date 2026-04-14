@@ -1,24 +1,10 @@
 package com.hexis.bi.utils.constants
 
+import com.hexis.bi.utils.constants.MeasurementConstants.CM_TO_IN
+import com.hexis.bi.utils.constants.MeasurementConstants.KG_TO_LB
+
 object ProfileConstants {
 
-    const val CM_TO_IN = 2.54f
-    private const val INCHES_PER_FOOT = 12
-
-    /** Converts centimeters to a (feet, inches) pair. */
-    fun cmToFeetAndInches(cm: Float): Pair<Int, Float> {
-        val totalInches = cm / CM_TO_IN
-        val feet = (totalInches / INCHES_PER_FOOT).toInt()
-        val inches = totalInches % INCHES_PER_FOOT
-        return feet to inches
-    }
-
-    /** Converts total inches to a (feet, inches) pair. */
-    fun inchesToFeetAndInches(inches: Int): Pair<Int, Int> {
-        return (inches / INCHES_PER_FOOT) to (inches % INCHES_PER_FOOT)
-    }
-
-    const val KG_TO_LB = 2.20462f
     const val HEIGHT_CM_MIN = 130f
     const val HEIGHT_CM_MAX = 230f
     const val HEIGHT_IN_MIN = HEIGHT_CM_MIN / CM_TO_IN
@@ -34,9 +20,6 @@ object ProfileConstants {
 
     // Date formatting
     const val DOB_DATE_FORMAT = "dd/MM/yyyy"
-
-    const val UNIT_SYSTEM_METRIC = "Metric"
-    const val UNIT_SYSTEM_IMPERIAL = "Imperial"
 
     // Firebase Storage directory for avatar images
     const val AVATAR_STORAGE_DIR = "avatars"

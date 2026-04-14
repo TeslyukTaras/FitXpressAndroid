@@ -43,7 +43,8 @@ import com.hexis.bi.ui.components.AppSwitch
 import com.hexis.bi.ui.theme.Green
 import com.hexis.bi.ui.theme.Lime100
 import com.hexis.bi.ui.theme.Red100
-import com.hexis.bi.utils.constants.ProfileConstants
+import com.hexis.bi.utils.cmToFeetAndInches
+import com.hexis.bi.utils.cmToInches
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -379,7 +380,7 @@ private fun ValueCell(
     }
 
     val unit = stringResource(if (isMetric) R.string.unit_cm else R.string.unit_in)
-    val deltaValue = if (isMetric) value.deltaCm else value.deltaCm / ProfileConstants.CM_TO_IN
+    val deltaValue = if (isMetric) value.deltaCm else value.deltaCm.cmToInches()
     val deltaText = when {
         value.deltaCm > 0 -> stringResource(R.string.format_delta_up, deltaValue, unit)
         value.deltaCm < 0 -> stringResource(R.string.format_delta_down, deltaValue, unit)
@@ -406,7 +407,7 @@ private fun ValueCell(
                 style = MaterialTheme.typography.bodyMedium,
             )
         } else {
-            val (feet, inches) = ProfileConstants.cmToFeetAndInches(value.cm)
+            val (feet, inches) = value.cm.cmToFeetAndInches()
             val feetText = stringResource(R.string.format_value_int, feet)
             val ftUnit = stringResource(R.string.unit_ft)
             val inchesText = stringResource(R.string.format_value_decimal, inches)

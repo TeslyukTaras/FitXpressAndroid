@@ -8,7 +8,8 @@ import com.hexis.bi.domain.suit.SuitRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.base.UiEvent
 import com.hexis.bi.utils.calculateAge
-import com.hexis.bi.utils.constants.ProfileConstants
+import com.hexis.bi.utils.inchesToFeetAndInches
+import com.hexis.bi.utils.isMetricUnitSystem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -32,11 +33,12 @@ class HomeViewModel(
     init {
         userRepository.observeUser()
             .onEach { profile ->
+                val isMetric = profile.unitSystem.isMetricUnitSystem()
                 _state.update { current ->
                     current.copy(
                         userName = "${profile.firstName} ${profile.lastName}".trim(),
                         avatarUrl = profile.avatarUrl,
-                        weight = if (profile.unitSystem == ProfileConstants.UNIT_SYSTEM_METRIC)
+                        weight = if (isMetric)
                             profile.weightKg?.let {
                                 appContext.getString(
                                     R.string.unit_weight_kg,
@@ -50,7 +52,7 @@ class HomeViewModel(
                                     it
                                 )
                             },
-                        height = if (profile.unitSystem == ProfileConstants.UNIT_SYSTEM_METRIC)
+                        height = if (isMetric)
                             profile.heightCm?.let {
                                 appContext.getString(
                                     R.string.unit_height_cm,
@@ -59,7 +61,7 @@ class HomeViewModel(
                             }
                         else
                             profile.heightIn?.let {
-                                val (ft, inches) = ProfileConstants.inchesToFeetAndInches(it)
+                                val (ft, inches) = it.inchesToFeetAndInches()
                                 appContext.getString(
                                     R.string.unit_height_ft_in,
                                     ft,
