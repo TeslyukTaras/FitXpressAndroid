@@ -13,6 +13,9 @@
     <dimen name="spacer_2xl">24dp</dimen>
     <dimen name="spacer_xxl">32dp</dimen>
     <dimen name="spacer_3xl">48dp</dimen>
+    <dimen name="spacer_4xl">56dp</dimen>
+    <dimen name="spacer_5xl">64dp</dimen>
+    <dimen name="spacer_6xl">72dp</dimen>
 
     <!-- Icons -->
     <dimen name="icon_small">16dp</dimen>

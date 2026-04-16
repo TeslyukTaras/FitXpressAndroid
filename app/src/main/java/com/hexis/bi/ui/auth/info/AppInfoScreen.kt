@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
@@ -92,9 +93,9 @@ private fun AppInfoBottomBar(
         modifier = Modifier
             .fillMaxWidth()
             .padding(
-                bottom = dimensionResource(R.dimen.spacer_3xl),
+                bottom = dimensionResource(R.dimen.spacer_xl),
                 start = dimensionResource(R.dimen.padding_medium),
-                end = dimensionResource(R.dimen.padding_medium),
+                end = dimensionResource(R.dimen.padding_small),
             ),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
@@ -110,7 +111,7 @@ private fun AppInfoBottomBar(
         Text(
             text = stringResource(R.string.app_info_page_indicator, currentPage + 1, pageCount),
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = MaterialTheme.colorScheme.primaryFixed,
         )
 
         TextButton(onClick = if (isLastPage) onFinish else onNext) {
@@ -148,7 +149,8 @@ private fun AppInfoPageContent(page: AppInfoPage, pageIndex: Int) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+            .padding(horizontal = dimensionResource(R.dimen.padding_medium))
+            .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_2xl)))

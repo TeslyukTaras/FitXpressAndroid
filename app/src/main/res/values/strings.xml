@@ -266,6 +266,23 @@
     <string name="app_info_page2_subtitle">clearly, visually, and accurately</string>
     <string name="app_info_page2_emphasis">No scales. No tape measures. Connect your wearable and reveal your body\'s true intelligence.</string>
 
+    <!-- Profile onboarding screen -->
+    <string name="onboarding_personal_info_title">Personal information</string>
+    <string name="onboarding_personal_info_subtitle">This helps personalize your results\nand progress tracking.</string>
+    <string name="onboarding_suit_connect_title">Connect your scanning suit</string>
+    <string name="onboarding_suit_connect_subtitle">If you already have a suit, connect it now.\nYou can also do this later in Settings.</string>
+    <string name="onboarding_suit_connected_title">Suit connected</string>
+    <string name="onboarding_suit_connected_subtitle">Your scanning suit is successfully linked to your profile.</string>
+    <string name="onboarding_suit_id_hint">You can find the ID on your suit tag or packaging</string>
+    <string name="onboarding_no_suit">No scanning suit yet?</string>
+    <string name="onboarding_buy_one">Buy one</string>
+    <string name="action_back">Back</string>
+
+    <!-- Profile incomplete dialog (shown before scan) -->
+    <string name="profile_incomplete_dialog_title">Complete your profile</string>
+    <string name="profile_incomplete_dialog_body">Please fill in your height, weight, and date of birth before starting a scan.</string>
+    <string name="profile_incomplete_dialog_action">Edit profile</string>
+
     <!-- Scan screen -->
     <string name="scan_title">Scan</string>
     <string name="how_to_scan_title">How to scan?</string>

@@ -14,13 +14,13 @@ import com.hexis.bi.data.preferences.UserPreferencesRepository
 import com.hexis.bi.ui.auth.forgotpassword.ForgotPasswordScreen
 import com.hexis.bi.ui.auth.info.AppInfoScreen
 import com.hexis.bi.ui.auth.login.LoginScreen
+import com.hexis.bi.ui.auth.onboarding.OnboardingScreen
 import com.hexis.bi.ui.auth.signup.SignUpScreen
 import com.hexis.bi.ui.main.MainScreen
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
-
 
 
 @Composable
@@ -61,6 +61,16 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
                 },
             )
         }
+
+        composable(Route.PROFILE_ONBOARDING) {
+            OnboardingScreen(
+                onFinish = {
+                    navController.navigate(Route.MAIN) {
+                        popUpTo(Route.PROFILE_ONBOARDING) { inclusive = true }
+                    }
+                },
+            )
+        }
         composable(Route.LOGIN) {
             LoginScreen(
                 onNavigateToSignUp = { navController.navigate(Route.SIGN_UP) },
@@ -81,7 +91,7 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
             SignUpScreen(
                 onNavigateToLogin = { navController.popBackStack() },
                 onSignUpSuccess = {
-                    navController.navigate(Route.MAIN) {
+                    navController.navigate(Route.PROFILE_ONBOARDING) {
                         popUpTo(Route.LOGIN) { inclusive = true }
                     }
                 },
