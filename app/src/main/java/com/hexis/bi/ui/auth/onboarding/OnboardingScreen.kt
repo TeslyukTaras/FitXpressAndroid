@@ -1,7 +1,6 @@
 package com.hexis.bi.ui.auth.onboarding
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,11 +16,9 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -59,9 +56,9 @@ import com.hexis.bi.ui.components.AppButton
 import com.hexis.bi.ui.components.AppDatePicker
 import com.hexis.bi.ui.components.AppDropdown
 import com.hexis.bi.ui.components.AppOutlinedButton
-import com.hexis.bi.ui.components.AppSlider
 import com.hexis.bi.ui.components.AppTextField
 import com.hexis.bi.ui.components.AppTopBar
+import com.hexis.bi.ui.components.profile.HeathParametersSection
 import com.hexis.bi.ui.components.my_suit.SuitConnectedBanner
 import com.hexis.bi.ui.components.my_suit.SuitInfoRow
 import com.hexis.bi.utils.parseDob
@@ -299,143 +296,15 @@ private fun PersonalInfoPage(
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
         // Units + Height + Weight card
-        MeasurementSection(state = state, viewModel = viewModel)
+        HeathParametersSection(
+            params = state,
+            onSelectMetric = viewModel::selectMetric,
+            onSelectImperial = viewModel::selectImperial,
+            onHeightChange = viewModel::updateHeight,
+            onWeightChange = viewModel::updateWeight,
+        )
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
-    }
-}
-
-@Composable
-private fun MeasurementSection(
-    state: OnboardingState,
-    viewModel: OnboardingViewModel,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
-            .background(MaterialTheme.colorScheme.tertiary)
-            .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
-    ) {
-        // Units toggle
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    vertical = dimensionResource(R.dimen.spacer_l),
-                    horizontal = dimensionResource(R.dimen.spacer_xs),
-                ),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = stringResource(R.string.edit_profile_units),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.weight(1f),
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(dimensionResource(R.dimen.spacer_xxs)),
-            ) {
-                val selectedBgColor = MaterialTheme.colorScheme.surfaceVariant
-
-                Text(
-                    text = stringResource(R.string.edit_profile_metric),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (state.isMetric) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(if (state.isMetric) selectedBgColor else MaterialTheme.colorScheme.background)
-                        .clickable { viewModel.selectMetric() }
-                        .padding(
-                            horizontal = dimensionResource(R.dimen.spacer_s),
-                            vertical = dimensionResource(R.dimen.spacer_xxs),
-                        ),
-                )
-
-                Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacer_xxs)))
-
-                Text(
-                    text = stringResource(R.string.edit_profile_imperial),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (!state.isMetric) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(if (!state.isMetric) selectedBgColor else MaterialTheme.colorScheme.background)
-                        .clickable { viewModel.selectImperial() }
-                        .padding(
-                            horizontal = dimensionResource(R.dimen.spacer_s),
-                            vertical = dimensionResource(R.dimen.spacer_xxs),
-                        ),
-                )
-            }
-        }
-
-        // Height slider
-        MeasurementSlider(
-            label = stringResource(R.string.edit_profile_height),
-            valueText = if (state.isMetric) stringResource(
-                R.string.unit_height_cm,
-                state.heightDisplayValue
-            )
-            else stringResource(R.string.unit_height_ft_in, state.heightFeet, state.heightInches),
-            value = state.heightSliderValue,
-            valueRange = state.heightSliderRange,
-            onValueChange = viewModel::updateHeight,
-        )
-
-        // Weight slider
-        MeasurementSlider(
-            label = stringResource(R.string.edit_profile_weight),
-            valueText = if (state.isMetric) stringResource(
-                R.string.unit_weight_kg,
-                state.weightDisplayValue
-            )
-            else stringResource(R.string.unit_weight_lb, state.weightDisplayValue),
-            value = state.weightSliderValue,
-            valueRange = state.weightSliderRange,
-            onValueChange = viewModel::updateWeight,
-        )
-    }
-}
-
-@Composable
-private fun MeasurementSlider(
-    label: String,
-    valueText: String,
-    value: Float,
-    valueRange: ClosedFloatingPointRange<Float>,
-    onValueChange: (Float) -> Unit,
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Normal),
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = dimensionResource(R.dimen.spacer_xs)),
-            )
-            Text(
-                text = valueText,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacer_xs)),
-            )
-        }
-        AppSlider(
-            value = value,
-            onValueChange = onValueChange,
-            valueRange = valueRange,
-            modifier = Modifier.fillMaxWidth(),
-        )
     }
 }
 
