@@ -30,8 +30,8 @@ import com.hexis.bi.ui.base.BaseBottomSheet
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppDialog
+import com.hexis.bi.ui.components.AppTabSelector
 import com.hexis.bi.ui.main.home.sleep.components.SleepSettingsDialogContent
-import com.hexis.bi.ui.main.home.sleep.components.SleepTabSelector
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -83,29 +83,24 @@ fun SleepScreen(
             ) {
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
 
-                SleepTabSelector(
+                AppTabSelector(
+                    tabs = SleepTab.entries,
                     selectedTab = state.selectedTab,
                     onTabSelected = viewModel::selectTab,
                 )
 
                 when (state.selectedTab) {
-                    SleepTab.Day -> {
-                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-                        SleepDayContent(
-                            state = state,
-                            onInfoClick = viewModel::showRecoverySheet,
-                        )
-                    }
+                    SleepTab.Day -> SleepDayContent(
+                        state = state,
+                        onInfoClick = viewModel::showRecoverySheet,
+                    )
 
-                    SleepTab.Summary -> {
-                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
-                        SleepSummaryContent(
-                            state = state,
-                            onInfoClick = viewModel::showRecoverySheet,
-                            onPreviousWeek = viewModel::previousWeek,
-                            onNextWeek = viewModel::nextWeek,
-                        )
-                    }
+                    SleepTab.Summary -> SleepSummaryContent(
+                        state = state,
+                        onInfoClick = viewModel::showRecoverySheet,
+                        onPreviousWeek = viewModel::previousWeek,
+                        onNextWeek = viewModel::nextWeek,
+                    )
                 }
 
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))

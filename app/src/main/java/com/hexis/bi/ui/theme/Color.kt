@@ -52,3 +52,4 @@ val SubtitleBlue = Color(0xFF7272A8)
 
 // Shadow
 val ShadowGray = Color(0xFFC8C8C8)
+val GridLineGray = Color(0x5EB5B5B5)

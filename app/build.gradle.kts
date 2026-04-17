@@ -91,6 +91,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.look.camera.sdk)
     implementation(libs.timber)
+    implementation(libs.androidx.compose.ui.unit)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

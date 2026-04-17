@@ -45,6 +45,16 @@
     <dimen name="sleep_timeline_corner_radius">4dp</dimen>
     <dimen name="sleep_timeline_connector_width">1dp</dimen>
 
+    <!-- Recovery -->
+    <dimen name="recovery_arc_width">140dp</dimen>
+    <dimen name="recovery_arc_height">114dp</dimen>
+    <dimen name="recovery_arc_stroke_width">10dp</dimen>
+    <dimen name="recovery_arc_text_offset">12dp</dimen>
+    <dimen name="recovery_bar_chart_height">164dp</dimen>
+    <dimen name="recovery_bar_horizontal_padding">10dp</dimen>
+    <dimen name="recovery_y_axis_width">24dp</dimen>
+    <dimen name="recovery_bar_corner">6dp</dimen>
+
     <!-- Scan -->
     <dimen name="scan_corner_length">68dp</dimen>
     <dimen name="scan_corner_stroke_width">4dp</dimen>
@@ -71,7 +81,8 @@
     <dimen name="picker_height">200dp</dimen>
     <dimen name="picker_highlight_height">45dp</dimen>
     <dimen name="picker_item_padding">80dp</dimen>
-    <dimen name="date_row_min_width">120dp</dimen>
+    <dimen name="date_navigator_label_min_width">120dp</dimen>
+    <dimen name="date_navigator_height">40dp</dimen>
 
     <!-- Corner radii -->
     <dimen name="corner_sheet">24dp</dimen>
@@ -91,6 +102,9 @@
 
     <!-- Dividers -->
     <dimen name="divider_size">1dp</dimen>
+
+    <!-- Effects -->
+    <dimen name="dash_width">5dp</dimen>
 
 
 </resources>

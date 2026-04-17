@@ -2,7 +2,6 @@ package com.hexis.bi.ui.main.scan.results
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -40,8 +38,8 @@ import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppSwitch
+import com.hexis.bi.ui.components.AppTabSelector
 import com.hexis.bi.ui.theme.Green
-import com.hexis.bi.ui.theme.Lime100
 import com.hexis.bi.ui.theme.Red100
 import com.hexis.bi.utils.cmToFeetAndInches
 import com.hexis.bi.utils.cmToInches
@@ -67,12 +65,14 @@ fun ResultsScreen(
         },
     ) {
         Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
 
-            ResultsTabSelector(
-                modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+            AppTabSelector(
+                tabs = ResultsTab.entries,
                 selectedTab = state.selectedTab,
                 onTabSelected = viewModel::selectTab,
+                tabLabel = { stringResource(it.labelRes) },
+                modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium)),
             )
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
@@ -98,44 +98,6 @@ fun ResultsScreen(
             )
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
-        }
-    }
-}
-
-@Composable
-private fun ResultsTabSelector(
-    modifier: Modifier = Modifier,
-    selectedTab: ResultsTab,
-    onTabSelected: (ResultsTab) -> Unit,
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.6f))
-            .padding(dimensionResource(R.dimen.spacer_xxs)),
-    ) {
-        ResultsTab.entries.forEach { tab ->
-            val isSelected = tab == selectedTab
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(CircleShape)
-                    .then(
-                        if (isSelected) Modifier.background(Lime100, CircleShape)
-                        else Modifier
-                    )
-                    .clickable { onTabSelected(tab) }
-                    .padding(vertical = dimensionResource(R.dimen.spacer_2xs)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(tab.labelRes),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    textAlign = TextAlign.Center,
-                )
-            }
         }
     }
 }

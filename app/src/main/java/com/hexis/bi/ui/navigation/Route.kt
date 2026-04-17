@@ -19,6 +19,7 @@ internal object Route {
         const val SCAN_PREFERENCES = "main/scan_preferences"
         const val MY_SUIT = "main/my_suit"
         const val SLEEP = "main/sleep"
+        const val RECOVERY = "main/recovery"
         const val SCAN = "main/scan"
         const val SCAN_RESULTS = "main/scan/results"
 

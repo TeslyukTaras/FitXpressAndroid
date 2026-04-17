@@ -34,6 +34,7 @@ import com.hexis.bi.ui.components.AppOutlinedButton
 import com.hexis.bi.ui.components.MainNavBottomBar
 import com.hexis.bi.ui.main.body.BodyScreen
 import com.hexis.bi.ui.main.home.HomeScreen
+import com.hexis.bi.ui.main.home.recovery.RecoveryScreen
 import com.hexis.bi.ui.main.home.sleep.SleepScreen
 import com.hexis.bi.ui.main.notifications.NotificationsScreen
 import com.hexis.bi.ui.main.scan.ScanScreen
@@ -77,10 +78,14 @@ fun MainScreen(
                         onNotificationClick = { navController.navigate(Route.Main.NOTIFICATIONS) },
                         onSettingsClick = { navController.navigate(Route.Main.SETTINGS) },
                         onSleepClick = { navController.navigate(Route.Main.SLEEP) },
+                        onRecoveryClick = { navController.navigate(Route.Main.RECOVERY) },
                     )
                 }
                 composable(Route.Main.SLEEP) {
                     SleepScreen(onBack = { navController.popBackStackOnce() })
+                }
+                composable(Route.Main.RECOVERY) {
+                    RecoveryScreen(onBack = { navController.popBackStackOnce() })
                 }
                 composable(Route.Main.SCAN) {
                     ScanScreen(

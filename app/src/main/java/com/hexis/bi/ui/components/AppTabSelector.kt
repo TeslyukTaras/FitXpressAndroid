@@ -1,4 +1,4 @@
-package com.hexis.bi.ui.main.home.sleep.components
+package com.hexis.bi.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,14 +16,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
-import com.hexis.bi.ui.main.home.sleep.SleepTab
 import com.hexis.bi.ui.theme.Lime100
 
 @Composable
-fun SleepTabSelector(
-    selectedTab: SleepTab,
-    onTabSelected: (SleepTab) -> Unit,
+fun <T> AppTabSelector(
+    tabs: List<T>,
+    selectedTab: T,
+    onTabSelected: (T) -> Unit,
     modifier: Modifier = Modifier,
+    tabLabel: @Composable (T) -> String = { it.toString() },
 ) {
     Row(
         modifier = modifier
@@ -32,7 +33,7 @@ fun SleepTabSelector(
             .background(MaterialTheme.colorScheme.background.copy(alpha = 0.6f))
             .padding(dimensionResource(R.dimen.spacer_xxs)),
     ) {
-        SleepTab.entries.forEach { tab ->
+        tabs.forEach { tab ->
             val isSelected = tab == selectedTab
             Box(
                 modifier = Modifier
@@ -47,7 +48,7 @@ fun SleepTabSelector(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = tab.name,
+                    text = tabLabel(tab),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                     textAlign = TextAlign.Center,
