@@ -283,6 +283,26 @@
     <string name="profile_incomplete_dialog_body">Please fill in your height, weight, and date of birth before starting a scan.</string>
     <string name="profile_incomplete_dialog_action">Edit profile</string>
 
+    <!-- Recovery screen -->
+    <string name="recovery_screen_title">Recovery</string>
+    <string name="recovery_status_title">Recovery status</string>
+    <string name="recovery_status_ready">Ready</string>
+    <string name="recovery_status_recovering">Recovering</string>
+    <string name="recovery_status_low">Low</string>
+    <string name="recovery_metric_sleep">Sleep</string>
+    <string name="recovery_metric_heart">Heart</string>
+    <string name="recovery_metric_stress">Stress</string>
+    <string name="recovery_metric_activity_load">Activity load</string>
+    <string name="recovery_info_title">Recovery and body progress</string>
+    <string name="recovery_info_body">Recovery reflects how ready your body is based on recent signals.</string>
+    <string name="recovery_last_7_days">Last 7 days</string>
+    <string name="recovery_avg_score">Avg score</string>
+    <string name="recovery_avg_score_value">%1$d/100</string>
+    <string name="recovery_trend_label">Trend:</string>
+    <string name="recovery_info_sheet_title">Recovery and body progress</string>
+    <string name="recovery_info_sheet_heading">How recovery works</string>
+    <string name="recovery_info_sheet_body">Recovery reflects how ready your body is based on recent signals such as sleep quality, heart rate, stress levels, and activity load.\n\nA higher recovery score means your body is well-rested and ready for activity. A lower score suggests your body may need more rest or lighter activity.</string>
+
     <!-- Scan screen -->
     <string name="scan_title">Scan</string>
     <string name="how_to_scan_title">How to scan?</string>

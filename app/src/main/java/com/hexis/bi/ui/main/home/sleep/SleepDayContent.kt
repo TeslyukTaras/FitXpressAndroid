@@ -20,6 +20,8 @@ fun SleepDayContent(
     //val goalMinutes = state.sleepGoalHours * 60
     //val progress = if (goalMinutes > 0) state.totalSleepMinutes / goalMinutes.toFloat() else 0f
 
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
     SleepStatusCard(
         quality = state.sleepQuality,
         totalSleepMinutes = state.totalSleepMinutes,
