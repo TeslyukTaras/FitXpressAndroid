@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -38,7 +37,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
@@ -49,8 +47,8 @@ import com.hexis.bi.ui.components.AppAvatar
 import com.hexis.bi.ui.components.AppButton
 import com.hexis.bi.ui.components.AppDatePicker
 import com.hexis.bi.ui.components.AppDropdown
-import com.hexis.bi.ui.components.AppSlider
 import com.hexis.bi.ui.components.AppTextField
+import com.hexis.bi.ui.components.profile.HeathParametersSection
 import com.hexis.bi.utils.parseDob
 import org.koin.androidx.compose.koinViewModel
 
@@ -277,131 +275,11 @@ private fun PersonalInfoSection(
 
     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
-            .background(MaterialTheme.colorScheme.tertiary)
-            .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
-    ) {
-        // Units toggle
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    vertical = dimensionResource(R.dimen.spacer_l),
-                    horizontal = dimensionResource(R.dimen.spacer_xs)
-                ),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = stringResource(R.string.edit_profile_units),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.weight(1f)
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(dimensionResource(R.dimen.spacer_xxs))
-            ) {
-                val selectedBgColor = MaterialTheme.colorScheme.surfaceVariant
-
-                Text(
-                    text = stringResource(R.string.edit_profile_metric),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (state.isMetric) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(if (state.isMetric) selectedBgColor else MaterialTheme.colorScheme.background)
-                        .clickable { viewModel.selectMetric() }
-                        .padding(
-                            horizontal = dimensionResource(R.dimen.spacer_s),
-                            vertical = dimensionResource(R.dimen.spacer_xxs)
-                        )
-                )
-
-                Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacer_xxs)))
-
-                Text(
-                    text = stringResource(R.string.edit_profile_imperial),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (!state.isMetric) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(if (!state.isMetric) selectedBgColor else MaterialTheme.colorScheme.background)
-                        .clickable { viewModel.selectImperial() }
-                        .padding(
-                            horizontal = dimensionResource(R.dimen.spacer_s),
-                            vertical = dimensionResource(R.dimen.spacer_xxs)
-                        )
-                )
-            }
-        }
-
-        MeasurementSlider(
-            label = stringResource(R.string.edit_profile_height),
-            valueText = if (state.isMetric) stringResource(
-                R.string.unit_height_cm,
-                state.heightDisplayValue
-            )
-            else stringResource(R.string.unit_height_ft_in, state.heightFeet, state.heightInches),
-            value = state.heightSliderValue,
-            valueRange = state.heightSliderRange,
-            onValueChange = viewModel::updateHeight,
-        )
-
-        MeasurementSlider(
-            label = stringResource(R.string.edit_profile_weight),
-            valueText = if (state.isMetric) stringResource(
-                R.string.unit_weight_kg,
-                state.weightDisplayValue
-            )
-            else stringResource(R.string.unit_weight_lb, state.weightDisplayValue),
-            value = state.weightSliderValue,
-            valueRange = state.weightSliderRange,
-            onValueChange = viewModel::updateWeight,
-        )
-    }
-}
-
-@Composable
-private fun MeasurementSlider(
-    label: String,
-    valueText: String,
-    value: Float,
-    valueRange: ClosedFloatingPointRange<Float>,
-    onValueChange: (Float) -> Unit,
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Normal),
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = dimensionResource(R.dimen.spacer_xs)),
-            )
-            Text(
-                text = valueText,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacer_xs)),
-            )
-        }
-        AppSlider(
-            value = value,
-            onValueChange = onValueChange,
-            valueRange = valueRange,
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
+    HeathParametersSection(
+        params = state,
+        onSelectMetric = viewModel::selectMetric,
+        onSelectImperial = viewModel::selectImperial,
+        onHeightChange = viewModel::updateHeight,
+        onWeightChange = viewModel::updateWeight,
+    )
 }

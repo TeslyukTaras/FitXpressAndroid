@@ -1,4 +1,4 @@
-package com.hexis.bi.ui.main.settings.editprofile
+package com.hexis.bi.ui.auth.onboarding
 
 import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.ui.base.UiEvent
@@ -9,22 +9,24 @@ import com.hexis.bi.utils.constants.ProfileConstants
 import com.hexis.bi.utils.kgToLb
 import kotlin.math.roundToInt
 
-sealed interface EditProfileEvent : UiEvent {
-    data object SaveSuccess : EditProfileEvent
+sealed interface OnboardingEvent : UiEvent {
+    data object Finished : OnboardingEvent
 }
 
-data class EditProfileState(
-    val firstName: String = "",
-    val lastName: String = "",
-    val email: String = "",
-    val avatarUrl: String? = null,
+data class OnboardingState(
+    // Personal info (step 1)
     val dateOfBirth: String = "",
     val gender: GenderOption = GenderOption.Male,
     override val isMetric: Boolean = true,
     val heightCm: Float = ProfileConstants.DEFAULT_HEIGHT_CM,
     val weightKg: Float = ProfileConstants.DEFAULT_WEIGHT_KG,
-    val isGenderDropdownOpen: Boolean = false,
     val showDatePicker: Boolean = false,
+
+    // Suit (step 2)
+    val suitIdInput: String = "",
+    val isSuitConnected: Boolean = false,
+    val connectedSuitId: String = "",
+    val connectedStatus: String = "",
 ) : HealthParameters {
     override val heightSliderValue: Float
         get() = if (isMetric) heightCm else heightCm.cmToInches()

@@ -8,8 +8,8 @@ plugins {
 }
 
 val localProps = Properties()
-val localPropsFile: File? = rootProject.file("local.properties")
-if (localPropsFile?.exists() == true) localProps.load(localPropsFile.inputStream())
+val localPropsFile: File = rootProject.file("local.properties")
+if (localPropsFile.exists()) localProps.load(localPropsFile.inputStream())
 
 android {
     namespace = "com.hexis.bi"
@@ -22,7 +22,7 @@ android {
     defaultConfig {
         applicationId = "com.hexis.bi"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 2
         versionName = "1.0.0"
 

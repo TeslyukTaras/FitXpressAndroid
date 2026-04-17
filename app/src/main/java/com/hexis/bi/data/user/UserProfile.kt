@@ -18,4 +18,5 @@ data class UserProfile(
     val weightLb: Int? = null,
     val unitSystem: String? = null,
     val dateOfBirth: Date? = null,
+    val suitId: String? = null,
 )

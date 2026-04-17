@@ -1,12 +1,10 @@
 package com.hexis.bi.ui.main.settings.mysuit
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,16 +12,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -37,6 +34,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
@@ -45,7 +43,9 @@ import com.hexis.bi.ui.components.AppButton
 import com.hexis.bi.ui.components.AppDialog
 import com.hexis.bi.ui.components.AppOutlinedButton
 import com.hexis.bi.ui.components.AppTextField
-import com.hexis.bi.ui.theme.Green
+import com.hexis.bi.ui.components.my_suit.ReconnectDialogContent
+import com.hexis.bi.ui.components.my_suit.SuitConnectedBanner
+import com.hexis.bi.ui.components.my_suit.SuitInfoRow
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -75,16 +75,26 @@ fun MySuitScreen(
                 )
             },
         ) {
-            if (state.isConnected) ConnectedContent(
-                state = state,
-                onReconnect = viewModel::showReconnectDialog,
-            )
-            else DisconnectedContent(
-                suitIdInput = state.suitIdInput,
-                onSuitIdChange = viewModel::updateSuitIdInput,
-                onConnect = viewModel::connect,
-                onBuyOne = onBuyOne,
-            )
+            var imageHeight by remember { mutableStateOf(Dp.Unspecified) }
+
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                if (imageHeight == Dp.Unspecified) {
+                    imageHeight = maxHeight * 0.55f
+                }
+
+                if (state.isConnected) ConnectedContent(
+                    state = state,
+                    imageHeight = imageHeight,
+                    onReconnect = viewModel::showReconnectDialog,
+                )
+                else DisconnectedContent(
+                    suitIdInput = state.suitIdInput,
+                    imageHeight = imageHeight,
+                    onSuitIdChange = viewModel::updateSuitIdInput,
+                    onConnect = viewModel::connect,
+                    onBuyOne = onBuyOne,
+                )
+            }
         }
 
         if (state.showReconnectDialog) AppDialog(onDismiss = viewModel::dismissReconnectDialog) {
@@ -99,6 +109,7 @@ fun MySuitScreen(
 @Composable
 private fun ConnectedContent(
     state: MySuitState,
+    imageHeight: Dp,
     onReconnect: () -> Unit,
 ) {
     Column(
@@ -110,18 +121,18 @@ private fun ConnectedContent(
     ) {
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-        ConnectedBanner()
+        SuitConnectedBanner()
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
 
-        Box(modifier = Modifier.padding(vertical = dimensionResource(R.dimen.padding_medium))) {
-            Image(
-                painter = painterResource(R.drawable.img_my_suit),
-                contentDescription = null,
-                modifier = Modifier.fillMaxWidth(),
-                contentScale = ContentScale.Fit,
-            )
-        }
+        Image(
+            painter = painterResource(R.drawable.img_my_suit),
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(imageHeight),
+            contentScale = ContentScale.Fit,
+        )
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
@@ -137,21 +148,23 @@ private fun ConnectedContent(
             value = state.connectedStatus,
         )
 
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+        Spacer(Modifier.weight(1f))
 
-        AppOutlinedButton(
-            text = stringResource(R.string.action_reconnect_suit),
-            onClick = onReconnect,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
+        BottomButtonAction() {
+            AppOutlinedButton(
+                text = stringResource(R.string.action_reconnect_suit),
+                onClick = onReconnect,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
 
 @Composable
 private fun DisconnectedContent(
     suitIdInput: String,
+    imageHeight: Dp,
     onSuitIdChange: (String) -> Unit,
     onConnect: () -> Unit,
     onBuyOne: () -> Unit,
@@ -181,18 +194,18 @@ private fun DisconnectedContent(
             textAlign = TextAlign.Center,
         )
 
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-        Box(modifier = Modifier.padding(vertical = dimensionResource(R.dimen.padding_medium))) {
-            Image(
-                painter = painterResource(R.drawable.img_my_suit),
-                contentDescription = null,
-                modifier = Modifier.fillMaxWidth(),
-                contentScale = ContentScale.Fit,
-            )
-        }
+        Image(
+            painter = painterResource(R.drawable.img_my_suit),
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(imageHeight),
+            contentScale = ContentScale.Fit,
+        )
 
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
 
         AppTextField(
             value = suitIdInput,
@@ -211,15 +224,30 @@ private fun DisconnectedContent(
         )
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
-        AppButton(
-            text = stringResource(R.string.action_connect),
-            onClick = onConnect,
-            enabled = suitIdInput.isNotBlank(),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+        Spacer(Modifier.weight(1f))
 
-        val noSuitText = buildAnnotatedString {
+        BottomButtonAction(onBuyOne) {
+            AppButton(
+                text = stringResource(R.string.action_connect),
+                onClick = onConnect,
+                enabled = suitIdInput.isNotBlank(),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun BottomButtonAction(
+    onBuyOne: (() -> Unit)? = null,
+    button: @Composable () -> Unit
+) {
+    button()
+
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+
+    val noSuitText = buildAnnotatedString {
+        if (onBuyOne != null) {
             append(stringResource(R.string.my_suit_no_suit))
             append(" ")
             withStyle(
@@ -229,136 +257,14 @@ private fun DisconnectedContent(
                 )
             ) { append(stringResource(R.string.my_suit_buy_one)) }
         }
-        Text(
-            text = noSuitText,
-            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Normal),
-            color = MaterialTheme.colorScheme.secondary,
-            modifier = Modifier
-                .clip(MaterialTheme.shapes.medium)
-                .clickable(onClick = onBuyOne),
-        )
-
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
     }
-}
-
-@Composable
-private fun ConnectedBanner() {
-    Row(
+    Text(
+        text = noSuitText,
+        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Normal),
+        color = MaterialTheme.colorScheme.secondary,
+        minLines = 1,
         modifier = Modifier
-            .fillMaxWidth()
             .clip(MaterialTheme.shapes.medium)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(
-                horizontal = dimensionResource(R.dimen.spacer_l),
-                vertical = dimensionResource(R.dimen.spacer_m)
-            ),
-        verticalAlignment = Alignment.Top,
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_m)),
-    ) {
-        Box(
-            Modifier
-                .size(dimensionResource(R.dimen.icon_medium))
-                .clip(CircleShape)
-                .background(Green)
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_tick),
-                contentDescription = stringResource(R.string.cd_suit_connected),
-                tint = MaterialTheme.colorScheme.background,
-                modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
-            )
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = stringResource(R.string.my_suit_connected_banner_title),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
-            Text(
-                text = stringResource(R.string.my_suit_connected_banner_body),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.secondary,
-            )
-        }
-    }
-}
-
-@Composable
-private fun SuitInfoRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.secondary,
-        )
-        Text(
-            text = stringResource(R.string.colon),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.secondary,
-        )
-        Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacer_xl)))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-    }
-}
-
-@Composable
-private fun ReconnectDialogContent(onDismiss: () -> Unit, onConfirm: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(dimensionResource(R.dimen.padding_large)),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = stringResource(R.string.my_suit_reconnect_dialog_title),
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center,
-        )
-
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
-
-        Text(
-            text = stringResource(R.string.my_suit_reconnect_dialog_body),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center,
-        )
-
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
-
-        Text(
-            text = stringResource(R.string.my_suit_reconnect_dialog_note),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.secondary,
-            textAlign = TextAlign.Center,
-        )
-
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_xs)),
-        ) {
-            AppOutlinedButton(
-                text = stringResource(R.string.action_cancel),
-                onClick = onDismiss,
-                modifier = Modifier.weight(1f),
-            )
-            AppButton(
-                text = stringResource(R.string.action_reconnect),
-                onClick = onConfirm,
-                modifier = Modifier.weight(1f),
-            )
-        }
-    }
+            .clickable(onClick = onBuyOne ?: {}),
+    )
 }

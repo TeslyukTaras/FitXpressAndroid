@@ -52,6 +52,12 @@ class FirestoreUserRepository(
         collection.document(profile.uid).set(profile, SetOptions.merge()).await()
     }
 
+    override suspend fun updateFields(fields: Map<String, Any?>): Result<Unit> = runCatching {
+        val uid = firebaseAuth.currentUser?.uid
+            ?: error(context.getString(R.string.error_session_expired))
+        collection.document(uid).update(fields).await()
+    }
+
     override suspend fun updateAvatarUrl(url: String): Result<Unit> = runCatching {
         val uid = firebaseAuth.currentUser?.uid
             ?: error(context.getString(R.string.error_session_expired))

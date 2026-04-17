@@ -1,0 +1,100 @@
+package com.hexis.bi.ui.auth.onboarding
+
+import android.app.Application
+import com.hexis.bi.data.user.UserRepository
+import com.hexis.bi.domain.enums.GenderOption
+import com.hexis.bi.domain.suit.SuitRepository
+import com.hexis.bi.ui.base.BaseViewModel
+import com.hexis.bi.utils.cmToInches
+import com.hexis.bi.utils.constants.MeasurementConstants
+import com.hexis.bi.utils.inchesToCm
+import com.hexis.bi.utils.kgToLb
+import com.hexis.bi.utils.lbToKg
+import com.hexis.bi.utils.parseDob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlin.math.roundToInt
+
+class OnboardingViewModel(
+    application: Application,
+    private val userRepository: UserRepository,
+    private val suitRepository: SuitRepository,
+) : BaseViewModel(application) {
+
+    private val _state = MutableStateFlow(OnboardingState())
+    val state = _state.asStateFlow()
+
+    // Personal info actions
+    fun updateDateOfBirth(value: String) = _state.update { it.copy(dateOfBirth = value) }
+    fun selectGender(gender: GenderOption) = _state.update { it.copy(gender = gender) }
+    fun selectMetric() = _state.update { it.copy(isMetric = true) }
+    fun selectImperial() = _state.update { it.copy(isMetric = false) }
+
+    fun updateHeight(sliderValue: Float) = _state.update {
+        it.copy(heightCm = if (it.isMetric) sliderValue else sliderValue.inchesToCm())
+    }
+
+    fun updateWeight(sliderValue: Float) = _state.update {
+        it.copy(weightKg = if (it.isMetric) sliderValue else sliderValue.lbToKg())
+    }
+
+    fun showDatePicker() = _state.update { it.copy(showDatePicker = true) }
+    fun hideDatePicker() = _state.update { it.copy(showDatePicker = false) }
+
+    // Suit actions
+    fun updateSuitIdInput(value: String) = _state.update { it.copy(suitIdInput = value) }
+
+    fun connectSuit() {
+        val suitId = _state.value.suitIdInput.trim()
+        if (suitId.isBlank()) return
+        launch {
+            suitRepository.connect(suitId)
+            _state.update {
+                it.copy(
+                    isSuitConnected = true,
+                    connectedSuitId = suitId,
+                    connectedStatus = "Active",
+                )
+            }
+        }
+    }
+
+    fun reconnectSuit() {
+        _state.update {
+            it.copy(
+                isSuitConnected = false,
+                suitIdInput = it.connectedSuitId,
+                connectedSuitId = "",
+                connectedStatus = "",
+            )
+        }
+        launch { suitRepository.disconnect() }
+    }
+
+    fun finish() = launch {
+        val s = _state.value
+        val heightCmInt = s.heightCm.toInt()
+        val weightKgInt = s.weightKg.toInt()
+        val fields = mutableMapOf<String, Any?>(
+            "gender" to s.gender.name,
+            "heightCm" to heightCmInt,
+            "weightKg" to weightKgInt,
+            "heightIn" to heightCmInt.toFloat().cmToInches().roundToInt(),
+            "weightLb" to weightKgInt.toFloat().kgToLb().roundToInt(),
+            "unitSystem" to if (s.isMetric) MeasurementConstants.UNIT_SYSTEM_METRIC
+            else MeasurementConstants.UNIT_SYSTEM_IMPERIAL,
+        )
+        s.dateOfBirth.parseDob()?.let { fields["dateOfBirth"] = it }
+        if (s.isSuitConnected && s.connectedSuitId.isNotBlank()) {
+            fields["suitId"] = s.connectedSuitId
+        }
+        userRepository.updateFields(fields)
+            .onSuccess { emitEvent(OnboardingEvent.Finished) }
+            .onFailure { setError(it.message) }
+    }
+
+    fun skip() {
+        emitEvent(OnboardingEvent.Finished)
+    }
+}
