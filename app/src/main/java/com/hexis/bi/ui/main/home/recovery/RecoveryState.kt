@@ -42,7 +42,7 @@ data class RecoveryState(
 
     // Day tab
     val dateLabel: String = "",
-    val score: Int = 87,
+    val score: Int = 0,
     val metrics: List<RecoveryMetric> = emptyList(),
     val canGoNextDay: Boolean = false,
 

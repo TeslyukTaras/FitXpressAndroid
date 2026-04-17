@@ -342,6 +342,7 @@
     <string name="format_delta_up">%1$+.1f %2$s ↑</string>
     <string name="format_delta_down">%1$+.1f %2$s ↓</string>
     <string name="format_delta_neutral">%1$+.1f %2$s</string>
+    <string name="format_percentage">%1$d%%</string>
     <string name="scan_measurement_neck">Neck</string>
     <string name="scan_measurement_shoulders">Shoulders</string>
     <string name="scan_measurement_chest">Chest</string>

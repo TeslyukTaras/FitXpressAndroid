@@ -30,8 +30,6 @@ class RecoveryViewModel(application: Application) : BaseViewModel(application) {
         _state.update { it.copy(selectedTab = tab) }
     }
 
-    // Day navigation
-
     fun previousDay() {
         dayOffset--
         loadDayData(dayOffset)
@@ -43,8 +41,6 @@ class RecoveryViewModel(application: Application) : BaseViewModel(application) {
             loadDayData(dayOffset)
         }
     }
-
-    // Week navigation
 
     fun previousWeek() {
         weekOffset--
@@ -73,15 +69,23 @@ class RecoveryViewModel(application: Application) : BaseViewModel(application) {
 
         val score = random.nextInt(SCORE_MIN, SCORE_MAX + 1)
 
-        val sleepOptions = listOf("Good", "Fair", "Poor")
-        val stressOptions = listOf("Low", "Medium", "High")
-        val loadOptions = listOf("Light", "Moderate", "Heavy")
-
         val metrics = listOf(
-            RecoveryMetric(R.string.recovery_metric_sleep, sleepOptions[random.nextInt(sleepOptions.size)]),
-            RecoveryMetric(R.string.recovery_metric_heart, "${random.nextInt(HEART_RATE_MIN, HEART_RATE_MAX + 1)} bpm"),
-            RecoveryMetric(R.string.recovery_metric_stress, stressOptions[random.nextInt(stressOptions.size)]),
-            RecoveryMetric(R.string.recovery_metric_activity_load, loadOptions[random.nextInt(loadOptions.size)]),
+            RecoveryMetric(
+                R.string.recovery_metric_sleep,
+                sleepOptions[random.nextInt(sleepOptions.size)]
+            ),
+            RecoveryMetric(
+                R.string.recovery_metric_heart,
+                "${random.nextInt(HEART_RATE_MIN, HEART_RATE_MAX + 1)} bpm"
+            ),
+            RecoveryMetric(
+                R.string.recovery_metric_stress,
+                stressOptions[random.nextInt(stressOptions.size)]
+            ),
+            RecoveryMetric(
+                R.string.recovery_metric_activity_load,
+                loadOptions[random.nextInt(loadOptions.size)]
+            ),
         )
 
         _state.update {
@@ -132,9 +136,12 @@ class RecoveryViewModel(application: Application) : BaseViewModel(application) {
     }
 
     companion object {
-        private const val SCORE_MIN = 30
+        private const val SCORE_MIN = 0
         private const val SCORE_MAX = 100
         private const val HEART_RATE_MIN = 55
-        private const val HEART_RATE_MAX = 80
+        private const val HEART_RATE_MAX = 100
+        private val sleepOptions = listOf("Good", "Fair", "Poor")
+        private val stressOptions = listOf("Low", "Medium", "High")
+        private val loadOptions = listOf("Light", "Moderate", "Heavy")
     }
 }

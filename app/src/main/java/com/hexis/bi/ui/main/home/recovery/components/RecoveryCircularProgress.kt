@@ -75,7 +75,7 @@ fun RecoveryCircularProgress(
             modifier = Modifier.offset(y = dimensionResource(R.dimen.recovery_arc_text_offset)),
         ) {
             Text(
-                text = "$score%",
+                text = stringResource(R.string.format_percentage, score),
                 style = MaterialTheme.typography.headlineLarge,
                 color = statusColor,
             )
