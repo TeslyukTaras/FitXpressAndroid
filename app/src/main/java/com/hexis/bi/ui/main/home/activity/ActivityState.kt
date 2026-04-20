@@ -18,9 +18,24 @@ data class ActivityMetric(
     val unit: String,
 )
 
-data class HourlyStepEntry(
-    val hour: Int,
-    val steps: Int,
+data class BarChartEntry(
+    val value: Float,
+    val xLabel: String? = null,
+    val tooltipLabel: String,
+)
+
+enum class TrendComparison { UP, DOWN, FLAT, NONE }
+
+data class PeriodSummary(
+    val periodLabel: String = "",
+    val bars: List<BarChartEntry> = emptyList(),
+    val totalSteps: Int = 0,
+    val avgStepsPerDay: Int = 0,
+    val trendPercent: Int? = null,
+    val trendComparison: TrendComparison = TrendComparison.NONE,
+    val totalDistanceKm: Float = 0f,
+    val totalCalories: Int = 0,
+    val canGoNext: Boolean = false,
 )
 
 data class ActivityState(
@@ -35,8 +50,13 @@ data class ActivityState(
     val currentSteps: Int = 0,
     val calories: Int = 0,
     val distanceKm: Float = 0f,
-    val hourlySteps: List<HourlyStepEntry> = emptyList(),
+    val hourlyBars: List<BarChartEntry> = emptyList(),
     val canGoNextDay: Boolean = false,
+
+    // Period tabs
+    val week: PeriodSummary = PeriodSummary(),
+    val month: PeriodSummary = PeriodSummary(),
+    val year: PeriodSummary = PeriodSummary(),
 
     // Info bottom sheet
     val showInfoSheet: Boolean = false,

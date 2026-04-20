@@ -94,11 +94,23 @@ fun ActivityScreen(
                         onNextDay = viewModel::nextDay,
                     )
 
-                    ActivityTab.Week,
-                    ActivityTab.Month,
-                    ActivityTab.Year -> {
-                        // TODO: implement other tabs
-                    }
+                    ActivityTab.Week -> ActivityWeekContent(
+                        state = state,
+                        onPreviousWeek = viewModel::previousWeek,
+                        onNextWeek = viewModel::nextWeek,
+                    )
+
+                    ActivityTab.Month -> ActivityMonthContent(
+                        state = state,
+                        onPreviousMonth = viewModel::previousMonth,
+                        onNextMonth = viewModel::nextMonth,
+                    )
+
+                    ActivityTab.Year -> ActivityYearContent(
+                        state = state,
+                        onPreviousYear = viewModel::previousYear,
+                        onNextYear = viewModel::nextYear,
+                    )
                 }
 
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))

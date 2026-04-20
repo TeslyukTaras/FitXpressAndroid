@@ -26,11 +26,33 @@ internal object ActivityConstants {
     const val CIRCLE_FULL_SWEEP = 360f
     const val CIRCLE_START_ANGLE = 0f
 
-    // Steps timeline chart
-    val STEP_GRID_LINES = listOf(0f, 200f, 400f, 600f)
+    // Day chart grid (hourly steps) — base max grows dynamically in steps of STEP_GRID_STEP
     const val STEP_GRID_MAX = 600f
+    const val STEP_GRID_STEP = 200f
 
-    // Mock data: actual distance/calories are randomized as a fraction of their goals
+    // Week/Month chart grid (daily totals)
+    const val PERIOD_STEP_GRID_MAX = 6000f
+    const val PERIOD_STEP_GRID_STEP = 2000f
+
+    // Year chart grid (monthly totals)
+    const val YEAR_STEP_GRID_MAX = 300_000f
+    const val YEAR_STEP_GRID_STEP = 100_000f
+
+    // Period sizing
+    const val DAYS_IN_WEEK = 7
+    const val MONTHS_IN_YEAR = 12
+
+    // Day-of-month values labelled on the Month tab x-axis
+    val MONTH_LABEL_DAYS: Set<Int> = setOf(1, 7, 14, 21, 28)
+
+    // Mock-data ranges (actual values don't derive from step totals)
     const val MOCK_GOAL_FRACTION_MIN = 0.3f
     const val MOCK_GOAL_FRACTION_MAX = 1.2f
+    const val MOCK_PERIOD_STEPS_MIN = 1_500
+    const val MOCK_PERIOD_STEPS_MAX = 6_000
+    const val MOCK_MONTH_STEPS_MIN = 150_000
+    const val MOCK_MONTH_STEPS_MAX = 250_000
+    const val MOCK_TREND_PCT_MIN = -20
+    const val MOCK_TREND_PCT_MAX = 20
+    const val TREND_FLAT_THRESHOLD = 2
 }

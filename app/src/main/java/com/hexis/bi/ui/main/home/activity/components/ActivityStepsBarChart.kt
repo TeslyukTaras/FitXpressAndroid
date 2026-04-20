@@ -38,62 +38,80 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.hexis.bi.R
-import com.hexis.bi.ui.main.home.activity.HourlyStepEntry
+import com.hexis.bi.ui.main.home.activity.BarChartEntry
 import com.hexis.bi.ui.theme.Blue300
 import com.hexis.bi.ui.theme.GridLineGray
 import com.hexis.bi.ui.theme.LightBlue
 import com.hexis.bi.ui.theme.LightGradientBlue
-import com.hexis.bi.utils.constants.ActivityConstants
-import com.hexis.bi.utils.formatHour
 import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.roundToInt
 
+/**
+ * Generalized bar chart used across Activity Day/Week/Month/Year tabs.
+ *
+ * Renders: header (title + total) OR tooltip overlay, y-axis with grid labels,
+ * vertical bars aligned in a single row, and per-bar x-axis labels.
+ */
 @Composable
-fun ActivityStepsTimeline(
-    entries: List<HourlyStepEntry>,
-    totalSteps: Int,
+fun ActivityStepsBarChart(
+    entries: List<BarChartEntry>,
+    totalValue: Int,
+    baseYMax: Float,
+    yGridStep: Float,
+    title: String,
+    barGap: Dp,
     modifier: Modifier = Modifier,
+    yAxisWidth: Dp = dimensionResource(R.dimen.recovery_y_axis_width),
+    xLabelStartPadding: Dp = 0.dp,
+    isLastHighlighted: Boolean = false,
+    yLabelFormatter: (Float) -> String = { it.toInt().toString() },
 ) {
+    val yMax = computeEffectiveYMax(entries, baseYMax, yGridStep)
+    val yGridLines = remember(yMax) {
+        listOf(0f, yMax / 3f, yMax * 2f / 3f, yMax)
+    }
+    val highlightedIndex = if (isLastHighlighted) entries.indexOfLast { it.value > 0f } else -1
     val fmt = NumberFormat.getNumberInstance(Locale.US)
-    var selectedHour by remember { mutableIntStateOf(-1) }
-    val selectedEntry = entries.getOrNull(selectedHour)
+    var selectedIndex by remember { mutableIntStateOf(-1) }
+    val selectedEntry = entries.getOrNull(selectedIndex)
 
     var barsAreaWidth by remember { mutableIntStateOf(0) }
     var tooltipWidth by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
 
-    val yAxisWidth = dimensionResource(R.dimen.recovery_y_axis_width)
     val chartGap = dimensionResource(R.dimen.spacer_xs)
-    val barGap = dimensionResource(R.dimen.spacer_2xs)
     val dashWidth = dimensionResource(R.dimen.dash_width)
     val stripeWidth = dimensionResource(R.dimen.sleep_bar_stripe_width)
+    val pointerVerticalPadding = dimensionResource(R.dimen.activity_chart_pointer_vertical_padding)
     val pointerColor = MaterialTheme.colorScheme.secondary
 
     Column(modifier = modifier.fillMaxWidth()) {
         val showTooltip = selectedEntry != null && barsAreaWidth > 0
         val tooltipEntry = selectedEntry ?: entries.firstOrNull()
 
-        // --- Header / Tooltip Overlay ---
+        // Header / tooltip overlay + chart wrap so the selected-index pointer line
+        // can span from under the tooltip through the bars area.
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .drawBehind {
-                    if (selectedHour in entries.indices && barsAreaWidth > 0) {
+                    if (selectedIndex in entries.indices && barsAreaWidth > 0) {
                         val gapPx = barGap.toPx()
                         val barWidthPx =
                             (barsAreaWidth - gapPx * (entries.size - 1)) / entries.size.toFloat()
-                        val centerOfBarX = selectedHour * (barWidthPx + gapPx) + (barWidthPx / 2f)
+                        val centerOfBarX = selectedIndex * (barWidthPx + gapPx) + (barWidthPx / 2f)
                         val absoluteCenterX = (yAxisWidth + chartGap).toPx() + centerOfBarX
 
                         val dashEffect = PathEffect.dashPathEffect(
                             floatArrayOf(dashWidth.toPx(), dashWidth.toPx()), 0f
                         )
 
-                        val verticalPaddingPx = 5.dp.toPx()
+                        val verticalPaddingPx = pointerVerticalPadding.toPx()
 
                         drawLine(
                             color = pointerColor,
@@ -114,12 +132,12 @@ fun ActivityStepsTimeline(
                             .offset {
                                 if (barsAreaWidth == 0) return@offset IntOffset.Zero
 
-                                val safeHour = selectedHour.coerceAtLeast(0)
+                                val safeIndex = selectedIndex.coerceAtLeast(0)
                                 val gapPx = barGap.roundToPx().toFloat()
                                 val barWidthPx =
                                     (barsAreaWidth - gapPx * (entries.size - 1)) / entries.size.toFloat()
                                 val centerOfBarX =
-                                    safeHour * (barWidthPx + gapPx) + (barWidthPx / 2f)
+                                    safeIndex * (barWidthPx + gapPx) + (barWidthPx / 2f)
                                 val absoluteCenterX =
                                     (yAxisWidth + chartGap).roundToPx() + centerOfBarX
 
@@ -141,14 +159,14 @@ fun ActivityStepsTimeline(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
-                            text = tooltipEntry.hour.formatHour(),
+                            text = tooltipEntry.tooltipLabel,
                             style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
                             color = MaterialTheme.colorScheme.onBackground,
                             textAlign = TextAlign.Center,
                         )
                         Row {
                             Text(
-                                text = fmt.format(tooltipEntry.steps),
+                                text = fmt.format(tooltipEntry.value.toInt()),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = Blue300,
                                 modifier = Modifier.alignByBaseline(),
@@ -173,12 +191,12 @@ fun ActivityStepsTimeline(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = stringResource(R.string.activity_steps_timeline),
+                        text = title,
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                     Text(
-                        text = fmt.format(totalSteps),
+                        text = fmt.format(totalValue),
                         style = MaterialTheme.typography.headlineSmall,
                         color = Blue300,
                     )
@@ -187,25 +205,25 @@ fun ActivityStepsTimeline(
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
 
-            // --- Main Chart Area ---
+            // Main chart area: y-axis + bars area
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(dimensionResource(R.dimen.activity_steps_chart_height)),
             ) {
-
-                // Y-Axis
+                // Y-axis
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
                         .width(yAxisWidth)
                 ) {
-                    ActivityConstants.STEP_GRID_LINES.forEach { value ->
-                        val fraction = 1f - (value / ActivityConstants.STEP_GRID_MAX)
+                    yGridLines.forEach { value ->
+                        val fraction = 1f - (value / yMax)
                         Text(
-                            text = value.toInt().toString(),
+                            text = yLabelFormatter(value),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.secondary,
+                            minLines = 1,
                             modifier = Modifier.align { size, space, _ ->
                                 IntOffset(0, (space.height * fraction - size.height / 2).toInt())
                             },
@@ -215,7 +233,7 @@ fun ActivityStepsTimeline(
 
                 Spacer(Modifier.width(chartGap))
 
-                // Bars & Grid Lines
+                // Bars + grid lines
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -230,20 +248,20 @@ fun ActivityStepsTimeline(
                                     (size.width - gapPx * (entries.size - 1)) / entries.size.toFloat()
                                 val slotWidthPx = barWidthPx + gapPx
 
-                                fun getHourForX(x: Float): Int =
+                                fun indexForX(x: Float): Int =
                                     (x / slotWidthPx).toInt().coerceIn(0, entries.size - 1)
 
-                                selectedHour = getHourForX(down.position.x)
+                                selectedIndex = indexForX(down.position.x)
                                 down.consume()
 
                                 while (true) {
                                     val event = awaitPointerEvent()
                                     val change = event.changes.firstOrNull() ?: break
                                     if (change.changedToUp()) {
-                                        selectedHour = -1
+                                        selectedIndex = -1
                                         break
                                     }
-                                    selectedHour = getHourForX(change.position.x)
+                                    selectedIndex = indexForX(change.position.x)
                                     change.consume()
                                 }
                             }
@@ -252,9 +270,8 @@ fun ActivityStepsTimeline(
                             val dashEffect = PathEffect.dashPathEffect(
                                 floatArrayOf(dashWidth.toPx(), dashWidth.toPx()), 0f
                             )
-
-                            ActivityConstants.STEP_GRID_LINES.forEach { value ->
-                                val y = size.height * (1f - value / ActivityConstants.STEP_GRID_MAX)
+                            yGridLines.forEach { value ->
+                                val y = size.height * (1f - value / yMax)
                                 drawLine(
                                     color = GridLineGray,
                                     start = Offset(0f, y),
@@ -273,9 +290,11 @@ fun ActivityStepsTimeline(
 
                         entries.forEachIndexed { index, entry ->
                             val offsetX = index * (barWidthPx + gapPx)
-                            HourBar(
-                                entry = entry,
-                                isSelected = index == selectedHour,
+                            ChartBar(
+                                value = entry.value,
+                                yMax = yMax,
+                                isSelected = index == selectedIndex,
+                                isHighlighted = index == highlightedIndex,
                                 modifier = Modifier
                                     .offset { IntOffset(offsetX.roundToInt(), 0) }
                                     .width(barWidthDp)
@@ -286,35 +305,57 @@ fun ActivityStepsTimeline(
             }
         }
 
-        // --- X-Axis ---
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = dimensionResource(R.dimen.spacer_xxs)),
-        ) {
-            Spacer(Modifier.width(yAxisWidth + chartGap))
-            Text(
-                text = stringResource(R.string.activity_time_start),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.secondary,
-            )
-            Spacer(Modifier.weight(1f))
-            Text(
-                text = stringResource(R.string.activity_time_end),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.secondary,
-            )
+        // X-axis labels (per-bar, anchored at the bar's left edge, natural width)
+        if (entries.any { it.xLabel != null }) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = dimensionResource(R.dimen.spacer_xxs)),
+            ) {
+                Spacer(Modifier.width(yAxisWidth + chartGap))
+                Box(modifier = Modifier.weight(1f)) {
+                    // Reserve a line of height up-front so the row doesn't grow
+                    // once per-bar labels are positioned after barsAreaWidth is measured.
+                    Text(
+                        text = "",
+                        style = MaterialTheme.typography.bodySmall,
+                        minLines = 1,
+                    )
+                    if (barsAreaWidth > 0 && entries.isNotEmpty()) {
+                        val gapPx = with(density) { barGap.toPx() }
+                        val labelStartPx = with(density) { xLabelStartPadding.toPx() }
+                        val barWidthPx =
+                            (barsAreaWidth - gapPx * (entries.size - 1)) / entries.size.toFloat()
+
+                        entries.forEachIndexed { index, entry ->
+                            val label = entry.xLabel ?: return@forEachIndexed
+                            val offsetX = index * (barWidthPx + gapPx) + labelStartPx
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.secondary,
+                                minLines = 1,
+                                modifier = Modifier.offset {
+                                    IntOffset(offsetX.roundToInt(), 0)
+                                },
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun HourBar(
-    entry: HourlyStepEntry,
+internal fun ChartBar(
+    value: Float,
+    yMax: Float,
     isSelected: Boolean,
+    isHighlighted: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val barBrush = if (isSelected)
+    val barBrush = if (isSelected || isHighlighted)
         Brush.verticalGradient(listOf(LightGradientBlue, Blue300))
     else Brush.verticalGradient(listOf(LightBlue, LightBlue))
 
@@ -323,18 +364,33 @@ private fun HourBar(
         topEnd = dimensionResource(R.dimen.spacer_2xs),
     )
 
-    val fraction = (entry.steps / ActivityConstants.STEP_GRID_MAX).coerceIn(0f, 1f)
+    val fraction = (value / yMax).coerceIn(0f, 1f)
 
     Box(
         modifier = modifier.fillMaxHeight(),
         contentAlignment = Alignment.BottomCenter,
     ) {
-        if (entry.steps > 0) Box(
+        val fillModifier =
+            if (fraction > 0f) Modifier.fillMaxHeight(fraction)
+            else Modifier.height(1.dp)
+
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(fraction)
+                .then(fillModifier)
                 .clip(barShape)
                 .background(barBrush),
         )
     }
+}
+
+internal fun computeEffectiveYMax(
+    entries: List<BarChartEntry>,
+    baseYMax: Float,
+    yGridStep: Float,
+): Float {
+    val actualMax = entries.maxOfOrNull { it.value } ?: 0f
+    if (actualMax <= baseYMax || yGridStep <= 0f) return baseYMax
+    val steps = kotlin.math.ceil(actualMax / yGridStep)
+    return steps * yGridStep
 }
