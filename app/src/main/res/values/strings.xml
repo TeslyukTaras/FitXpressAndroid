@@ -303,6 +303,34 @@
     <string name="recovery_info_sheet_heading">How recovery works</string>
     <string name="recovery_info_sheet_body">Recovery reflects how ready your body is based on recent signals such as sleep quality, heart rate, stress levels, and activity load.\n\nA higher recovery score means your body is well-rested and ready for activity. A lower score suggests your body may need more rest or lighter activity.</string>
 
+    <!-- Activity screen -->
+    <string name="activity_screen_title">Activity</string>
+    <string name="activity_tab_day">Day</string>
+    <string name="activity_tab_week">Week</string>
+    <string name="activity_tab_month">Month</string>
+    <string name="activity_tab_year">Year</string>
+    <string name="activity_goal_label">Goal:</string>
+    <string name="activity_progress_title">Activity progress</string>
+    <string name="activity_metric_calories">Calories</string>
+    <string name="activity_metric_distance">Distance</string>
+    <string name="activity_metric_steps">Step</string>
+    <string name="activity_unit_cal">cal</string>
+    <string name="activity_unit_km">km</string>
+    <string name="activity_unit_mi">mi</string>
+    <string name="activity_unit_steps">st</string>
+    <string name="activity_steps_timeline">Steps timeline</string>
+    <string name="activity_time_start">12 am</string>
+    <string name="activity_time_end">11:59 pm</string>
+    <string name="activity_info_sheet_title">Activity progress score</string>
+    <string name="activity_info_heading_1">1. What this score means</string>
+    <string name="activity_info_body_1">Activity progress shows how close you are to your daily steps goal.</string>
+    <string name="activity_info_heading_2">2. What you see on this screen</string>
+    <string name="activity_info_body_2">Along with steps, we also show distance and active calories to give more context for your day.</string>
+    <string name="activity_info_heading_3">3. Why it may differ</string>
+    <string name="activity_info_body_3">Numbers can vary depending on which device tracked your activity and whether it was carried during the day.</string>
+    <string name="activity_info_heading_4">4. Why daily activity matters</string>
+    <string name="activity_info_body_4">Regular movement supports energy levels, recovery, and long-term health. Over time, it can also contribute to changes in body composition.</string>
+
     <!-- Scan screen -->
     <string name="scan_title">Scan</string>
     <string name="how_to_scan_title">How to scan?</string>
@@ -371,4 +399,5 @@
     <string name="scan_error_processing_failed">Scan processing failed</string>
     <string name="scan_error_timeout">Scan timed out. Please try again.</string>
     <string name="scan_error_with_detail">%1$s: %2$s</string>
+    <string name="activity_goal_label_format">" / %1$s"</string>
 </resources>
