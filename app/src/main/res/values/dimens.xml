@@ -55,6 +55,12 @@
     <dimen name="recovery_y_axis_width">24dp</dimen>
     <dimen name="recovery_bar_corner">6dp</dimen>
 
+    <!-- Activity -->
+    <dimen name="activity_arc_size">130dp</dimen>
+    <dimen name="activity_arc_stroke_width">8dp</dimen>
+    <dimen name="activity_arc_ring_gap">4dp</dimen>
+    <dimen name="activity_steps_chart_height">180dp</dimen>
+
     <!-- Scan -->
     <dimen name="scan_corner_length">68dp</dimen>
     <dimen name="scan_corner_stroke_width">4dp</dimen>

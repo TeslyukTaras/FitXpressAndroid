@@ -11,6 +11,7 @@ import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.Period
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 
@@ -35,6 +36,10 @@ fun Date.formatShortMonthDay(): String =
     SimpleDateFormat(DateFormatConstants.SHORT_MONTH_DAY, Locale.getDefault()).format(this)
 
 fun Long.millisToShortMonthDay(): String = Date(this).formatShortMonthDay()
+
+/** Full "April 14" label used on day-based detail screens. Locale-aware. */
+fun LocalDate.formatFullMonthDay(): String =
+    format(DateTimeFormatter.ofPattern(DateFormatConstants.FULL_MONTH_DAY, Locale.getDefault()))
 
 /** Sortable timestamp used as the Firestore document ID for a saved scan. */
 fun Date.formatAsScanDocId(): String =
