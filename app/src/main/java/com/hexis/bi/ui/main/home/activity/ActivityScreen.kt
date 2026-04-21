@@ -29,7 +29,9 @@ import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseBottomSheet
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
+import com.hexis.bi.ui.components.AppDialog
 import com.hexis.bi.ui.components.AppTabSelector
+import com.hexis.bi.ui.main.home.activity.components.ActivitySettingsDialogContent
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,7 +48,8 @@ fun ActivityScreen(
     Box(modifier = modifier) {
         BaseScreen(
             modifier = Modifier.then(
-                if (state.showInfoSheet) Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
+                if (state.showInfoSheet || state.showSettingsDialog)
+                    Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
                 else Modifier
             ),
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -59,7 +62,7 @@ fun ActivityScreen(
                     onBack = onBack,
                     background = MaterialTheme.colorScheme.surfaceVariant,
                     actions = {
-                        IconButton(onClick = { }) {
+                        IconButton(onClick = viewModel::showSettingsDialog) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_settings),
                                 contentDescription = stringResource(R.string.cd_settings),
@@ -114,6 +117,20 @@ fun ActivityScreen(
                 }
 
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
+            }
+        }
+
+        if (state.showSettingsDialog) {
+            AppDialog(onDismiss = viewModel::dismissSettingsDialog) {
+                ActivitySettingsDialogContent(
+                    stepsGoal = state.stepsGoalDraft,
+                    showActiveCalories = state.showActiveCaloriesDraft,
+                    dataSource = state.dataSource,
+                    onStepsGoalChange = viewModel::updateStepsGoalDraft,
+                    onShowActiveCaloriesChange = viewModel::updateActiveCaloriesDraft,
+                    onCancel = viewModel::dismissSettingsDialog,
+                    onSave = viewModel::saveSettings,
+                )
             }
         }
 

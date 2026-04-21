@@ -44,24 +44,18 @@ class ActivityViewModel(
     private var monthOffset = 0
     private var yearOffset = 0
     private var weightKg = ProfileConstants.DEFAULT_WEIGHT_KG
+    private var heightCm: Float? = null
+    private var isFemale: Boolean = false
 
     init {
         reloadAllTabs()
         userRepository.observeUser()
             .onEach { profile ->
-                val heightCm = profile.heightCm?.toFloat()
-                val isFemale = profile.gender?.lowercase() == "female"
-                val stepGoal = _state.value.stepsGoal
-
+                heightCm = profile.heightCm?.toFloat()
+                isFemale = profile.gender?.lowercase() == "female"
                 profile.weightKg?.toFloat()?.let { weightKg = it }
 
-                val distGoalKm = if (heightCm != null)
-                    distanceGoalKm(stepGoal, heightCm, isFemale)
-                else ActivityConstants.DEFAULT_DISTANCE_GOAL_KM
-
-                val calGoal = if (distGoalKm > 0f && weightKg > 0f)
-                    caloriesGoal(distGoalKm, weightKg)
-                else ActivityConstants.DEFAULT_CALORIES_GOAL
+                val (distGoalKm, calGoal) = deriveGoals(_state.value.stepsGoal)
 
                 _state.update {
                     it.copy(
@@ -75,6 +69,21 @@ class ActivityViewModel(
             .catch { setError(it.message) }
             .launchIn(viewModelScope)
     }
+
+    private fun deriveGoals(stepsGoal: Int): Pair<Float, Int> {
+        val distGoalKm = heightCm?.let { distanceGoalKm(stepsGoal, it, isFemale) }
+            ?: ActivityConstants.DEFAULT_DISTANCE_GOAL_KM
+        val calGoal = if (distGoalKm > 0f && weightKg > 0f)
+            caloriesGoal(distGoalKm, weightKg)
+        else ActivityConstants.DEFAULT_CALORIES_GOAL
+        return distGoalKm to calGoal
+    }
+
+    private fun actualDistanceKm(steps: Int): Float =
+        heightCm?.let { distanceGoalKm(steps, it, isFemale) } ?: 0f
+
+    private fun actualCalories(distanceKm: Float): Int =
+        if (distanceKm > 0f && weightKg > 0f) caloriesGoal(distanceKm, weightKg) else 0
 
     fun selectTab(tab: ActivityTab) {
         _state.update { it.copy(selectedTab = tab) }
@@ -136,6 +145,43 @@ class ActivityViewModel(
         _state.update { it.copy(showInfoSheet = false) }
     }
 
+    fun showSettingsDialog() {
+        _state.update {
+            it.copy(
+                showSettingsDialog = true,
+                stepsGoalDraft = it.stepsGoal,
+                showActiveCaloriesDraft = it.showActiveCalories,
+            )
+        }
+    }
+
+    fun dismissSettingsDialog() {
+        _state.update { it.copy(showSettingsDialog = false) }
+    }
+
+    fun updateStepsGoalDraft(goal: Int) {
+        _state.update { it.copy(stepsGoalDraft = goal) }
+    }
+
+    fun updateActiveCaloriesDraft(enabled: Boolean) {
+        _state.update { it.copy(showActiveCaloriesDraft = enabled) }
+    }
+
+    fun saveSettings() {
+        val newStepsGoal = _state.value.stepsGoalDraft
+        val (distGoalKm, calGoal) = deriveGoals(newStepsGoal)
+        _state.update {
+            it.copy(
+                showSettingsDialog = false,
+                stepsGoal = newStepsGoal,
+                distanceGoalKm = distGoalKm,
+                caloriesGoal = calGoal,
+                showActiveCalories = it.showActiveCaloriesDraft,
+            )
+        }
+        reloadAllTabs()
+    }
+
     private fun reloadAllTabs() {
         loadDayData(dayOffset)
         loadWeekData(weekOffset)
@@ -148,11 +194,6 @@ class ActivityViewModel(
     // the UI can be exercised before the activity pipeline exists. Every caller
     // lives in the loadXxxData() functions and should switch to repository data
     // once it's available.
-
-    private fun randomGoalFraction(random: Random): Float =
-        ActivityConstants.MOCK_GOAL_FRACTION_MIN +
-                random.nextFloat() *
-                (ActivityConstants.MOCK_GOAL_FRACTION_MAX - ActivityConstants.MOCK_GOAL_FRACTION_MIN)
 
     private fun randomPeriodSteps(random: Random): Int = random.nextInt(
         ActivityConstants.MOCK_PERIOD_STEPS_MIN,
@@ -198,10 +239,9 @@ class ActivityViewModel(
         }
 
         val totalSteps = hourlyBars.sumOf { it.value.toInt() }
-        val current = _state.value
-        val distanceKm = (randomGoalFraction(random) * current.distanceGoalKm)
-            .let { (it * 10).toInt() / 10f }
-        val calories = (randomGoalFraction(random) * current.caloriesGoal).toInt()
+        val rawDistanceKm = actualDistanceKm(totalSteps)
+        val distanceKm = (rawDistanceKm * 10).toInt() / 10f
+        val calories = actualCalories(rawDistanceKm)
 
         _state.update {
             it.copy(
@@ -316,11 +356,8 @@ class ActivityViewModel(
         val totalSteps = bars.sumOf { it.value.toInt() }
         val avgPerDay = if (periodLengthDays > 0) totalSteps / periodLengthDays else 0
         val (trendPct, trendComparison) = computeTrend(random, hasComparison)
-        val current = _state.value
-        val distanceKm = avgPerDay * periodLengthDays *
-                current.distanceGoalKm / current.stepsGoal.coerceAtLeast(1)
-        val calories = (avgPerDay * periodLengthDays *
-                current.caloriesGoal.toFloat() / current.stepsGoal.coerceAtLeast(1)).toInt()
+        val distanceKm = actualDistanceKm(totalSteps)
+        val calories = actualCalories(distanceKm)
 
         return PeriodSummary(
             periodLabel = periodLabel,

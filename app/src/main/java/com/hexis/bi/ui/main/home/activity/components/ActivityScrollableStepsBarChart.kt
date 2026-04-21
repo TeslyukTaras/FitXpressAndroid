@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -76,6 +77,8 @@ fun ActivityScrollableStepsBarChart(
     val highlightedIndex = if (isLastHighlighted) entries.indexOfLast { it.value > 0f } else -1
     val density = LocalDensity.current
     val scrollState = rememberScrollState()
+    var tooltipWidth by remember { mutableIntStateOf(0) }
+    var viewportWidthPx by remember { mutableIntStateOf(0) }
 
     val chartGap = dimensionResource(R.dimen.spacer_xs)
     val dashWidth = dimensionResource(R.dimen.dash_width)
@@ -129,6 +132,21 @@ fun ActivityScrollableStepsBarChart(
                 Column(
                     modifier = Modifier
                         .alpha(if (showTooltip) 1f else 0f)
+                        .onSizeChanged { tooltipWidth = it.width }
+                        .offset {
+                            if (viewportWidthPx == 0 || entries.isEmpty()) return@offset IntOffset.Zero
+                            val safeIndex = selectedIndex.coerceAtLeast(0)
+                            val slotPx = slotWidth.toPx()
+                            val barWidthPx = barWidth.toPx()
+                            val barCenter = safeIndex * slotPx + barWidthPx / 2f
+                            val axisOffsetPx = (yAxisWidth + chartGap).roundToPx()
+                            val targetX = axisOffsetPx + (barCenter - scrollState.value) -
+                                    tooltipWidth / 2f
+                            val minX = axisOffsetPx.toFloat()
+                            val maxX = (axisOffsetPx + viewportWidthPx - tooltipWidth)
+                                .toFloat().coerceAtLeast(minX)
+                            IntOffset(targetX.coerceIn(minX, maxX).roundToInt(), 0)
+                        }
                         .background(
                             MaterialTheme.colorScheme.background,
                             MaterialTheme.shapes.small,
@@ -198,6 +216,7 @@ fun ActivityScrollableStepsBarChart(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
+                    .onSizeChanged { viewportWidthPx = it.width }
                     .horizontalScroll(scrollState),
             ) {
                 Box(

@@ -2,6 +2,7 @@ package com.hexis.bi.ui.main.home.activity
 
 import androidx.annotation.StringRes
 import com.hexis.bi.R
+import com.hexis.bi.domain.enums.HealthProvider
 import com.hexis.bi.utils.constants.ActivityConstants
 import com.hexis.bi.utils.kmToMiles
 
@@ -60,6 +61,13 @@ data class ActivityState(
 
     // Info bottom sheet
     val showInfoSheet: Boolean = false,
+
+    // Settings dialog
+    val showSettingsDialog: Boolean = false,
+    val stepsGoalDraft: Int = ActivityConstants.DEFAULT_STEP_GOAL,
+    val showActiveCalories: Boolean = true,
+    val showActiveCaloriesDraft: Boolean = true,
+    val dataSource: HealthProvider = HealthProvider.AppleHealth,
 ) {
     val progressPercent: Int
         get() = if (stepsGoal > 0)

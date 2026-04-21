@@ -9,6 +9,11 @@ internal object ActivityConstants {
     const val HOURS_IN_DAY = 24
     const val DEFAULT_STEP_GOAL = 10_000
 
+    // Settings dialog — steps-goal slider bounds (in steps)
+    const val STEPS_GOAL_MIN = 2_000
+    const val STEPS_GOAL_MAX = 25_000
+    const val STEPS_GOAL_SLIDER_STEP = 500
+
     // Stride length multipliers (height in cm × factor = stride in cm)
     const val STRIDE_FACTOR_FEMALE = 0.413f
     const val STRIDE_FACTOR_MALE = 0.415f
@@ -45,9 +50,7 @@ internal object ActivityConstants {
     // Day-of-month values labelled on the Month tab x-axis
     val MONTH_LABEL_DAYS: Set<Int> = setOf(1, 7, 14, 21, 28)
 
-    // Mock-data ranges (actual values don't derive from step totals)
-    const val MOCK_GOAL_FRACTION_MIN = 0.3f
-    const val MOCK_GOAL_FRACTION_MAX = 1.2f
+    // Mock-data ranges
     const val MOCK_PERIOD_STEPS_MIN = 1_500
     const val MOCK_PERIOD_STEPS_MAX = 6_000
     const val MOCK_MONTH_STEPS_MIN = 150_000

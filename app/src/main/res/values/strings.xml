@@ -358,6 +358,12 @@
     <string name="activity_trend_none_symbol">—</string>
     <string name="activity_date_range_format">%1$s - %2$s</string>
 
+    <!-- Activity settings dialog -->
+    <string name="activity_settings_title">Activity settings</string>
+    <string name="activity_settings_steps_goal">Steps goal</string>
+    <string name="activity_settings_show_active_calories">Show active calories</string>
+    <string name="activity_settings_data_source">Data source</string>
+
     <!-- Scan screen -->
     <string name="scan_title">Scan</string>
     <string name="how_to_scan_title">How to scan?</string>
