@@ -331,6 +331,39 @@
     <string name="activity_info_heading_4">4. Why daily activity matters</string>
     <string name="activity_info_body_4">Regular movement supports energy levels, recovery, and long-term health. Over time, it can also contribute to changes in body composition.</string>
 
+    <!-- Activity period tabs (Week/Month/Year) -->
+    <string name="activity_total_steps">Total steps</string>
+    <string name="activity_avg_steps_per_day">Avg steps/day</string>
+    <string name="activity_trend_label">Trend:</string>
+    <string name="activity_weekly_totals">Weekly totals</string>
+    <string name="activity_period_totals">Period totals</string>
+    <string name="activity_yearly_totals">Yearly totals</string>
+    <string name="activity_summary_steps">Steps</string>
+    <string name="activity_summary_distance">Distance</string>
+    <string name="activity_summary_active_calories">Active calories</string>
+    <string name="activity_unit_kcal">kcal</string>
+    <string name="activity_trend_up_week">This week you walked more than last week.</string>
+    <string name="activity_trend_down_week">This week you walked less than last week.</string>
+    <string name="activity_trend_flat_week">This week you walked about the same as last week.</string>
+    <string name="activity_trend_none_week">Not enough data to compare with last week yet.</string>
+    <string name="activity_trend_up_month">This month you walked more than last month.</string>
+    <string name="activity_trend_down_month">This month you walked less than last month.</string>
+    <string name="activity_trend_flat_month">This month you walked about the same as last month.</string>
+    <string name="activity_trend_none_month">Not enough data to compare with last month yet.</string>
+    <string name="activity_trend_up_year">This year you walked more than last year.</string>
+    <string name="activity_trend_down_year">This year you walked less than last year.</string>
+    <string name="activity_trend_flat_year">This year you walked about the same as last year.</string>
+    <string name="activity_trend_none_year">Not enough data to compare with last year yet.</string>
+    <string name="activity_trend_percent_signed">%1$+d%%</string>
+    <string name="activity_trend_none_symbol">—</string>
+    <string name="activity_date_range_format">%1$s - %2$s</string>
+
+    <!-- Activity settings dialog -->
+    <string name="activity_settings_title">Activity settings</string>
+    <string name="activity_settings_steps_goal">Steps goal</string>
+    <string name="activity_settings_show_active_calories">Show active calories</string>
+    <string name="activity_settings_data_source">Data source</string>
+
     <!-- Scan screen -->
     <string name="scan_title">Scan</string>
     <string name="how_to_scan_title">How to scan?</string>

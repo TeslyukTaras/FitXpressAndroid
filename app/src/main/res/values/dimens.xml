@@ -60,6 +60,11 @@
     <dimen name="activity_arc_stroke_width">8dp</dimen>
     <dimen name="activity_arc_ring_gap">4dp</dimen>
     <dimen name="activity_steps_chart_height">180dp</dimen>
+    <dimen name="activity_period_y_axis_width">30dp</dimen>
+    <dimen name="activity_year_y_axis_width">40dp</dimen>
+    <dimen name="activity_year_bar_width">32dp</dimen>
+    <dimen name="activity_trend_padding">34dp</dimen>
+    <dimen name="activity_chart_pointer_vertical_padding">5dp</dimen>
 
     <!-- Scan -->
     <dimen name="scan_corner_length">68dp</dimen>

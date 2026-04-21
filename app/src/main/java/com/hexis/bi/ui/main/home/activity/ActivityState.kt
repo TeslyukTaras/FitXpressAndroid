@@ -2,6 +2,7 @@ package com.hexis.bi.ui.main.home.activity
 
 import androidx.annotation.StringRes
 import com.hexis.bi.R
+import com.hexis.bi.domain.enums.HealthProvider
 import com.hexis.bi.utils.constants.ActivityConstants
 import com.hexis.bi.utils.kmToMiles
 
@@ -18,9 +19,24 @@ data class ActivityMetric(
     val unit: String,
 )
 
-data class HourlyStepEntry(
-    val hour: Int,
-    val steps: Int,
+data class BarChartEntry(
+    val value: Float,
+    val xLabel: String? = null,
+    val tooltipLabel: String,
+)
+
+enum class TrendComparison { UP, DOWN, FLAT, NONE }
+
+data class PeriodSummary(
+    val periodLabel: String = "",
+    val bars: List<BarChartEntry> = emptyList(),
+    val totalSteps: Int = 0,
+    val avgStepsPerDay: Int = 0,
+    val trendPercent: Int? = null,
+    val trendComparison: TrendComparison = TrendComparison.NONE,
+    val totalDistanceKm: Float = 0f,
+    val totalCalories: Int = 0,
+    val canGoNext: Boolean = false,
 )
 
 data class ActivityState(
@@ -35,11 +51,23 @@ data class ActivityState(
     val currentSteps: Int = 0,
     val calories: Int = 0,
     val distanceKm: Float = 0f,
-    val hourlySteps: List<HourlyStepEntry> = emptyList(),
+    val hourlyBars: List<BarChartEntry> = emptyList(),
     val canGoNextDay: Boolean = false,
+
+    // Period tabs
+    val week: PeriodSummary = PeriodSummary(),
+    val month: PeriodSummary = PeriodSummary(),
+    val year: PeriodSummary = PeriodSummary(),
 
     // Info bottom sheet
     val showInfoSheet: Boolean = false,
+
+    // Settings dialog
+    val showSettingsDialog: Boolean = false,
+    val stepsGoalDraft: Int = ActivityConstants.DEFAULT_STEP_GOAL,
+    val showActiveCalories: Boolean = true,
+    val showActiveCaloriesDraft: Boolean = true,
+    val dataSource: HealthProvider = HealthProvider.AppleHealth,
 ) {
     val progressPercent: Int
         get() = if (stepsGoal > 0)

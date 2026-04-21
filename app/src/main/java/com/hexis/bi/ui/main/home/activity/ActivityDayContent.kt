@@ -1,8 +1,14 @@
 package com.hexis.bi.ui.main.home.activity
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -11,7 +17,8 @@ import com.hexis.bi.R
 import com.hexis.bi.ui.components.AppDateNavigator
 import com.hexis.bi.ui.main.home.activity.components.ActivityGoalRow
 import com.hexis.bi.ui.main.home.activity.components.ActivityProgressCard
-import com.hexis.bi.ui.main.home.activity.components.ActivityStepsTimeline
+import com.hexis.bi.ui.main.home.activity.components.ActivityStepsBarChart
+import com.hexis.bi.utils.constants.ActivityConstants
 
 @Composable
 fun ActivityDayContent(
@@ -65,8 +72,33 @@ fun ActivityDayContent(
 
     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
 
-    ActivityStepsTimeline(
-        entries = state.hourlySteps,
-        totalSteps = state.currentSteps,
+    ActivityStepsBarChart(
+        entries = state.hourlyBars,
+        totalValue = state.currentSteps,
+        baseYMax = ActivityConstants.STEP_GRID_MAX,
+        yGridStep = ActivityConstants.STEP_GRID_STEP,
+        title = stringResource(R.string.activity_steps_timeline),
+        barGap = dimensionResource(R.dimen.spacer_2xs),
     )
+
+    // Day-specific edge labels (start/end of 24h window)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = dimensionResource(R.dimen.spacer_xxs)),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Spacer(Modifier.width(dimensionResource(R.dimen.recovery_y_axis_width) + dimensionResource(R.dimen.spacer_xs)))
+        Text(
+            text = stringResource(R.string.activity_time_start),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.secondary,
+        )
+        Spacer(Modifier.weight(1f))
+        Text(
+            text = stringResource(R.string.activity_time_end),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.secondary,
+        )
+    }
 }

@@ -41,6 +41,26 @@ fun Long.millisToShortMonthDay(): String = Date(this).formatShortMonthDay()
 fun LocalDate.formatFullMonthDay(): String =
     format(DateTimeFormatter.ofPattern(DateFormatConstants.FULL_MONTH_DAY, Locale.getDefault()))
 
+/** Short "Apr 14" label used for compact date ranges. Locale-aware. */
+fun LocalDate.formatShortMonthDay(): String =
+    format(DateTimeFormatter.ofPattern(DateFormatConstants.SHORT_MONTH_DAY, Locale.getDefault()))
+
+/** Day-of-month number, e.g. "14". Locale-aware. */
+fun LocalDate.formatDayOfMonth(): String =
+    format(DateTimeFormatter.ofPattern(DateFormatConstants.DAY_OF_MONTH, Locale.getDefault()))
+
+/** Short month label, e.g. "Jan". Locale-aware. */
+fun LocalDate.formatMonthShort(): String =
+    format(DateTimeFormatter.ofPattern(DateFormatConstants.MONTH_SHORT, Locale.getDefault()))
+
+/** "April 2026" label used on month-based detail screens. Locale-aware. */
+fun LocalDate.formatFullMonthYear(): String =
+    format(DateTimeFormatter.ofPattern(DateFormatConstants.FULL_MONTH_YEAR, Locale.getDefault()))
+
+/** Four-digit year label, e.g. "2026". */
+fun LocalDate.formatYear(): String =
+    format(DateTimeFormatter.ofPattern(DateFormatConstants.YEAR, Locale.getDefault()))
+
 /** Sortable timestamp used as the Firestore document ID for a saved scan. */
 fun Date.formatAsScanDocId(): String =
     SimpleDateFormat(DateFormatConstants.SCAN_DOC_ID_TIMESTAMP, Locale.US).format(this)
