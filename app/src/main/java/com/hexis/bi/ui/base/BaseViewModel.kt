@@ -2,6 +2,7 @@ package com.hexis.bi.ui.base
 
 import android.app.Application
 import android.content.Context
+import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineScope
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 abstract class BaseViewModel(
     application: Application,
@@ -29,8 +31,7 @@ abstract class BaseViewModel(
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message.asStateFlow()
 
-    // One-shot events (navigation, toasts, etc.) — Channel guarantees delivery
-    // even if emitted before the collector is active (unlike SharedFlow with replay=0)
+    // Channel (not SharedFlow) so events emitted before the collector subscribes are still delivered.
     private val _events = Channel<UiEvent>(Channel.BUFFERED)
     val events: Flow<UiEvent> = _events.receiveAsFlow()
 
@@ -39,7 +40,14 @@ abstract class BaseViewModel(
     }
 
     protected fun setError(message: String?) {
+        if (message != null) {
+            Timber.tag(this::class.java.simpleName).e("UI error: %s", message)
+        }
         _error.value = message
+    }
+
+    protected fun setError(@StringRes resId: Int, vararg formatArgs: Any) {
+        setError(appContext.getString(resId, *formatArgs))
     }
 
     fun clearError() {
@@ -47,7 +55,14 @@ abstract class BaseViewModel(
     }
 
     protected fun setMessage(msg: String?) {
+        if (msg != null) {
+            Timber.tag(this::class.java.simpleName).i("UI message: %s", msg)
+        }
         _message.value = msg
+    }
+
+    protected fun setMessage(@StringRes resId: Int, vararg formatArgs: Any) {
+        setMessage(appContext.getString(resId, *formatArgs))
     }
 
     fun clearMessage() {
@@ -58,13 +73,7 @@ abstract class BaseViewModel(
         viewModelScope.launch { _events.send(event) }
     }
 
-    /**
-     * Launch a coroutine with automatic loading state and error handling.
-     *
-     * @param showLoading whether to flip [isLoading] around the block
-     * @param onError custom error handler; defaults to storing the message in [error]
-     * @param block the suspending work to execute
-     */
+    /** Launches a coroutine with automatic loading state and error handling. */
     protected fun launch(
         showLoading: Boolean = true,
         onError: (Throwable) -> Unit = { setError(it.message ?: "Unexpected error") },
@@ -74,6 +83,8 @@ abstract class BaseViewModel(
             if (showLoading) setLoading(true)
             block()
         } catch (e: Exception) {
+            Timber.tag(this@BaseViewModel::class.java.simpleName)
+                .e(e, "Coroutine failed in launch{}")
             onError(e)
         } finally {
             if (showLoading) setLoading(false)

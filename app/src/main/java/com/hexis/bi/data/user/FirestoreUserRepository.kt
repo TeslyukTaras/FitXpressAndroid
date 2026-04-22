@@ -69,4 +69,20 @@ class FirestoreUserRepository(
             ?: error(context.getString(R.string.error_session_expired))
         collection.document(uid).delete().await()
     }
+
+    private fun userSettingsDoc() = run {
+        val uid = firebaseAuth.currentUser?.uid
+            ?: error(context.getString(R.string.error_session_expired))
+        collection.document(uid)
+            .collection(FirestoreSchema.SETTINGS_COLLECTION)
+            .document(FirestoreSchema.USER_SETTINGS_DOC)
+    }
+
+    override suspend fun getUserSettings(): Result<UserSettings> = runCatching {
+        userSettingsDoc().get().await().toObject<UserSettings>() ?: UserSettings()
+    }
+
+    override suspend fun updateUserSettings(fields: Map<String, Any?>): Result<Unit> = runCatching {
+        userSettingsDoc().set(fields, SetOptions.merge()).await()
+    }
 }

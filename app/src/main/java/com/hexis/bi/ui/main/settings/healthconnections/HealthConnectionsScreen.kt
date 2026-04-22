@@ -1,7 +1,12 @@
 package com.hexis.bi.ui.main.settings.healthconnections
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.net.Uri
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,10 +25,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -35,6 +42,12 @@ import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.theme.Green
 import org.koin.androidx.compose.koinViewModel
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
 
 private data class HealthConnectionItem(
     val provider: HealthProvider,
@@ -62,9 +75,33 @@ fun HealthConnectionsScreen(
     viewModel: HealthConnectionsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+    val message by viewModel.message.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val activity = context.findActivity()
+
+    LaunchedEffect(state.widgetUrl) {
+        val url = state.widgetUrl ?: return@LaunchedEffect
+        val launched = runCatching {
+            CustomTabsIntent.Builder()
+                .build()
+                .launchUrl(context, Uri.parse(url))
+        }
+        if (launched.isSuccess) {
+            viewModel.onWidgetOpened()
+        } else {
+            viewModel.onWidgetLaunchFailed()
+        }
+    }
 
     BaseScreen(
         modifier = modifier,
+        isLoading = isLoading,
+        error = error,
+        onDismissError = viewModel::clearError,
+        message = message,
+        onDismissMessage = viewModel::clearMessage,
         topBar = {
             BaseTopBar(
                 title = stringResource(R.string.screen_health_connections),
@@ -90,24 +127,56 @@ fun HealthConnectionsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_m))
             ) {
-                healthConnections.forEach { item ->
-                    HealthConnectionRow(
-                        item = item,
-                        connected = item.provider in state.connectedProviders,
-                        onClick = { viewModel.toggleConnection(item.provider) },
-                    )
-                }
+                healthConnections
+                    .filterNot { it.provider == HealthProvider.AppleHealth }
+                    .forEach { item ->
+                        HealthConnectionRow(
+                            iconRes = item.iconRes,
+                            title = stringResource(item.nameRes),
+                            connected = item.provider in state.connectedProviders,
+                            onClick = {
+                                activity?.let { viewModel.onProviderClick(item.provider, it) }
+                            },
+                        )
+                    }
+
+                WearableConnectRow(
+                    connectedCount = state.wearableConnections.size,
+                    onClick = viewModel::onConnectWearable,
+                )
             }
         }
     }
 }
 
 @Composable
+private fun WearableConnectRow(
+    connectedCount: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    HealthConnectionRow(
+        iconRes = R.drawable.ic_connect,
+        title = stringResource(R.string.health_connection_wearable),
+        connected = connectedCount > 0,
+        connectedLabel = if (connectedCount > 0) {
+            stringResource(R.string.health_connection_wearable_count, connectedCount)
+        } else {
+            stringResource(R.string.health_connection_status_not_connected)
+        },
+        onClick = onClick,
+        modifier = modifier,
+    )
+}
+
+@Composable
 private fun HealthConnectionRow(
-    item: HealthConnectionItem,
+    @DrawableRes iconRes: Int,
+    title: String,
     connected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    connectedLabel: String? = null,
 ) {
     Row(
         modifier = modifier
@@ -119,7 +188,7 @@ private fun HealthConnectionRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
-            painter = painterResource(item.iconRes),
+            painter = painterResource(iconRes),
             contentDescription = null,
             tint = null,
             modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
@@ -127,7 +196,7 @@ private fun HealthConnectionRow(
         Spacer(Modifier.width(dimensionResource(R.dimen.spacer_m)))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = stringResource(item.nameRes),
+                text = title,
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Normal),
                 color = MaterialTheme.colorScheme.onBackground,
             )
@@ -142,8 +211,11 @@ private fun HealthConnectionRow(
                 )
                 Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacer_xxs)))
                 Text(
-                    text = if (connected) stringResource(R.string.health_connection_status_connected)
-                    else stringResource(R.string.health_connection_status_not_connected),
+                    text = connectedLabel ?: if (connected) {
+                        stringResource(R.string.health_connection_status_connected)
+                    } else {
+                        stringResource(R.string.health_connection_status_not_connected)
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = statusColor,
                 )

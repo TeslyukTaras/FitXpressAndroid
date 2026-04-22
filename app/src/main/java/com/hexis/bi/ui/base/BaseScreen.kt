@@ -21,27 +21,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.compose.LocalLifecycleOwner
 
 /**
- * Standard screen scaffold used across the app.
- *
- * Handles:
- * - Loading overlay with [CircularProgressIndicator]
- * - Persistent error snackbar (stays until user dismisses) when [error] is non-null
- * - Short-lived info snackbar when [message] is non-null
- * - Optional [topBar] and [bottomBar] slots
- *
- * Usage:
- * ```
- * BaseScreen(
- *     isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value,
- *     error = viewModel.error.collectAsStateWithLifecycle().value,
- *     onDismissError = viewModel::clearError,
- *     message = viewModel.message.collectAsStateWithLifecycle().value,
- *     onDismissMessage = viewModel::clearMessage,
- *     topBar = { MyTopBar() },
- * ) {
- *     MyContent()
- * }
- * ```
+ * Standard screen scaffold: loading overlay, persistent error snackbar, short info snackbar,
+ * and optional [topBar] / [bottomBar] slots.
  */
 @Composable
 fun BaseScreen(

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">FitXpress</string>
+    <!-- app_name is provided per-flavor via resValue (see app/build.gradle.kts) -->
     <string name="logo_name">Logo</string>
 
     <!-- Content descriptions -->
@@ -178,6 +178,13 @@
     <string name="sleep_timeline_title">Sleep timeline</string>
     <string name="sleep_recovery_title">Sleep and body recovery</string>
     <string name="sleep_recovery_subtitle">Better sleep consistency often improves recovery.</string>
+    <string name="sleep_insight_good">Solid sleep score — your body got the recovery it needed last night.</string>
+    <string name="sleep_insight_fair">Decent rest. Slightly longer or more consistent sleep would boost recovery.</string>
+    <string name="sleep_insight_poor">Short or fragmented sleep detected. Prioritise a longer, steadier night to support recovery.</string>
+    <string name="sleep_empty_title">No sleep data yet</string>
+    <string name="sleep_empty_subtitle">Sync a wearable via Terra to see last night\'s sleep.</string>
+    <string name="sleep_error_title">Couldn\'t load sleep data</string>
+    <string name="action_retry">Retry</string>
     <string name="sleep_settings_title">Sleep settings</string>
     <string name="sleep_settings_goal">Sleep goal</string>
     <string name="sleep_settings_data_source">Data source</string>
@@ -258,6 +265,23 @@
     <string name="health_connection_google">Google Health</string>
     <string name="health_connection_status_connected">Connected</string>
     <string name="health_connection_status_not_connected">Not connected</string>
+    <string name="health_connection_wearable">Connect wearable</string>
+    <string name="health_connection_wearable_count">%1$d connected</string>
+
+    <!-- Health connection errors & messages -->
+    <string name="error_sign_in_required">Sign in to connect a wearable</string>
+    <string name="error_health_connect_failed">Couldn\'t connect Health Connect. Make sure it\'s installed and try again.</string>
+    <string name="error_terra_invalid_dev_id">Terra rejected the developer credentials. Check terra.dev.id / terra.api.key.</string>
+    <string name="error_terra_invalid_token">Terra session expired. Please try again.</string>
+    <string name="error_terra_user_limit">Terra account user limit reached. Contact support.</string>
+    <string name="error_terra_no_internet">No internet connection. Check your network and try again.</string>
+    <string name="error_terra_provider_not_enabled">Health Connect isn\'t enabled for this app yet. Enable it in the Terra dashboard.</string>
+    <string name="error_wearable_start_failed">Couldn\'t start wearable connection. Please try again.</string>
+    <string name="error_connection_save_failed">Couldn\'t save your connection. Please try again.</string>
+    <string name="error_connection_callback_invalid">Received an invalid response from the connection service.</string>
+    <string name="error_wearable_connect_failed">Wearable connection failed: %1$s</string>
+    <string name="msg_health_connect_connected">Health Connect connected</string>
+    <string name="msg_wearable_connected">%1$s connected</string>
 
     <string name="app_info_page1_subtitle">Understand your body\'s intelligence — and the changes shaping it — like never before.</string>
     <string name="app_info_page1_emphasis">No scales. No tape measures.</string>
