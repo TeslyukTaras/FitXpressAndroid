@@ -25,6 +25,11 @@ class TerraCallbackHandler(
         return outcome
     }
 
+    /** Used by the sandbox widget to surface a synthetic success without a URI round-trip. */
+    suspend fun emit(outcome: Outcome) {
+        _outcomes.emit(outcome)
+    }
+
     private suspend fun parse(uri: Uri): Outcome {
         if (uri.scheme != TerraDeepLinks.SCHEME || uri.host != TerraDeepLinks.HOST) {
             return Outcome.Ignored

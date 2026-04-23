@@ -6,13 +6,18 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import timber.log.Timber
 import kotlin.coroutines.resume
 
-/** Runs Terra's `initConnection` flow. Must be called from an Activity. */
-class TerraConnector(private val authApi: TerraAuthApi) {
-
+/** Runs Terra's SDK connection flow (Health Connect / Samsung Health). Must be called from an Activity. */
+interface TerraConnector {
     suspend fun connect(
         activity: Activity,
         connection: Connections = Connections.HEALTH_CONNECT,
-    ): Result<Boolean> {
+    ): Result<Boolean>
+}
+
+/** Production implementation — drives `Terra.initConnection` on the Android SDK. */
+class TerraSdkConnector(private val authApi: TerraAuthApi) : TerraConnector {
+
+    override suspend fun connect(activity: Activity, connection: Connections): Result<Boolean> {
         val manager = TerraManagerHolder.current
             ?: return Result.failure(IllegalStateException("TerraManager not initialised"))
 
@@ -23,8 +28,10 @@ class TerraConnector(private val authApi: TerraAuthApi) {
 
         val tokenResult = authApi.generateAuthToken()
         val token = tokenResult.getOrElse {
-            Timber.e(it, "Terra generateAuthToken failed (devId=%s, env=%s)",
-                TerraConfig.devId.short(), TerraConfig.environment)
+            Timber.e(
+                it, "Terra generateAuthToken failed (devId=%s, env=%s)",
+                TerraConfig.devId.short(), TerraConfig.environment,
+            )
             return Result.failure(it)
         }
 

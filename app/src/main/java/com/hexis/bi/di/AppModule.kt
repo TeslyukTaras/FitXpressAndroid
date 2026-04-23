@@ -14,13 +14,17 @@ import com.hexis.bi.data.scan.api.ThreeDLookApi
 import com.hexis.bi.data.healthconnections.FirestoreHealthConnectionsRepository
 import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
 import com.hexis.bi.data.network.httpLoggingInterceptor
-import com.hexis.bi.data.sleep.TerraSdkSleepRepository
+import com.hexis.bi.data.sleep.TerraApiSleepRepository
 import com.hexis.bi.data.sleep.TerraSleepRepository
 import com.hexis.bi.data.suit.MockSuitRepository
+import com.hexis.bi.data.terra.TerraApi
+import com.hexis.bi.data.terra.TerraApiImpl
 import com.hexis.bi.data.terra.TerraAuthApi
 import com.hexis.bi.data.terra.TerraCallbackHandler
 import com.hexis.bi.data.terra.TerraConnector
+import com.hexis.bi.data.terra.TerraSdkConnector
 import com.hexis.bi.data.terra.TerraWidgetApi
+import com.hexis.bi.data.terra.TerraWidgetApiImpl
 import com.hexis.bi.data.user.FirestoreUserRepository
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.suit.SuitRepository
@@ -72,11 +76,12 @@ val appModule = module {
     single { ScanResultRepository() }
     single { ScanHistoryRepository(get(), get()) }
     single { TerraAuthApi(get()) }
-    single { TerraWidgetApi(get()) }
-    single { TerraConnector(get()) }
+    single<TerraApi> { TerraApiImpl(get()) }
     single<HealthConnectionsRepository> { FirestoreHealthConnectionsRepository(get(), get(), androidContext()) }
     single { TerraCallbackHandler(get()) }
-    single<TerraSleepRepository> { TerraSdkSleepRepository() }
+    single<TerraWidgetApi> { TerraWidgetApiImpl(get()) }
+    single<TerraConnector> { TerraSdkConnector(get()) }
+    single<TerraSleepRepository> { TerraApiSleepRepository(get(), get()) }
     viewModel { MainViewModel(get(), get()) }
     viewModel { LoginViewModel(get(), get(), get(), androidApplication()) }
     viewModel { SignUpViewModel(get(), get(), get(), androidApplication()) }

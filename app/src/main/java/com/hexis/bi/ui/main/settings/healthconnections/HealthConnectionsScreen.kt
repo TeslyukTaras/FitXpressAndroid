@@ -37,6 +37,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
+import com.hexis.bi.data.healthconnections.HealthConnection
+import com.hexis.bi.data.terra.TerraConfig
 import com.hexis.bi.domain.enums.HealthProvider
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
@@ -49,24 +51,8 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
     else -> null
 }
 
-private data class HealthConnectionItem(
-    val provider: HealthProvider,
-    @DrawableRes val iconRes: Int,
-    @StringRes val nameRes: Int,
-)
-
-private val healthConnections = listOf(
-    HealthConnectionItem(
-        HealthProvider.AppleHealth,
-        R.drawable.ic_apple,
-        R.string.health_connection_apple
-    ),
-    HealthConnectionItem(
-        HealthProvider.GoogleHealth,
-        R.drawable.ic_google,
-        R.string.health_connection_google
-    ),
-)
+private fun List<HealthConnection>.hasProvider(code: String): Boolean =
+    any { it.provider.equals(code, ignoreCase = true) }
 
 @Composable
 fun HealthConnectionsScreen(
@@ -125,48 +111,35 @@ fun HealthConnectionsScreen(
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_m))
+                verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_m)),
             ) {
-                healthConnections
-                    .filterNot { it.provider == HealthProvider.AppleHealth }
-                    .forEach { item ->
-                        HealthConnectionRow(
-                            iconRes = item.iconRes,
-                            title = stringResource(item.nameRes),
-                            connected = item.provider in state.connectedProviders,
-                            onClick = {
-                                activity?.let { viewModel.onProviderClick(item.provider, it) }
-                            },
-                        )
-                    }
-
-                WearableConnectRow(
-                    connectedCount = state.wearableConnections.size,
-                    onClick = viewModel::onConnectWearable,
+                HealthConnectionRow(
+                    iconRes = R.drawable.ic_google,
+                    title = stringResource(R.string.health_connection_health_connect),
+                    connected = HealthProvider.GoogleHealth in state.connectedProviders,
+                    onClick = {
+                        activity?.let { viewModel.onProviderClick(HealthProvider.GoogleHealth, it) }
+                    },
                 )
+
+                HealthConnectionRow(
+                    iconRes = R.drawable.ic_connect,
+                    title = stringResource(R.string.health_connection_oura),
+                    connected = state.wearableConnections.hasProvider("OURA"),
+                    onClick = viewModel::onConnectOura,
+                )
+
+                if (TerraConfig.isSandbox) {
+                    HealthConnectionRow(
+                        iconRes = R.drawable.ic_connect,
+                        title = stringResource(R.string.health_connection_dummy),
+                        connected = state.wearableConnections.hasProvider("DUMMY"),
+                        onClick = viewModel::onConnectDummy,
+                    )
+                }
             }
         }
     }
-}
-
-@Composable
-private fun WearableConnectRow(
-    connectedCount: Int,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    HealthConnectionRow(
-        iconRes = R.drawable.ic_connect,
-        title = stringResource(R.string.health_connection_wearable),
-        connected = connectedCount > 0,
-        connectedLabel = if (connectedCount > 0) {
-            stringResource(R.string.health_connection_wearable_count, connectedCount)
-        } else {
-            stringResource(R.string.health_connection_status_not_connected)
-        },
-        onClick = onClick,
-        modifier = modifier,
-    )
 }
 
 @Composable
@@ -207,7 +180,7 @@ private fun HealthConnectionRow(
                     modifier = Modifier
                         .size(dimensionResource(R.dimen.size_indicator))
                         .clip(CircleShape)
-                        .background(statusColor)
+                        .background(statusColor),
                 )
                 Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacer_xxs)))
                 Text(

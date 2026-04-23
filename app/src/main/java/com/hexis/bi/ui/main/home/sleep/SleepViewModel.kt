@@ -27,7 +27,6 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 import kotlin.math.roundToInt
-import kotlin.random.Random
 
 class SleepViewModel(
     application: Application,
@@ -253,71 +252,77 @@ class SleepViewModel(
         val fmt = DateTimeFormatter.ofPattern("MMM d")
         val label = "${monday.format(fmt)} - ${sunday.format(fmt)}"
 
-        val todayMinutes = if (offset == 0) _state.value.totalSleepMinutes else -1
-        val (entries, stages) = generateWeekData(monday, sunday, todayMinutes)
+        _state.update { it.copy(weekLabel = label, canGoNextWeek = offset < 0) }
 
-        _state.update {
-            it.copy(
-                weekLabel = label,
-                weeklyEntries = entries,
-                weeklyStages = stages,
-                avgSleepMinutes = avgMinutes(entries),
-                canGoNextWeek = offset < 0,
+        viewModelScope.launch {
+            // Pull one day earlier so sessions that wake on Monday are included.
+            val current = terraSleepRepository
+                .getSessionsForRange(monday.minusDays(1), sunday)
+                .getOrDefault(emptyList())
+            val previous = terraSleepRepository
+                .getSessionsForRange(monday.minusWeeks(1).minusDays(1), sunday.minusWeeks(1))
+                .getOrDefault(emptyList())
+
+            val entries = buildWeekEntries(monday, current)
+            val stages = buildWeeklyStages(current, previous)
+
+            _state.update {
+                it.copy(
+                    weeklyEntries = entries,
+                    weeklyStages = stages,
+                    avgSleepMinutes = avgMinutes(entries),
+                )
+            }
+        }
+    }
+
+    private fun buildWeekEntries(
+        monday: LocalDate,
+        sessions: List<TerraSleepSession>,
+    ): List<DailySleepEntry> {
+        val today = LocalDate.now()
+        val byDate = sessions.groupBy { it.wakeTime.toLocalDate() }
+        return WeekDay.entries.mapIndexed { index, weekDay ->
+            val day = monday.plusDays(index.toLong())
+            val minutes = if (day.isAfter(today)) 0
+            else byDate[day]?.sumOf { it.durationMinutes } ?: 0
+            DailySleepEntry(weekDay.abbreviation, minutes, isHighlighted = day == today)
+        }
+    }
+
+    private fun buildWeeklyStages(
+        current: List<TerraSleepSession>,
+        previous: List<TerraSleepSession>,
+    ): List<WeeklyStageData> {
+        if (current.isEmpty()) return emptyStageList()
+        val currAvg = averageStageMinutes(current)
+        val prevAvg = if (previous.isEmpty()) emptyMap() else averageStageMinutes(previous)
+        return listOf(
+            TerraSleepStage.Deep,
+            TerraSleepStage.REM,
+            TerraSleepStage.Light,
+            TerraSleepStage.Awake,
+        ).map { stage ->
+            val cur = currAvg[stage] ?: 0
+            val prev = prevAvg[stage] ?: 0
+            WeeklyStageData(
+                stage = stage.toUiStage(),
+                durationMinutes = cur,
+                trend = if (cur >= prev) StageTrend.Up else StageTrend.Down,
             )
         }
     }
 
-    // Summary tab keeps seeded mock data until the weekly Terra endpoint is wired in.
-    fun generateWeekData(monday: LocalDate, sunday: LocalDate, todayMinutes: Int = -1): Pair<List<DailySleepEntry>, List<WeeklyStageData>> {
-        val today = LocalDate.now()
-        val random = Random(monday.toEpochDay())
-
-        val entries = WeekDay.entries.mapIndexed { index, weekDay ->
-            val day = monday.plusDays(index.toLong())
-            val minutes = when {
-                day.isAfter(today) -> 0
-                day == today && todayMinutes >= 0 -> todayMinutes
-                else -> random.nextInt(SLEEP_MIN_MINUTES, SLEEP_MAX_MINUTES + 1)
+    /** Sums per-stage minutes across sessions, then divides by session count. */
+    private fun averageStageMinutes(sessions: List<TerraSleepSession>): Map<TerraSleepStage, Int> {
+        val totals = mutableMapOf<TerraSleepStage, Int>()
+        sessions.forEach { session ->
+            session.stages.forEach { interval ->
+                totals.merge(interval.stage, interval.durationMinutes, Int::plus)
             }
-            DailySleepEntry(weekDay.abbreviation, minutes, isHighlighted = day == today)
         }
-
-        val avgNightMinutes = avgMinutes(entries)
-        if (avgNightMinutes == 0) {
-            return Pair(entries, emptyStageList())
-        }
-
-        val (deepPct, remPct, awakePct) = stageSplit(random)
-        val lightPct = 1f - deepPct - remPct - awakePct
-
-        val prevRandom = Random(monday.minusWeeks(1).toEpochDay())
-        val (prevDeepPct, prevRemPct, prevAwakePct) = stageSplit(prevRandom)
-        val prevLightPct = 1f - prevDeepPct - prevRemPct - prevAwakePct
-
-        val deepMinutes = (avgNightMinutes * deepPct).roundToInt()
-        val remMinutes = (avgNightMinutes * remPct).roundToInt()
-        val awakeMinutes = (avgNightMinutes * awakePct).roundToInt()
-        val lightMinutes = avgNightMinutes - deepMinutes - remMinutes - awakeMinutes
-
-        val stages = listOf(
-            WeeklyStageData(SleepStage.Deep, deepMinutes, trend(deepPct, prevDeepPct)),
-            WeeklyStageData(SleepStage.REM, remMinutes, trend(remPct, prevRemPct)),
-            WeeklyStageData(SleepStage.Light, lightMinutes, trend(lightPct, prevLightPct)),
-            WeeklyStageData(SleepStage.Awake, awakeMinutes, trend(awakePct, prevAwakePct)),
-        )
-
-        return Pair(entries, stages)
+        return totals.mapValues { (_, total) -> total / sessions.size }
     }
-
-    private fun stageSplit(random: Random): Triple<Float, Float, Float> {
-        val deep = DEEP_MIN_PCT + random.nextFloat() * (DEEP_MAX_PCT - DEEP_MIN_PCT)
-        val rem = REM_MIN_PCT + random.nextFloat() * (REM_MAX_PCT - REM_MIN_PCT)
-        val awake = AWAKE_MIN_PCT + random.nextFloat() * (AWAKE_MAX_PCT - AWAKE_MIN_PCT)
-        return Triple(deep, rem, awake)
-    }
-
-    private fun trend(current: Float, previous: Float): StageTrend =
-        if (current >= previous) StageTrend.Up else StageTrend.Down
 
     private fun emptyStageList() = listOf(
         WeeklyStageData(SleepStage.Deep, 0, StageTrend.Up),
@@ -329,17 +334,5 @@ class SleepViewModel(
     private fun avgMinutes(entries: List<DailySleepEntry>): Int {
         val nonEmpty = entries.filter { it.durationMinutes > 0 }
         return if (nonEmpty.isEmpty()) 0 else nonEmpty.sumOf { it.durationMinutes } / nonEmpty.size
-    }
-
-    companion object {
-        private const val SLEEP_MIN_MINUTES = 300  // 5 h
-        private const val SLEEP_MAX_MINUTES = 540  // 9 h
-
-        private const val DEEP_MIN_PCT = 0.10f
-        private const val DEEP_MAX_PCT = 0.20f
-        private const val REM_MIN_PCT = 0.15f
-        private const val REM_MAX_PCT = 0.25f
-        private const val AWAKE_MIN_PCT = 0.03f
-        private const val AWAKE_MAX_PCT = 0.08f
     }
 }

@@ -63,6 +63,7 @@ android {
             resValue("string", "app_name", "FitXpress Dev")
             buildConfigField("String", "ENVIRONMENT", "\"dev\"")
             buildConfigField("String", "API_BASE_URL", "\"https://api.dev.hexis.bi/\"")
+            buildConfigField("boolean", "TERRA_INCLUDE_DUMMY_PROVIDER", "true")
         }
         create("stage") {
             dimension = "env"
@@ -71,12 +72,14 @@ android {
             resValue("string", "app_name", "FitXpress Stage")
             buildConfigField("String", "ENVIRONMENT", "\"stage\"")
             buildConfigField("String", "API_BASE_URL", "\"https://api.stage.hexis.bi/\"")
+            buildConfigField("boolean", "TERRA_INCLUDE_DUMMY_PROVIDER", "false")
         }
         create("prod") {
             dimension = "env"
             resValue("string", "app_name", "FitXpress")
             buildConfigField("String", "ENVIRONMENT", "\"prod\"")
             buildConfigField("String", "API_BASE_URL", "\"https://api.hexis.bi/\"")
+            buildConfigField("boolean", "TERRA_INCLUDE_DUMMY_PROVIDER", "false")
         }
     }
 

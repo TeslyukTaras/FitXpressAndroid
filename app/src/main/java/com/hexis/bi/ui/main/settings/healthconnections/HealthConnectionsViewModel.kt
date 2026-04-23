@@ -41,11 +41,19 @@ class HealthConnectionsViewModel(
     val state = _state.asStateFlow()
 
     init {
-        refreshSdkConnections()
-
         healthConnectionsRepository.observeConnections()
             .onEach { items ->
-                _state.update { it.copy(wearableConnections = items.filter { c -> c.active }) }
+                val active = items.filter { it.active }
+                val (sdk, wearables) = active.partition { it.provider == PROVIDER_HEALTH_CONNECT }
+                val connectedProviders = buildSet {
+                    if (sdk.isNotEmpty()) add(HealthProvider.GoogleHealth)
+                }
+                _state.update {
+                    it.copy(
+                        connectedProviders = connectedProviders,
+                        wearableConnections = wearables,
+                    )
+                }
             }
             .catch { setError(R.string.error_connection_save_failed) }
             .launchIn(viewModelScope)
@@ -62,7 +70,11 @@ class HealthConnectionsViewModel(
         }
     }
 
-    fun onConnectWearable() = launch(
+    fun onConnectOura() = startWidgetSession(PROVIDER_OURA)
+
+    fun onConnectDummy() = startWidgetSession(PROVIDER_DUMMY)
+
+    private fun startWidgetSession(providers: String) = launch(
         onError = { setError(R.string.error_wearable_start_failed) },
     ) {
         val uid = firebaseAuth.currentUser?.uid
@@ -71,7 +83,7 @@ class HealthConnectionsViewModel(
             return@launch
         }
 
-        terraWidgetApi.generateWidgetSession(referenceId = uid)
+        terraWidgetApi.generateWidgetSession(referenceId = uid, providers = providers)
             .onSuccess { url -> _state.update { it.copy(widgetUrl = url) } }
             .onFailure { setError(R.string.error_wearable_start_failed) }
     }
@@ -90,7 +102,6 @@ class HealthConnectionsViewModel(
     ) {
         terraConnector.connect(activity, Connections.HEALTH_CONNECT)
             .onSuccess {
-                refreshSdkConnections()
                 persistHealthConnectConnection()
                 setMessage(R.string.msg_health_connect_connected)
             }
@@ -121,15 +132,6 @@ class HealthConnectionsViewModel(
         ).onFailure { setError(R.string.error_connection_save_failed) }
     }
 
-    private fun refreshSdkConnections() {
-        val connected = buildSet {
-            if (TerraManagerHolder.isConnected(Connections.HEALTH_CONNECT)) {
-                add(HealthProvider.GoogleHealth)
-            }
-        }
-        _state.update { it.copy(connectedProviders = connected) }
-    }
-
     private fun handleCallbackOutcome(outcome: TerraCallbackHandler.Outcome) {
         when (outcome) {
             is TerraCallbackHandler.Outcome.Success ->
@@ -146,5 +148,7 @@ class HealthConnectionsViewModel(
 
     companion object {
         private const val PROVIDER_HEALTH_CONNECT = "HEALTH_CONNECT"
+        private const val PROVIDER_OURA = "OURA"
+        private const val PROVIDER_DUMMY = "DUMMY"
     }
 }

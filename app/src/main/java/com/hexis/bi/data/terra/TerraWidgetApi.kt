@@ -10,12 +10,16 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
-/**
- * Generates Terra Widget auth sessions for web-based providers (Oura, Garmin, Fitbit, …).
- *
- * Production note: hits Terra with the api-key directly; move behind our own backend before launch.
- */
-class TerraWidgetApi(private val client: OkHttpClient) {
+/** Produces a Terra Widget auth URL for web-based providers (Oura, Garmin, …). */
+interface TerraWidgetApi {
+    /**
+     * @param referenceId Firebase UID — Terra echoes it back via webhook/redirect.
+     * @param providers Comma-separated Terra provider codes (e.g. `OURA`, `DUMMY`).
+     */
+    suspend fun generateWidgetSession(referenceId: String, providers: String): Result<String>
+}
+
+class TerraWidgetApiImpl(private val client: OkHttpClient) : TerraWidgetApi {
 
     @Serializable
     private data class WidgetRequest(
@@ -34,8 +38,7 @@ class TerraWidgetApi(private val client: OkHttpClient) {
         val message: String? = null,
     )
 
-    /** @param referenceId Firebase UID — Terra echoes it back via webhook/redirect. */
-    suspend fun generateWidgetSession(referenceId: String): Result<String> =
+    override suspend fun generateWidgetSession(referenceId: String, providers: String): Result<String> =
         withContext(Dispatchers.IO) {
             try {
                 val payload = json.encodeToString(
@@ -44,7 +47,7 @@ class TerraWidgetApi(private val client: OkHttpClient) {
                         reference_id = referenceId,
                         auth_success_redirect_url = TerraDeepLinks.SUCCESS_URL,
                         auth_failure_redirect_url = TerraDeepLinks.FAILURE_URL,
-                        providers = DEFAULT_PROVIDERS,
+                        providers = providers,
                     ),
                 )
 
@@ -76,8 +79,5 @@ class TerraWidgetApi(private val client: OkHttpClient) {
         private val JSON_MEDIA = "application/json".toMediaType()
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
-        // HC / Samsung Health still go through the on-device SDK path.
-        private const val DEFAULT_PROVIDERS =
-            "OURA,GARMIN,FITBIT,WHOOP,POLAR,COROS,SUUNTO,WITHINGS,STRAVA"
     }
 }
