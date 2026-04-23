@@ -17,6 +17,7 @@ import com.hexis.bi.data.healthconnections.HealthConnection
 import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
 import com.hexis.bi.data.terra.TerraCallbackHandler
 import com.hexis.bi.data.terra.TerraConnector
+import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.data.terra.TerraManagerHolder
 import com.hexis.bi.data.terra.TerraWidgetApi
 import com.hexis.bi.domain.enums.HealthProvider
@@ -100,12 +101,23 @@ class HealthConnectionsViewModel(
     private fun connectHealthConnect(activity: Activity) = launch(
         onError = { setError(it.toHealthConnectErrorRes()) },
     ) {
-        terraConnector.connect(activity, Connections.HEALTH_CONNECT)
-            .onSuccess {
-                persistHealthConnectConnection()
-                setMessage(R.string.msg_health_connect_connected)
-            }
-            .onFailure { setError(it.toHealthConnectErrorRes()) }
+        val connected = terraConnector.connect(activity, Connections.HEALTH_CONNECT).getOrElse {
+            setError(it.toHealthConnectErrorRes())
+            return@launch
+        }
+        if (!connected) {
+            setError(R.string.error_health_connect_failed)
+            return@launch
+        }
+        TerraManagerHolder.current?.let { mgr ->
+            TerraSdkSync.syncLinkedConnections(
+                mgr,
+                reason = "post_connect",
+                force = true,
+            )
+        }
+        persistHealthConnectConnection()
+        setMessage(R.string.msg_health_connect_connected)
     }
 
     @StringRes

@@ -30,14 +30,14 @@ class TerraSdkConnector(private val authApi: TerraAuthApi) : TerraConnector {
         val token = tokenResult.getOrElse {
             Timber.e(
                 it, "Terra generateAuthToken failed (devId=%s, env=%s)",
-                TerraConfig.devId.short(), TerraConfig.environment,
+                redactSensitiveId(TerraConfig.devId), TerraConfig.environment,
             )
             return Result.failure(it)
         }
 
         Timber.d(
             "Terra initConnection start: connection=%s devId=%s env=%s tokenLen=%d",
-            connection, TerraConfig.devId.short(), TerraConfig.environment, token.length,
+            connection, redactSensitiveId(TerraConfig.devId), TerraConfig.environment, token.length,
         )
 
         return suspendCancellableCoroutine { cont ->
@@ -56,7 +56,7 @@ class TerraSdkConnector(private val authApi: TerraAuthApi) : TerraConnector {
                         error::class.java.simpleName,
                         error.message,
                         connection,
-                        TerraConfig.devId.short(),
+                        redactSensitiveId(TerraConfig.devId),
                         TerraConfig.environment,
                     )
                     if (cont.isActive) cont.resume(Result.failure(error))
@@ -68,6 +68,4 @@ class TerraSdkConnector(private val authApi: TerraAuthApi) : TerraConnector {
         }
     }
 
-    private fun String.short(): String =
-        if (length <= 8) "***" else "${take(4)}…${takeLast(4)}"
 }

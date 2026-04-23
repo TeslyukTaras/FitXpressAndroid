@@ -13,6 +13,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.data.terra.TerraCallbackHandler
+import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.data.terra.TerraManagerHolder
 import com.hexis.bi.ui.navigation.AppNavGraph
 import com.hexis.bi.ui.theme.FitXpressTheme
@@ -32,6 +33,13 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             TerraManagerHolder.init(activity = this@MainActivity, referenceId = uid)
                 .onFailure { Timber.e(it, "Terra re-init after auth change failed") }
+                .onSuccess {
+                    TerraSdkSync.syncLinkedConnections(
+                        TerraManagerHolder.current,
+                        reason = "auth_state",
+                        force = false,
+                    )
+                }
         }
     }
 
@@ -51,6 +59,22 @@ class MainActivity : ComponentActivity() {
             FitXpressTheme {
                 AppNavGraph(modifier = Modifier.fillMaxSize())
             }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val uid = firebaseAuth.currentUser?.uid
+        lifecycleScope.launch {
+            TerraManagerHolder.init(activity = this@MainActivity, referenceId = uid)
+                .onFailure { Timber.e(it, "Terra foreground init failed") }
+                .onSuccess {
+                    TerraSdkSync.syncLinkedConnections(
+                        TerraManagerHolder.current,
+                        reason = "foreground",
+                        force = false,
+                    )
+                }
         }
     }
 

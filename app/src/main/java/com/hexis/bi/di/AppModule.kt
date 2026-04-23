@@ -22,6 +22,7 @@ import com.hexis.bi.data.terra.TerraApiImpl
 import com.hexis.bi.data.terra.TerraAuthApi
 import com.hexis.bi.data.terra.TerraCallbackHandler
 import com.hexis.bi.data.terra.TerraConnector
+import com.hexis.bi.data.terra.TerraRestSourceResolver
 import com.hexis.bi.data.terra.TerraSdkConnector
 import com.hexis.bi.data.terra.TerraWidgetApi
 import com.hexis.bi.data.terra.TerraWidgetApiImpl
@@ -78,10 +79,16 @@ val appModule = module {
     single { TerraAuthApi(get()) }
     single<TerraApi> { TerraApiImpl(get()) }
     single<HealthConnectionsRepository> { FirestoreHealthConnectionsRepository(get(), get(), androidContext()) }
+    single { TerraRestSourceResolver(get()) }
     single { TerraCallbackHandler(get()) }
     single<TerraWidgetApi> { TerraWidgetApiImpl(get()) }
     single<TerraConnector> { TerraSdkConnector(get()) }
-    single<TerraSleepRepository> { TerraApiSleepRepository(get(), get()) }
+    single<TerraSleepRepository> {
+        TerraApiSleepRepository(
+            api = get(),
+            sourceResolver = get(),
+        )
+    }
     viewModel { MainViewModel(get(), get()) }
     viewModel { LoginViewModel(get(), get(), get(), androidApplication()) }
     viewModel { SignUpViewModel(get(), get(), get(), androidApplication()) }

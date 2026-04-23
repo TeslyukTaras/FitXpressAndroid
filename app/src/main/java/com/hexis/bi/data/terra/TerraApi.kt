@@ -24,11 +24,17 @@ interface TerraApi {
         terraUserId: String,
         startDate: LocalDate,
         endDate: LocalDate,
-    ): Result<TerraSleepApiResponse>
+    ): Result<TerraDataListResponse>
+
+    suspend fun getDaily(
+        terraUserId: String,
+        startDate: LocalDate,
+        endDate: LocalDate,
+    ): Result<TerraDataListResponse>
 }
 
 @Serializable
-data class TerraSleepApiResponse(
+data class TerraDataListResponse(
     val status: String? = null,
     val type: String? = null,
     val data: List<JsonElement> = emptyList(),
@@ -41,7 +47,7 @@ class TerraApiImpl(private val client: OkHttpClient) : TerraApi {
         terraUserId: String,
         startDate: LocalDate,
         endDate: LocalDate,
-    ): Result<TerraSleepApiResponse> = withContext(Dispatchers.IO) {
+    ): Result<TerraDataListResponse> = withContext(Dispatchers.IO) {
         try {
             val url = "$BASE_URL/sleep".toHttpUrl().newBuilder()
                 .addQueryParameter("user_id", terraUserId)
@@ -64,7 +70,43 @@ class TerraApiImpl(private val client: OkHttpClient) : TerraApi {
                 if (!response.isSuccessful) {
                     error("Terra /sleep ${response.code}: $body")
                 }
-                val parsed = json.decodeFromString(TerraSleepApiResponse.serializer(), body)
+                val parsed = json.decodeFromString(TerraDataListResponse.serializer(), body)
+                Result.success(parsed)
+            }
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getDaily(
+        terraUserId: String,
+        startDate: LocalDate,
+        endDate: LocalDate,
+    ): Result<TerraDataListResponse> = withContext(Dispatchers.IO) {
+        try {
+            val url = "$BASE_URL/daily".toHttpUrl().newBuilder()
+                .addQueryParameter("user_id", terraUserId)
+                .addQueryParameter("start_date", startDate.format(DATE_FMT))
+                .addQueryParameter("end_date", endDate.format(DATE_FMT))
+                .addQueryParameter("to_webhook", "false")
+                .addQueryParameter("with_samples", "true")
+                .build()
+
+            val request = Request.Builder()
+                .url(url)
+                .addHeader("dev-id", TerraConfig.devId)
+                .addHeader("x-api-key", TerraConfig.apiKey)
+                .addHeader("Accept", "application/json")
+                .get()
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                val body = response.body?.string().orEmpty()
+                if (!response.isSuccessful) {
+                    error("Terra /daily ${response.code}: $body")
+                }
+                val parsed = json.decodeFromString(TerraDataListResponse.serializer(), body)
                 Result.success(parsed)
             }
         } catch (e: Exception) {

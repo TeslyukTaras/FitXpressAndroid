@@ -69,7 +69,6 @@ class SleepViewModel(
                 mapOf(FirestoreSchema.UserSettingsFields.SLEEP_GOAL_HOURS to newGoal)
             ).onFailure { setError(it.message) }
         }
-        // Re-derive week snapshot so today's bar reflects updated goal context.
         loadWeekData(weekOffset)
     }
 
@@ -172,7 +171,6 @@ class SleepViewModel(
                 insightRes = insightFor(quality),
             )
         }
-        // Refresh summary so today's bar reflects the just-loaded session.
         loadWeekData(weekOffset)
     }
 
@@ -255,7 +253,6 @@ class SleepViewModel(
         _state.update { it.copy(weekLabel = label, canGoNextWeek = offset < 0) }
 
         viewModelScope.launch {
-            // Pull one day earlier so sessions that wake on Monday are included.
             val current = terraSleepRepository
                 .getSessionsForRange(monday.minusDays(1), sunday)
                 .getOrDefault(emptyList())
@@ -313,7 +310,6 @@ class SleepViewModel(
         }
     }
 
-    /** Sums per-stage minutes across sessions, then divides by session count. */
     private fun averageStageMinutes(sessions: List<TerraSleepSession>): Map<TerraSleepStage, Int> {
         val totals = mutableMapOf<TerraSleepStage, Int>()
         sessions.forEach { session ->
