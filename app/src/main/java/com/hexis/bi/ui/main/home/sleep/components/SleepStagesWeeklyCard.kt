@@ -24,6 +24,7 @@ import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
 import com.hexis.bi.ui.main.home.sleep.StageTrend
 import com.hexis.bi.ui.main.home.sleep.WeeklyStageData
+import com.hexis.bi.ui.main.home.sleep.nameRes
 import com.hexis.bi.ui.theme.Green
 import com.hexis.bi.ui.theme.Red100
 import com.hexis.bi.utils.formatSleepDuration

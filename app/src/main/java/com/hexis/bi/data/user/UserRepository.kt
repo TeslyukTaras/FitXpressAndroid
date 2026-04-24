@@ -4,6 +4,9 @@ import kotlinx.coroutines.flow.Flow
 
 interface UserRepository {
     fun observeUser(): Flow<UserProfile>
+
+    /** Same Firestore session as profile; listens to `settings/userSettings` in parallel (no extra manual fetch). */
+    fun observeUserSettings(): Flow<UserSettings>
     suspend fun getUser(): Result<UserProfile>
     suspend fun createUser(profile: UserProfile): Result<Unit>
     suspend fun createUserIfAbsent(profile: UserProfile): Result<Unit>

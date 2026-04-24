@@ -2,23 +2,22 @@ package com.hexis.bi.data.terra
 
 import android.app.Activity
 import co.tryterra.terra.enums.Connections
+import co.tryterra.terra.enums.CustomPermissions
 import kotlinx.coroutines.suspendCancellableCoroutine
 import timber.log.Timber
 import kotlin.coroutines.resume
 
 /** Runs Terra's SDK connection flow (Health Connect / Samsung Health). Must be called from an Activity. */
-interface TerraConnector {
+class TerraConnector(
+    private val authApi: TerraAuthApi,
+    private val terraManagerHolder: TerraManagerHolder,
+) {
+
     suspend fun connect(
         activity: Activity,
         connection: Connections = Connections.HEALTH_CONNECT,
-    ): Result<Boolean>
-}
-
-/** Production implementation — drives `Terra.initConnection` on the Android SDK. */
-class TerraSdkConnector(private val authApi: TerraAuthApi) : TerraConnector {
-
-    override suspend fun connect(activity: Activity, connection: Connections): Result<Boolean> {
-        val manager = TerraManagerHolder.current
+    ): Result<Boolean> {
+        val manager = terraManagerHolder.current
             ?: return Result.failure(IllegalStateException("TerraManager not initialised"))
 
         if (manager.getUserId(connection) != null) {
@@ -26,46 +25,50 @@ class TerraSdkConnector(private val authApi: TerraAuthApi) : TerraConnector {
             return Result.success(true)
         }
 
-        val tokenResult = authApi.generateAuthToken()
-        val token = tokenResult.getOrElse {
-            Timber.e(
-                it, "Terra generateAuthToken failed (devId=%s, env=%s)",
-                redactSensitiveId(TerraConfig.devId), TerraConfig.environment,
-            )
+        val token = authApi.generateAuthToken().getOrElse {
+            Timber.e(it, "Terra generateAuthToken failed (env=%s)", TerraConfig.environment)
             return Result.failure(it)
         }
 
-        Timber.d(
-            "Terra initConnection start: connection=%s devId=%s env=%s tokenLen=%d",
-            connection, redactSensitiveId(TerraConfig.devId), TerraConfig.environment, token.length,
-        )
+        val permissions = if (connection == Connections.HEALTH_CONNECT) HEALTH_CONNECT_PERMISSIONS else emptySet()
 
         return suspendCancellableCoroutine { cont ->
             manager.initConnection(
                 connection = connection,
                 token = token,
                 context = activity,
-                customPermissions = emptySet(),
+                customPermissions = permissions,
                 schedulerOn = true,
                 startIntent = null,
             ) { success, error ->
                 if (error != null) {
-                    Timber.e(
-                        error,
-                        "Terra initConnection failed: type=%s message=%s connection=%s devId=%s env=%s",
-                        error::class.java.simpleName,
-                        error.message,
-                        connection,
-                        redactSensitiveId(TerraConfig.devId),
-                        TerraConfig.environment,
-                    )
+                    Timber.e(error, "Terra initConnection failed: connection=%s", connection)
                     if (cont.isActive) cont.resume(Result.failure(error))
                 } else {
-                    Timber.d("Terra connection success=%s connection=%s", success, connection)
+                    Timber.d("Terra initConnection success=%s connection=%s", success, connection)
                     if (cont.isActive) cont.resume(Result.success(success))
                 }
             }
         }
     }
 
+    companion object {
+        // Matches the <uses-permission android:name="android.permission.health.READ_*"> block in
+        // AndroidManifest.xml. Passing these to initConnection ensures Terra requests the full set
+        // at the Health Connect permission prompt, instead of its smaller default.
+        private val HEALTH_CONNECT_PERMISSIONS: Set<CustomPermissions> = setOf(
+            CustomPermissions.SLEEP_ANALYSIS,
+            CustomPermissions.HEART_RATE,
+            CustomPermissions.HEART_RATE_VARIABILITY,
+            CustomPermissions.RESTING_HEART_RATE,
+            CustomPermissions.STEPS,
+            CustomPermissions.EXERCISE_DISTANCE,
+            CustomPermissions.CALORIES,
+            CustomPermissions.ACTIVE_DURATIONS,
+            CustomPermissions.WORKOUT_TYPE,
+            CustomPermissions.ACTIVITY_SUMMARY,
+            CustomPermissions.OXYGEN_SATURATION,
+            CustomPermissions.RESPIRATORY_RATE,
+        )
+    }
 }

@@ -1,24 +1,25 @@
 package com.hexis.bi.data.sleep
 
+import java.time.Duration
 import java.time.LocalDateTime
 
-data class TerraSleepStageInterval(
-    val stage: TerraSleepStage,
+enum class SleepStage { Deep, REM, Light, Awake }
+
+data class SleepStageInterval(
+    val stage: SleepStage,
     val start: LocalDateTime,
     val end: LocalDateTime,
 ) {
     val durationMinutes: Int
-        get() = java.time.Duration.between(start, end).toMinutes().toInt()
+        get() = Duration.between(start, end).toMinutes().toInt()
 }
 
-enum class TerraSleepStage { Deep, REM, Light, Awake }
-
-data class TerraSleepSession(
+data class SleepSession(
     val bedtime: LocalDateTime,
     val wakeTime: LocalDateTime,
     val durationMinutes: Int,
     val efficiencyPercent: Float,
     val restingHeartRateBpm: Int,
     val hrvMs: Int,
-    val stages: List<TerraSleepStageInterval>,
+    val stages: List<SleepStageInterval>,
 )

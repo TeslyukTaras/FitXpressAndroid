@@ -1,15 +1,16 @@
 package com.hexis.bi.ui.main.home.sleep
 
 import android.app.Application
+import androidx.lifecycle.viewModelScope
 import com.hexis.bi.R
-import com.hexis.bi.data.sleep.TerraSleepRepository
-import com.hexis.bi.data.sleep.TerraSleepSession
-import com.hexis.bi.data.sleep.TerraSleepStage
-import com.hexis.bi.data.sleep.TerraSleepStageInterval
+import com.hexis.bi.data.sleep.SleepRepository
+import com.hexis.bi.data.sleep.SleepSession
+import com.hexis.bi.data.terra.TerraManagerHolder
+import com.hexis.bi.data.sleep.SleepStage
+import com.hexis.bi.data.sleep.SleepStageInterval
 import com.hexis.bi.data.user.FirestoreSchema
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.enums.WeekDay
-import androidx.lifecycle.viewModelScope
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.theme.Blue300
 import com.hexis.bi.ui.theme.BlueFadedIndicator100
@@ -19,6 +20,9 @@ import com.hexis.bi.utils.constants.SleepConstants
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -27,11 +31,13 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 import kotlin.math.roundToInt
+import timber.log.Timber
 
 class SleepViewModel(
     application: Application,
-    private val terraSleepRepository: TerraSleepRepository,
+    private val sleepRepository: SleepRepository,
     private val userRepository: UserRepository,
+    private val terraManagerHolder: TerraManagerHolder,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(SleepState())
@@ -40,9 +46,25 @@ class SleepViewModel(
     private var weekOffset = 0
 
     init {
-        loadSleepGoal()
-        loadTodaySession()
-        loadWeekData(0)
+        userRepository.observeUserSettings()
+            .onEach { settings ->
+                val goal = settings.sleepGoalHours ?: SleepConstants.DEFAULT_SLEEP_GOAL_HOURS
+                _state.update { curr ->
+                    if (curr.showSettingsDialog) {
+                        curr.copy(sleepGoalHours = goal)
+                    } else {
+                        curr.copy(sleepGoalHours = goal, sleepGoalHoursDraft = goal)
+                    }
+                }
+            }
+            .catch { e -> Timber.w(e, "observeUserSettings failed; keeping sleep goal defaults") }
+            .launchIn(viewModelScope)
+
+        viewModelScope.launch {
+            terraManagerHolder.awaitCurrentOrTimeout()
+            loadTodaySession()
+            loadWeekData(0)
+        }
     }
 
     fun selectTab(tab: SleepTab) {
@@ -94,24 +116,12 @@ class SleepViewModel(
         _state.update { it.copy(showRecoverySheet = false) }
     }
 
-    private fun loadSleepGoal() = viewModelScope.launch {
-        userRepository.getUserSettings().onSuccess { settings ->
-            val goal = settings.sleepGoalHours ?: return@onSuccess
-            _state.update { it.copy(sleepGoalHours = goal, sleepGoalHoursDraft = goal) }
-        }
-    }
-
     private fun loadTodaySession() {
         _state.update { it.copy(dayLoadState = SleepDayLoadState.Loading, errorMessage = null) }
         viewModelScope.launch {
-            val result = terraSleepRepository.getSessionForNight(LocalDate.now())
-            result.fold(
+            sleepRepository.getSessionForNight(LocalDate.now()).fold(
                 onSuccess = { session ->
-                    if (session == null) {
-                        applyEmptySession()
-                    } else {
-                        applySession(session)
-                    }
+                    if (session == null) applyEmptySession() else applySession(session)
                 },
                 onFailure = { err ->
                     _state.update {
@@ -146,13 +156,9 @@ class SleepViewModel(
         loadWeekData(weekOffset)
     }
 
-    private fun applySession(session: TerraSleepSession) {
+    private fun applySession(session: SleepSession) {
         val score = computeSleepScore(session.durationMinutes, session.efficiencyPercent)
         val quality = qualityFor(score)
-        val stages = aggregateStages(session.stages)
-        val segments = buildTimelineSegments(session)
-        val startHour = session.bedtime.hour
-        val endHour = session.wakeTime.hour
 
         _state.update {
             it.copy(
@@ -160,14 +166,14 @@ class SleepViewModel(
                 errorMessage = null,
                 totalSleepMinutes = session.durationMinutes,
                 sleepQuality = quality,
-                stages = stages,
+                stages = aggregateStages(session.stages),
                 restfulness = score,
                 restfulnessMax = 100,
                 hrv = session.hrvMs,
                 restingHeartRate = session.restingHeartRateBpm,
-                timelineStartHour = startHour,
-                timelineEndHour = endHour,
-                timelineSegments = segments,
+                timelineStartHour = session.bedtime.hour,
+                timelineEndHour = session.wakeTime.hour,
+                timelineSegments = buildTimelineSegments(session),
                 insightRes = insightFor(quality),
             )
         }
@@ -209,18 +215,18 @@ class SleepViewModel(
         SleepQuality.Poor -> R.string.sleep_insight_poor
     }
 
-    private fun aggregateStages(intervals: List<TerraSleepStageInterval>): List<SleepStageData> {
+    private fun aggregateStages(intervals: List<SleepStageInterval>): List<SleepStageData> {
         val sums = intervals.groupBy { it.stage }
             .mapValues { (_, list) -> list.sumOf { it.durationMinutes } }
         return listOf(
-            SleepStageData(SleepStage.Deep, sums[TerraSleepStage.Deep] ?: 0, Blue300),
-            SleepStageData(SleepStage.REM, sums[TerraSleepStage.REM] ?: 0, BlueFadedIndicator300),
-            SleepStageData(SleepStage.Light, sums[TerraSleepStage.Light] ?: 0, BlueFadedIndicator200),
-            SleepStageData(SleepStage.Awake, sums[TerraSleepStage.Awake] ?: 0, BlueFadedIndicator100),
+            SleepStageData(SleepStage.Deep, sums[SleepStage.Deep] ?: 0, Blue300),
+            SleepStageData(SleepStage.REM, sums[SleepStage.REM] ?: 0, BlueFadedIndicator300),
+            SleepStageData(SleepStage.Light, sums[SleepStage.Light] ?: 0, BlueFadedIndicator200),
+            SleepStageData(SleepStage.Awake, sums[SleepStage.Awake] ?: 0, BlueFadedIndicator100),
         )
     }
 
-    private fun buildTimelineSegments(session: TerraSleepSession): List<TimelineSegment> {
+    private fun buildTimelineSegments(session: SleepSession): List<TimelineSegment> {
         val totalMinutes = Duration.between(session.bedtime, session.wakeTime).toMinutes()
             .toFloat()
             .coerceAtLeast(1f)
@@ -228,18 +234,11 @@ class SleepViewModel(
             val startOffset = Duration.between(session.bedtime, interval.start).toMinutes().toFloat()
             val endOffset = Duration.between(session.bedtime, interval.end).toMinutes().toFloat()
             TimelineSegment(
-                stage = interval.stage.toUiStage(),
+                stage = interval.stage,
                 startFraction = (startOffset / totalMinutes).coerceIn(0f, 1f),
                 endFraction = (endOffset / totalMinutes).coerceIn(0f, 1f),
             )
         }
-    }
-
-    private fun TerraSleepStage.toUiStage(): SleepStage = when (this) {
-        TerraSleepStage.Deep -> SleepStage.Deep
-        TerraSleepStage.REM -> SleepStage.REM
-        TerraSleepStage.Light -> SleepStage.Light
-        TerraSleepStage.Awake -> SleepStage.Awake
     }
 
     private fun loadWeekData(offset: Int) {
@@ -253,10 +252,10 @@ class SleepViewModel(
         _state.update { it.copy(weekLabel = label, canGoNextWeek = offset < 0) }
 
         viewModelScope.launch {
-            val current = terraSleepRepository
+            val current = sleepRepository
                 .getSessionsForRange(monday.minusDays(1), sunday)
                 .getOrDefault(emptyList())
-            val previous = terraSleepRepository
+            val previous = sleepRepository
                 .getSessionsForRange(monday.minusWeeks(1).minusDays(1), sunday.minusWeeks(1))
                 .getOrDefault(emptyList())
 
@@ -275,7 +274,7 @@ class SleepViewModel(
 
     private fun buildWeekEntries(
         monday: LocalDate,
-        sessions: List<TerraSleepSession>,
+        sessions: List<SleepSession>,
     ): List<DailySleepEntry> {
         val today = LocalDate.now()
         val byDate = sessions.groupBy { it.wakeTime.toLocalDate() }
@@ -288,30 +287,25 @@ class SleepViewModel(
     }
 
     private fun buildWeeklyStages(
-        current: List<TerraSleepSession>,
-        previous: List<TerraSleepSession>,
+        current: List<SleepSession>,
+        previous: List<SleepSession>,
     ): List<WeeklyStageData> {
         if (current.isEmpty()) return emptyStageList()
         val currAvg = averageStageMinutes(current)
         val prevAvg = if (previous.isEmpty()) emptyMap() else averageStageMinutes(previous)
-        return listOf(
-            TerraSleepStage.Deep,
-            TerraSleepStage.REM,
-            TerraSleepStage.Light,
-            TerraSleepStage.Awake,
-        ).map { stage ->
+        return SleepStage.entries.map { stage ->
             val cur = currAvg[stage] ?: 0
             val prev = prevAvg[stage] ?: 0
             WeeklyStageData(
-                stage = stage.toUiStage(),
+                stage = stage,
                 durationMinutes = cur,
                 trend = if (cur >= prev) StageTrend.Up else StageTrend.Down,
             )
         }
     }
 
-    private fun averageStageMinutes(sessions: List<TerraSleepSession>): Map<TerraSleepStage, Int> {
-        val totals = mutableMapOf<TerraSleepStage, Int>()
+    private fun averageStageMinutes(sessions: List<SleepSession>): Map<SleepStage, Int> {
+        val totals = mutableMapOf<SleepStage, Int>()
         sessions.forEach { session ->
             session.stages.forEach { interval ->
                 totals.merge(interval.stage, interval.durationMinutes, Int::plus)

@@ -28,8 +28,9 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import com.hexis.bi.R
-import com.hexis.bi.ui.main.home.sleep.SleepStage
+import com.hexis.bi.data.sleep.SleepStage
 import com.hexis.bi.ui.main.home.sleep.TimelineSegment
+import com.hexis.bi.ui.main.home.sleep.nameRes
 import com.hexis.bi.ui.theme.Blue300
 import com.hexis.bi.ui.theme.BlueFadedIndicator100
 import com.hexis.bi.ui.theme.BlueFadedIndicator200

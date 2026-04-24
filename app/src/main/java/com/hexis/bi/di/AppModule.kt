@@ -14,18 +14,16 @@ import com.hexis.bi.data.scan.api.ThreeDLookApi
 import com.hexis.bi.data.healthconnections.FirestoreHealthConnectionsRepository
 import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
 import com.hexis.bi.data.network.httpLoggingInterceptor
+import com.hexis.bi.data.sleep.SleepRepository
 import com.hexis.bi.data.sleep.TerraApiSleepRepository
-import com.hexis.bi.data.sleep.TerraSleepRepository
 import com.hexis.bi.data.suit.MockSuitRepository
 import com.hexis.bi.data.terra.TerraApi
-import com.hexis.bi.data.terra.TerraApiImpl
 import com.hexis.bi.data.terra.TerraAuthApi
 import com.hexis.bi.data.terra.TerraCallbackHandler
 import com.hexis.bi.data.terra.TerraConnector
+import com.hexis.bi.data.terra.TerraManagerHolder
 import com.hexis.bi.data.terra.TerraRestSourceResolver
-import com.hexis.bi.data.terra.TerraSdkConnector
 import com.hexis.bi.data.terra.TerraWidgetApi
-import com.hexis.bi.data.terra.TerraWidgetApiImpl
 import com.hexis.bi.data.user.FirestoreUserRepository
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.suit.SuitRepository
@@ -77,29 +75,25 @@ val appModule = module {
     single { ScanResultRepository() }
     single { ScanHistoryRepository(get(), get()) }
     single { TerraAuthApi(get()) }
-    single<TerraApi> { TerraApiImpl(get()) }
+    single { TerraApi(get()) }
     single<HealthConnectionsRepository> { FirestoreHealthConnectionsRepository(get(), get(), androidContext()) }
-    single { TerraRestSourceResolver(get()) }
+    single { TerraManagerHolder() }
+    single { TerraRestSourceResolver(get(), get()) }
     single { TerraCallbackHandler(get()) }
-    single<TerraWidgetApi> { TerraWidgetApiImpl(get()) }
-    single<TerraConnector> { TerraSdkConnector(get()) }
-    single<TerraSleepRepository> {
-        TerraApiSleepRepository(
-            api = get(),
-            sourceResolver = get(),
-        )
-    }
+    single { TerraWidgetApi(get()) }
+    single { TerraConnector(get(), get()) }
+    single<SleepRepository> { TerraApiSleepRepository(api = get(), sourceResolver = get()) }
     viewModel { MainViewModel(get(), get()) }
     viewModel { LoginViewModel(get(), get(), get(), androidApplication()) }
     viewModel { SignUpViewModel(get(), get(), get(), androidApplication()) }
-    viewModel { HomeViewModel(androidApplication(), get(), get(), get()) }
+    viewModel { HomeViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { EditProfileViewModel(androidApplication(), get(), get(), get()) }
     viewModel { ForgotPasswordViewModel(get(), androidApplication()) }
     viewModel { ScanPreferencesViewModel(androidApplication(), get()) }
-    viewModel { HealthConnectionsViewModel(androidApplication(), get(), get(), get(), get(), get()) }
+    viewModel { HealthConnectionsViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { MySuitViewModel(androidApplication(), get(), get()) }
     viewModel { NotificationsSettingsViewModel(androidApplication()) }
-    viewModel { SleepViewModel(androidApplication(), get(), get()) }
+    viewModel { SleepViewModel(androidApplication(), get(), get(), get()) }
     viewModel { ActivityViewModel(androidApplication(), get()) }
     viewModel { RecoveryViewModel(androidApplication()) }
     viewModel { ScanViewModel(androidApplication(), get()) }

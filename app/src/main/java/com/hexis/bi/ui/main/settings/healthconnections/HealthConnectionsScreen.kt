@@ -43,6 +43,7 @@ import com.hexis.bi.domain.enums.HealthProvider
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.theme.Green
+import com.hexis.bi.utils.constants.TerraProviders
 import org.koin.androidx.compose.koinViewModel
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {
@@ -125,16 +126,16 @@ fun HealthConnectionsScreen(
                 HealthConnectionRow(
                     iconRes = R.drawable.ic_connect,
                     title = stringResource(R.string.health_connection_oura),
-                    connected = state.wearableConnections.hasProvider("OURA"),
-                    onClick = viewModel::onConnectOura,
+                    connected = state.wearableConnections.hasProvider(TerraProviders.OURA),
+                    onClick = { viewModel.onOuraRowClick() },
                 )
 
                 if (TerraConfig.isSandbox) {
                     HealthConnectionRow(
                         iconRes = R.drawable.ic_connect,
                         title = stringResource(R.string.health_connection_dummy),
-                        connected = state.wearableConnections.hasProvider("DUMMY"),
-                        onClick = viewModel::onConnectDummy,
+                        connected = state.wearableConnections.hasProvider(TerraProviders.DUMMY),
+                        onClick = { viewModel.onDummyRowClick() },
                     )
                 }
             }

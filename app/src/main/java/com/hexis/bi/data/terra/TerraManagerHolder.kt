@@ -3,25 +3,28 @@ package com.hexis.bi.data.terra
 import android.app.Activity
 import co.tryterra.terra.Terra
 import co.tryterra.terra.TerraManager
-import co.tryterra.terra.enums.Connections
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.suspendCancellableCoroutine
 import timber.log.Timber
 import kotlin.coroutines.resume
 
-/** Holds the [TerraManager] after activity-scoped init. */
-object TerraManagerHolder {
+/**
+ * Process-wide holder for the [TerraManager] returned by Terra’s SDK after [init].
+ *
+ * This is a normal class (injected as a Koin singleton) so the SDK handle is not kept in a
+ * **static** field — Android lint `StaticFieldLeak` does not apply. [TerraManager] still retains
+ * the [Activity] passed at init; [com.hexis.bi.ui.MainActivity] calls [clearLocalManager] from
+ * [android.app.Activity.onDestroy] so we drop that handle when the activity is torn down.
+ */
+class TerraManagerHolder {
 
-    private val _manager = MutableStateFlow<TerraManager?>(null)
-    val manager: StateFlow<TerraManager?> = _manager.asStateFlow()
+    @Volatile
+    private var manager: TerraManager? = null
 
-    val current: TerraManager? get() = _manager.value
-
-    private var currentReferenceId: String? = null
+    val current: TerraManager?
+        get() = manager
 
     private val initMutex = Mutex()
 
@@ -32,39 +35,43 @@ object TerraManagerHolder {
     suspend fun init(activity: Activity, referenceId: String?): Result<TerraManager> =
         initMutex.withLock {
             suspendCancellableCoroutine { cont ->
-                Timber.d(
-                    "Terra.instance(devId=%s, refIdSet=%s, env=%s)",
-                    redactSensitiveId(TerraConfig.devId),
-                    referenceId != null,
-                    TerraConfig.environment,
-                )
-                Terra.instance(TerraConfig.devId, referenceId, activity) { manager, error ->
-                    if (error != null || manager == null) {
-                        Timber.e(
-                            error,
-                            "Terra init failed: type=%s message=%s",
-                            error?.let { it::class.java.simpleName } ?: "null",
-                            error?.message,
-                        )
-                        if (cont.isActive) {
-                            cont.resume(
-                                Result.failure(error ?: IllegalStateException("Null TerraManager")),
-                            )
-                        }
+                Terra.instance(TerraConfig.devId, referenceId, activity) { mgr, error ->
+                    if (error != null) {
+                        Timber.e(error, "Terra init failed")
+                        if (cont.isActive) cont.resume(Result.failure(error))
                     } else {
-                        _manager.value = manager
-                        currentReferenceId = referenceId
-                        Timber.d(
-                            "Terra init success (env=%s, refIdSet=%s)",
-                            TerraConfig.environment,
-                            referenceId != null,
-                        )
-                        if (cont.isActive) cont.resume(Result.success(manager))
+                        manager = mgr
+                        Timber.d("Terra init success (env=%s)", TerraConfig.environment)
+                        if (cont.isActive) cont.resume(Result.success(mgr))
                     }
                 }
             }
         }
 
-    fun isConnected(connection: Connections): Boolean =
-        current?.getUserId(connection) != null
+    /**
+     * Clears the cached [TerraManager] after server-side deauth so the next [init] can reconnect
+     * without the SDK still reporting the old Health Connect user id.
+     */
+    fun clearLocalManager() {
+        manager = null
+    }
+
+    /**
+     * Waits until [current] is non-null (Terra [init] finished) or [timeoutMs] elapses. Used so
+     * REST reads (e.g. sleep) do not run before the SDK has finished its first handshake.
+     */
+    suspend fun awaitCurrentOrTimeout(timeoutMs: Long = DEFAULT_AWAIT_TIMEOUT_MS): TerraManager? {
+        current?.let { return it }
+        val steps = (timeoutMs / AWAIT_POLL_INTERVAL_MS).toInt().coerceAtLeast(1)
+        repeat(steps) {
+            current?.let { return it }
+            delay(AWAIT_POLL_INTERVAL_MS)
+        }
+        return current
+    }
+
+    private companion object {
+        private const val DEFAULT_AWAIT_TIMEOUT_MS = 25_000L
+        private const val AWAIT_POLL_INTERVAL_MS = 50L
+    }
 }

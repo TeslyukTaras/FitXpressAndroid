@@ -4,10 +4,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
 /**
@@ -22,18 +19,14 @@ class TerraAuthApi(private val client: OkHttpClient) {
 
     suspend fun generateAuthToken(): Result<String> = withContext(Dispatchers.IO) {
         try {
-            val request = Request.Builder()
-                .url(ENDPOINT)
-                .addHeader("dev-id", TerraConfig.devId)
-                .addHeader("x-api-key", TerraConfig.apiKey)
-                .addHeader("Accept", "application/json")
-                .post(EMPTY_JSON.toRequestBody("application/json".toMediaType()))
+            val request = terraRequest("$TERRA_BASE_URL/auth/generateAuthToken")
+                .post(EMPTY_JSON.toRequestBody(TERRA_JSON_MEDIA))
                 .build()
 
             client.newCall(request).execute().use { response ->
                 val body = response.body?.string().orEmpty()
                 if (!response.isSuccessful) error("Terra auth ${response.code}: $body")
-                val parsed = Json { ignoreUnknownKeys = true }.decodeFromString<TokenResponse>(body)
+                val parsed = terraJson.decodeFromString(TokenResponse.serializer(), body)
                 val token = parsed.token ?: error("Terra auth returned no token: $body")
                 Result.success(token)
             }
@@ -44,7 +37,6 @@ class TerraAuthApi(private val client: OkHttpClient) {
     }
 
     companion object {
-        private const val ENDPOINT = "https://api.tryterra.co/v2/auth/generateAuthToken"
         private const val EMPTY_JSON = "{}"
     }
 }

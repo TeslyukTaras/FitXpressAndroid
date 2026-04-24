@@ -26,16 +26,17 @@ class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModel()
     private val firebaseAuth: FirebaseAuth by inject()
     private val terraCallbackHandler: TerraCallbackHandler by inject()
+    private val terraManagerHolder: TerraManagerHolder by inject()
 
     // Re-init Terra on sign-in/out so the SDK stays bound to the current Firebase UID.
     private val authListener = FirebaseAuth.AuthStateListener { auth ->
         val uid = auth.currentUser?.uid
         lifecycleScope.launch {
-            TerraManagerHolder.init(activity = this@MainActivity, referenceId = uid)
+            terraManagerHolder.init(activity = this@MainActivity, referenceId = uid)
                 .onFailure { Timber.e(it, "Terra re-init after auth change failed") }
                 .onSuccess {
                     TerraSdkSync.syncLinkedConnections(
-                        TerraManagerHolder.current,
+                        terraManagerHolder.current,
                         reason = "auth_state",
                         force = false,
                     )
@@ -66,11 +67,11 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         val uid = firebaseAuth.currentUser?.uid
         lifecycleScope.launch {
-            TerraManagerHolder.init(activity = this@MainActivity, referenceId = uid)
+            terraManagerHolder.init(activity = this@MainActivity, referenceId = uid)
                 .onFailure { Timber.e(it, "Terra foreground init failed") }
                 .onSuccess {
                     TerraSdkSync.syncLinkedConnections(
-                        TerraManagerHolder.current,
+                        terraManagerHolder.current,
                         reason = "foreground",
                         force = false,
                     )
@@ -86,6 +87,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         firebaseAuth.removeAuthStateListener(authListener)
+        terraManagerHolder.clearLocalManager()
         super.onDestroy()
     }
 

@@ -10,6 +10,7 @@ import com.hexis.bi.data.user.FirestoreSchema.UserFields
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.tasks.await
 
 class FirestoreUserRepository(
@@ -77,6 +78,22 @@ class FirestoreUserRepository(
             .collection(FirestoreSchema.SETTINGS_COLLECTION)
             .document(FirestoreSchema.USER_SETTINGS_DOC)
     }
+
+    override fun observeUserSettings(): Flow<UserSettings> = callbackFlow {
+        val uid = firebaseAuth.currentUser?.uid
+            ?: error(context.getString(R.string.error_session_expired))
+        val ref = collection.document(uid)
+            .collection(FirestoreSchema.SETTINGS_COLLECTION)
+            .document(FirestoreSchema.USER_SETTINGS_DOC)
+        val listener = ref.addSnapshotListener { snap, err ->
+            if (err != null) {
+                close(err)
+                return@addSnapshotListener
+            }
+            trySend(snap?.toObject<UserSettings>() ?: UserSettings())
+        }
+        awaitClose { listener.remove() }
+    }.distinctUntilChanged()
 
     override suspend fun getUserSettings(): Result<UserSettings> = runCatching {
         userSettingsDoc().get().await().toObject<UserSettings>() ?: UserSettings()

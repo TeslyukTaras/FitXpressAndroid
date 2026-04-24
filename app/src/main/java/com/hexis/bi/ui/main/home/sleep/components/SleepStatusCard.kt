@@ -26,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
 import com.hexis.bi.ui.main.home.sleep.SleepQuality
 import com.hexis.bi.ui.main.home.sleep.SleepStageData
+import com.hexis.bi.ui.main.home.sleep.nameRes
 import com.hexis.bi.utils.formatSleepDuration
 
 @Composable

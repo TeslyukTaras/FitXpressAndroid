@@ -3,22 +3,11 @@ package com.hexis.bi.ui.main.home.sleep
 import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.Color
 import com.hexis.bi.R
+import com.hexis.bi.data.sleep.SleepStage
 import com.hexis.bi.domain.enums.HealthProvider
 import com.hexis.bi.utils.constants.SleepConstants
 
 enum class SleepTab { Day, Summary }
-
-enum class SleepStage {
-    Deep, REM, Light, Awake;
-
-    @StringRes
-    fun nameRes(): Int = when (this) {
-        Deep -> R.string.sleep_stage_deep
-        REM -> R.string.sleep_stage_rem
-        Light -> R.string.sleep_stage_light
-        Awake -> R.string.sleep_stage_awake
-    }
-}
 
 enum class SleepQuality {
     Good, Fair, Poor;
@@ -34,6 +23,14 @@ enum class SleepQuality {
 enum class SleepDayLoadState { Loading, Ready, Error }
 
 enum class StageTrend { Up, Down }
+
+@StringRes
+fun SleepStage.nameRes(): Int = when (this) {
+    SleepStage.Deep -> R.string.sleep_stage_deep
+    SleepStage.REM -> R.string.sleep_stage_rem
+    SleepStage.Light -> R.string.sleep_stage_light
+    SleepStage.Awake -> R.string.sleep_stage_awake
+}
 
 @StringRes
 fun HealthProvider.nameRes(): Int = when (this) {

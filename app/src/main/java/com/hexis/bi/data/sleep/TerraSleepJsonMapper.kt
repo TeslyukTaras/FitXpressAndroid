@@ -8,10 +8,11 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import timber.log.Timber
+import java.time.Duration
 
 internal object TerraSleepJsonMapper {
 
-    fun sessionOrNull(row: JsonElement): TerraSleepSession? {
+    fun sessionOrNull(row: JsonElement): SleepSession? {
         val obj = row as? JsonObject ?: return null
         val metadata = obj["metadata"]?.jsonObject ?: return null
         val bedtime = metadata.parseTerraDateTimeField("start_time") ?: run {
@@ -28,7 +29,7 @@ internal object TerraSleepJsonMapper {
         val inBed = durations?.get("in_bed")?.jsonObject
         val other = durations?.get("other")?.jsonObject
 
-        val spanSeconds = java.time.Duration.between(bedtime, wakeTime).seconds.coerceAtLeast(1)
+        val spanSeconds = Duration.between(bedtime, wakeTime).seconds.coerceAtLeast(1)
         var durationSec = inBed?.float("duration_in_bed_seconds")
             ?: other?.float("duration_in_bed_seconds")
             ?: asleep?.float("duration_asleep_state_seconds")
@@ -49,7 +50,7 @@ internal object TerraSleepJsonMapper {
             ?: 0
         val hrvMs = heartRate?.float("avg_hrv_rmssd")?.toInt() ?: 0
 
-        return TerraSleepSession(
+        return SleepSession(
             bedtime = bedtime,
             wakeTime = wakeTime,
             durationMinutes = durationMinutes,
@@ -60,23 +61,23 @@ internal object TerraSleepJsonMapper {
         )
     }
 
-    private fun parseStages(root: JsonObject): List<TerraSleepStageInterval> {
+    private fun parseStages(root: JsonObject): List<SleepStageInterval> {
         val stageData = root["sleep_stage_data"]?.jsonObject ?: return emptyList()
         return buildList {
-            addAll(stageData.periods("light_periods", TerraSleepStage.Light))
-            addAll(stageData.periods("deep_periods", TerraSleepStage.Deep))
-            addAll(stageData.periods("rem_periods", TerraSleepStage.REM))
-            addAll(stageData.periods("wake_periods", TerraSleepStage.Awake))
+            addAll(stageData.periods("light_periods", SleepStage.Light))
+            addAll(stageData.periods("deep_periods", SleepStage.Deep))
+            addAll(stageData.periods("rem_periods", SleepStage.REM))
+            addAll(stageData.periods("wake_periods", SleepStage.Awake))
         }.sortedBy { it.start }
     }
 
-    private fun JsonObject.periods(key: String, stage: TerraSleepStage): List<TerraSleepStageInterval> {
+    private fun JsonObject.periods(key: String, stage: SleepStage): List<SleepStageInterval> {
         val arr = this[key]?.jsonArray ?: return emptyList()
         return arr.mapNotNull { el ->
             val o = el as? JsonObject ?: return@mapNotNull null
             val start = o.parseTerraDateTimeField("start") ?: return@mapNotNull null
             val end = o.parseTerraDateTimeField("end") ?: return@mapNotNull null
-            TerraSleepStageInterval(stage = stage, start = start, end = end)
+            SleepStageInterval(stage = stage, start = start, end = end)
         }
     }
 }

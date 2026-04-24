@@ -4,22 +4,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
 /** Produces a Terra Widget auth URL for web-based providers (Oura, Garmin, …). */
-interface TerraWidgetApi {
-    /**
-     * @param referenceId Firebase UID — Terra echoes it back via webhook/redirect.
-     * @param providers Comma-separated Terra provider codes (e.g. `OURA`, `DUMMY`).
-     */
-    suspend fun generateWidgetSession(referenceId: String, providers: String): Result<String>
-}
-
-class TerraWidgetApiImpl(private val client: OkHttpClient) : TerraWidgetApi {
+class TerraWidgetApi(private val client: OkHttpClient) {
 
     @Serializable
     private data class WidgetRequest(
@@ -38,10 +27,14 @@ class TerraWidgetApiImpl(private val client: OkHttpClient) : TerraWidgetApi {
         val message: String? = null,
     )
 
-    override suspend fun generateWidgetSession(referenceId: String, providers: String): Result<String> =
+    /**
+     * @param referenceId Firebase UID — Terra echoes it back via webhook/redirect.
+     * @param providers Comma-separated Terra provider codes (e.g. `OURA`, `DUMMY`).
+     */
+    suspend fun generateWidgetSession(referenceId: String, providers: String): Result<String> =
         withContext(Dispatchers.IO) {
             try {
-                val payload = json.encodeToString(
+                val payload = terraJson.encodeToString(
                     WidgetRequest.serializer(),
                     WidgetRequest(
                         reference_id = referenceId,
@@ -51,20 +44,14 @@ class TerraWidgetApiImpl(private val client: OkHttpClient) : TerraWidgetApi {
                     ),
                 )
 
-                val request = Request.Builder()
-                    .url(ENDPOINT)
-                    .addHeader("dev-id", TerraConfig.devId)
-                    .addHeader("x-api-key", TerraConfig.apiKey)
-                    .addHeader("Accept", "application/json")
-                    .post(payload.toRequestBody(JSON_MEDIA))
+                val request = terraRequest("$TERRA_BASE_URL/auth/generateWidgetSession")
+                    .post(payload.toRequestBody(TERRA_JSON_MEDIA))
                     .build()
 
                 client.newCall(request).execute().use { response ->
-                    val body = response.body?.string().orEmpty()
-                    if (!response.isSuccessful) {
-                        error("Terra widget ${response.code}: $body")
-                    }
-                    val parsed = json.decodeFromString(WidgetResponse.serializer(), body)
+                    val body = response.body.string()
+                    if (!response.isSuccessful) error("Terra widget ${response.code}: $body")
+                    val parsed = terraJson.decodeFromString(WidgetResponse.serializer(), body)
                     val url = parsed.url ?: error("Terra widget returned no url: $body")
                     Result.success(url)
                 }
@@ -73,11 +60,4 @@ class TerraWidgetApiImpl(private val client: OkHttpClient) : TerraWidgetApi {
                 Result.failure(e)
             }
         }
-
-    companion object {
-        private const val ENDPOINT = "https://api.tryterra.co/v2/auth/generateWidgetSession"
-        private val JSON_MEDIA = "application/json".toMediaType()
-        private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
-
-    }
 }
