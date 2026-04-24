@@ -93,6 +93,7 @@ fun SleepScreen(
                     SleepTab.Day -> SleepDayContent(
                         state = state,
                         onInfoClick = viewModel::showRecoverySheet,
+                        onRetry = viewModel::retryLoad,
                     )
 
                     SleepTab.Summary -> SleepSummaryContent(

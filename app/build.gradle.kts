@@ -11,6 +11,9 @@ val localProps = Properties()
 val localPropsFile: File = rootProject.file("local.properties")
 if (localPropsFile.exists()) localProps.load(localPropsFile.inputStream())
 
+fun localOr(key: String, default: String): String =
+    localProps.getProperty(key, default)
+
 android {
     namespace = "com.hexis.bi"
     compileSdk {
@@ -21,18 +24,63 @@ android {
 
     defaultConfig {
         applicationId = "com.hexis.bi"
-        minSdk = 24
+        // Terra Android SDK requires minSdk 28 (Samsung Health / Health Connect).
+        minSdk = 28
         targetSdk = 37
         versionCode = 2
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
+        ndk {
+            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
+        }
+
         buildConfigField(
             "String",
             "THREEDLOOK_API_TOKEN",
             "\"${localProps.getProperty("threedlook.api.token", "")}\""
         )
+
+        buildConfigField(
+            "String",
+            "TERRA_DEV_ID",
+            "\"${localOr("terra.dev.id", "")}\""
+        )
+        buildConfigField(
+            "String",
+            "TERRA_API_KEY",
+            "\"${localOr("terra.api.key", "")}\""
+        )
+    }
+
+    flavorDimensions += "env"
+    productFlavors {
+        create("dev") {
+            dimension = "env"
+            //applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            resValue("string", "app_name", "FitXpress Dev")
+            buildConfigField("String", "ENVIRONMENT", "\"dev\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://api.dev.hexis.bi/\"")
+            buildConfigField("boolean", "TERRA_INCLUDE_DUMMY_PROVIDER", "true")
+        }
+        create("stage") {
+            dimension = "env"
+            //applicationIdSuffix = ".stage"
+            versionNameSuffix = "-stage"
+            resValue("string", "app_name", "FitXpress Stage")
+            buildConfigField("String", "ENVIRONMENT", "\"stage\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://api.stage.hexis.bi/\"")
+            buildConfigField("boolean", "TERRA_INCLUDE_DUMMY_PROVIDER", "false")
+        }
+        create("prod") {
+            dimension = "env"
+            resValue("string", "app_name", "FitXpress")
+            buildConfigField("String", "ENVIRONMENT", "\"prod\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://api.hexis.bi/\"")
+            buildConfigField("boolean", "TERRA_INCLUDE_DUMMY_PROVIDER", "false")
+        }
     }
 
     buildTypes {
@@ -52,7 +100,9 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        resValues = true
     }
+
 }
 
 kotlin {
@@ -88,10 +138,13 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
     implementation(libs.okhttp)
+    debugImplementation(libs.okhttp.logging.interceptor)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.look.camera.sdk)
     implementation(libs.timber)
     implementation(libs.androidx.compose.ui.unit)
+    implementation(libs.terra.android)
+    implementation(libs.androidx.browser)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

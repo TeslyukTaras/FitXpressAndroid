@@ -26,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
 import com.hexis.bi.ui.main.home.sleep.SleepQuality
 import com.hexis.bi.ui.main.home.sleep.SleepStageData
+import com.hexis.bi.ui.main.home.sleep.nameRes
 import com.hexis.bi.utils.formatSleepDuration
 
 @Composable
@@ -54,7 +55,8 @@ fun SleepStatusCard(
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
-                text = stringResource(quality.nameRes()),
+                text = if (totalSleepMinutes <= 0) stringResource(R.string.sleep_placeholder)
+                else stringResource(quality.nameRes()),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.secondary,
             )

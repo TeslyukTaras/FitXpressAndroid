@@ -25,6 +25,7 @@ import com.hexis.bi.R
 fun SleepRecoveryBanner(
     onInfoClick: () -> Unit,
     modifier: Modifier = Modifier,
+    insightText: String = stringResource(R.string.sleep_recovery_subtitle),
 ) {
     Row(
         modifier = modifier
@@ -46,7 +47,7 @@ fun SleepRecoveryBanner(
             )
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
             Text(
-                text = stringResource(R.string.sleep_recovery_subtitle),
+                text = insightText,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.secondary,
             )
