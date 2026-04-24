@@ -174,6 +174,7 @@ private fun DayBar(
 
 @Composable
 private fun formatBarLabel(minutes: Int): String {
+    if (minutes <= 0) return stringResource(R.string.sleep_placeholder)
     val hours = minutes / SleepConstants.MINUTES_PER_HOUR
     val mins = minutes % SleepConstants.MINUTES_PER_HOUR
     return when {

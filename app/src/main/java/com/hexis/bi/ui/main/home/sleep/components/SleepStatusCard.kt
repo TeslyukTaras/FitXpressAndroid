@@ -54,7 +54,8 @@ fun SleepStatusCard(
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
-                text = stringResource(quality.nameRes()),
+                text = if (totalSleepMinutes <= 0) stringResource(R.string.sleep_placeholder)
+                else stringResource(quality.nameRes()),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.secondary,
             )

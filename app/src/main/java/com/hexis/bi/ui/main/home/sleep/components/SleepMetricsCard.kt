@@ -28,6 +28,7 @@ fun SleepMetricsCard(
     restfulnessMax: Int,
     hrv: Int,
     restingHeartRate: Int,
+    hasSleepData: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -45,28 +46,29 @@ fun SleepMetricsCard(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
 
+        val dash = stringResource(R.string.sleep_placeholder)
         MetricRow(
             label = stringResource(R.string.sleep_metric_restfulness),
-            value = "$restfulness/$restfulnessMax",
-            unit = stringResource(R.string.unit_percent),
+            value = if (hasSleepData) "$restfulness/$restfulnessMax" else dash,
+            unit = if (hasSleepData) stringResource(R.string.unit_percent) else null,
         )
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
         MetricRow(
             label = stringResource(R.string.sleep_metric_hrv),
-            value = hrv.toString(),
-            unit = stringResource(R.string.unit_ms),
+            value = if (hasSleepData) hrv.toString() else dash,
+            unit = if (hasSleepData) stringResource(R.string.unit_ms) else null,
         )
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
         MetricRow(
             label = stringResource(R.string.sleep_metric_resting_heart_rate),
-            value = restingHeartRate.toString(),
-            unit = stringResource(R.string.unit_bpm),
+            value = if (hasSleepData) restingHeartRate.toString() else dash,
+            unit = if (hasSleepData) stringResource(R.string.unit_bpm) else null,
         )
     }
 }
 
 @Composable
-private fun MetricRow(label: String, value: String, unit: String) {
+private fun MetricRow(label: String, value: String, unit: String?) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -81,14 +83,16 @@ private fun MetricRow(label: String, value: String, unit: String) {
         Text(
             text = buildAnnotatedString {
                 append(value)
-                append(" ")
-                withStyle(
-                    SpanStyle(
-                        color = MaterialTheme.colorScheme.secondary,
-                        fontWeight = FontWeight.Normal,
-                        fontSize = MaterialTheme.typography.bodyMedium.fontSize
-                    )
-                ) { append(unit) }
+                if (!unit.isNullOrBlank()) {
+                    append(" ")
+                    withStyle(
+                        SpanStyle(
+                            color = MaterialTheme.colorScheme.secondary,
+                            fontWeight = FontWeight.Normal,
+                            fontSize = MaterialTheme.typography.bodyMedium.fontSize
+                        )
+                    ) { append(unit) }
+                }
             },
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onBackground,

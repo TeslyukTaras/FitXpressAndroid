@@ -49,6 +49,7 @@ fun HomeScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
+        viewModel.refreshSleepOverview()
         viewModel.events.collect { event ->
             when (event) {
                 is HomeEvent.NavigateToLogin -> onLogout()
@@ -161,9 +162,7 @@ private fun OverviewGrid(
                             .fillMaxHeight(),
                     )
                 }
-                if (rowCards.size < 2) {
-                    Spacer(Modifier.weight(1f))
-                }
+                if (rowCards.size < 2) Spacer(Modifier.weight(1f))
             }
         }
     }

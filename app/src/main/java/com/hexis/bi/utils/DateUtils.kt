@@ -88,24 +88,21 @@ fun hour12ToHour24(hour12: Int, isPm: Boolean): Int = when {
 
 @Composable
 fun formatSleepDuration(minutes: Int): String =
-    if (minutes >= SleepConstants.MINUTES_PER_HOUR)
-        stringResource(
-            R.string.sleep_duration_hours_minutes,
-            minutes / SleepConstants.MINUTES_PER_HOUR,
-            minutes % SleepConstants.MINUTES_PER_HOUR,
-        )
-    else
-        stringResource(R.string.sleep_duration_minutes, minutes)
+    if (minutes <= 0) stringResource(R.string.sleep_placeholder)
+    else if (minutes >= SleepConstants.MINUTES_PER_HOUR) stringResource(
+        R.string.sleep_duration_hours_minutes,
+        minutes / SleepConstants.MINUTES_PER_HOUR,
+        minutes % SleepConstants.MINUTES_PER_HOUR,
+    )
+    else stringResource(R.string.sleep_duration_minutes, minutes)
 
 @Composable
 fun formatHour(hour: Int): String =
-    if (hour < TimeConstants.HOURS_IN_HALF_DAY)
-        stringResource(
-            R.string.sleep_time_am,
-            if (hour == 0) TimeConstants.HOURS_IN_HALF_DAY else hour
-        )
-    else
-        stringResource(
-            R.string.sleep_time_pm,
-            if (hour == TimeConstants.HOURS_IN_HALF_DAY) TimeConstants.HOURS_IN_HALF_DAY else hour - TimeConstants.HOURS_IN_HALF_DAY
-        )
+    if (hour < TimeConstants.HOURS_IN_HALF_DAY) stringResource(
+        R.string.sleep_time_am,
+        if (hour == 0) TimeConstants.HOURS_IN_HALF_DAY else hour
+    )
+    else stringResource(
+        R.string.sleep_time_pm,
+        if (hour == TimeConstants.HOURS_IN_HALF_DAY) TimeConstants.HOURS_IN_HALF_DAY else hour - TimeConstants.HOURS_IN_HALF_DAY
+    )

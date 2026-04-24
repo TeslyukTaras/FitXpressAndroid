@@ -73,6 +73,7 @@ private fun SleepDayReady(state: SleepState, onInfoClick: () -> Unit) {
         restfulnessMax = state.restfulnessMax,
         hrv = state.hrv,
         restingHeartRate = state.restingHeartRate,
+        hasSleepData = state.totalSleepMinutes > 0,
     )
 
     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))

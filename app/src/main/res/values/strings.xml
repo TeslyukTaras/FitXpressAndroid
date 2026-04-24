@@ -152,6 +152,7 @@
     <string name="cd_info">Info</string>
 
     <!-- Sleep screen -->
+    <string name="sleep_placeholder">-</string>
     <string name="sleep_screen_title">Sleep</string>
     <string name="sleep_status_title">Sleep status</string>
     <string name="sleep_stage_deep">Deep</string>

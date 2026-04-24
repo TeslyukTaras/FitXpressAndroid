@@ -22,12 +22,15 @@ data class IntelligenceScoreData(
     val level: ScoreLevel,
 )
 
+internal fun buildOverviewCardsWithSleep(sleepCard: OverviewCardData): List<OverviewCardData> =
+    listOf(sleepCard, defaultOverviewCards[1], defaultOverviewCards[2], defaultOverviewCards[3])
+
 private val defaultOverviewCards = listOf(
     OverviewCardData(
         title = "Sleep Score",
         iconRes = R.drawable.ic_moon,
-        value = "7.5",
-        valueLabel = "h",
+        value = "-",
+        valueLabel = null,
         subtitle = "Goal: 8 h",
         variant = OverviewCardVariant.Accent,
     ),
