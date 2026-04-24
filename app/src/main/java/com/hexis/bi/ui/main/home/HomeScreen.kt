@@ -80,6 +80,7 @@ fun HomeScreen(
             HomeHeader(
                 userName = state.userName,
                 avatarUrl = state.avatarUrl,
+                hasUnreadNotifications = state.hasUnreadNotifications,
                 onNotificationClick = onNotificationClick,
                 onSettingsClick = onSettingsClick,
             )
@@ -113,7 +114,7 @@ fun HomeScreen(
                 cardClicks = cardClicks,
             )
 
-            if (state.isSuitConnected) {
+            if (state.isSuitConnected && state.intelligenceScores.isNotEmpty()) {
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
                 Text(

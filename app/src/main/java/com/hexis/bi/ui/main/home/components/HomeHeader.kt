@@ -28,6 +28,7 @@ import com.hexis.bi.ui.components.AppAvatar
 fun HomeHeader(
     userName: String,
     avatarUrl: String?,
+    hasUnreadNotifications: Boolean,
     onNotificationClick: () -> Unit,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -64,9 +65,9 @@ fun HomeHeader(
             BadgedBox(
                 modifier = Modifier.fillMaxSize(),
                 badge = {
-                    Badge(
+                    if (hasUnreadNotifications) Badge(
                         modifier.size(dimensionResource(R.dimen.size_indicator)),
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     )
                 }
             ) {

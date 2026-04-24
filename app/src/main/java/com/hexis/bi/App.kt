@@ -4,14 +4,26 @@ import android.app.Activity
 import android.app.Application
 import android.os.Bundle
 import android.view.WindowManager
+import com.hexis.bi.data.notification.NotificationInboxRepository
+import com.hexis.bi.data.reminder.ScanReminderScheduler
+import com.hexis.bi.data.reminder.ScanReminderWorkRunner
 import com.hexis.bi.di.appModule
+import com.hexis.bi.utils.SystemNotificationHelper
 import com.look.camera.sdk.SdkActivity
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.get
 import org.koin.core.context.startKoin
 import timber.log.Timber
 
-class App : Application() {
+class App : Application(), KoinComponent {
+    fun scanReminderWorkRunner(): ScanReminderWorkRunner = get<ScanReminderWorkRunner>()
+
+    fun scanReminderScheduler(): ScanReminderScheduler = get<ScanReminderScheduler>()
+
+    fun notificationInboxRepository(): NotificationInboxRepository = get<NotificationInboxRepository>()
+
     override fun onCreate() {
         super.onCreate()
         if (BuildConfig.DEBUG) {
@@ -22,6 +34,8 @@ class App : Application() {
             androidContext(this@App)
             modules(appModule)
         }
+        SystemNotificationHelper.createChannels(this)
+        scanReminderScheduler().onNotificationSettingsOrScanChanged()
         registerActivityLifecycleCallbacks(KeepScreenOn)
     }
 }
