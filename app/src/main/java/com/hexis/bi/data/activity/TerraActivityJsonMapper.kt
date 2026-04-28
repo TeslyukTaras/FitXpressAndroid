@@ -14,6 +14,54 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 
+private object TerraActivityJsonKeys {
+    object Common {
+        const val METADATA = "metadata"
+        const val SUMMARY = "summary"
+    }
+
+    object DateTime {
+        const val DATE = "date"
+        const val START_TIME = "start_time"
+        const val END_TIME = "end_time"
+        const val START_TIME_LOCAL = "start_time_local"
+        const val END_TIME_LOCAL = "end_time_local"
+        const val TIMESTAMP = "timestamp"
+        const val TIMESTAMP_LOCAL = "timestamp_local"
+        val CANDIDATES = listOf(
+            DATE,
+            START_TIME,
+            END_TIME,
+            START_TIME_LOCAL,
+            END_TIME_LOCAL,
+            TIMESTAMP,
+            TIMESTAMP_LOCAL,
+        )
+    }
+
+    object Nodes {
+        const val DISTANCE_DATA = "distance_data"
+        const val ACTIVITY_DATA = "activity_data"
+        const val CALORIES_DATA = "calories_data"
+    }
+
+    object Steps {
+        const val STEPS = "steps"
+        const val STEP_COUNT = "step_count"
+    }
+
+    object Distance {
+        const val DISTANCE_METERS = "distance_meters"
+        const val DISTANCE_METRES = "distance_metres"
+    }
+
+    object Calories {
+        const val ACTIVE_CALORIES = "active_calories"
+        const val NET_ACTIVITY_CALORIES = "net_activity_calories"
+        const val ACTIVE_ENERGY_BURNED_CALORIES = "active_energy_burned_calories"
+    }
+}
+
 object TerraActivityJsonMapper {
     fun summaryOrNull(json: JsonElement, fallbackDate: LocalDate? = null): ActivitySummary? {
         val root = json.jsonObject
@@ -33,27 +81,11 @@ object TerraActivityJsonMapper {
 }
 
 private fun JsonObject.dateOrNull(): LocalDate? {
-    val metadata = this["metadata"]?.jsonObject
-    val fromDateField = listOf(
-        "date",
-        "start_time",
-        "end_time",
-        "start_time_local",
-        "end_time_local",
-        "timestamp",
-        "timestamp_local",
-    )
+    val metadata = this[TerraActivityJsonKeys.Common.METADATA]?.jsonObject
+    val fromDateField = TerraActivityJsonKeys.DateTime.CANDIDATES
         .firstNotNullOfOrNull { key -> metadata?.get(key)?.toString()?.trim('"')?.toLocalDateOrNull() }
     if (fromDateField != null) return fromDateField
-    return listOf(
-        "date",
-        "start_time",
-        "end_time",
-        "start_time_local",
-        "end_time_local",
-        "timestamp",
-        "timestamp_local",
-    )
+    return TerraActivityJsonKeys.DateTime.CANDIDATES
         .firstNotNullOfOrNull { key -> this[key]?.toString()?.trim('"')?.toLocalDateOrNull() }
 }
 
@@ -64,37 +96,37 @@ private fun String.toLocalDateOrNull(): LocalDate? =
     }.getOrNull()
 
 private fun JsonObject.extractSteps(): Int {
-    val distanceData = this["distance_data"]?.jsonObject
-    val activityData = this["activity_data"]?.jsonObject
-    val metadata = this["metadata"]?.jsonObject
-    return int("steps")
-        ?: distanceData?.int("steps")
-        ?: distanceData?.get("summary")?.jsonObject?.int("steps")
-        ?: activityData?.int("steps")
-        ?: activityData?.get("summary")?.jsonObject?.int("steps")
-        ?: int("step_count")
-        ?: metadata?.int("step_count")
-        ?: metadata?.int("steps")
+    val distanceData = this[TerraActivityJsonKeys.Nodes.DISTANCE_DATA]?.jsonObject
+    val activityData = this[TerraActivityJsonKeys.Nodes.ACTIVITY_DATA]?.jsonObject
+    val metadata = this[TerraActivityJsonKeys.Common.METADATA]?.jsonObject
+    return int(TerraActivityJsonKeys.Steps.STEPS)
+        ?: distanceData?.int(TerraActivityJsonKeys.Steps.STEPS)
+        ?: distanceData?.get(TerraActivityJsonKeys.Common.SUMMARY)?.jsonObject?.int(TerraActivityJsonKeys.Steps.STEPS)
+        ?: activityData?.int(TerraActivityJsonKeys.Steps.STEPS)
+        ?: activityData?.get(TerraActivityJsonKeys.Common.SUMMARY)?.jsonObject?.int(TerraActivityJsonKeys.Steps.STEPS)
+        ?: int(TerraActivityJsonKeys.Steps.STEP_COUNT)
+        ?: metadata?.int(TerraActivityJsonKeys.Steps.STEP_COUNT)
+        ?: metadata?.int(TerraActivityJsonKeys.Steps.STEPS)
         ?: 0
 }
 
 private fun JsonObject.extractDistanceKm(): Float {
-    val distanceData = this["distance_data"]?.jsonObject
-    val meters = distanceData?.float("distance_meters")
-        ?: distanceData?.get("summary")?.jsonObject?.float("distance_meters")
-        ?: distanceData?.float("distance_metres")
-        ?: distanceData?.get("summary")?.jsonObject?.float("distance_metres")
+    val distanceData = this[TerraActivityJsonKeys.Nodes.DISTANCE_DATA]?.jsonObject
+    val meters = distanceData?.float(TerraActivityJsonKeys.Distance.DISTANCE_METERS)
+        ?: distanceData?.get(TerraActivityJsonKeys.Common.SUMMARY)?.jsonObject?.float(TerraActivityJsonKeys.Distance.DISTANCE_METERS)
+        ?: distanceData?.float(TerraActivityJsonKeys.Distance.DISTANCE_METRES)
+        ?: distanceData?.get(TerraActivityJsonKeys.Common.SUMMARY)?.jsonObject?.float(TerraActivityJsonKeys.Distance.DISTANCE_METRES)
     return if (meters != null) meters / 1000f else 0f
 }
 
 private fun JsonObject.extractActiveCalories(): Int {
-    val caloriesData = this["calories_data"]?.jsonObject
-    val activityData = this["activity_data"]?.jsonObject
-    return caloriesData?.int("active_calories")
-        ?: caloriesData?.int("net_activity_calories")
-        ?: caloriesData?.get("summary")?.jsonObject?.int("active_calories")
-        ?: activityData?.int("active_calories")
-        ?: activityData?.int("active_energy_burned_calories")
+    val caloriesData = this[TerraActivityJsonKeys.Nodes.CALORIES_DATA]?.jsonObject
+    val activityData = this[TerraActivityJsonKeys.Nodes.ACTIVITY_DATA]?.jsonObject
+    return caloriesData?.int(TerraActivityJsonKeys.Calories.ACTIVE_CALORIES)
+        ?: caloriesData?.int(TerraActivityJsonKeys.Calories.NET_ACTIVITY_CALORIES)
+        ?: caloriesData?.get(TerraActivityJsonKeys.Common.SUMMARY)?.jsonObject?.int(TerraActivityJsonKeys.Calories.ACTIVE_CALORIES)
+        ?: activityData?.int(TerraActivityJsonKeys.Calories.ACTIVE_CALORIES)
+        ?: activityData?.int(TerraActivityJsonKeys.Calories.ACTIVE_ENERGY_BURNED_CALORIES)
         ?: 0
 }
 
@@ -139,10 +171,10 @@ private fun JsonObject.collectHourlyStepSamplesInto(out: MutableList<HourlyStepS
 
 private fun JsonObject.sampleHourOrNull(): Int? =
     listOf(
-        "timestamp",
-        "timestamp_local",
-        "start_time",
-        "start_time_local",
+        TerraActivityJsonKeys.DateTime.TIMESTAMP,
+        TerraActivityJsonKeys.DateTime.TIMESTAMP_LOCAL,
+        TerraActivityJsonKeys.DateTime.START_TIME,
+        TerraActivityJsonKeys.DateTime.START_TIME_LOCAL,
     )
         .firstNotNullOfOrNull { key ->
             this[key]?.jsonPrimitive?.contentOrNull()?.toLocalDateTimeOrNull()?.hour
@@ -150,8 +182,8 @@ private fun JsonObject.sampleHourOrNull(): Int? =
 
 private fun JsonObject.sampleStepsOrNull(): Int? =
     listOf(
-        "steps",
-        "step_count",
+        TerraActivityJsonKeys.Steps.STEPS,
+        TerraActivityJsonKeys.Steps.STEP_COUNT,
     )
         .firstNotNullOfOrNull { key ->
             this[key]?.jsonPrimitive?.intOrNull
@@ -160,10 +192,10 @@ private fun JsonObject.sampleStepsOrNull(): Int? =
 
 private fun JsonObject.sampleTime(): LocalDateTime? =
     listOf(
-        "timestamp",
-        "timestamp_local",
-        "start_time",
-        "start_time_local",
+        TerraActivityJsonKeys.DateTime.TIMESTAMP,
+        TerraActivityJsonKeys.DateTime.TIMESTAMP_LOCAL,
+        TerraActivityJsonKeys.DateTime.START_TIME,
+        TerraActivityJsonKeys.DateTime.START_TIME_LOCAL,
     )
         .firstNotNullOfOrNull { key ->
             this[key]?.jsonPrimitive?.contentOrNull()?.toLocalDateTimeOrNull()

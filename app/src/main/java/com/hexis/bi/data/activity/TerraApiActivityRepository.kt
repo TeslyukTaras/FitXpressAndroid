@@ -9,6 +9,11 @@ import com.hexis.bi.utils.constants.TerraCacheConstants
 import kotlinx.serialization.json.JsonElement
 import java.time.LocalDate
 
+private object ActivityRepositoryConstants {
+    const val DAY_LOOKBACK_DAYS = 1L
+    const val DAY_LOOKAHEAD_DAYS = 1L
+}
+
 class TerraApiActivityRepository(
     private val api: TerraApi,
     private val sourceResolver: TerraRestSourceResolver,
@@ -20,8 +25,8 @@ class TerraApiActivityRepository(
 
     override suspend fun getSummaryForDate(date: LocalDate): Result<ActivitySummary?> =
         sourceResolver.fetchMergedFromAllSources(
-            start = date.minusDays(1),
-            end = date.plusDays(1),
+            start = date.minusDays(ActivityRepositoryConstants.DAY_LOOKBACK_DAYS),
+            end = date.plusDays(ActivityRepositoryConstants.DAY_LOOKAHEAD_DAYS),
             fetchJson = ::fetchJsonForUser,
             parse = { rows -> rows.mapNotNull { TerraActivityJsonMapper.summaryOrNull(it, fallbackDate = date) } },
             merge = ::mergeGapFillByDate,

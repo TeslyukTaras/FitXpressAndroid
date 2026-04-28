@@ -24,17 +24,17 @@ class TerraApi(private val client: OkHttpClient) {
         endDate: LocalDate,
     ): Result<TerraDataListResponse> = withContext(Dispatchers.IO) {
         try {
-            val url = "$TERRA_BASE_URL/daily".toHttpUrl().newBuilder()
-                .addQueryParameter("user_id", terraUserId)
-                .addQueryParameter("start_date", startDate.format(DATE_FMT))
-                .addQueryParameter("end_date", endDate.format(DATE_FMT))
-                .addQueryParameter("to_webhook", "false")
-                .addQueryParameter("with_samples", "true")
+            val url = "$TERRA_BASE_URL${TerraApiConstants.Path.DAILY}".toHttpUrl().newBuilder()
+                .addQueryParameter(TerraApiConstants.Query.USER_ID, terraUserId)
+                .addQueryParameter(TerraApiConstants.Query.START_DATE, startDate.format(DATE_FMT))
+                .addQueryParameter(TerraApiConstants.Query.END_DATE, endDate.format(DATE_FMT))
+                .addQueryParameter(TerraApiConstants.Query.TO_WEBHOOK, TerraApiConstants.QueryValue.FALSE)
+                .addQueryParameter(TerraApiConstants.Query.WITH_SAMPLES, TerraApiConstants.QueryValue.TRUE)
                 .build()
 
             client.newCall(terraRequest(url.toString()).get().build()).execute().use { response ->
                 val body = response.body?.string().orEmpty()
-                if (!response.isSuccessful) error("Terra /daily ${response.code}: $body")
+                if (!response.isSuccessful) error("Terra ${TerraApiConstants.Path.DAILY} ${response.code}: $body")
                 Result.success(terraJson.decodeFromString(TerraDataListResponse.serializer(), body))
             }
         } catch (e: Exception) {
@@ -49,17 +49,17 @@ class TerraApi(private val client: OkHttpClient) {
         endDate: LocalDate,
     ): Result<TerraDataListResponse> = withContext(Dispatchers.IO) {
         try {
-            val url = "$TERRA_BASE_URL/sleep".toHttpUrl().newBuilder()
-                .addQueryParameter("user_id", terraUserId)
-                .addQueryParameter("start_date", startDate.format(DATE_FMT))
-                .addQueryParameter("end_date", endDate.format(DATE_FMT))
-                .addQueryParameter("to_webhook", "false")
-                .addQueryParameter("with_samples", "true")
+            val url = "$TERRA_BASE_URL${TerraApiConstants.Path.SLEEP}".toHttpUrl().newBuilder()
+                .addQueryParameter(TerraApiConstants.Query.USER_ID, terraUserId)
+                .addQueryParameter(TerraApiConstants.Query.START_DATE, startDate.format(DATE_FMT))
+                .addQueryParameter(TerraApiConstants.Query.END_DATE, endDate.format(DATE_FMT))
+                .addQueryParameter(TerraApiConstants.Query.TO_WEBHOOK, TerraApiConstants.QueryValue.FALSE)
+                .addQueryParameter(TerraApiConstants.Query.WITH_SAMPLES, TerraApiConstants.QueryValue.TRUE)
                 .build()
 
             client.newCall(terraRequest(url.toString()).get().build()).execute().use { response ->
                 val body = response.body?.string().orEmpty()
-                if (!response.isSuccessful) error("Terra /sleep ${response.code}: $body")
+                if (!response.isSuccessful) error("Terra ${TerraApiConstants.Path.SLEEP} ${response.code}: $body")
                 Result.success(terraJson.decodeFromString(TerraDataListResponse.serializer(), body))
             }
         } catch (e: Exception) {
@@ -71,14 +71,14 @@ class TerraApi(private val client: OkHttpClient) {
     /** `DELETE /v2/auth/deauthenticateUser?user_id=…` — revokes Terra’s access for that user id. */
     suspend fun deauthenticateUser(terraUserId: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            val url = "$TERRA_BASE_URL/auth/deauthenticateUser".toHttpUrl().newBuilder()
-                .addQueryParameter("user_id", terraUserId)
+            val url = "$TERRA_BASE_URL${TerraApiConstants.Path.DEAUTHENTICATE_USER}".toHttpUrl().newBuilder()
+                .addQueryParameter(TerraApiConstants.Query.USER_ID, terraUserId)
                 .build()
             val request = terraRequest(url.toString()).delete().build()
             client.newCall(request).execute().use { response ->
                 val body = response.body?.string().orEmpty()
                 if (!response.isSuccessful && response.code != 404) {
-                    error("Terra DELETE /auth/deauthenticateUser ${response.code}: $body")
+                    error("Terra DELETE ${TerraApiConstants.Path.DEAUTHENTICATE_USER} ${response.code}: $body")
                 }
                 Result.success(Unit)
             }
@@ -90,6 +90,27 @@ class TerraApi(private val client: OkHttpClient) {
 
     companion object {
         private val DATE_FMT: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+    }
+}
+
+private object TerraApiConstants {
+    object Path {
+        const val DAILY = "/daily"
+        const val SLEEP = "/sleep"
+        const val DEAUTHENTICATE_USER = "/auth/deauthenticateUser"
+    }
+
+    object Query {
+        const val USER_ID = "user_id"
+        const val START_DATE = "start_date"
+        const val END_DATE = "end_date"
+        const val TO_WEBHOOK = "to_webhook"
+        const val WITH_SAMPLES = "with_samples"
+    }
+
+    object QueryValue {
+        const val TRUE = "true"
+        const val FALSE = "false"
     }
 }
 
