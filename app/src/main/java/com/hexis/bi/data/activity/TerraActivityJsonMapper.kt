@@ -13,6 +13,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
+import kotlin.math.roundToInt
 
 private object TerraActivityJsonKeys {
     object Common {
@@ -53,12 +54,31 @@ private object TerraActivityJsonKeys {
     object Distance {
         const val DISTANCE_METERS = "distance_meters"
         const val DISTANCE_METRES = "distance_metres"
+        const val DISTANCE_KM = "distance_km"
+        const val DISTANCE_KILOMETERS = "distance_kilometers"
+        const val DISTANCE_KILOMETRES = "distance_kilometres"
+        const val DISTANCE_MILES = "distance_miles"
+        val METERS_CANDIDATES = listOf(DISTANCE_METERS, DISTANCE_METRES)
+        val KM_CANDIDATES = listOf(DISTANCE_KM, DISTANCE_KILOMETERS, DISTANCE_KILOMETRES)
+        val MILES_CANDIDATES = listOf(DISTANCE_MILES)
     }
 
     object Calories {
         const val ACTIVE_CALORIES = "active_calories"
         const val NET_ACTIVITY_CALORIES = "net_activity_calories"
         const val ACTIVE_ENERGY_BURNED_CALORIES = "active_energy_burned_calories"
+        const val ACTIVITY_CALORIES = "activity_calories"
+        const val TOTAL_BURNED_CALORIES = "total_burned_calories"
+        const val TOTAL_CALORIES = "total_calories"
+        const val BMR_CALORIES = "bmr_calories"
+        val ACTIVE_CANDIDATES = listOf(
+            ACTIVE_CALORIES,
+            NET_ACTIVITY_CALORIES,
+            ACTIVE_ENERGY_BURNED_CALORIES,
+            ACTIVITY_CALORIES,
+        )
+        val TOTAL_CANDIDATES = listOf(TOTAL_BURNED_CALORIES, TOTAL_CALORIES)
+        val BMR_CANDIDATES = listOf(BMR_CALORIES)
     }
 }
 
@@ -112,22 +132,84 @@ private fun JsonObject.extractSteps(): Int {
 
 private fun JsonObject.extractDistanceKm(): Float {
     val distanceData = this[TerraActivityJsonKeys.Nodes.DISTANCE_DATA]?.jsonObject
-    val meters = distanceData?.float(TerraActivityJsonKeys.Distance.DISTANCE_METERS)
-        ?: distanceData?.get(TerraActivityJsonKeys.Common.SUMMARY)?.jsonObject?.float(TerraActivityJsonKeys.Distance.DISTANCE_METERS)
-        ?: distanceData?.float(TerraActivityJsonKeys.Distance.DISTANCE_METRES)
-        ?: distanceData?.get(TerraActivityJsonKeys.Common.SUMMARY)?.jsonObject?.float(TerraActivityJsonKeys.Distance.DISTANCE_METRES)
-    return if (meters != null) meters / 1000f else 0f
+    val activityData = this[TerraActivityJsonKeys.Nodes.ACTIVITY_DATA]?.jsonObject
+    val meters = distanceData.firstFloatByKeysDeep(TerraActivityJsonKeys.Distance.METERS_CANDIDATES)
+        ?: activityData.firstFloatByKeysDeep(TerraActivityJsonKeys.Distance.METERS_CANDIDATES)
+        ?: this.firstFloatByKeysDeep(TerraActivityJsonKeys.Distance.METERS_CANDIDATES)
+    if (meters != null) return (meters / 1000f).coerceAtLeast(0f)
+
+    val km = distanceData.firstFloatByKeysDeep(TerraActivityJsonKeys.Distance.KM_CANDIDATES)
+        ?: activityData.firstFloatByKeysDeep(TerraActivityJsonKeys.Distance.KM_CANDIDATES)
+        ?: this.firstFloatByKeysDeep(TerraActivityJsonKeys.Distance.KM_CANDIDATES)
+    if (km != null) return km.coerceAtLeast(0f)
+
+    val miles = distanceData.firstFloatByKeysDeep(TerraActivityJsonKeys.Distance.MILES_CANDIDATES)
+        ?: activityData.firstFloatByKeysDeep(TerraActivityJsonKeys.Distance.MILES_CANDIDATES)
+        ?: this.firstFloatByKeysDeep(TerraActivityJsonKeys.Distance.MILES_CANDIDATES)
+    if (miles != null) return (miles * 1.60934f).coerceAtLeast(0f)
+
+    return 0f
 }
 
 private fun JsonObject.extractActiveCalories(): Int {
     val caloriesData = this[TerraActivityJsonKeys.Nodes.CALORIES_DATA]?.jsonObject
     val activityData = this[TerraActivityJsonKeys.Nodes.ACTIVITY_DATA]?.jsonObject
-    return caloriesData?.int(TerraActivityJsonKeys.Calories.ACTIVE_CALORIES)
-        ?: caloriesData?.int(TerraActivityJsonKeys.Calories.NET_ACTIVITY_CALORIES)
-        ?: caloriesData?.get(TerraActivityJsonKeys.Common.SUMMARY)?.jsonObject?.int(TerraActivityJsonKeys.Calories.ACTIVE_CALORIES)
-        ?: activityData?.int(TerraActivityJsonKeys.Calories.ACTIVE_CALORIES)
-        ?: activityData?.int(TerraActivityJsonKeys.Calories.ACTIVE_ENERGY_BURNED_CALORIES)
-        ?: 0
+    val directActive = caloriesData.firstIntByKeysDeep(TerraActivityJsonKeys.Calories.ACTIVE_CANDIDATES)
+        ?: activityData.firstIntByKeysDeep(TerraActivityJsonKeys.Calories.ACTIVE_CANDIDATES)
+        ?: this.firstIntByKeysDeep(TerraActivityJsonKeys.Calories.ACTIVE_CANDIDATES)
+    if (directActive != null) return directActive.coerceAtLeast(0)
+
+    val totalFloat = caloriesData.firstFloatByKeysDeep(TerraActivityJsonKeys.Calories.TOTAL_CANDIDATES)
+        ?: activityData.firstFloatByKeysDeep(TerraActivityJsonKeys.Calories.TOTAL_CANDIDATES)
+        ?: this.firstFloatByKeysDeep(TerraActivityJsonKeys.Calories.TOTAL_CANDIDATES)
+    val bmrFloat = caloriesData.firstFloatByKeysDeep(TerraActivityJsonKeys.Calories.BMR_CANDIDATES)
+        ?: activityData.firstFloatByKeysDeep(TerraActivityJsonKeys.Calories.BMR_CANDIDATES)
+        ?: this.firstFloatByKeysDeep(TerraActivityJsonKeys.Calories.BMR_CANDIDATES)
+    if (totalFloat != null && bmrFloat != null) {
+        return (totalFloat - bmrFloat).coerceAtLeast(0f).roundToInt()
+    }
+
+    val totalInt = caloriesData.firstIntByKeysDeep(TerraActivityJsonKeys.Calories.TOTAL_CANDIDATES)
+        ?: activityData.firstIntByKeysDeep(TerraActivityJsonKeys.Calories.TOTAL_CANDIDATES)
+        ?: this.firstIntByKeysDeep(TerraActivityJsonKeys.Calories.TOTAL_CANDIDATES)
+    val bmrInt = caloriesData.firstIntByKeysDeep(TerraActivityJsonKeys.Calories.BMR_CANDIDATES)
+        ?: activityData.firstIntByKeysDeep(TerraActivityJsonKeys.Calories.BMR_CANDIDATES)
+        ?: this.firstIntByKeysDeep(TerraActivityJsonKeys.Calories.BMR_CANDIDATES)
+    if (totalInt != null && bmrInt != null) return (totalInt - bmrInt).coerceAtLeast(0)
+    return 0
+}
+
+private fun JsonObject?.firstIntByKeysDeep(keys: List<String>): Int? {
+    this ?: return null
+    val keySet = keys.map { it.lowercase() }.toSet()
+    return walkDeep()
+        .firstNotNullOfOrNull { (key, value) ->
+            if (key.lowercase() !in keySet) null else value.jsonPrimitive.numberAsIntOrNull()
+        }
+}
+
+private fun JsonObject?.firstFloatByKeysDeep(keys: List<String>): Float? {
+    this ?: return null
+    val keySet = keys.map { it.lowercase() }.toSet()
+    return walkDeep()
+        .firstNotNullOfOrNull { (key, value) ->
+            if (key.lowercase() !in keySet) null else value.jsonPrimitive.numberAsFloatOrNull()
+        }
+}
+
+private fun JsonObject.walkDeep(): Sequence<Pair<String, JsonElement>> = sequence {
+    for ((key, value) in this@walkDeep) {
+        yield(key to value)
+        when (value) {
+            is JsonObject -> yieldAll(value.walkDeep())
+            is kotlinx.serialization.json.JsonArray -> {
+                value.forEach { item ->
+                    if (item is JsonObject) yieldAll(item.walkDeep())
+                }
+            }
+            else -> Unit
+        }
+    }
 }
 
 private fun JsonObject.extractHourlySteps(targetDate: LocalDate): Map<Int, Int> {
@@ -203,6 +285,16 @@ private fun JsonObject.sampleTime(): LocalDateTime? =
 
 private fun JsonPrimitive.contentOrNull(): String? =
     if (isString) content else content.takeIf { it.isNotBlank() }
+
+private fun JsonPrimitive.numberAsIntOrNull(): Int? =
+    intOrNull
+        ?: floatOrNull?.toInt()
+        ?: contentOrNull()?.toFloatOrNull()?.toInt()
+
+private fun JsonPrimitive.numberAsFloatOrNull(): Float? =
+    floatOrNull
+        ?: intOrNull?.toFloat()
+        ?: contentOrNull()?.toFloatOrNull()
 
 private fun String.toLocalDateTimeOrNull(): LocalDateTime? =
     runCatching { OffsetDateTime.parse(this).toLocalDateTime() }

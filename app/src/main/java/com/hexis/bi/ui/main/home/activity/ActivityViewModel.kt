@@ -93,9 +93,12 @@ class ActivityViewModel(
     }
 
     private fun deriveGoals(stepsGoal: Int): Pair<Float, Int> {
-        val distGoalKm = heightCm?.let { distanceGoalKm(stepsGoal, it, isFemale) }
-            ?: ActivityConstants.DEFAULT_DISTANCE_GOAL_KM
-        val calGoal = if (distGoalKm > 0f && weightKg > 0f)
+        val height = heightCm
+        if (height == null || height <= 0f) {
+            return ActivityConstants.DEFAULT_DISTANCE_GOAL_KM to ActivityConstants.DEFAULT_CALORIES_GOAL
+        }
+        val distGoalKm = distanceGoalKm(stepsGoal, height, isFemale)
+        val calGoal = if (distGoalKm > 0f && weightKg > 0f) {
             caloriesGoal(distGoalKm, weightKg)
         else ActivityConstants.DEFAULT_CALORIES_GOAL
         return distGoalKm to calGoal
