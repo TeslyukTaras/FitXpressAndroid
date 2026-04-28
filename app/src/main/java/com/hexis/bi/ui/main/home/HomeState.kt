@@ -64,6 +64,7 @@ data class HomeState(
     val height: String? = null,
     val age: String? = null,
     val isSuitConnected: Boolean = false,
+    val hasUnreadNotifications: Boolean = false,
     val sleepGoalHours: Int = SleepConstants.DEFAULT_SLEEP_GOAL_HOURS,
     val overviewCards: List<OverviewCardData> = emptyList(),
     val intelligenceScores: List<IntelligenceScoreData> = defaultIntelligenceScores,

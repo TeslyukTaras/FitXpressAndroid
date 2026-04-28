@@ -12,6 +12,11 @@ internal object FirestoreSchema {
 
     object UserSettingsFields {
         const val SLEEP_GOAL_HOURS = "sleepGoalHours"
+        const val PUSH_NOTIFICATIONS_ENABLED = "pushNotificationsEnabled"
+        const val VOICE_GUIDANCE_ENABLED = "voiceGuidanceEnabled"
+        const val SCAN_REMINDERS_ENABLED = "scanRemindersEnabled"
+        const val REMINDER_DAY = "reminderDay"
+        const val REMINDER_HOUR = "reminderHour"
     }
 
     object HealthConnectionFields {

@@ -1,5 +1,10 @@
 package com.hexis.bi.ui.main.settings.notifications
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,6 +21,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -28,9 +35,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.domain.enums.ReminderDay
@@ -41,7 +50,6 @@ import com.hexis.bi.ui.components.AppScrollPicker
 import com.hexis.bi.ui.components.AppSwitch
 import com.hexis.bi.ui.components.PickerColumnData
 import com.hexis.bi.utils.constants.TimeConstants
-import com.hexis.bi.utils.formatHour
 import com.hexis.bi.utils.hour12ToHour24
 import com.hexis.bi.utils.hour24ToHour12
 import com.hexis.bi.utils.isHour24Pm
@@ -55,10 +63,40 @@ fun NotificationsSettingsScreen(
     viewModel: NotificationsSettingsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
     val showAnyDialog = state.showDayPicker || state.showTimePicker
+    val context = LocalContext.current
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) viewModel.toggleNotifications(true)
+        else viewModel.notifyNotificationsPermissionDenied()
+    }
+
+    fun onNotificationToggleRequest(enabled: Boolean) {
+        if (enabled) {
+            if (Build.VERSION.SDK_INT >= 33) {
+                val has = ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS,
+                ) == PackageManager.PERMISSION_GRANTED
+                if (!has) {
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    return
+                }
+            }
+            viewModel.toggleNotifications(true)
+        } else {
+            viewModel.toggleNotifications(false)
+        }
+    }
 
     Box(modifier = modifier) {
         BaseScreen(
+            isLoading = isLoading,
+            error = error,
+            onDismissError = viewModel::clearError,
             modifier = Modifier
                 .fillMaxSize()
                 .then(
@@ -68,7 +106,7 @@ fun NotificationsSettingsScreen(
                 ),
             topBar = {
                 BaseTopBar(
-                    title = stringResource(R.string.screen_notifications),
+                    title = stringResource(R.string.notification_settings_title),
                     onBack = onBack,
                 )
             },
@@ -76,6 +114,7 @@ fun NotificationsSettingsScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
             ) {
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
@@ -92,7 +131,8 @@ fun NotificationsSettingsScreen(
                     SwitchRow(
                         label = stringResource(R.string.notifications_toggle),
                         checked = state.notificationsEnabled,
-                        onCheckedChange = viewModel::toggleNotifications,
+                        onCheckedChange = ::onNotificationToggleRequest,
+                        enabled = state.settingsLoaded,
                     )
                     HorizontalDivider(
                         color = MaterialTheme.colorScheme.outline,
@@ -102,6 +142,7 @@ fun NotificationsSettingsScreen(
                         label = stringResource(R.string.notifications_voice),
                         checked = state.voiceEnabled,
                         onCheckedChange = viewModel::toggleVoice,
+                        enabled = state.settingsLoaded,
                     )
                 }
 
@@ -138,6 +179,7 @@ fun NotificationsSettingsScreen(
                         AppSwitch(
                             checked = state.remindToScanEnabled,
                             onCheckedChange = viewModel::toggleRemindToScan,
+                            enabled = state.settingsLoaded,
                         )
                     }
 
@@ -150,7 +192,7 @@ fun NotificationsSettingsScreen(
                     // Day row
                     PickerRow(
                         label = stringResource(R.string.notifications_day),
-                        value = state.reminderDay.name,
+                        value = stringResource(state.reminderDay.labelRes()),
                         enabled = state.remindToScanEnabled,
                         onClick = viewModel::showDayPicker,
                     )
@@ -158,11 +200,12 @@ fun NotificationsSettingsScreen(
                     // Time row
                     PickerRow(
                         label = stringResource(R.string.notifications_time),
-                        value = state.reminderHour.formatHour(),
+                        value = formatHourOnly(state.reminderHour),
                         enabled = state.remindToScanEnabled,
                         onClick = viewModel::showTimePicker,
                     )
                 }
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
             }
         }
 
@@ -173,23 +216,20 @@ fun NotificationsSettingsScreen(
                 selectedItem = state.reminderDay,
                 onItemSelected = viewModel::selectDay,
                 onDismiss = viewModel::hideDayPicker,
-                itemLabel = { it.name },
+                itemLabel = { stringResource(it.labelRes()) },
                 title = stringResource(R.string.notifications_day).trimEnd(':'),
             )
         }
 
         // Time picker dialog
         if (state.showTimePicker) {
-            val timeState = rememberAppTimePickerState(initialHour = state.reminderHour)
+            val hourState = rememberAppHourPickerState(initialHour = state.reminderHour)
 
             AppScrollPicker(
                 title = stringResource(R.string.notifications_select_time),
-                pickerColumns = timeState.toColumns(),
+                pickerColumns = hourState.toColumns(),
                 onDismiss = viewModel::hideTimePicker,
-                onConfirm = {
-                    viewModel.selectTime(timeState.selectedHour24)
-                    viewModel.hideTimePicker()
-                }
+                onConfirm = { viewModel.selectTime(hourState.selectedHour24) },
             )
         }
     }
@@ -201,6 +241,7 @@ private fun SwitchRow(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -209,12 +250,14 @@ private fun SwitchRow(
         Text(
             text = label,
             style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = if (enabled) MaterialTheme.colorScheme.onBackground
+            else MaterialTheme.colorScheme.secondary,
             modifier = Modifier.weight(1f),
         )
         AppSwitch(
             checked = checked,
             onCheckedChange = onCheckedChange,
+            enabled = enabled,
         )
     }
 }
@@ -260,8 +303,15 @@ private fun PickerRow(
     }
 }
 
+private fun formatHourOnly(hour24: Int): String {
+    val h12 = if (hour24 % TimeConstants.HOURS_IN_HALF_DAY == 0) TimeConstants.HOURS_IN_HALF_DAY
+    else hour24 % TimeConstants.HOURS_IN_HALF_DAY
+    val amPm = if (hour24 < TimeConstants.HOURS_IN_HALF_DAY) TimeConstants.AM else TimeConstants.PM
+    return "$h12 $amPm"
+}
+
 @OptIn(ExperimentalFoundationApi::class)
-class AppTimePickerState(
+private class AppHourPickerState(
     val hourPagerState: PagerState,
     val amPmPagerState: PagerState,
     val hours: List<Int> = TimeConstants.HOURS_12,
@@ -274,24 +324,21 @@ class AppTimePickerState(
         )
 
     fun toColumns() = listOf(
-        PickerColumnData(
-            hourPagerState,
-            hours.map { it.toString() }),
+        PickerColumnData(hourPagerState, hours.map { it.toString() }),
         PickerColumnData(amPmPagerState, amPm),
     )
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun rememberAppTimePickerState(initialHour: Int): AppTimePickerState {
+private fun rememberAppHourPickerState(initialHour: Int): AppHourPickerState {
     val initialHour12 = initialHour.hour24ToHour12()
     val hourIndex = TimeConstants.HOURS_12.indexOf(initialHour12).coerceAtLeast(0)
-
     val hourPagerState = rememberPagerState(initialPage = hourIndex) { TimeConstants.HOURS_12.size }
     val amPmPagerState =
         rememberPagerState(initialPage = if (initialHour.isHour24Pm()) 1 else 0) { TimeConstants.AM_PM.size }
 
     return remember(hourPagerState, amPmPagerState) {
-        AppTimePickerState(hourPagerState, amPmPagerState)
+        AppHourPickerState(hourPagerState, amPmPagerState)
     }
 }

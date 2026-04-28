@@ -3,6 +3,7 @@ package com.hexis.bi.ui.main.home
 import android.app.Application
 import androidx.lifecycle.viewModelScope
 import com.hexis.bi.R
+import com.hexis.bi.data.notification.NotificationInboxRepository
 import com.hexis.bi.data.sleep.SleepRepository
 import com.hexis.bi.data.sleep.SleepSession
 import com.hexis.bi.data.terra.TerraManagerHolder
@@ -35,6 +36,7 @@ class HomeViewModel(
     private val suitRepository: SuitRepository,
     private val sleepRepository: SleepRepository,
     private val terraManagerHolder: TerraManagerHolder,
+    private val notificationInbox: NotificationInboxRepository,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(
@@ -96,6 +98,13 @@ class HomeViewModel(
                 _state.update { current ->
                     current.copy(isSuitConnected = info != null)
                 }
+            }
+            .catch { setError(it.message) }
+            .launchIn(viewModelScope)
+
+        notificationInbox.unreadCount
+            .onEach { count ->
+                _state.update { it.copy(hasUnreadNotifications = count > 0) }
             }
             .catch { setError(it.message) }
             .launchIn(viewModelScope)

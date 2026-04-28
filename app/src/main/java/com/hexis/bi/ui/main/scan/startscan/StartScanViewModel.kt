@@ -8,6 +8,8 @@ import com.hexis.bi.data.scan.ScanProgress
 import com.hexis.bi.data.scan.ScanResult
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.scan.ThreeDLookRepository
+import com.hexis.bi.data.notification.NotificationInboxRepository
+import com.hexis.bi.data.reminder.ScanReminderScheduler
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.calculateAge
@@ -23,6 +25,8 @@ class StartScanViewModel(
     private val threeDLookRepository: ThreeDLookRepository,
     private val scanResultRepository: ScanResultRepository,
     private val scanHistoryRepository: ScanHistoryRepository,
+    private val scanReminderScheduler: ScanReminderScheduler,
+    private val notificationInbox: NotificationInboxRepository,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(StartScanState())
@@ -164,6 +168,11 @@ class StartScanViewModel(
 
                     // Save to Firestore history
                     scanHistoryRepository.saveScan(progress.response)
+                    scanReminderScheduler.onNotificationSettingsOrScanChanged()
+                    notificationInbox.appendInbox(
+                        R.string.notif_body_scan_done_title,
+                        R.string.notif_body_scan_done_body,
+                    )
 
                     _state.update { it.copy(isComplete = true) }
                 }
@@ -192,4 +201,5 @@ class StartScanViewModel(
         val detail = failure.detail?.takeIf { it.isNotBlank() } ?: return base
         return appContext.getString(R.string.scan_error_with_detail, base, detail)
     }
+
 }

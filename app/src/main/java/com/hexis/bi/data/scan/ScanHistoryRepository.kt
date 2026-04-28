@@ -95,6 +95,15 @@ class ScanHistoryRepository(
             scans.getOrNull(1) to scans.getOrNull(2)
         }
 
+    /** True if any saved scan in recent history has [ScanRecord.timestamp] in the inclusive range. */
+    suspend fun hasScanSavedBetween(
+        startMillisInclusive: Long,
+        endMillisInclusive: Long,
+        lookback: Long = 50L,
+    ): Result<Boolean> = getRecentScans(limit = lookback).map { scans ->
+        scans.any { it.timestamp in startMillisInclusive..endMillisInclusive }
+    }
+
     private suspend fun getRecentScans(limit: Long): Result<List<ScanRecord>> = runCatching {
         val snapshot = scansCollection()
             .orderBy(FIELD_SAVED_AT, Query.Direction.DESCENDING)
