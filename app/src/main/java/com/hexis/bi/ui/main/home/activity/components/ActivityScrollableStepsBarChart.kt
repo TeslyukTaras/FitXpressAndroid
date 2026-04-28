@@ -31,6 +31,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -63,10 +64,12 @@ fun ActivityScrollableStepsBarChart(
     barGap: Dp,
     modifier: Modifier = Modifier,
     yAxisWidth: Dp = dimensionResource(R.dimen.recovery_y_axis_width),
-    yLabelFormatter: (Float) -> String = { it.toInt().toString() },
+    yLabelFormatter: ((Float) -> String)? = null,
     isLastHighlighted: Boolean = false,
     scrollAlignIndex: Int = entries.lastIndex,
 ) {
+    val context = LocalContext.current
+    val resolvedYLabelFormatter = yLabelFormatter ?: { value -> formatYAxisLabel(value, context) }
     val yMax = computeEffectiveYMax(entries, baseYMax, yGridStep)
     val yGridLines = remember(yMax) {
         listOf(0f, yMax / 3f, yMax * 2f / 3f, yMax)
@@ -198,7 +201,7 @@ fun ActivityScrollableStepsBarChart(
                 yGridLines.forEach { value ->
                     val fraction = 1f - (value / yMax)
                     Text(
-                        text = yLabelFormatter(value),
+                        text = resolvedYLabelFormatter(value),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.secondary,
                         minLines = 1,

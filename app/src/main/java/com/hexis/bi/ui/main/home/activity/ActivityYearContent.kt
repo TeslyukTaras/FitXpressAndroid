@@ -1,14 +1,59 @@
 package com.hexis.bi.ui.main.home.activity
 
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
 import com.hexis.bi.ui.main.home.activity.components.ActivityScrollableStepsBarChart
 import com.hexis.bi.utils.constants.ActivityConstants
 
 @Composable
 fun ActivityYearContent(
+    state: ActivityState,
+    onPreviousYear: () -> Unit,
+    onNextYear: () -> Unit,
+    onRetry: () -> Unit,
+) {
+    when (state.yearLoadState) {
+        ActivityLoadState.Loading -> ActivityLoadPlaceholder {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        }
+
+        ActivityLoadState.Error -> ActivityLoadPlaceholder {
+            Text(
+                text = stringResource(R.string.activity_error_title),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
+            TextButton(onClick = onRetry) {
+                Text(
+                    text = stringResource(R.string.action_retry),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+
+        ActivityLoadState.Ready -> ActivityYearReady(
+            state = state,
+            onPreviousYear = onPreviousYear,
+            onNextYear = onNextYear,
+        )
+    }
+}
+
+@Composable
+private fun ActivityYearReady(
     state: ActivityState,
     onPreviousYear: () -> Unit,
     onNextYear: () -> Unit,
@@ -37,13 +82,9 @@ fun ActivityYearContent(
             barWidth = dimensionResource(R.dimen.activity_year_bar_width),
             barGap = dimensionResource(R.dimen.spacer_s),
             yAxisWidth = dimensionResource(R.dimen.activity_year_y_axis_width),
-            yLabelFormatter = ::formatShortThousand,
             isLastHighlighted = !state.year.canGoNext,
             scrollAlignIndex = state.year.bars.indexOfLast { it.value > 0f }
                 .takeIf { it >= 0 } ?: state.year.bars.lastIndex,
         )
     }
 }
-
-private fun formatShortThousand(value: Float): String =
-    if (value >= 1_000f) "${(value / 1_000f).toInt()}k" else value.toInt().toString()

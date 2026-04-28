@@ -57,12 +57,20 @@ internal object TerraSleepJsonMapper {
 
     fun sessionOrNull(row: JsonElement): SleepSession? {
         val obj = row as? JsonObject ?: return null
-        val metadata = obj[TerraSleepJsonKeys.Metadata.NODE]?.jsonObject ?: return null
-        val bedtime = metadata.parseTerraDateTimeField(TerraSleepJsonKeys.Metadata.START_TIME) ?: run {
+        val metadata = obj[TerraSleepJsonKeys.Metadata.NODE]?.jsonObject
+        val bedtime = metadata?.parseTerraDateTimeField(TerraSleepJsonKeys.Metadata.START_TIME)
+            ?: obj.parseTerraDateTimeField(TerraSleepJsonKeys.Metadata.START_TIME)
+            ?: metadata?.parseTerraDateTimeField("start_time_local")
+            ?: obj.parseTerraDateTimeField("start_time_local")
+            ?: run {
             Timber.w("Terra sleep: missing/unparsed %s in metadata", TerraSleepJsonKeys.Metadata.START_TIME)
             return null
         }
-        val wakeTime = metadata.parseTerraDateTimeField(TerraSleepJsonKeys.Metadata.END_TIME) ?: run {
+        val wakeTime = metadata?.parseTerraDateTimeField(TerraSleepJsonKeys.Metadata.END_TIME)
+            ?: obj.parseTerraDateTimeField(TerraSleepJsonKeys.Metadata.END_TIME)
+            ?: metadata?.parseTerraDateTimeField("end_time_local")
+            ?: obj.parseTerraDateTimeField("end_time_local")
+            ?: run {
             Timber.w("Terra sleep: missing/unparsed %s in metadata", TerraSleepJsonKeys.Metadata.END_TIME)
             return null
         }

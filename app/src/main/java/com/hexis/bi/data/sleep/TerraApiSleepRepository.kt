@@ -3,7 +3,9 @@ package com.hexis.bi.data.sleep
 import com.hexis.bi.data.terra.TerraApi
 import com.hexis.bi.data.terra.TerraRangeJsonFetcher
 import com.hexis.bi.data.terra.TerraRestSourceResolver
+import com.hexis.bi.data.terra.TtlCache
 import com.hexis.bi.data.terra.fetchMergedFromAllSources
+import com.hexis.bi.utils.constants.TerraCacheConstants
 import com.hexis.bi.utils.redactSensitiveId
 import kotlinx.serialization.json.JsonElement
 import timber.log.Timber
@@ -14,6 +16,10 @@ class TerraApiSleepRepository(
     private val sourceResolver: TerraRestSourceResolver,
 ) : SleepRepository {
 
+    private val rangeCache = TtlCache<Pair<LocalDate, LocalDate>, List<SleepSession>>(
+        ttlMs = TerraCacheConstants.RANGE_CACHE_TTL_MS,
+    )
+
     override suspend fun getSessionForNight(date: LocalDate): Result<SleepSession?> =
         getSessionsForRange(date.minusDays(1), date).map { sessions ->
             sessions.firstOrNull { it.wakeTime.toLocalDate() == date }
@@ -23,13 +29,17 @@ class TerraApiSleepRepository(
     override suspend fun getSessionsForRange(
         start: LocalDate,
         end: LocalDate,
-    ): Result<List<SleepSession>> = sourceResolver.fetchMergedFromAllSources(
-        start = start,
-        end = end,
-        fetchJson = ::fetchJsonForUser,
-        parse = { rows -> rows.mapNotNull(TerraSleepJsonMapper::sessionOrNull) },
-        merge = ::mergeGapFillByWakeDay,
-    )
+    ): Result<List<SleepSession>> {
+        val key = start to end
+        rangeCache.get(key)?.let { return Result.success(it) }
+        return sourceResolver.fetchMergedFromAllSources(
+            start = start,
+            end = end,
+            fetchJson = ::fetchJsonForUser,
+            parse = { rows -> rows.mapNotNull(TerraSleepJsonMapper::sessionOrNull) },
+            merge = ::mergeGapFillByWakeDay,
+        ).onSuccess { rangeCache.put(key, it) }
+    }
 
     private suspend fun fetchJsonForUser(
         terraUserId: String,

@@ -1,5 +1,6 @@
 package com.hexis.bi.ui.main.home.activity.components
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -33,6 +34,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -49,6 +51,7 @@ import com.hexis.bi.ui.theme.LightBlue
 import com.hexis.bi.ui.theme.LightGradientBlue
 import java.text.NumberFormat
 import java.util.Locale
+import kotlin.math.pow
 import kotlin.math.roundToInt
 
 /**
@@ -69,8 +72,10 @@ fun ActivityStepsBarChart(
     yAxisWidth: Dp = dimensionResource(R.dimen.recovery_y_axis_width),
     xLabelStartPadding: Dp = 0.dp,
     isLastHighlighted: Boolean = false,
-    yLabelFormatter: (Float) -> String = { it.toInt().toString() },
+    yLabelFormatter: ((Float) -> String)? = null,
 ) {
+    val context = LocalContext.current
+    val resolvedYLabelFormatter = yLabelFormatter ?: { value -> formatYAxisLabel(value, context) }
     val yMax = computeEffectiveYMax(entries, baseYMax, yGridStep)
     val yGridLines = remember(yMax) {
         listOf(0f, yMax / 3f, yMax * 2f / 3f, yMax)
@@ -220,7 +225,7 @@ fun ActivityStepsBarChart(
                     yGridLines.forEach { value ->
                         val fraction = 1f - (value / yMax)
                         Text(
-                            text = yLabelFormatter(value),
+                            text = resolvedYLabelFormatter(value),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.secondary,
                             minLines = 1,
@@ -390,7 +395,27 @@ internal fun computeEffectiveYMax(
     yGridStep: Float,
 ): Float {
     val actualMax = entries.maxOfOrNull { it.value } ?: 0f
-    if (actualMax <= baseYMax || yGridStep <= 0f) return baseYMax
-    val steps = kotlin.math.ceil(actualMax / yGridStep)
-    return steps * yGridStep
+    val minStep = yGridStep.coerceAtLeast(1f)
+    val stepTarget = (maxOf(baseYMax, actualMax) / 3f).coerceAtLeast(minStep)
+    val niceStep = ceilNiceStep(stepTarget, minStep)
+    return niceStep * 3f
+}
+
+internal fun formatYAxisLabel(value: Float, context: Context): String {
+    val whole = value.toInt()
+    return if (whole >= 10_000) {
+        context.getString(R.string.activity_axis_thousands_short, whole / 1_000)
+    } else {
+        whole.toString()
+    }
+}
+
+private fun ceilNiceStep(target: Float, minStep: Float): Float {
+    val base = 10f.pow(kotlin.math.floor(kotlin.math.log10(target.coerceAtLeast(1f))))
+    val multipliers = floatArrayOf(1f, 2f, 3f, 4f, 5f, 6f, 8f, 10f)
+    for (m in multipliers) {
+        val candidate = base * m
+        if (candidate >= target && candidate >= minStep) return candidate
+    }
+    return base * 10f
 }

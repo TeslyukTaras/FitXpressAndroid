@@ -6,6 +6,7 @@ import com.hexis.bi.utils.constants.MeasurementConstants.INCHES_PER_FOOT
 import com.hexis.bi.utils.constants.MeasurementConstants.KG_TO_LB
 import com.hexis.bi.utils.constants.MeasurementConstants.KM_TO_MI
 import com.hexis.bi.utils.constants.MeasurementConstants.UNIT_SYSTEM_METRIC
+import kotlin.math.roundToInt
 
 fun Float.cmToInches(): Float = this / CM_TO_IN
 fun Float.inchesToCm(): Float = this * CM_TO_IN
@@ -41,4 +42,6 @@ fun distanceGoalKm(stepGoal: Int, heightCm: Float, isFemale: Boolean): Float =
 
 /** Active calories goal derived from distance goal and body weight. */
 fun caloriesGoal(distanceGoalKm: Float, weightKg: Float): Int =
-    (distanceGoalKm * weightKg * ActivityConstants.CALORIES_PER_KM_PER_KG).toInt()
+    (distanceGoalKm * weightKg * ActivityConstants.CALORIES_PER_KM_PER_KG)
+        .roundToInt()
+        .coerceAtLeast(0)

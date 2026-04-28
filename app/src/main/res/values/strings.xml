@@ -166,6 +166,7 @@
     <string name="home_sleep_value">%1$s h</string>
     <string name="home_sleep_goal">Goal: %1$s h</string>
     <string name="home_activity_value">%1$s steps</string>
+    <string name="home_activity_value_label">steps</string>
     <string name="home_activity_goal">Goal: %1$s</string>
     <string name="home_nav_home">Home</string>
     <string name="home_nav_body">Body</string>
@@ -362,6 +363,7 @@
 
     <!-- Activity screen -->
     <string name="activity_screen_title">Activity</string>
+    <string name="activity_error_title">Couldn\'t load activity data</string>
     <string name="activity_tab_day">Day</string>
     <string name="activity_tab_week">Week</string>
     <string name="activity_tab_month">Month</string>
@@ -414,6 +416,7 @@
     <string name="activity_trend_percent_signed">%1$+d%%</string>
     <string name="activity_trend_none_symbol">—</string>
     <string name="activity_date_range_format">%1$s - %2$s</string>
+    <string name="activity_axis_thousands_short">%1$dk</string>
 
     <!-- Activity settings dialog -->
     <string name="activity_settings_title">Activity settings</string>

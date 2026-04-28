@@ -26,6 +26,7 @@ data class BarChartEntry(
 )
 
 enum class TrendComparison { UP, DOWN, FLAT, NONE }
+enum class ActivityLoadState { Loading, Ready, Error }
 
 data class PeriodSummary(
     val periodLabel: String = "",
@@ -44,6 +45,8 @@ data class ActivityState(
     val isMetric: Boolean = true,
 
     // Day tab
+    val dayLoadState: ActivityLoadState = ActivityLoadState.Loading,
+    val dayErrorMessage: String? = null,
     val dateLabel: String = "",
     val stepsGoal: Int = ActivityConstants.DEFAULT_STEP_GOAL,
     val caloriesGoal: Int = ActivityConstants.DEFAULT_CALORIES_GOAL,
@@ -55,8 +58,14 @@ data class ActivityState(
     val canGoNextDay: Boolean = false,
 
     // Period tabs
+    val weekLoadState: ActivityLoadState = ActivityLoadState.Loading,
+    val weekErrorMessage: String? = null,
     val week: PeriodSummary = PeriodSummary(),
+    val monthLoadState: ActivityLoadState = ActivityLoadState.Loading,
+    val monthErrorMessage: String? = null,
     val month: PeriodSummary = PeriodSummary(),
+    val yearLoadState: ActivityLoadState = ActivityLoadState.Loading,
+    val yearErrorMessage: String? = null,
     val year: PeriodSummary = PeriodSummary(),
 
     // Info bottom sheet
@@ -67,7 +76,7 @@ data class ActivityState(
     val stepsGoalDraft: Int = ActivityConstants.DEFAULT_STEP_GOAL,
     val showActiveCalories: Boolean = true,
     val showActiveCaloriesDraft: Boolean = true,
-    val dataSource: HealthProvider = HealthProvider.AppleHealth,
+    val dataSource: HealthProvider = HealthProvider.GoogleHealth,
 ) {
     val progressPercent: Int
         get() = if (stepsGoal > 0)
