@@ -53,5 +53,26 @@ internal object HomeOverviewDefaults {
         variant = variant,
     )
 
+    fun placeholderRecoveryCard(context: Context): OverviewCardData =
+        recoveryCard(
+            context = context,
+            value = context.getString(R.string.sleep_placeholder),
+            statusSubtitle = "",
+        )
+
+    fun recoveryCard(
+        context: Context,
+        value: String,
+        statusSubtitle: String,
+        variant: OverviewCardVariant = OverviewCardVariant.Default,
+    ): OverviewCardData = OverviewCardData(
+        title = context.getString(R.string.home_card_recovery),
+        iconRes = R.drawable.ic_refresh,
+        value = value,
+        valueLabel = null,
+        subtitle = statusSubtitle,
+        variant = variant,
+    )
+
     internal fun formatSteps(steps: Int): String = "%,d".format(steps)
 }

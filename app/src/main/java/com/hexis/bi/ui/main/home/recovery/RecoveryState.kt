@@ -4,10 +4,14 @@ import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.Color
 import com.hexis.bi.R
 import com.hexis.bi.ui.theme.Blue300
+import com.hexis.bi.ui.theme.Green
 import com.hexis.bi.ui.theme.Red100
 import com.hexis.bi.ui.theme.Yellow
+import com.hexis.bi.utils.constants.RecoveryConstants
 
 enum class RecoveryTab { Day, Summary }
+
+enum class RecoveryLoadState { Loading, Ready, Error }
 
 enum class RecoveryStatus(
     @StringRes val labelRes: Int,
@@ -19,11 +23,21 @@ enum class RecoveryStatus(
 
     companion object {
         fun fromScore(score: Int): RecoveryStatus = when {
-            score >= 70 -> Ready
-            score >= 40 -> Recovering
+            score >= RecoveryConstants.STATUS_READY_MIN -> Ready
+            score >= RecoveryConstants.STATUS_RECOVERING_MIN -> Recovering
             else -> Low
         }
     }
+}
+
+enum class RecoveryTrend(
+    @StringRes val labelRes: Int,
+    @StringRes val descriptionRes: Int,
+    val color: Color,
+) {
+    Stable(R.string.recovery_trend_flat, R.string.recovery_trend_flat_description, Blue300),
+    Improving(R.string.recovery_trend_up, R.string.recovery_trend_up_description, Green),
+    Decreasing(R.string.recovery_trend_down, R.string.recovery_trend_down_description, Red100),
 }
 
 data class RecoveryMetric(
@@ -40,6 +54,14 @@ data class DailyRecoveryEntry(
 data class RecoveryState(
     val selectedTab: RecoveryTab = RecoveryTab.Day,
 
+    // Day tab — load status
+    val dayLoadState: RecoveryLoadState = RecoveryLoadState.Loading,
+    val dayErrorMessage: String? = null,
+
+    // Summary tab — load status
+    val summaryLoadState: RecoveryLoadState = RecoveryLoadState.Loading,
+    val summaryErrorMessage: String? = null,
+
     // Day tab
     val dateLabel: String = "",
     val score: Int = 0,
@@ -50,8 +72,7 @@ data class RecoveryState(
     val weekLabel: String = "",
     val weeklyEntries: List<DailyRecoveryEntry> = emptyList(),
     val avgScore: Int = 0,
-    val trendLabel: String = "Stable",
-    val trendDescription: String = "Recovery stayed stable this week.",
+    val trend: RecoveryTrend = RecoveryTrend.Stable,
     val canGoNextWeek: Boolean = false,
 
     // Info bottom sheet

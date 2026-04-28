@@ -7,6 +7,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
+import timber.log.Timber
+import com.hexis.bi.utils.redactSensitiveId
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -35,6 +37,7 @@ class TerraApi(private val client: OkHttpClient) {
             client.newCall(terraRequest(url.toString()).get().build()).execute().use { response ->
                 val body = response.body?.string().orEmpty()
                 if (!response.isSuccessful) error("Terra ${TerraApiConstants.Path.DAILY} ${response.code}: $body")
+                logTerraRawJson("DAILY", terraUserId, startDate, endDate, body)
                 Result.success(terraJson.decodeFromString(TerraDataListResponse.serializer(), body))
             }
         } catch (e: Exception) {
@@ -60,6 +63,7 @@ class TerraApi(private val client: OkHttpClient) {
             client.newCall(terraRequest(url.toString()).get().build()).execute().use { response ->
                 val body = response.body?.string().orEmpty()
                 if (!response.isSuccessful) error("Terra ${TerraApiConstants.Path.SLEEP} ${response.code}: $body")
+                logTerraRawJson("SLEEP", terraUserId, startDate, endDate, body)
                 Result.success(terraJson.decodeFromString(TerraDataListResponse.serializer(), body))
             }
         } catch (e: Exception) {
@@ -90,6 +94,29 @@ class TerraApi(private val client: OkHttpClient) {
 
     companion object {
         private val DATE_FMT: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+    }
+}
+
+private const val TERRA_LOG_CHUNK_CHARS = 3500
+
+private fun logTerraRawJson(
+    endpoint: String,
+    terraUserId: String,
+    startDate: LocalDate,
+    endDate: LocalDate,
+    body: String,
+) {
+    val tag = "TERRA_RAW"
+    val header = "[$endpoint] user=${redactSensitiveId(terraUserId)} range=[$startDate..$endDate] bytes=${body.length}"
+    Timber.tag(tag).d(header)
+    // Logcat truncates lines around 4 KB; chunk so the full JSON is recoverable.
+    var i = 0
+    var part = 1
+    while (i < body.length) {
+        val end = (i + TERRA_LOG_CHUNK_CHARS).coerceAtMost(body.length)
+        Timber.tag(tag).d("[$endpoint][part $part] ${body.substring(i, end)}")
+        i = end
+        part++
     }
 }
 
