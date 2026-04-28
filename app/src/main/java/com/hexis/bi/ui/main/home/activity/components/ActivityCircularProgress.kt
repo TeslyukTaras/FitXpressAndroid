@@ -23,6 +23,7 @@ fun ActivityCircularProgress(
     stepsProgress: Float,
     distanceProgress: Float,
     caloriesProgress: Float,
+    showCalories: Boolean,
     progressPercent: Int,
     modifier: Modifier = Modifier,
 ) {
@@ -30,8 +31,11 @@ fun ActivityCircularProgress(
     val strokeWidth = dimensionResource(R.dimen.activity_arc_stroke_width)
     val ringGap = dimensionResource(R.dimen.activity_arc_ring_gap)
 
-    val rings = listOf(stepsProgress, distanceProgress, caloriesProgress)
-        .zip(ActivityConstants.RING_COLORS)
+    val rings = if (showCalories) {
+        listOf(stepsProgress, distanceProgress, caloriesProgress).zip(ActivityConstants.RING_COLORS)
+    } else {
+        listOf(stepsProgress, distanceProgress).zip(ActivityConstants.RING_COLORS.dropLast(1))
+    }
 
     Box(
         modifier = modifier.size(arcSize),

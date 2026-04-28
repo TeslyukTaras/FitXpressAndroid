@@ -40,8 +40,8 @@ internal object ActivityConstants {
     const val PERIOD_STEP_GRID_STEP = 2000f
 
     // Year chart grid (monthly totals)
-    const val YEAR_STEP_GRID_MAX = 300_000f
-    const val YEAR_STEP_GRID_STEP = 100_000f
+    const val YEAR_STEP_GRID_MAX = 6_000f
+    const val YEAR_STEP_GRID_STEP = 2_000f
 
     // Period sizing
     const val DAYS_IN_WEEK = 7

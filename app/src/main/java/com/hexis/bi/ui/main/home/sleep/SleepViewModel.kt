@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.hexis.bi.R
 import com.hexis.bi.data.sleep.SleepRepository
 import com.hexis.bi.data.sleep.SleepSession
-import com.hexis.bi.data.terra.TerraManagerHolder
 import com.hexis.bi.data.sleep.SleepStage
 import com.hexis.bi.data.sleep.SleepStageInterval
 import com.hexis.bi.data.user.FirestoreSchema
@@ -24,6 +23,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.Duration
@@ -37,13 +37,13 @@ class SleepViewModel(
     application: Application,
     private val sleepRepository: SleepRepository,
     private val userRepository: UserRepository,
-    private val terraManagerHolder: TerraManagerHolder,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(SleepState())
     val state: StateFlow<SleepState> = _state.asStateFlow()
 
     private var weekOffset = 0
+    private val loadedTabs = mutableSetOf<SleepTab>()
 
     init {
         userRepository.observeUserSettings()
@@ -60,15 +60,19 @@ class SleepViewModel(
             .catch { e -> Timber.w(e, "observeUserSettings failed; keeping sleep goal defaults") }
             .launchIn(viewModelScope)
 
-        viewModelScope.launch {
-            terraManagerHolder.awaitCurrentOrTimeout()
-            loadTodaySession()
-            loadWeekData(0)
-        }
+        loadDataForTab(_state.value.selectedTab)
     }
 
     fun selectTab(tab: SleepTab) {
         _state.update { it.copy(selectedTab = tab) }
+        if (tab !in loadedTabs) loadDataForTab(tab)
+    }
+
+    private fun loadDataForTab(tab: SleepTab) {
+        when (tab) {
+            SleepTab.Day -> loadTodaySession()
+            SleepTab.Summary -> loadWeekData(weekOffset)
+        }
     }
 
     fun showSettingsDialog() {
@@ -91,10 +95,12 @@ class SleepViewModel(
                 mapOf(FirestoreSchema.UserSettingsFields.SLEEP_GOAL_HOURS to newGoal)
             ).onFailure { setError(it.message) }
         }
-        loadWeekData(weekOffset)
+        if (SleepTab.Summary in loadedTabs) loadWeekData(weekOffset)
     }
 
     fun retryLoad() = loadTodaySession()
+
+    fun retrySummaryLoad() = loadWeekData(weekOffset)
 
     fun previousWeek() {
         weekOffset--
@@ -117,28 +123,33 @@ class SleepViewModel(
     }
 
     private fun loadTodaySession() {
-        _state.update { it.copy(dayLoadState = SleepDayLoadState.Loading, errorMessage = null) }
+        val targetDay = LocalDate.now()
+        _state.update { it.copy(dayLoadState = SleepLoadState.Loading, errorMessage = null) }
         viewModelScope.launch {
-            sleepRepository.getSessionForNight(LocalDate.now()).fold(
+            val result = withTimeoutOrNull(DAY_LOAD_TIMEOUT_MS) {
+                sleepRepository.getSessionForNight(targetDay)
+            }
+            (result ?: Result.success(null)).fold(
                 onSuccess = { session ->
-                    if (session == null) applyEmptySession() else applySession(session)
+                    if (session.hasAnySleepData()) {
+                        applySession(session!!)
+                    } else {
+                        loadBestSessionFromNeighborRange(targetDay)
+                    }
                 },
                 onFailure = { err ->
-                    _state.update {
-                        it.copy(
-                            dayLoadState = SleepDayLoadState.Error,
-                            errorMessage = err.message,
-                        )
-                    }
+                    applyEmptySession()
+                    _state.update { it.copy(errorMessage = err.message) }
                 },
             )
         }
     }
 
     private fun applyEmptySession() {
+        loadedTabs.add(SleepTab.Day)
         _state.update {
             it.copy(
-                dayLoadState = SleepDayLoadState.Ready,
+                dayLoadState = SleepLoadState.Ready,
                 errorMessage = null,
                 totalSleepMinutes = 0,
                 sleepQuality = SleepQuality.Fair,
@@ -153,16 +164,17 @@ class SleepViewModel(
                 insightRes = R.string.sleep_recovery_subtitle,
             )
         }
-        loadWeekData(weekOffset)
+        prefetchSummaryIfNeeded()
     }
 
     private fun applySession(session: SleepSession) {
+        loadedTabs.add(SleepTab.Day)
         val score = computeSleepScore(session.durationMinutes, session.efficiencyPercent)
         val quality = qualityFor(score)
 
         _state.update {
             it.copy(
-                dayLoadState = SleepDayLoadState.Ready,
+                dayLoadState = SleepLoadState.Ready,
                 errorMessage = null,
                 totalSleepMinutes = session.durationMinutes,
                 sleepQuality = quality,
@@ -177,7 +189,13 @@ class SleepViewModel(
                 insightRes = insightFor(quality),
             )
         }
-        loadWeekData(weekOffset)
+        prefetchSummaryIfNeeded()
+    }
+
+    private fun prefetchSummaryIfNeeded() {
+        if (_state.value.selectedTab == SleepTab.Day && SleepTab.Summary !in loadedTabs) {
+            loadWeekData(weekOffset)
+        }
     }
 
     private fun computeSleepScore(durationMinutes: Int, efficiencyPercent: Float): Int {
@@ -246,29 +264,56 @@ class SleepViewModel(
             .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
             .plusWeeks(offset.toLong())
         val sunday = monday.plusDays(6)
+        val previousMonday = monday.minusWeeks(1)
+        val previousSunday = sunday.minusWeeks(1)
         val fmt = DateTimeFormatter.ofPattern("MMM d")
         val label = "${monday.format(fmt)} - ${sunday.format(fmt)}"
 
-        _state.update { it.copy(weekLabel = label, canGoNextWeek = offset < 0) }
+        _state.update {
+            it.copy(
+                summaryLoadState = SleepLoadState.Loading,
+                summaryErrorMessage = null,
+                weekLabel = label,
+                canGoNextWeek = offset < 0,
+            )
+        }
 
         viewModelScope.launch {
-            val current = sleepRepository
-                .getSessionsForRange(monday.minusDays(1), sunday)
-                .getOrDefault(emptyList())
-            val previous = sleepRepository
-                .getSessionsForRange(monday.minusWeeks(1).minusDays(1), sunday.minusWeeks(1))
-                .getOrDefault(emptyList())
+            sleepRepository
+                .getSessionsForRange(previousMonday.minusDays(1), sunday)
+                .fold(
+                    onSuccess = { sessions ->
+                        val current = sessions.filter { session ->
+                            val wakeDay = session.wakeTime.toLocalDate()
+                            !wakeDay.isBefore(monday) && !wakeDay.isAfter(sunday)
+                        }
+                        val previous = sessions.filter { session ->
+                            val wakeDay = session.wakeTime.toLocalDate()
+                            !wakeDay.isBefore(previousMonday) && !wakeDay.isAfter(previousSunday)
+                        }
+                        val entries = buildWeekEntries(monday, current)
+                        val stages = buildWeeklyStages(current, previous)
 
-            val entries = buildWeekEntries(monday, current)
-            val stages = buildWeeklyStages(current, previous)
-
-            _state.update {
-                it.copy(
-                    weeklyEntries = entries,
-                    weeklyStages = stages,
-                    avgSleepMinutes = avgMinutes(entries),
+                        loadedTabs.add(SleepTab.Summary)
+                        _state.update {
+                            it.copy(
+                                summaryLoadState = SleepLoadState.Ready,
+                                summaryErrorMessage = null,
+                                weeklyEntries = entries,
+                                weeklyStages = stages,
+                                avgSleepMinutes = avgMinutes(entries),
+                            )
+                        }
+                    },
+                    onFailure = { failure ->
+                        _state.update {
+                            it.copy(
+                                summaryLoadState = SleepLoadState.Error,
+                                summaryErrorMessage = failure.message,
+                            )
+                        }
+                    },
                 )
-            }
         }
     }
 
@@ -324,5 +369,36 @@ class SleepViewModel(
     private fun avgMinutes(entries: List<DailySleepEntry>): Int {
         val nonEmpty = entries.filter { it.durationMinutes > 0 }
         return if (nonEmpty.isEmpty()) 0 else nonEmpty.sumOf { it.durationMinutes } / nonEmpty.size
+    }
+
+    private suspend fun loadBestSessionFromNeighborRange(targetDay: LocalDate) {
+        val rangeResult = withTimeoutOrNull(DAY_LOAD_TIMEOUT_MS) {
+            sleepRepository.getSessionsForRange(
+                targetDay.minusDays(SLEEP_DAY_FALLBACK_RANGE_DAYS + 1),
+                targetDay.plusDays(SLEEP_DAY_FALLBACK_RANGE_DAYS),
+            )
+        }
+        val fallback = rangeResult
+            ?.getOrNull()
+            .orEmpty()
+            .bestForTargetDay(targetDay)
+        if (fallback.hasAnySleepData()) applySession(fallback!!) else applyEmptySession()
+    }
+
+    private fun List<SleepSession>.bestForTargetDay(targetDay: LocalDate): SleepSession? =
+        minWithOrNull(
+            compareBy<SleepSession> { kotlin.math.abs(java.time.temporal.ChronoUnit.DAYS.between(it.wakeTime.toLocalDate(), targetDay)) }
+                .thenByDescending { it.sleepMagnitude() },
+        )
+
+    private fun SleepSession?.hasAnySleepData(): Boolean =
+        this != null && (durationMinutes > 0 || stages.isNotEmpty())
+
+    private fun SleepSession.sleepMagnitude(): Long =
+        durationMinutes.toLong() + hrvMs.toLong() + restingHeartRateBpm.toLong()
+
+    private companion object {
+        private const val DAY_LOAD_TIMEOUT_MS = 12_000L
+        private const val SLEEP_DAY_FALLBACK_RANGE_DAYS = 1L
     }
 }

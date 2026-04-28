@@ -6,6 +6,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import com.hexis.bi.data.auth.AuthRepository
 import com.hexis.bi.data.auth.FirebaseAuthRepository
+import com.hexis.bi.data.activity.ActivityRepository
+import com.hexis.bi.data.activity.TerraApiActivityRepository
 import com.hexis.bi.data.preferences.UserPreferencesRepository
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanResultRepository
@@ -83,18 +85,19 @@ val appModule = module {
     single { TerraWidgetApi(get()) }
     single { TerraConnector(get(), get()) }
     single<SleepRepository> { TerraApiSleepRepository(api = get(), sourceResolver = get()) }
+    single<ActivityRepository> { TerraApiActivityRepository(api = get(), sourceResolver = get()) }
     viewModel { MainViewModel(get(), get()) }
     viewModel { LoginViewModel(get(), get(), get(), androidApplication()) }
     viewModel { SignUpViewModel(get(), get(), get(), androidApplication()) }
-    viewModel { HomeViewModel(androidApplication(), get(), get(), get(), get()) }
+    viewModel { HomeViewModel(androidApplication(), get(), get(), get(), get(), get()) }
     viewModel { EditProfileViewModel(androidApplication(), get(), get(), get()) }
     viewModel { ForgotPasswordViewModel(get(), androidApplication()) }
     viewModel { ScanPreferencesViewModel(androidApplication(), get()) }
     viewModel { HealthConnectionsViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { MySuitViewModel(androidApplication(), get(), get()) }
     viewModel { NotificationsSettingsViewModel(androidApplication()) }
-    viewModel { SleepViewModel(androidApplication(), get(), get(), get()) }
-    viewModel { ActivityViewModel(androidApplication(), get()) }
+    viewModel { SleepViewModel(androidApplication(), get(), get()) }
+    viewModel { ActivityViewModel(androidApplication(), get(), get(), get()) }
     viewModel { RecoveryViewModel(androidApplication()) }
     viewModel { ScanViewModel(androidApplication(), get()) }
     viewModel { StartScanViewModel(androidApplication(), get(), get(), get(), get()) }

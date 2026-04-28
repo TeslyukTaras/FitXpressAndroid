@@ -2,6 +2,7 @@ package com.hexis.bi.ui.main.home
 
 import androidx.annotation.DrawableRes
 import com.hexis.bi.R
+import com.hexis.bi.utils.constants.ActivityConstants
 import com.hexis.bi.utils.constants.SleepConstants
 
 enum class OverviewCardVariant { Default, Accent, Primary }
@@ -23,18 +24,16 @@ data class IntelligenceScoreData(
     val level: ScoreLevel,
 )
 
-internal fun buildOverviewCardsWithSleep(sleepCard: OverviewCardData): List<OverviewCardData> =
-    listOf(sleepCard) + defaultOverviewCardsTail
+internal const val OVERVIEW_SLEEP_INDEX = 0
+internal const val OVERVIEW_ACTIVITY_INDEX = 1
 
-/** Activity, recovery, scan — still mock data until those features are wired. */
+internal fun buildOverviewCards(
+    sleepCard: OverviewCardData,
+    activityCard: OverviewCardData,
+): List<OverviewCardData> = listOf(sleepCard, activityCard) + defaultOverviewCardsTail
+
+/** Recovery and scan — still mock data until those features are wired. */
 private val defaultOverviewCardsTail = listOf(
-    OverviewCardData(
-        title = "Activity Score",
-        iconRes = R.drawable.ic_steps,
-        value = "9,500",
-        valueLabel = "steps",
-        subtitle = "Goal: 10,000",
-    ),
     OverviewCardData(
         title = "Recovery",
         iconRes = R.drawable.ic_refresh,
@@ -65,6 +64,7 @@ data class HomeState(
     val age: String? = null,
     val isSuitConnected: Boolean = false,
     val sleepGoalHours: Int = SleepConstants.DEFAULT_SLEEP_GOAL_HOURS,
+    val activityGoalSteps: Int = ActivityConstants.DEFAULT_STEP_GOAL,
     val overviewCards: List<OverviewCardData> = emptyList(),
     val intelligenceScores: List<IntelligenceScoreData> = defaultIntelligenceScores,
 )

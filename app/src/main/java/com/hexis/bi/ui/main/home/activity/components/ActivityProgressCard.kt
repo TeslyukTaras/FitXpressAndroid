@@ -39,11 +39,16 @@ fun ActivityProgressCard(
     stepsProgress: Float,
     distanceProgress: Float,
     caloriesProgress: Float,
+    showCalories: Boolean,
     metrics: List<ActivityMetric>,
     onInfoClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val indicatorColors = ActivityConstants.RING_COLORS.asReversed()
+    val indicatorColors = if (showCalories) {
+        ActivityConstants.RING_COLORS.asReversed()
+    } else {
+        ActivityConstants.RING_COLORS.asReversed().drop(1)
+    }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -97,6 +102,7 @@ fun ActivityProgressCard(
                     stepsProgress = stepsProgress,
                     distanceProgress = distanceProgress,
                     caloriesProgress = caloriesProgress,
+                    showCalories = showCalories,
                     progressPercent = progressPercent,
                 )
 

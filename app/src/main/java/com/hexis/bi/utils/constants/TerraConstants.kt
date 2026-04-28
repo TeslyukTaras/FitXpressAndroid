@@ -5,3 +5,7 @@ internal object TerraProviders {
     const val OURA = "OURA"
     const val DUMMY = "DUMMY"
 }
+
+internal object TerraCacheConstants {
+    const val RANGE_CACHE_TTL_MS = 60_000L
+}

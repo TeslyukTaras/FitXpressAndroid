@@ -49,7 +49,7 @@ fun HomeScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
-        viewModel.refreshSleepOverview()
+        viewModel.refreshOverview()
         viewModel.events.collect { event ->
             when (event) {
                 is HomeEvent.NavigateToLogin -> onLogout()

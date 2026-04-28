@@ -20,7 +20,7 @@ enum class SleepQuality {
     }
 }
 
-enum class SleepDayLoadState { Loading, Ready, Error }
+enum class SleepLoadState { Loading, Ready, Error }
 
 enum class StageTrend { Up, Down }
 
@@ -66,8 +66,12 @@ data class SleepState(
     val selectedTab: SleepTab = SleepTab.Day,
 
     // Day tab — load status
-    val dayLoadState: SleepDayLoadState = SleepDayLoadState.Loading,
+    val dayLoadState: SleepLoadState = SleepLoadState.Loading,
     val errorMessage: String? = null,
+
+    // Summary tab — load status
+    val summaryLoadState: SleepLoadState = SleepLoadState.Loading,
+    val summaryErrorMessage: String? = null,
 
     // Day tab — sleep status
     val totalSleepMinutes: Int = 0,

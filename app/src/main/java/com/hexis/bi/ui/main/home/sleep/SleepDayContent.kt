@@ -32,11 +32,11 @@ fun SleepDayContent(
     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
     when (state.dayLoadState) {
-        SleepDayLoadState.Loading -> SleepDayPlaceholder {
+        SleepLoadState.Loading -> SleepLoadPlaceholder {
             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
 
-        SleepDayLoadState.Error -> SleepDayPlaceholder {
+        SleepLoadState.Error -> SleepLoadPlaceholder {
             Text(
                 text = stringResource(R.string.sleep_error_title),
                 style = MaterialTheme.typography.titleSmall,
@@ -53,7 +53,7 @@ fun SleepDayContent(
             }
         }
 
-        SleepDayLoadState.Ready -> SleepDayReady(state = state, onInfoClick = onInfoClick)
+        SleepLoadState.Ready -> SleepDayReady(state = state, onInfoClick = onInfoClick)
     }
 }
 
@@ -94,7 +94,7 @@ private fun SleepDayReady(state: SleepState, onInfoClick: () -> Unit) {
 }
 
 @Composable
-private fun SleepDayPlaceholder(content: @Composable () -> Unit) {
+fun SleepLoadPlaceholder(content: @Composable () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()

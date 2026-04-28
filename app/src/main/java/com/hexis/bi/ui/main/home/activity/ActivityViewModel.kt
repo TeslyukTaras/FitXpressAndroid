@@ -2,11 +2,17 @@ package com.hexis.bi.ui.main.home.activity
 
 import android.app.Application
 import androidx.lifecycle.viewModelScope
+import com.hexis.bi.data.activity.ActivityRepository
+import com.hexis.bi.data.activity.ActivitySummary
+import com.hexis.bi.data.terra.TerraRestSourceResolver
+import com.hexis.bi.data.user.FirestoreSchema
 import com.hexis.bi.data.user.UserRepository
+import com.hexis.bi.domain.enums.HealthProvider
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.caloriesGoal
 import com.hexis.bi.utils.constants.ActivityConstants
 import com.hexis.bi.utils.constants.ProfileConstants
+import com.hexis.bi.utils.constants.TerraProviders
 import com.hexis.bi.utils.distanceGoalKm
 import com.hexis.bi.utils.formatDayOfMonth
 import com.hexis.bi.utils.formatFullMonthDay
@@ -20,6 +26,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -29,11 +36,13 @@ import java.time.LocalTime
 import java.time.Month
 import java.time.temporal.TemporalAdjusters
 import kotlin.math.abs
-import kotlin.random.Random
+import kotlinx.coroutines.launch
 
 class ActivityViewModel(
     application: Application,
+    private val activityRepository: ActivityRepository,
     private val userRepository: UserRepository,
+    private val sourceResolver: TerraRestSourceResolver,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(ActivityState())
@@ -46,25 +55,38 @@ class ActivityViewModel(
     private var weightKg = ProfileConstants.DEFAULT_WEIGHT_KG
     private var heightCm: Float? = null
     private var isFemale: Boolean = false
+    private val loadedTabs = mutableSetOf<ActivityTab>()
 
     init {
-        reloadAllTabs()
-        userRepository.observeUser()
-            .onEach { profile ->
+        observeDataSource()
+        loadDataForTab(_state.value.selectedTab)
+        combine(
+            userRepository.observeUser(),
+            userRepository.observeUserSettings(),
+        ) { profile, settings -> profile to settings }
+            .onEach { (profile, settings) ->
                 heightCm = profile.heightCm?.toFloat()
                 isFemale = profile.gender?.lowercase() == "female"
                 profile.weightKg?.toFloat()?.let { weightKg = it }
 
-                val (distGoalKm, calGoal) = deriveGoals(_state.value.stepsGoal)
+                val stepsGoal = settings.stepsGoal ?: ActivityConstants.DEFAULT_STEP_GOAL
+                val showActiveCalories = settings.showActiveCalories ?: true
+                val settingsDataSource = settings.activityDataSource.toHealthProviderOrNull()
+                val (distGoalKm, calGoal) = deriveGoals(stepsGoal)
 
-                _state.update {
-                    it.copy(
+                _state.update { curr ->
+                    curr.copy(
                         isMetric = profile.unitSystem.isMetricUnitSystem(),
+                        stepsGoal = stepsGoal,
+                        stepsGoalDraft = if (curr.showSettingsDialog) curr.stepsGoalDraft else stepsGoal,
+                        showActiveCalories = showActiveCalories,
+                        showActiveCaloriesDraft = if (curr.showSettingsDialog) curr.showActiveCaloriesDraft else showActiveCalories,
+                        dataSource = settingsDataSource ?: curr.dataSource,
                         distanceGoalKm = distGoalKm,
                         caloriesGoal = calGoal,
                     )
                 }
-                reloadAllTabs()
+                reloadLoadedTabs()
             }
             .catch { setError(it.message) }
             .launchIn(viewModelScope)
@@ -79,15 +101,24 @@ class ActivityViewModel(
         return distGoalKm to calGoal
     }
 
-    private fun actualDistanceKm(steps: Int): Float =
-        heightCm?.let { distanceGoalKm(steps, it, isFemale) } ?: 0f
-
-    private fun actualCalories(distanceKm: Float): Int =
-        if (distanceKm > 0f && weightKg > 0f) caloriesGoal(distanceKm, weightKg) else 0
-
     fun selectTab(tab: ActivityTab) {
         _state.update { it.copy(selectedTab = tab) }
+        if (tab !in loadedTabs) loadDataForTab(tab)
     }
+
+    private fun loadDataForTab(tab: ActivityTab) {
+        when (tab) {
+            ActivityTab.Day -> loadDayData(dayOffset)
+            ActivityTab.Week -> loadWeekData(weekOffset)
+            ActivityTab.Month -> loadMonthData(monthOffset)
+            ActivityTab.Year -> loadYearData(yearOffset)
+        }
+    }
+
+    fun retryDayLoad() = loadDayData(dayOffset)
+    fun retryWeekLoad() = loadWeekData(weekOffset)
+    fun retryMonthLoad() = loadMonthData(monthOffset)
+    fun retryYearLoad() = loadYearData(yearOffset)
 
     fun previousDay() {
         dayOffset--
@@ -179,78 +210,45 @@ class ActivityViewModel(
                 showActiveCalories = it.showActiveCaloriesDraft,
             )
         }
-        reloadAllTabs()
-    }
-
-    private fun reloadAllTabs() {
-        loadDayData(dayOffset)
-        loadWeekData(weekOffset)
-        loadMonthData(monthOffset)
-        loadYearData(yearOffset)
-    }
-
-    // region Mock data — TODO: remove once wired to a real data source
-    // The helpers below generate deterministic-but-fake step/trend values so
-    // the UI can be exercised before the activity pipeline exists. Every caller
-    // lives in the loadXxxData() functions and should switch to repository data
-    // once it's available.
-
-    private fun randomPeriodSteps(random: Random): Int = random.nextInt(
-        ActivityConstants.MOCK_PERIOD_STEPS_MIN,
-        ActivityConstants.MOCK_PERIOD_STEPS_MAX,
-    )
-
-    private fun randomMonthSteps(random: Random): Int = random.nextInt(
-        ActivityConstants.MOCK_MONTH_STEPS_MIN,
-        ActivityConstants.MOCK_MONTH_STEPS_MAX,
-    )
-
-    private fun computeTrend(random: Random, hasComparison: Boolean): Pair<Int?, TrendComparison> {
-        if (!hasComparison) return null to TrendComparison.NONE
-        val pct = random.nextInt(
-            ActivityConstants.MOCK_TREND_PCT_MIN,
-            ActivityConstants.MOCK_TREND_PCT_MAX + 1,
-        )
-        val comparison = when {
-            abs(pct) <= ActivityConstants.TREND_FLAT_THRESHOLD -> TrendComparison.FLAT
-            pct > 0 -> TrendComparison.UP
-            else -> TrendComparison.DOWN
+        viewModelScope.launch {
+            userRepository.updateUserSettings(
+                mapOf(
+                    FirestoreSchema.UserSettingsFields.STEPS_GOAL to newStepsGoal,
+                    FirestoreSchema.UserSettingsFields.SHOW_ACTIVE_CALORIES to _state.value.showActiveCaloriesDraft,
+                    FirestoreSchema.UserSettingsFields.ACTIVITY_DATA_SOURCE to _state.value.dataSource.toStorageValue(),
+                )
+            ).onFailure { setError(it.message) }
         }
-        return pct to comparison
+        reloadLoadedTabs()
     }
 
-    // endregion
+    private fun reloadLoadedTabs() {
+        loadedTabs.toList().forEach(::loadDataForTab)
+    }
 
     private fun loadDayData(offset: Int) {
         val day = LocalDate.now().plusDays(offset.toLong())
-        val random = Random(day.toEpochDay())
-        val isToday = day == LocalDate.now()
-        val currentHour = LocalTime.now().hour
-
-        val hourlyBars = (0 until ActivityConstants.HOURS_IN_DAY).map { hour ->
-            val isFuture = isToday && hour > currentHour
-            val steps =
-                if (isFuture) 0 else random.nextInt(0, ActivityConstants.STEP_GRID_MAX.toInt())
-            BarChartEntry(
-                value = steps.toFloat(),
-                xLabel = null,
-                tooltipLabel = hour.formatHour(),
-            )
-        }
-
-        val totalSteps = hourlyBars.sumOf { it.value.toInt() }
-        val rawDistanceKm = actualDistanceKm(totalSteps)
-        val distanceKm = (rawDistanceKm * 10).toInt() / 10f
-        val calories = actualCalories(rawDistanceKm)
-
         _state.update {
             it.copy(
+                dayLoadState = ActivityLoadState.Loading,
+                dayErrorMessage = null,
                 dateLabel = day.formatFullMonthDay(),
-                currentSteps = totalSteps,
-                calories = calories,
-                distanceKm = distanceKm,
-                hourlyBars = hourlyBars,
                 canGoNextDay = offset < 0,
+            )
+        }
+        viewModelScope.launch {
+            activityRepository.getSummaryForDate(day).fold(
+                onSuccess = { summary ->
+                    applyDaySummary(day, summary)
+                },
+                onFailure = { err ->
+                    _state.update {
+                        it.copy(
+                            dayLoadState = ActivityLoadState.Error,
+                            dayErrorMessage = err.message,
+                        )
+                    }
+                },
             )
         }
     }
@@ -259,108 +257,182 @@ class ActivityViewModel(
         val weekStart = LocalDate.now()
             .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
             .plusWeeks(offset.toLong())
-        val random = Random(weekStart.toEpochDay())
-
-        val today = LocalDate.now()
-        val days =
-            (0 until ActivityConstants.DAYS_IN_WEEK).map { i -> weekStart.plusDays(i.toLong()) }
-        val bars = days.map { date ->
-            val steps = if (date.isAfter(today)) 0 else randomPeriodSteps(random)
-            BarChartEntry(
-                value = steps.toFloat(),
-                xLabel = date.formatDayOfMonth(),
-                tooltipLabel = date.formatShortMonthDay(),
-            )
+        val weekEnd = weekStart.plusDays(6)
+        val previousStart = weekStart.minusWeeks(1)
+        val previousEnd = weekEnd.minusWeeks(1)
+        _state.update { it.copy(weekLoadState = ActivityLoadState.Loading, weekErrorMessage = null) }
+        viewModelScope.launch {
+            activityRepository
+                .getSummariesForRange(previousStart, weekEnd)
+                .fold(
+                    onSuccess = { allRows ->
+                        val rows = allRows.filterByDateRange(weekStart, weekEnd)
+                        val previousRows = allRows.filterByDateRange(previousStart, previousEnd)
+                        loadedTabs.add(ActivityTab.Week)
+                        _state.update {
+                            it.copy(
+                                weekLoadState = ActivityLoadState.Ready,
+                                week = buildPeriodSummary(
+                                    start = weekStart,
+                                    periodLengthDays = ActivityConstants.DAYS_IN_WEEK,
+                                    rows = rows,
+                                    previousRows = previousRows,
+                                    canGoNext = offset < 0,
+                                    label = "${weekStart.formatShortMonthDay()} - ${weekEnd.formatShortMonthDay()}",
+                                    includeTrend = true,
+                                ),
+                            )
+                        }
+                    },
+                    onFailure = { failure ->
+                        _state.update {
+                            it.copy(
+                                weekLoadState = ActivityLoadState.Error,
+                                weekErrorMessage = failure.message,
+                            )
+                        }
+                    },
+                )
         }
-        val summary = buildPeriodSummary(
-            bars = bars,
-            periodLabel = "${days.first().formatShortMonthDay()} - ${
-                days.last().formatShortMonthDay()
-            }",
-            periodLengthDays = ActivityConstants.DAYS_IN_WEEK,
-            random = random,
-            canGoNext = offset < 0,
-        )
-
-        _state.update { it.copy(week = summary) }
     }
 
     private fun loadMonthData(offset: Int) {
         val monthStart = LocalDate.now()
             .withDayOfMonth(1)
             .plusMonths(offset.toLong())
-        val random = Random(monthStart.toEpochDay())
-        val today = LocalDate.now()
         val daysInMonth = monthStart.lengthOfMonth()
-
-        val bars = (0 until daysInMonth).map { i ->
-            val date = monthStart.plusDays(i.toLong())
-            val steps = if (date.isAfter(today)) 0 else randomPeriodSteps(random)
-            BarChartEntry(
-                value = steps.toFloat(),
-                xLabel = if (date.dayOfMonth in ActivityConstants.MONTH_LABEL_DAYS)
-                    date.dayOfMonth.toString() else null,
-                tooltipLabel = date.formatShortMonthDay(),
-            )
+        val monthEnd = monthStart.plusDays(daysInMonth.toLong() - 1)
+        val prevStart = monthStart.minusMonths(1)
+        val prevEnd = prevStart.plusDays(prevStart.lengthOfMonth().toLong() - 1)
+        _state.update { it.copy(monthLoadState = ActivityLoadState.Loading, monthErrorMessage = null) }
+        viewModelScope.launch {
+            activityRepository
+                .getSummariesForRange(prevStart, monthEnd)
+                .fold(
+                    onSuccess = { allRows ->
+                        val rows = allRows.filterByDateRange(monthStart, monthEnd)
+                        val prevRows = allRows.filterByDateRange(prevStart, prevEnd)
+                        loadedTabs.add(ActivityTab.Month)
+                        _state.update {
+                            it.copy(
+                                monthLoadState = ActivityLoadState.Ready,
+                                month = buildPeriodSummary(
+                                    start = monthStart,
+                                    periodLengthDays = daysInMonth,
+                                    rows = rows,
+                                    previousRows = prevRows,
+                                    canGoNext = offset < 0,
+                                    label = monthStart.formatFullMonthYear(),
+                                    includeTrend = true,
+                                ),
+                            )
+                        }
+                    },
+                    onFailure = { failure ->
+                        _state.update {
+                            it.copy(
+                                monthLoadState = ActivityLoadState.Error,
+                                monthErrorMessage = failure.message,
+                            )
+                        }
+                    },
+                )
         }
-        val summary = buildPeriodSummary(
-            bars = bars,
-            periodLabel = monthStart.formatFullMonthYear(),
-            periodLengthDays = daysInMonth,
-            random = random,
-            canGoNext = offset < 0,
-        )
-
-        _state.update { it.copy(month = summary) }
     }
 
     private fun loadYearData(offset: Int) {
         val yearStart = LocalDate.now()
             .withDayOfYear(1)
             .plusYears(offset.toLong())
-        val random = Random(yearStart.toEpochDay())
-        val currentMonthStart = LocalDate.now().withDayOfMonth(1)
-
-        val bars = (0 until ActivityConstants.MONTHS_IN_YEAR).map { i ->
-            val monthStart = yearStart.withMonth(Month.JANUARY.value).plusMonths(i.toLong())
-            val steps =
-                if (monthStart.isAfter(currentMonthStart)) 0 else randomMonthSteps(random)
-            BarChartEntry(
-                value = steps.toFloat(),
-                xLabel = monthStart.formatMonthShort(),
-                tooltipLabel = monthStart.formatFullMonthYear(),
+        val yearEnd = yearStart.plusDays(yearStart.lengthOfYear().toLong() - 1)
+        _state.update { it.copy(yearLoadState = ActivityLoadState.Loading, yearErrorMessage = null) }
+        viewModelScope.launch {
+            activityRepository.getSummariesForRange(yearStart, yearEnd).fold(
+                onSuccess = { rows ->
+                    loadedTabs.add(ActivityTab.Year)
+                    _state.update {
+                        it.copy(
+                            yearLoadState = ActivityLoadState.Ready,
+                            year = buildPeriodSummary(
+                                start = yearStart,
+                                periodLengthDays = yearStart.lengthOfYear(),
+                                rows = rows,
+                                previousRows = emptyList(),
+                                canGoNext = offset < 0,
+                                label = yearStart.formatYear(),
+                                includeTrend = false,
+                                bucketByMonth = true,
+                            ),
+                        )
+                    }
+                },
+                onFailure = { err ->
+                    _state.update {
+                        it.copy(
+                            yearLoadState = ActivityLoadState.Error,
+                            yearErrorMessage = err.message,
+                        )
+                    }
+                },
             )
         }
-        val daysInYear = yearStart.lengthOfYear()
-        // Year tab always shows "no comparison" copy per design.
-        val summary = buildPeriodSummary(
-            bars = bars,
-            periodLabel = yearStart.formatYear(),
-            periodLengthDays = daysInYear,
-            random = random,
-            canGoNext = offset < 0,
-            hasComparison = false,
-        )
-
-        _state.update { it.copy(year = summary) }
     }
 
     private fun buildPeriodSummary(
-        bars: List<BarChartEntry>,
-        periodLabel: String,
+        start: LocalDate,
         periodLengthDays: Int,
-        random: Random,
+        rows: List<ActivitySummary>,
+        previousRows: List<ActivitySummary>,
         canGoNext: Boolean,
-        hasComparison: Boolean = true,
+        label: String,
+        includeTrend: Boolean,
+        bucketByMonth: Boolean = false,
     ): PeriodSummary {
+        val byDate = rows.associateBy { it.date }
+        val today = LocalDate.now()
+        val bars = if (bucketByMonth) {
+            val byYearMonth = rows.groupBy { it.date.year to it.date.month }
+                .mapValues { (_, list) -> list.sumOf { it.steps } }
+            (0 until ActivityConstants.MONTHS_IN_YEAR).map { i ->
+                val monthStart = start.withMonth(Month.JANUARY.value).plusMonths(i.toLong())
+                val steps = if (monthStart.isAfter(today.withDayOfMonth(1))) 0
+                else byYearMonth[monthStart.year to monthStart.month] ?: 0
+                BarChartEntry(
+                    value = steps.toFloat(),
+                    xLabel = monthStart.formatMonthShort(),
+                    tooltipLabel = monthStart.formatFullMonthYear(),
+                )
+            }
+        } else {
+            (0 until periodLengthDays).map { i ->
+                val date = start.plusDays(i.toLong())
+                val steps = if (date.isAfter(today)) 0 else (byDate[date]?.steps ?: 0)
+                BarChartEntry(
+                    value = steps.toFloat(),
+                    xLabel = if (periodLengthDays == ActivityConstants.DAYS_IN_WEEK) date.formatDayOfMonth()
+                    else if (date.dayOfMonth in ActivityConstants.MONTH_LABEL_DAYS) date.dayOfMonth.toString() else null,
+                    tooltipLabel = date.formatShortMonthDay(),
+                )
+            }
+        }
+
         val totalSteps = bars.sumOf { it.value.toInt() }
-        val avgPerDay = if (periodLengthDays > 0) totalSteps / periodLengthDays else 0
-        val (trendPct, trendComparison) = computeTrend(random, hasComparison)
-        val distanceKm = actualDistanceKm(totalSteps)
-        val calories = actualCalories(distanceKm)
+        val daysWithData = rows.map { it.date }.distinct().size
+        val avgPerDay = if (daysWithData > 0) totalSteps / daysWithData else 0
+        val previousSteps = previousRows.sumOf { it.steps }
+        val trendPct = if (!includeTrend || previousSteps <= 0) null
+        else (((totalSteps - previousSteps).toFloat() / previousSteps) * 100f).toInt()
+        val trendComparison = when {
+            !includeTrend || trendPct == null -> TrendComparison.NONE
+            abs(trendPct) <= ActivityConstants.TREND_FLAT_THRESHOLD -> TrendComparison.FLAT
+            trendPct > 0 -> TrendComparison.UP
+            else -> TrendComparison.DOWN
+        }
+        val distanceKm = rows.sumOf { it.distanceKm.toDouble() }.toFloat()
+        val calories = rows.sumOf { it.activeCalories }
 
         return PeriodSummary(
-            periodLabel = periodLabel,
+            periodLabel = label,
             bars = bars,
             totalSteps = totalSteps,
             avgStepsPerDay = avgPerDay,
@@ -370,5 +442,115 @@ class ActivityViewModel(
             totalCalories = calories,
             canGoNext = canGoNext,
         )
+    }
+
+    private fun applyDaySummary(day: LocalDate, summary: ActivitySummary?) {
+        val hourlyBars = buildDayBars(day, summary)
+        val totalSteps = summary?.steps ?: 0
+        val distanceKm = summary?.distanceKm ?: 0f
+        val calories = summary?.activeCalories ?: 0
+        loadedTabs.add(ActivityTab.Day)
+        _state.update {
+            it.copy(
+                dayLoadState = ActivityLoadState.Ready,
+                dayErrorMessage = null,
+                dateLabel = day.formatFullMonthDay(),
+                currentSteps = totalSteps,
+                calories = calories,
+                distanceKm = distanceKm,
+                hourlyBars = hourlyBars,
+                canGoNextDay = dayOffset < 0,
+            )
+        }
+        prefetchWeekIfNeeded()
+    }
+
+    private fun buildDayBars(day: LocalDate, summary: ActivitySummary?): List<BarChartEntry> {
+        val isToday = day == LocalDate.now()
+        val currentHour = LocalTime.now().hour
+        val byHour = reconcileHourlyStepsWithTotal(
+            hourly = summary?.hourlySteps.orEmpty(),
+            totalSteps = summary?.steps ?: 0,
+        )
+        return (0 until ActivityConstants.HOURS_IN_DAY).map { hour ->
+            val isFuture = isToday && hour > currentHour
+            val steps = if (isFuture) 0 else (byHour[hour] ?: 0)
+            BarChartEntry(
+                value = steps.toFloat(),
+                xLabel = null,
+                tooltipLabel = hour.formatHour(),
+            )
+        }
+    }
+
+    private fun observeDataSource() {
+        viewModelScope.launch {
+            val provider = sourceResolver.resolveOrderedIdentities()
+                .getOrDefault(emptyList())
+                .firstOrNull()
+                ?.provider
+                .toHealthProvider()
+            _state.update { it.copy(dataSource = provider) }
+            userRepository.updateUserSettings(
+                mapOf(FirestoreSchema.UserSettingsFields.ACTIVITY_DATA_SOURCE to provider.toStorageValue())
+            ).onFailure { setError(it.message) }
+        }
+    }
+
+    private fun String?.toHealthProvider(): HealthProvider =
+        if (this.equals(TerraProviders.HEALTH_CONNECT, ignoreCase = true)) {
+            HealthProvider.GoogleHealth
+        } else {
+            HealthProvider.AppleHealth
+        }
+
+    private fun String?.toHealthProviderOrNull(): HealthProvider? = when (this) {
+        HealthProvider.GoogleHealth.name -> HealthProvider.GoogleHealth
+        HealthProvider.AppleHealth.name -> HealthProvider.AppleHealth
+        else -> null
+    }
+
+    private fun HealthProvider.toStorageValue(): String = name
+
+    private fun List<ActivitySummary>.filterByDateRange(
+        start: LocalDate,
+        end: LocalDate,
+    ): List<ActivitySummary> = filter { !it.date.isBefore(start) && !it.date.isAfter(end) }
+
+    private fun prefetchWeekIfNeeded() {
+        if (_state.value.selectedTab == ActivityTab.Day && ActivityTab.Week !in loadedTabs) {
+            loadWeekData(weekOffset)
+        }
+    }
+
+    private fun reconcileHourlyStepsWithTotal(
+        hourly: Map<Int, Int>,
+        totalSteps: Int,
+    ): Map<Int, Int> {
+        if (hourly.isEmpty() || totalSteps <= 0) return hourly
+        val sum = hourly.values.sum()
+        if (sum <= totalSteps) return hourly
+
+        val scaled = hourly.mapValues { (_, value) ->
+            ((value.toDouble() * totalSteps.toDouble()) / sum.toDouble()).toInt().coerceAtLeast(0)
+        }.toMutableMap()
+        var diff = totalSteps - scaled.values.sum()
+        if (diff != 0) {
+            val orderedHours = hourly.entries.sortedByDescending { it.value }.map { it.key }
+            var idx = 0
+            while (diff != 0 && orderedHours.isNotEmpty()) {
+                val hour = orderedHours[idx % orderedHours.size]
+                val current = scaled[hour] ?: 0
+                if (diff > 0) {
+                    scaled[hour] = current + 1
+                    diff--
+                } else if (current > 0) {
+                    scaled[hour] = current - 1
+                    diff++
+                }
+                idx++
+            }
+        }
+        return scaled
     }
 }

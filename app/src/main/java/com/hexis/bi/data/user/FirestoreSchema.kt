@@ -12,6 +12,9 @@ internal object FirestoreSchema {
 
     object UserSettingsFields {
         const val SLEEP_GOAL_HOURS = "sleepGoalHours"
+        const val STEPS_GOAL = "stepsGoal"
+        const val SHOW_ACTIVE_CALORIES = "showActiveCalories"
+        const val ACTIVITY_DATA_SOURCE = "activityDataSource"
     }
 
     object HealthConnectionFields {

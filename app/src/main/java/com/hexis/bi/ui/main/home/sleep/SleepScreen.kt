@@ -101,6 +101,7 @@ fun SleepScreen(
                         onInfoClick = viewModel::showRecoverySheet,
                         onPreviousWeek = viewModel::previousWeek,
                         onNextWeek = viewModel::nextWeek,
+                        onRetry = viewModel::retrySummaryLoad,
                     )
                 }
 

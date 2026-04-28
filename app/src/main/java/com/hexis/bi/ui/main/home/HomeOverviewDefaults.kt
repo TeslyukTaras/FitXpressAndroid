@@ -2,6 +2,7 @@ package com.hexis.bi.ui.main.home
 
 import android.content.Context
 import com.hexis.bi.R
+import com.hexis.bi.utils.constants.ActivityConstants
 import com.hexis.bi.utils.constants.SleepConstants
 
 internal object HomeOverviewDefaults {
@@ -28,4 +29,29 @@ internal object HomeOverviewDefaults {
         subtitle = goalSubtitle,
         variant = variant,
     )
+
+    fun placeholderActivityCard(context: Context, stepsGoal: Int = ActivityConstants.DEFAULT_STEP_GOAL): OverviewCardData =
+        activityCard(
+            context = context,
+            goalSubtitle = context.getString(R.string.home_activity_goal, formatSteps(stepsGoal)),
+            value = context.getString(R.string.sleep_placeholder),
+            valueLabel = null,
+        )
+
+    fun activityCard(
+        context: Context,
+        goalSubtitle: String,
+        value: String,
+        valueLabel: String?,
+        variant: OverviewCardVariant = OverviewCardVariant.Default,
+    ): OverviewCardData = OverviewCardData(
+        title = context.getString(R.string.home_card_activity_score),
+        iconRes = R.drawable.ic_steps,
+        value = value,
+        valueLabel = valueLabel,
+        subtitle = goalSubtitle,
+        variant = variant,
+    )
+
+    internal fun formatSteps(steps: Int): String = "%,d".format(steps)
 }

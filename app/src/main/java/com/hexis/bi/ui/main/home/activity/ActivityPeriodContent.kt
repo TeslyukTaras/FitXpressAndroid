@@ -46,7 +46,7 @@ fun ActivityPeriodContent(
 
     ActivitySummaryCard(
         title = totalsTitle,
-        rows = listOf(
+        rows = listOfNotNull(
             SummaryRow(
                 label = stringResource(R.string.activity_summary_steps),
                 value = "%,d".format(period.totalSteps),
@@ -57,11 +57,11 @@ fun ActivityPeriodContent(
                 value = "%.1f".format(period.totalDistanceKmDisplay(state.isMetric)),
                 unit = stringResource(state.distanceUnitRes),
             ),
-            SummaryRow(
+            if (state.showActiveCalories) SummaryRow(
                 label = stringResource(R.string.activity_summary_active_calories),
                 value = "%,d".format(period.totalCalories),
                 unit = stringResource(R.string.activity_unit_kcal),
-            ),
+            ) else null,
         ),
     )
 }

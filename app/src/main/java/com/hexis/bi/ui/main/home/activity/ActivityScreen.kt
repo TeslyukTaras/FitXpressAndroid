@@ -95,24 +95,28 @@ fun ActivityScreen(
                         onInfoClick = viewModel::showInfoSheet,
                         onPreviousDay = viewModel::previousDay,
                         onNextDay = viewModel::nextDay,
+                        onRetry = viewModel::retryDayLoad,
                     )
 
                     ActivityTab.Week -> ActivityWeekContent(
                         state = state,
                         onPreviousWeek = viewModel::previousWeek,
                         onNextWeek = viewModel::nextWeek,
+                        onRetry = viewModel::retryWeekLoad,
                     )
 
                     ActivityTab.Month -> ActivityMonthContent(
                         state = state,
                         onPreviousMonth = viewModel::previousMonth,
                         onNextMonth = viewModel::nextMonth,
+                        onRetry = viewModel::retryMonthLoad,
                     )
 
                     ActivityTab.Year -> ActivityYearContent(
                         state = state,
                         onPreviousYear = viewModel::previousYear,
                         onNextYear = viewModel::nextYear,
+                        onRetry = viewModel::retryYearLoad,
                     )
                 }
 

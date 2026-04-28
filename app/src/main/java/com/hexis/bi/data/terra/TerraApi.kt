@@ -18,6 +18,31 @@ import java.time.format.DateTimeFormatter
  */
 class TerraApi(private val client: OkHttpClient) {
 
+    suspend fun getDaily(
+        terraUserId: String,
+        startDate: LocalDate,
+        endDate: LocalDate,
+    ): Result<TerraDataListResponse> = withContext(Dispatchers.IO) {
+        try {
+            val url = "$TERRA_BASE_URL/daily".toHttpUrl().newBuilder()
+                .addQueryParameter("user_id", terraUserId)
+                .addQueryParameter("start_date", startDate.format(DATE_FMT))
+                .addQueryParameter("end_date", endDate.format(DATE_FMT))
+                .addQueryParameter("to_webhook", "false")
+                .addQueryParameter("with_samples", "true")
+                .build()
+
+            client.newCall(terraRequest(url.toString()).get().build()).execute().use { response ->
+                val body = response.body?.string().orEmpty()
+                if (!response.isSuccessful) error("Terra /daily ${response.code}: $body")
+                Result.success(terraJson.decodeFromString(TerraDataListResponse.serializer(), body))
+            }
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            Result.failure(e)
+        }
+    }
+
     suspend fun getSleep(
         terraUserId: String,
         startDate: LocalDate,
