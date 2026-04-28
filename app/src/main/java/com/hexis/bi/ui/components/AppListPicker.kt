@@ -21,7 +21,7 @@ fun <T> AppListPicker(
     selectedItem: T,
     onItemSelected: (T) -> Unit,
     onDismiss: () -> Unit,
-    itemLabel: (T) -> String,
+    itemLabel: @Composable (T) -> String,
     modifier: Modifier = Modifier,
     title: String? = null,
 ) {
@@ -43,8 +43,9 @@ fun <T> AppListPicker(
             )
             items.forEach { item ->
                 val selected = item == selectedItem
+                val label = itemLabel(item)
                 Text(
-                    text = itemLabel(item),
+                    text = label,
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (selected) MaterialTheme.colorScheme.background
                     else MaterialTheme.colorScheme.secondary,

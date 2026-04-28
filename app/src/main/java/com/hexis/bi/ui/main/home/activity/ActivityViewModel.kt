@@ -30,13 +30,13 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.Month
 import java.time.temporal.TemporalAdjusters
 import kotlin.math.abs
-import kotlinx.coroutines.launch
 
 class ActivityViewModel(
     application: Application,
@@ -98,8 +98,7 @@ class ActivityViewModel(
             return ActivityConstants.DEFAULT_DISTANCE_GOAL_KM to ActivityConstants.DEFAULT_CALORIES_GOAL
         }
         val distGoalKm = distanceGoalKm(stepsGoal, height, isFemale)
-        val calGoal = if (distGoalKm > 0f && weightKg > 0f) {
-            caloriesGoal(distGoalKm, weightKg)
+        val calGoal = if (distGoalKm > 0f && weightKg > 0f) caloriesGoal(distGoalKm, weightKg)
         else ActivityConstants.DEFAULT_CALORIES_GOAL
         return distGoalKm to calGoal
     }
@@ -263,7 +262,12 @@ class ActivityViewModel(
         val weekEnd = weekStart.plusDays(6)
         val previousStart = weekStart.minusWeeks(1)
         val previousEnd = weekEnd.minusWeeks(1)
-        _state.update { it.copy(weekLoadState = ActivityLoadState.Loading, weekErrorMessage = null) }
+        _state.update {
+            it.copy(
+                weekLoadState = ActivityLoadState.Loading,
+                weekErrorMessage = null
+            )
+        }
         viewModelScope.launch {
             activityRepository
                 .getSummariesForRange(previousStart, weekEnd)
@@ -307,7 +311,12 @@ class ActivityViewModel(
         val monthEnd = monthStart.plusDays(daysInMonth.toLong() - 1)
         val prevStart = monthStart.minusMonths(1)
         val prevEnd = prevStart.plusDays(prevStart.lengthOfMonth().toLong() - 1)
-        _state.update { it.copy(monthLoadState = ActivityLoadState.Loading, monthErrorMessage = null) }
+        _state.update {
+            it.copy(
+                monthLoadState = ActivityLoadState.Loading,
+                monthErrorMessage = null
+            )
+        }
         viewModelScope.launch {
             activityRepository
                 .getSummariesForRange(prevStart, monthEnd)
@@ -348,7 +357,12 @@ class ActivityViewModel(
             .withDayOfYear(1)
             .plusYears(offset.toLong())
         val yearEnd = yearStart.plusDays(yearStart.lengthOfYear().toLong() - 1)
-        _state.update { it.copy(yearLoadState = ActivityLoadState.Loading, yearErrorMessage = null) }
+        _state.update {
+            it.copy(
+                yearLoadState = ActivityLoadState.Loading,
+                yearErrorMessage = null
+            )
+        }
         viewModelScope.launch {
             activityRepository.getSummariesForRange(yearStart, yearEnd).fold(
                 onSuccess = { rows ->

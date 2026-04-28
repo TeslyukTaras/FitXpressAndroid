@@ -8,16 +8,21 @@ import com.hexis.bi.data.auth.AuthRepository
 import com.hexis.bi.data.auth.FirebaseAuthRepository
 import com.hexis.bi.data.activity.ActivityRepository
 import com.hexis.bi.data.activity.TerraApiActivityRepository
+import com.hexis.bi.data.healthconnections.FirestoreHealthConnectionsRepository
+import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
+import com.hexis.bi.data.network.httpLoggingInterceptor
+import com.hexis.bi.data.notification.NotificationInboxRepository
 import com.hexis.bi.data.preferences.UserPreferencesRepository
+import com.hexis.bi.data.reminder.ScanReminderScheduler
+import com.hexis.bi.data.reminder.ScanReminderSchedulerImpl
+import com.hexis.bi.data.reminder.ScanReminderWorkRunner
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.scan.ThreeDLookRepository
 import com.hexis.bi.data.scan.api.ThreeDLookApi
-import com.hexis.bi.data.healthconnections.FirestoreHealthConnectionsRepository
-import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
-import com.hexis.bi.data.network.httpLoggingInterceptor
 import com.hexis.bi.data.sleep.SleepRepository
 import com.hexis.bi.data.sleep.TerraApiSleepRepository
+import com.hexis.bi.data.store.AppPreferencesDataStore
 import com.hexis.bi.data.suit.MockSuitRepository
 import com.hexis.bi.data.terra.TerraApi
 import com.hexis.bi.data.terra.TerraAuthApi
@@ -38,6 +43,7 @@ import com.hexis.bi.ui.main.home.HomeViewModel
 import com.hexis.bi.ui.main.home.activity.ActivityViewModel
 import com.hexis.bi.ui.main.home.recovery.RecoveryViewModel
 import com.hexis.bi.ui.main.home.sleep.SleepViewModel
+import com.hexis.bi.ui.main.notifications.NotificationsViewModel
 import com.hexis.bi.ui.main.scan.ScanViewModel
 import com.hexis.bi.ui.main.scan.results.ResultsViewModel
 import com.hexis.bi.ui.main.scan.startscan.StartScanViewModel
@@ -48,6 +54,7 @@ import com.hexis.bi.ui.main.settings.mysuit.MySuitViewModel
 import com.hexis.bi.ui.main.settings.notifications.NotificationsSettingsViewModel
 import com.hexis.bi.ui.main.settings.scanpreferences.ScanPreferencesViewModel
 import com.hexis.bi.utils.constants.NetworkConstants.HTTP_TIMEOUT_SECONDS
+import com.hexis.bi.utils.permissions.NotificationPermissionCoordinator
 import okhttp3.OkHttpClient
 import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
@@ -60,7 +67,22 @@ val appModule = module {
     single { FirebaseFirestore.getInstance() }
     single { FirebaseStorage.getInstance() }
     single { CredentialManager.create(androidContext()) }
-    single { UserPreferencesRepository(androidContext()) }
+    single { AppPreferencesDataStore(androidContext()) }
+    single { UserPreferencesRepository(get()) }
+    single { NotificationInboxRepository(get()) }
+    single {
+        ScanReminderWorkRunner(
+            androidApplication(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+        )
+    }
+    single<ScanReminderScheduler> { ScanReminderSchedulerImpl(androidContext(), get(), get()) }
+    single { NotificationPermissionCoordinator(androidContext(), get(), get(), get(), get()) }
     single<AuthRepository> { FirebaseAuthRepository(get(), get(), androidContext()) }
     single<SuitRepository> { MockSuitRepository(get()) }
     single<UserRepository> { FirestoreUserRepository(get(), get(), androidContext()) }
@@ -78,7 +100,13 @@ val appModule = module {
     single { ScanHistoryRepository(get(), get()) }
     single { TerraAuthApi(get()) }
     single { TerraApi(get()) }
-    single<HealthConnectionsRepository> { FirestoreHealthConnectionsRepository(get(), get(), androidContext()) }
+    single<HealthConnectionsRepository> {
+        FirestoreHealthConnectionsRepository(
+            get(),
+            get(),
+            androidContext()
+        )
+    }
     single { TerraManagerHolder() }
     single { TerraRestSourceResolver(get(), get()) }
     single { TerraCallbackHandler(get()) }
@@ -89,18 +117,30 @@ val appModule = module {
     viewModel { MainViewModel(get(), get()) }
     viewModel { LoginViewModel(get(), get(), get(), androidApplication()) }
     viewModel { SignUpViewModel(get(), get(), get(), androidApplication()) }
-    viewModel { HomeViewModel(androidApplication(), get(), get(), get(), get(), get()) }
+    viewModel { HomeViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { EditProfileViewModel(androidApplication(), get(), get(), get()) }
     viewModel { ForgotPasswordViewModel(get(), androidApplication()) }
-    viewModel { ScanPreferencesViewModel(androidApplication(), get()) }
-    viewModel { HealthConnectionsViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { ScanPreferencesViewModel(androidApplication(), get(), get()) }
+    viewModel {
+        HealthConnectionsViewModel(
+            androidApplication(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get()
+        )
+    }
     viewModel { MySuitViewModel(androidApplication(), get(), get()) }
-    viewModel { NotificationsSettingsViewModel(androidApplication()) }
+    viewModel { NotificationsSettingsViewModel(androidApplication(), get(), get(), get(), get()) }
+    viewModel { NotificationsViewModel(androidApplication(), get()) }
     viewModel { SleepViewModel(androidApplication(), get(), get()) }
     viewModel { ActivityViewModel(androidApplication(), get(), get(), get()) }
     viewModel { RecoveryViewModel(androidApplication()) }
     viewModel { ScanViewModel(androidApplication(), get()) }
-    viewModel { StartScanViewModel(androidApplication(), get(), get(), get(), get()) }
+    viewModel { StartScanViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { ResultsViewModel(androidApplication(), get(), get(), get()) }
     viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get()) }
     viewModel { OnboardingViewModel(androidApplication(), get(), get()) }
