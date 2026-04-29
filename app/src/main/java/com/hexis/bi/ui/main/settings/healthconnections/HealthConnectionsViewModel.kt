@@ -2,7 +2,6 @@ package com.hexis.bi.ui.main.settings.healthconnections
 
 import android.app.Activity
 import android.app.Application
-import androidx.annotation.StringRes
 import androidx.lifecycle.viewModelScope
 import co.tryterra.terra.InvalidAuthToken
 import co.tryterra.terra.InvalidDevId
@@ -21,7 +20,6 @@ import com.hexis.bi.data.terra.TerraConnector
 import com.hexis.bi.data.terra.TerraManagerHolder
 import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.data.terra.TerraWidgetApi
-import com.hexis.bi.domain.enums.HealthProvider
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.constants.TerraProviders
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -50,14 +48,10 @@ class HealthConnectionsViewModel(
         healthConnectionsRepository.observeConnections()
             .onEach { items ->
                 val active = items.filter { it.active }
-                val (sdk, wearables) = active.partition { it.provider == TerraProviders.HEALTH_CONNECT }
-                val connectedProviders = buildSet {
-                    if (sdk.isNotEmpty()) add(HealthProvider.GoogleHealth)
-                }
                 _state.update {
                     it.copy(
-                        connectedProviders = connectedProviders,
-                        wearableConnections = wearables,
+                        connectedProviders = emptySet(),
+                        wearableConnections = active,
                     )
                 }
             }
@@ -69,26 +63,41 @@ class HealthConnectionsViewModel(
             .launchIn(viewModelScope)
     }
 
-    fun onProviderClick(provider: HealthProvider, activity: Activity) {
-        when (provider) {
-            HealthProvider.GoogleHealth -> {
-                val uiConnected = HealthProvider.GoogleHealth in _state.value.connectedProviders
-                val sdkConnected =
-                    terraManagerHolder.current?.getUserId(Connections.HEALTH_CONNECT) != null
-                if (uiConnected || sdkConnected) {
-                    disconnectGoogleHealth(activity)
-                } else {
-                    connectHealthConnect(activity)
-                }
-            }
-
-            HealthProvider.AppleHealth -> Unit
+    fun onSdkProviderRowClick(provider: String, displayName: String, activity: Activity?) {
+        if (!provider.equals(TerraProviders.HEALTH_CONNECT, ignoreCase = true)) {
+            onWidgetProviderRowClick(provider, displayName)
+            return
+        }
+        if (activity == null) {
+            setError(R.string.error_health_connect_failed)
+            return
+        }
+        val sdkConnection = Connections.HEALTH_CONNECT
+        val sdkConnected = terraManagerHolder.current?.getUserId(sdkConnection) != null
+        val storedConnected = isWearableConnected(provider)
+        if (sdkConnected || storedConnected) {
+            disconnectSdkProvider(
+                activity = activity,
+                connection = sdkConnection,
+                provider = provider,
+                displayName = displayName,
+            )
+        } else {
+            connectSdkProvider(
+                activity = activity,
+                connection = sdkConnection,
+                provider = provider,
+                displayName = displayName,
+            )
         }
     }
 
     fun onOuraRowClick() {
         if (isWearableConnected(TerraProviders.OURA)) {
-            disconnectWearableByProvider(TerraProviders.OURA, R.string.health_connection_oura)
+            disconnectWearableByProvider(
+                TerraProviders.OURA,
+                appContext.getString(R.string.health_connection_oura)
+            )
         } else {
             onConnectOura()
         }
@@ -96,9 +105,20 @@ class HealthConnectionsViewModel(
 
     fun onDummyRowClick() {
         if (isWearableConnected(TerraProviders.DUMMY)) {
-            disconnectWearableByProvider(TerraProviders.DUMMY, R.string.health_connection_dummy)
+            disconnectWearableByProvider(
+                TerraProviders.DUMMY,
+                appContext.getString(R.string.health_connection_dummy)
+            )
         } else {
             onConnectDummy()
+        }
+    }
+
+    fun onWidgetProviderRowClick(provider: String, displayName: String) {
+        if (isWearableConnected(provider)) {
+            disconnectWearableByProvider(provider, displayName)
+        } else {
+            startWidgetSession(provider)
         }
     }
 
@@ -114,7 +134,7 @@ class HealthConnectionsViewModel(
             )
         }
 
-    private fun disconnectWearableByProvider(terraProvider: String, @StringRes nameRes: Int) =
+    private fun disconnectWearableByProvider(terraProvider: String, providerName: String) =
         launch(
             onError = { setError(R.string.error_connection_save_failed) },
         ) {
@@ -134,7 +154,6 @@ class HealthConnectionsViewModel(
                 setMessage(R.string.msg_health_connect_nothing_to_disconnect)
                 return@launch
             }
-            val label = appContext.getString(nameRes)
             for (id in ids) {
                 terraApi.deauthenticateUser(id).onFailure { e ->
                     Timber.w(e, "Terra deauthenticateUser failed user_id=%s", id)
@@ -145,7 +164,7 @@ class HealthConnectionsViewModel(
                     Timber.w(it, "deactivateConnection failed for %s", id)
                 }
             }
-            setMessage(R.string.msg_wearable_disconnected, label)
+            setMessage(R.string.msg_wearable_disconnected, providerName)
         }
 
     private fun startWidgetSession(providers: String) = launch(
@@ -171,8 +190,12 @@ class HealthConnectionsViewModel(
         setError(R.string.error_wearable_start_failed)
     }
 
-    /** Terra REST deauth, Firestore deactivate, clear local SDK, then re-run [TerraManagerHolder.init]. */
-    fun disconnectGoogleHealth(activity: Activity) = launch(
+    private fun disconnectSdkProvider(
+        activity: Activity,
+        connection: Connections,
+        provider: String,
+        displayName: String,
+    ) = launch(
         onError = { setError(R.string.error_health_connect_failed) },
     ) {
         val uid = firebaseAuth.currentUser?.uid
@@ -184,17 +207,17 @@ class HealthConnectionsViewModel(
             setError(R.string.error_connection_save_failed)
             return@launch
         }
-        val hcFirestoreIds = connections
+        val firestoreIds = connections
             .filter {
                 it.active && it.provider.equals(
-                    TerraProviders.HEALTH_CONNECT,
+                    provider,
                     ignoreCase = true
                 )
             }
             .map { it.terraUserId }
             .distinct()
-        val sdkId = terraManagerHolder.current?.getUserId(Connections.HEALTH_CONNECT)
-        val allIds = (hcFirestoreIds + listOfNotNull(sdkId)).distinct()
+        val sdkId = terraManagerHolder.current?.getUserId(connection)
+        val allIds = (firestoreIds + listOfNotNull(sdkId)).distinct()
         if (allIds.isEmpty()) {
             setMessage(R.string.msg_health_connect_nothing_to_disconnect)
             return@launch
@@ -204,7 +227,7 @@ class HealthConnectionsViewModel(
                 Timber.w(e, "Terra deauthenticateUser failed user_id=%s", id)
             }
         }
-        for (id in hcFirestoreIds) {
+        for (id in firestoreIds) {
             healthConnectionsRepository.deactivateConnection(id).onFailure {
                 Timber.w(it, "deactivateConnection failed for %s", id)
             }
@@ -212,14 +235,23 @@ class HealthConnectionsViewModel(
         terraManagerHolder.clearLocalManager()
         terraManagerHolder.init(activity, uid)
             .onFailure { Timber.e(it, "Terra init after disconnect failed") }
-        setMessage(R.string.msg_health_connect_disconnected)
+        if (provider.equals(TerraProviders.HEALTH_CONNECT, ignoreCase = true)) {
+            setMessage(R.string.msg_health_connect_disconnected)
+        } else {
+            setMessage(R.string.msg_wearable_disconnected, displayName)
+        }
     }
 
-    private fun connectHealthConnect(activity: Activity) = launch(
-        onError = { setError(it.toHealthConnectErrorRes()) },
+    private fun connectSdkProvider(
+        activity: Activity,
+        connection: Connections,
+        provider: String,
+        displayName: String,
+    ) = launch(
+        onError = { setError(it.toSdkErrorRes()) },
     ) {
-        val connected = terraConnector.connect(activity, Connections.HEALTH_CONNECT).getOrElse {
-            setError(it.toHealthConnectErrorRes())
+        val connected = terraConnector.connect(activity, connection).getOrElse {
+            setError(it.toSdkErrorRes())
             return@launch
         }
         if (!connected) {
@@ -233,12 +265,15 @@ class HealthConnectionsViewModel(
                 force = true,
             )
         }
-        persistHealthConnectConnection()
-        setMessage(R.string.msg_health_connect_connected)
+        persistSdkConnection(connection, provider)
+        if (provider.equals(TerraProviders.HEALTH_CONNECT, ignoreCase = true)) {
+            setMessage(R.string.msg_health_connect_connected)
+        } else {
+            setMessage(R.string.msg_wearable_connected, displayName)
+        }
     }
 
-    @StringRes
-    private fun Throwable.toHealthConnectErrorRes(): Int = when (this) {
+    private fun Throwable.toSdkErrorRes(): Int = when (this) {
         is InvalidDevId -> R.string.error_terra_invalid_dev_id
         is InvalidAuthToken -> R.string.error_terra_invalid_token
         is UserLimitExceeded -> R.string.error_terra_user_limit
@@ -247,13 +282,13 @@ class HealthConnectionsViewModel(
         else -> R.string.error_health_connect_failed
     }
 
-    private suspend fun persistHealthConnectConnection() {
-        val terraUserId = terraManagerHolder.current?.getUserId(Connections.HEALTH_CONNECT)
+    private suspend fun persistSdkConnection(connection: Connections, provider: String) {
+        val terraUserId = terraManagerHolder.current?.getUserId(connection)
             ?: return
         healthConnectionsRepository.upsertConnection(
             HealthConnection(
                 terraUserId = terraUserId,
-                provider = TerraProviders.HEALTH_CONNECT,
+                provider = provider,
                 source = HealthConnection.SOURCE_SDK,
                 connectedAt = Timestamp.now(),
                 active = true,

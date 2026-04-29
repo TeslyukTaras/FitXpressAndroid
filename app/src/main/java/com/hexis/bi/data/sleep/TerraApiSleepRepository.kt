@@ -10,6 +10,12 @@ import com.hexis.bi.utils.redactSensitiveId
 import kotlinx.serialization.json.JsonElement
 import timber.log.Timber
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
+
+private object SleepRepositoryConstants {
+    const val DAY_LOOKBACK_DAYS = 1L
+    const val DAY_LOOKAHEAD_DAYS = 1L
+}
 
 class TerraApiSleepRepository(
     private val api: TerraApi,
@@ -21,9 +27,13 @@ class TerraApiSleepRepository(
     )
 
     override suspend fun getSessionForNight(date: LocalDate): Result<SleepSession?> =
-        getSessionsForRange(date.minusDays(1), date).map { sessions ->
-            sessions.firstOrNull { it.wakeTime.toLocalDate() == date }
-                ?: sessions.maxByOrNull { it.wakeTime }
+        getSessionsForRange(
+            date.minusDays(SleepRepositoryConstants.DAY_LOOKBACK_DAYS),
+            date.plusDays(SleepRepositoryConstants.DAY_LOOKAHEAD_DAYS),
+        ).map { sessions ->
+            sessions.minByOrNull {
+                kotlin.math.abs(ChronoUnit.DAYS.between(it.wakeTime.toLocalDate(), date))
+            }
         }
 
     override suspend fun getSessionsForRange(

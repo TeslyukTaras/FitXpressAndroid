@@ -70,31 +70,7 @@ fun RecoveryBarChart(
     val tooltipEntry = selectedEntry ?: entries.firstOrNull()
 
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .drawBehind {
-                if (selectedIndex in entries.indices && barsAreaWidth > 0) {
-                    val gapPx = barGap.toPx()
-                    val barWidthPx =
-                        (barsAreaWidth - gapPx * (entries.size - 1)) / entries.size.toFloat()
-                    val centerOfBarX =
-                        selectedIndex * (barWidthPx + gapPx) + (barWidthPx / 2f)
-                    val absoluteCenterX = (yAxisWidth + chartGap).toPx() + centerOfBarX
-
-                    val dashEffect = PathEffect.dashPathEffect(
-                        floatArrayOf(dashWidth.toPx(), dashWidth.toPx()), 0f,
-                    )
-                    val verticalPaddingPx = pointerVerticalPadding.toPx()
-
-                    drawLine(
-                        color = pointerColor,
-                        start = Offset(absoluteCenterX, verticalPaddingPx),
-                        end = Offset(absoluteCenterX, size.height - verticalPaddingPx),
-                        strokeWidth = stripeWidth.toPx(),
-                        pathEffect = dashEffect,
-                    )
-                }
-            },
+        modifier = modifier.fillMaxWidth(),
     ) {
         // Header / tooltip overlay
         Box(modifier = Modifier.fillMaxWidth()) {
@@ -139,7 +115,10 @@ fun RecoveryBarChart(
                         textAlign = TextAlign.Center,
                     )
                     Text(
-                        text = stringResource(R.string.recovery_avg_score_value, tooltipEntry.score),
+                        text = stringResource(
+                            R.string.recovery_avg_score_value,
+                            tooltipEntry.score
+                        ),
                         style = MaterialTheme.typography.labelMedium,
                         color = Blue300,
                     )
@@ -167,7 +146,7 @@ fun RecoveryBarChart(
             }
         }
 
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxl)))
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
 
         Row(
             modifier = Modifier
@@ -242,6 +221,20 @@ fun RecoveryBarChart(
                                 pathEffect = dashEffect,
                             )
                         }
+                        if (selectedIndex in entries.indices && entries.isNotEmpty()) {
+                            val gapPx = barGap.toPx()
+                            val barWidthPx =
+                                (size.width - gapPx * (entries.size - 1)) / entries.size.toFloat()
+                            val centerX = selectedIndex * (barWidthPx + gapPx) + (barWidthPx / 2f)
+                            val verticalPaddingPx = pointerVerticalPadding.toPx()
+                            drawLine(
+                                color = pointerColor,
+                                start = Offset(centerX, verticalPaddingPx),
+                                end = Offset(centerX, size.height - verticalPaddingPx),
+                                strokeWidth = stripeWidth.toPx(),
+                                pathEffect = dashEffect,
+                            )
+                        }
                     },
             ) {
                 if (entries.isNotEmpty() && barsAreaWidth > 0) {
@@ -298,6 +291,7 @@ private fun DayBar(
     isSelected: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val minBarHeight = dimensionResource(R.dimen.chart_bar_min_height)
     val highlight = entry.isHighlighted || isSelected
     val barBrush = if (highlight)
         Brush.verticalGradient(listOf(LightGradientBlue, Blue300))
@@ -312,10 +306,14 @@ private fun DayBar(
         modifier = modifier.fillMaxHeight(),
         contentAlignment = Alignment.BottomCenter,
     ) {
-        if (entry.score > 0) Box(
+        val fraction =
+            (1f - RecoveryConstants.mapScoreToFraction(entry.score.toFloat())).coerceIn(0f, 1f)
+        val fillModifier = if (fraction > 0f) Modifier.fillMaxHeight(fraction)
+        else Modifier.height(minBarHeight)
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(1f - RecoveryConstants.mapScoreToFraction(entry.score.toFloat()))
+                .then(fillModifier)
                 .clip(barShape)
                 .background(barBrush),
         )
