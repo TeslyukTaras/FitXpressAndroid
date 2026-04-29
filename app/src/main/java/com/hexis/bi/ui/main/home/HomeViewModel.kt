@@ -31,7 +31,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.util.Locale
 
 sealed interface HomeEvent : UiEvent {
     data object NavigateToLogin : HomeEvent
@@ -200,12 +199,7 @@ class HomeViewModel(
                 }
             },
             onFailure = {
-                val card = HomeOverviewDefaults.sleepCard(
-                    context = appContext,
-                    goalSubtitle = goalSubtitle,
-                    value = appContext.getString(R.string.sleep_placeholder),
-                    valueLabel = null,
-                )
+                val card = (null as SleepSession?).toSleepOverviewCard(goalSubtitle)
                 _state.update {
                     it.copy(
                         overviewCards = it.overviewCards.replaced(
@@ -238,12 +232,7 @@ class HomeViewModel(
                 }
             },
             onFailure = {
-                val card = HomeOverviewDefaults.activityCard(
-                    context = appContext,
-                    goalSubtitle = goalSubtitle,
-                    value = appContext.getString(R.string.sleep_placeholder),
-                    valueLabel = null,
-                )
+                val card = (null as ActivitySummary?).toActivityOverviewCard(goalSubtitle)
                 _state.update {
                     it.copy(
                         overviewCards = it.overviewCards.replaced(
@@ -257,18 +246,12 @@ class HomeViewModel(
     }
 
     private fun SleepSession?.toSleepOverviewCard(goalSubtitle: String): OverviewCardData {
-        val placeholder = appContext.getString(R.string.sleep_placeholder)
-        val hasDuration = this != null && durationMinutes > 0
-        val valueText = if (hasDuration) {
-            "%.1f".format(Locale.US, durationMinutes / 60f)
-        } else {
-            placeholder
-        }
+        val hours = (this?.durationMinutes ?: 0).coerceAtLeast(0) / 60f
         return HomeOverviewDefaults.sleepCard(
             context = appContext,
             goalSubtitle = goalSubtitle,
-            value = valueText,
-            valueLabel = if (hasDuration) appContext.getString(R.string.unit_hours_short) else null,
+            value = HomeOverviewDefaults.formatSleepHours(hours),
+            valueLabel = appContext.getString(R.string.unit_hours_short),
         )
     }
 
@@ -286,11 +269,7 @@ class HomeViewModel(
                 }
             },
             onFailure = {
-                val card = HomeOverviewDefaults.recoveryCard(
-                    context = appContext,
-                    value = appContext.getString(R.string.sleep_placeholder),
-                    statusSubtitle = "",
-                )
+                val card = (null as RecoverySnapshot?).toRecoveryOverviewCard()
                 _state.update {
                     it.copy(
                         overviewCards = it.overviewCards.replaced(
@@ -304,33 +283,21 @@ class HomeViewModel(
     }
 
     private fun RecoverySnapshot?.toRecoveryOverviewCard(): OverviewCardData {
-        val placeholder = appContext.getString(R.string.sleep_placeholder)
-        val hasScore = this != null && score > 0
-        val valueText = if (hasScore) appContext.getString(
-            R.string.home_recovery_score_value,
-            score
-        ) else placeholder
-        val statusSubtitle = if (hasScore) {
-            appContext.getString(RecoveryStatus.fromScore(score).labelRes)
-        } else {
-            ""
-        }
+        val score = (this?.score ?: 0).coerceAtLeast(0)
         return HomeOverviewDefaults.recoveryCard(
             context = appContext,
-            value = valueText,
-            statusSubtitle = statusSubtitle,
+            value = appContext.getString(R.string.home_recovery_score_value, score),
+            statusSubtitle = appContext.getString(RecoveryStatus.fromScore(score).labelRes),
         )
     }
 
     private fun ActivitySummary?.toActivityOverviewCard(goalSubtitle: String): OverviewCardData {
-        val placeholder = appContext.getString(R.string.sleep_placeholder)
-        val hasSteps = this != null && steps > 0
-        val valueText = if (hasSteps) HomeOverviewDefaults.formatSteps(steps) else placeholder
+        val steps = (this?.steps ?: 0).coerceAtLeast(0)
         return HomeOverviewDefaults.activityCard(
             context = appContext,
             goalSubtitle = goalSubtitle,
-            value = valueText,
-            valueLabel = if (hasSteps) appContext.getString(R.string.home_activity_value_label) else null,
+            value = HomeOverviewDefaults.formatSteps(steps),
+            valueLabel = appContext.getString(R.string.home_activity_value_label),
         )
     }
 }

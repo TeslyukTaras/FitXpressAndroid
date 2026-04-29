@@ -180,9 +180,8 @@ class RecoveryViewModel(
             ?.let(::sleepLabelFor)
             ?.let(appContext::getString)
             ?: unknown
-        val heartValue = snapshot?.restingHeartRateBpm?.takeIf { it > 0 }
-            ?.let { appContext.getString(R.string.recovery_metric_heart_bpm, it) }
-            ?: unknown
+        val heartBpm = snapshot?.restingHeartRateBpm?.coerceAtLeast(0) ?: 0
+        val heartValue = appContext.getString(R.string.recovery_metric_heart_bpm, heartBpm)
         val stressValue = snapshot?.stressLevel?.let { appContext.getString(stressLabelFor(it)) } ?: unknown
         val loadValue = snapshot?.activityLoad?.let { appContext.getString(loadLabelFor(it)) } ?: unknown
         return listOf(
