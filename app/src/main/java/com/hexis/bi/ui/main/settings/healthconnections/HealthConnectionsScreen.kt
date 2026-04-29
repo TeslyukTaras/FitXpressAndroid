@@ -3,9 +3,7 @@ package com.hexis.bi.ui.main.settings.healthconnections
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import android.net.Uri
 import androidx.annotation.DrawableRes
-import androidx.annotation.StringRes
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -35,6 +33,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.data.healthconnections.HealthConnection
@@ -73,7 +72,7 @@ fun HealthConnectionsScreen(
         val launched = runCatching {
             CustomTabsIntent.Builder()
                 .build()
-                .launchUrl(context, Uri.parse(url))
+                .launchUrl(context, url.toUri())
         }
         if (launched.isSuccess) {
             viewModel.onWidgetOpened()

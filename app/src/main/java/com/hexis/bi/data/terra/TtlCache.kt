@@ -26,6 +26,4 @@ class TtlCache<K : Any, V : Any>(private val ttlMs: Long) {
     suspend fun put(key: K, value: V) = mutex.withLock {
         map[key] = Entry(System.currentTimeMillis(), value)
     }
-
-    suspend fun clear() = mutex.withLock { map.clear() }
 }

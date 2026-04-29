@@ -31,16 +31,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.data.notification.InboxItem
-import com.hexis.bi.utils.constants.NotificationUi
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
+import com.hexis.bi.utils.constants.NotificationUi
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -131,16 +130,14 @@ private fun NotificationListRow(
     item: InboxItem,
     onClick: () -> Unit,
 ) {
-    val context = LocalContext.current
-    val timeLabel: String = if (item.createdAtEpochMillis > NotificationUi.RELATIVE_TIME_EPOCH_UNSET) {
-        DateUtils.getRelativeTimeSpanString(
-            item.createdAtEpochMillis,
-            System.currentTimeMillis(),
-            DateUtils.MINUTE_IN_MILLIS,
-        ).toString()
-    } else {
-        context.getString(item.timeLabelRes)
-    }
+    val timeLabel: String =
+        if (item.createdAtEpochMillis > NotificationUi.RELATIVE_TIME_EPOCH_UNSET)
+            DateUtils.getRelativeTimeSpanString(
+                item.createdAtEpochMillis,
+                System.currentTimeMillis(),
+                DateUtils.MINUTE_IN_MILLIS,
+            ).toString()
+        else stringResource(item.timeLabelRes)
 
     Row(
         modifier = Modifier

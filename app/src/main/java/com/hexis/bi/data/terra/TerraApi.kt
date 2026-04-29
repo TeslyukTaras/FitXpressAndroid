@@ -1,5 +1,6 @@
 package com.hexis.bi.data.terra
 
+import com.hexis.bi.utils.redactSensitiveId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -8,7 +9,6 @@ import kotlinx.serialization.json.JsonElement
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import timber.log.Timber
-import com.hexis.bi.utils.redactSensitiveId
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -30,12 +30,18 @@ class TerraApi(private val client: OkHttpClient) {
                 .addQueryParameter(TerraApiConstants.Query.USER_ID, terraUserId)
                 .addQueryParameter(TerraApiConstants.Query.START_DATE, startDate.format(DATE_FMT))
                 .addQueryParameter(TerraApiConstants.Query.END_DATE, endDate.format(DATE_FMT))
-                .addQueryParameter(TerraApiConstants.Query.TO_WEBHOOK, TerraApiConstants.QueryValue.FALSE)
-                .addQueryParameter(TerraApiConstants.Query.WITH_SAMPLES, TerraApiConstants.QueryValue.TRUE)
+                .addQueryParameter(
+                    TerraApiConstants.Query.TO_WEBHOOK,
+                    TerraApiConstants.QueryValue.FALSE
+                )
+                .addQueryParameter(
+                    TerraApiConstants.Query.WITH_SAMPLES,
+                    TerraApiConstants.QueryValue.TRUE
+                )
                 .build()
 
             client.newCall(terraRequest(url.toString()).get().build()).execute().use { response ->
-                val body = response.body?.string().orEmpty()
+                val body = response.body.string()
                 if (!response.isSuccessful) error("Terra ${TerraApiConstants.Path.DAILY} ${response.code}: $body")
                 logTerraRawJson("DAILY", terraUserId, startDate, endDate, body)
                 Result.success(terraJson.decodeFromString(TerraDataListResponse.serializer(), body))
@@ -56,12 +62,18 @@ class TerraApi(private val client: OkHttpClient) {
                 .addQueryParameter(TerraApiConstants.Query.USER_ID, terraUserId)
                 .addQueryParameter(TerraApiConstants.Query.START_DATE, startDate.format(DATE_FMT))
                 .addQueryParameter(TerraApiConstants.Query.END_DATE, endDate.format(DATE_FMT))
-                .addQueryParameter(TerraApiConstants.Query.TO_WEBHOOK, TerraApiConstants.QueryValue.FALSE)
-                .addQueryParameter(TerraApiConstants.Query.WITH_SAMPLES, TerraApiConstants.QueryValue.TRUE)
+                .addQueryParameter(
+                    TerraApiConstants.Query.TO_WEBHOOK,
+                    TerraApiConstants.QueryValue.FALSE
+                )
+                .addQueryParameter(
+                    TerraApiConstants.Query.WITH_SAMPLES,
+                    TerraApiConstants.QueryValue.TRUE
+                )
                 .build()
 
             client.newCall(terraRequest(url.toString()).get().build()).execute().use { response ->
-                val body = response.body?.string().orEmpty()
+                val body = response.body.string()
                 if (!response.isSuccessful) error("Terra ${TerraApiConstants.Path.SLEEP} ${response.code}: $body")
                 logTerraRawJson("SLEEP", terraUserId, startDate, endDate, body)
                 Result.success(terraJson.decodeFromString(TerraDataListResponse.serializer(), body))
@@ -73,31 +85,31 @@ class TerraApi(private val client: OkHttpClient) {
     }
 
     /** `DELETE /v2/auth/deauthenticateUser?user_id=…` — revokes Terra’s access for that user id. */
-    suspend fun deauthenticateUser(terraUserId: String): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
-            val url = "$TERRA_BASE_URL${TerraApiConstants.Path.DEAUTHENTICATE_USER}".toHttpUrl().newBuilder()
-                .addQueryParameter(TerraApiConstants.Query.USER_ID, terraUserId)
-                .build()
-            val request = terraRequest(url.toString()).delete().build()
-            client.newCall(request).execute().use { response ->
-                val body = response.body?.string().orEmpty()
-                if (!response.isSuccessful && response.code != 404) {
-                    error("Terra DELETE ${TerraApiConstants.Path.DEAUTHENTICATE_USER} ${response.code}: $body")
+    suspend fun deauthenticateUser(terraUserId: String): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                val url = "$TERRA_BASE_URL${TerraApiConstants.Path.DEAUTHENTICATE_USER}".toHttpUrl()
+                    .newBuilder()
+                    .addQueryParameter(TerraApiConstants.Query.USER_ID, terraUserId)
+                    .build()
+                val request = terraRequest(url.toString()).delete().build()
+                client.newCall(request).execute().use { response ->
+                    val body = response.body.string()
+                    if (!response.isSuccessful && response.code != 404) {
+                        error("Terra DELETE ${TerraApiConstants.Path.DEAUTHENTICATE_USER} ${response.code}: $body")
+                    }
+                    Result.success(Unit)
                 }
-                Result.success(Unit)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                Result.failure(e)
             }
-        } catch (e: Exception) {
-            if (e is CancellationException) throw e
-            Result.failure(e)
         }
-    }
 
     companion object {
         private val DATE_FMT: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
     }
 }
-
-private const val TERRA_LOG_CHUNK_CHARS = 3500
 
 private fun logTerraRawJson(
     endpoint: String,
@@ -106,18 +118,10 @@ private fun logTerraRawJson(
     endDate: LocalDate,
     body: String,
 ) {
-    val tag = "TERRA_RAW"
-    val header = "[$endpoint] user=${redactSensitiveId(terraUserId)} range=[$startDate..$endDate] bytes=${body.length}"
-    Timber.tag(tag).d(header)
-    // Logcat truncates lines around 4 KB; chunk so the full JSON is recoverable.
-    var i = 0
-    var part = 1
-    while (i < body.length) {
-        val end = (i + TERRA_LOG_CHUNK_CHARS).coerceAtMost(body.length)
-        Timber.tag(tag).d("[$endpoint][part $part] ${body.substring(i, end)}")
-        i = end
-        part++
-    }
+    Timber.tag("TerraApi").d(
+        "[%s] user=%s range=[%s..%s] bytes=%d",
+        endpoint, redactSensitiveId(terraUserId), startDate, endDate, body.length,
+    )
 }
 
 private object TerraApiConstants {

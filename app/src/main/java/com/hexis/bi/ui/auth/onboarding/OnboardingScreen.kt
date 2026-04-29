@@ -36,7 +36,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -58,9 +57,9 @@ import com.hexis.bi.ui.components.AppDropdown
 import com.hexis.bi.ui.components.AppOutlinedButton
 import com.hexis.bi.ui.components.AppTextField
 import com.hexis.bi.ui.components.AppTopBar
-import com.hexis.bi.ui.components.profile.HeathParametersSection
 import com.hexis.bi.ui.components.my_suit.SuitConnectedBanner
 import com.hexis.bi.ui.components.my_suit.SuitInfoRow
+import com.hexis.bi.ui.components.profile.HeathParametersSection
 import com.hexis.bi.utils.parseDob
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel

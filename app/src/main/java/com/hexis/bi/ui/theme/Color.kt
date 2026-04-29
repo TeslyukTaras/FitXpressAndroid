@@ -32,7 +32,8 @@ val ShadowColor = Color(0x33A7A7A7)
 
 // Red
 val Red100 = Color(0xFFFF3A3A)   // vivid red — errors, delete actions
-val Red200 = Color(0xFFFF7070)   // muted red
+
+//val Red200 = Color(0xFFFF7070)   // muted red
 val Red300 = Color(0xFFE62020)   // deep red — destructive action buttons
 
 // Lime

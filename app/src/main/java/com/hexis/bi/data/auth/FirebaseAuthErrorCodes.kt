@@ -15,6 +15,8 @@ internal object FirebaseAuthErrorCodes {
     // Custom codes for precondition failures not covered by FirebaseAuthException
     const val NO_CURRENT_USER = "ERROR_NO_CURRENT_USER"
     const val NO_EMAIL_ON_ACCOUNT = "ERROR_NO_EMAIL_ON_ACCOUNT"
+    const val NO_GOOGLE_CREDENTIAL = "ERROR_NO_GOOGLE_CREDENTIAL"
+    const val GOOGLE_SIGN_IN_CANCELLED = "ERROR_GOOGLE_SIGN_IN_CANCELLED"
 }
 
 /**

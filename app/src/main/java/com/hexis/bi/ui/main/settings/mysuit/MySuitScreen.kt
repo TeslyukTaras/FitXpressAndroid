@@ -151,7 +151,7 @@ private fun ConnectedContent(
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
         Spacer(Modifier.weight(1f))
 
-        BottomButtonAction() {
+        BottomButtonAction {
             AppOutlinedButton(
                 text = stringResource(R.string.action_reconnect_suit),
                 onClick = onReconnect,

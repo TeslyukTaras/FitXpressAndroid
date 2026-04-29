@@ -3,8 +3,11 @@ package com.hexis.bi.data.auth
 import android.app.Activity
 import android.content.Context
 import androidx.credentials.CredentialManager
-import com.hexis.bi.R
 import androidx.credentials.GetCredentialRequest
+import androidx.credentials.GetCredentialResponse
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.NoCredentialException
+import com.hexis.bi.R
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.EmailAuthProvider
@@ -58,7 +61,7 @@ class FirebaseAuthRepository(
         val request = GetCredentialRequest.Builder()
             .addCredentialOption(googleIdOption)
             .build()
-        val result = credentialManager.getCredential(context = context, request = request)
+        val result = requestGoogleCredential(context, request)
         val idToken = GoogleIdTokenCredential.createFrom(result.credential.data).idToken
         val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
         auth.signInWithCredential(firebaseCredential).await()
@@ -97,7 +100,7 @@ class FirebaseAuthRepository(
         val request = GetCredentialRequest.Builder()
             .addCredentialOption(googleIdOption)
             .build()
-        val result = credentialManager.getCredential(context = context, request = request)
+        val result = requestGoogleCredential(context, request)
         val idToken = GoogleIdTokenCredential.createFrom(result.credential.data).idToken
         val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
         user.reauthenticate(firebaseCredential).await()
@@ -117,6 +120,22 @@ class FirebaseAuthRepository(
     override suspend fun signOut() {
         auth.signOut()
     }
+
+    /**
+     * Translates Credential Manager exceptions into [FirebaseAuthCodeException]s so [mapAuthError]
+     * can produce a friendly message — and so the lint check that requires explicit handling of
+     * [NoCredentialException] is satisfied.
+     */
+    private suspend fun requestGoogleCredential(
+        context: Context,
+        request: GetCredentialRequest,
+    ): GetCredentialResponse = try {
+        credentialManager.getCredential(context = context, request = request)
+    } catch (e: NoCredentialException) {
+        throw FirebaseAuthCodeException(FirebaseAuthErrorCodes.NO_GOOGLE_CREDENTIAL)
+    } catch (e: GetCredentialCancellationException) {
+        throw FirebaseAuthCodeException(FirebaseAuthErrorCodes.GOOGLE_SIGN_IN_CANCELLED)
+    }
 }
 
 private fun <T> Result<T>.mapAuthError(context: Context): Result<T> {
@@ -129,6 +148,8 @@ private fun <T> Result<T>.mapAuthError(context: Context): Result<T> {
     val friendly = when (errorCode) {
         FirebaseAuthErrorCodes.NO_CURRENT_USER -> context.getString(R.string.error_session_expired)
         FirebaseAuthErrorCodes.NO_EMAIL_ON_ACCOUNT -> context.getString(R.string.error_no_email_on_account)
+        FirebaseAuthErrorCodes.NO_GOOGLE_CREDENTIAL -> context.getString(R.string.error_no_google_credential)
+        FirebaseAuthErrorCodes.GOOGLE_SIGN_IN_CANCELLED -> context.getString(R.string.error_google_sign_in_cancelled)
         FirebaseAuthErrorCodes.INVALID_EMAIL -> context.getString(R.string.error_auth_invalid_email)
         FirebaseAuthErrorCodes.WRONG_PASSWORD,
         FirebaseAuthErrorCodes.INVALID_CREDENTIAL -> context.getString(R.string.error_auth_wrong_password)

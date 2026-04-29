@@ -1,13 +1,11 @@
 package com.hexis.bi.data.activity
 
-import com.hexis.bi.data.terra.float
 import com.hexis.bi.data.terra.int
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.time.LocalDate
@@ -103,7 +101,9 @@ object TerraActivityJsonMapper {
 private fun JsonObject.dateOrNull(): LocalDate? {
     val metadata = this[TerraActivityJsonKeys.Common.METADATA]?.jsonObject
     val fromDateField = TerraActivityJsonKeys.DateTime.CANDIDATES
-        .firstNotNullOfOrNull { key -> metadata?.get(key)?.toString()?.trim('"')?.toLocalDateOrNull() }
+        .firstNotNullOfOrNull { key ->
+            metadata?.get(key)?.toString()?.trim('"')?.toLocalDateOrNull()
+        }
     if (fromDateField != null) return fromDateField
     return TerraActivityJsonKeys.DateTime.CANDIDATES
         .firstNotNullOfOrNull { key -> this[key]?.toString()?.trim('"')?.toLocalDateOrNull() }
@@ -121,9 +121,13 @@ private fun JsonObject.extractSteps(): Int {
     val metadata = this[TerraActivityJsonKeys.Common.METADATA]?.jsonObject
     return int(TerraActivityJsonKeys.Steps.STEPS)
         ?: distanceData?.int(TerraActivityJsonKeys.Steps.STEPS)
-        ?: distanceData?.get(TerraActivityJsonKeys.Common.SUMMARY)?.jsonObject?.int(TerraActivityJsonKeys.Steps.STEPS)
+        ?: distanceData?.get(TerraActivityJsonKeys.Common.SUMMARY)?.jsonObject?.int(
+            TerraActivityJsonKeys.Steps.STEPS
+        )
         ?: activityData?.int(TerraActivityJsonKeys.Steps.STEPS)
-        ?: activityData?.get(TerraActivityJsonKeys.Common.SUMMARY)?.jsonObject?.int(TerraActivityJsonKeys.Steps.STEPS)
+        ?: activityData?.get(TerraActivityJsonKeys.Common.SUMMARY)?.jsonObject?.int(
+            TerraActivityJsonKeys.Steps.STEPS
+        )
         ?: int(TerraActivityJsonKeys.Steps.STEP_COUNT)
         ?: metadata?.int(TerraActivityJsonKeys.Steps.STEP_COUNT)
         ?: metadata?.int(TerraActivityJsonKeys.Steps.STEPS)
@@ -154,14 +158,16 @@ private fun JsonObject.extractDistanceKm(): Float {
 private fun JsonObject.extractActiveCalories(): Int {
     val caloriesData = this[TerraActivityJsonKeys.Nodes.CALORIES_DATA]?.jsonObject
     val activityData = this[TerraActivityJsonKeys.Nodes.ACTIVITY_DATA]?.jsonObject
-    val directActive = caloriesData.firstIntByKeysDeep(TerraActivityJsonKeys.Calories.ACTIVE_CANDIDATES)
-        ?: activityData.firstIntByKeysDeep(TerraActivityJsonKeys.Calories.ACTIVE_CANDIDATES)
-        ?: this.firstIntByKeysDeep(TerraActivityJsonKeys.Calories.ACTIVE_CANDIDATES)
+    val directActive =
+        caloriesData.firstIntByKeysDeep(TerraActivityJsonKeys.Calories.ACTIVE_CANDIDATES)
+            ?: activityData.firstIntByKeysDeep(TerraActivityJsonKeys.Calories.ACTIVE_CANDIDATES)
+            ?: this.firstIntByKeysDeep(TerraActivityJsonKeys.Calories.ACTIVE_CANDIDATES)
     if (directActive != null) return directActive.coerceAtLeast(0)
 
-    val totalFloat = caloriesData.firstFloatByKeysDeep(TerraActivityJsonKeys.Calories.TOTAL_CANDIDATES)
-        ?: activityData.firstFloatByKeysDeep(TerraActivityJsonKeys.Calories.TOTAL_CANDIDATES)
-        ?: this.firstFloatByKeysDeep(TerraActivityJsonKeys.Calories.TOTAL_CANDIDATES)
+    val totalFloat =
+        caloriesData.firstFloatByKeysDeep(TerraActivityJsonKeys.Calories.TOTAL_CANDIDATES)
+            ?: activityData.firstFloatByKeysDeep(TerraActivityJsonKeys.Calories.TOTAL_CANDIDATES)
+            ?: this.firstFloatByKeysDeep(TerraActivityJsonKeys.Calories.TOTAL_CANDIDATES)
     val bmrFloat = caloriesData.firstFloatByKeysDeep(TerraActivityJsonKeys.Calories.BMR_CANDIDATES)
         ?: activityData.firstFloatByKeysDeep(TerraActivityJsonKeys.Calories.BMR_CANDIDATES)
         ?: this.firstFloatByKeysDeep(TerraActivityJsonKeys.Calories.BMR_CANDIDATES)
@@ -207,6 +213,7 @@ private fun JsonObject.walkDeep(): Sequence<Pair<String, JsonElement>> = sequenc
                     if (item is JsonObject) yieldAll(item.walkDeep())
                 }
             }
+
             else -> Unit
         }
     }
@@ -236,7 +243,8 @@ private fun JsonObject.collectHourlyStepSamplesInto(out: MutableList<HourlyStepS
                     val hour = sample.sampleHourOrNull() ?: return@forEach
                     val steps = sample.sampleStepsOrNull() ?: return@forEach
                     val sampleTime = sample.sampleTime()
-                    val sortTime = sampleTime?.let { it.toLocalDate().toEpochDay() * 24L + it.hour } ?: hour.toLong()
+                    val sortTime = sampleTime?.let { it.toLocalDate().toEpochDay() * 24L + it.hour }
+                        ?: hour.toLong()
                     if (steps >= 0) {
                         out += HourlyStepSample(
                             hour = hour,
@@ -314,7 +322,13 @@ private fun List<HourlyStepSample>.normalizedToIncrements(): List<HourlyStepSamp
     val monotonic = ordered.zipWithNext().all { (a, b) -> b.steps >= a.steps }
     if (!monotonic) return ordered
     val deltas = buildList {
-        add(HourlyStepSample(ordered.first().hour, ordered.first().steps.coerceAtLeast(0), ordered.first().sortTime))
+        add(
+            HourlyStepSample(
+                ordered.first().hour,
+                ordered.first().steps.coerceAtLeast(0),
+                ordered.first().sortTime
+            )
+        )
         for (i in 1 until ordered.size) {
             val delta = (ordered[i].steps - ordered[i - 1].steps).coerceAtLeast(0)
             add(HourlyStepSample(ordered[i].hour, delta, ordered[i].sortTime))

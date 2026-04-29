@@ -44,8 +44,24 @@ object TerraSdkSync {
         val start = Date.from(Instant.now().minus(lookbackDays, ChronoUnit.DAYS))
 
         for (connection in linked) {
-            awaitPull("getDaily", connection, reason) { cb -> mgr.getDaily(connection, start, end, true, cb) }
-            awaitPull("getSleep", connection, reason) { cb -> mgr.getSleep(connection, start, end, true, cb) }
+            awaitPull("getDaily", connection, reason) { cb ->
+                mgr.getDaily(
+                    connection,
+                    start,
+                    end,
+                    true,
+                    cb
+                )
+            }
+            awaitPull("getSleep", connection, reason) { cb ->
+                mgr.getSleep(
+                    connection,
+                    start,
+                    end,
+                    true,
+                    cb
+                )
+            }
         }
     }
 
@@ -62,13 +78,22 @@ object TerraSdkSync {
         connection: Connections,
         reason: String,
         start: (callback: (Boolean, Any?, co.tryterra.terra.TerraError?) -> Unit) -> Unit,
-    ) = suspendCancellableCoroutine<Unit> { cont ->
+    ) = suspendCancellableCoroutine { cont ->
         start { success, _, error ->
-            if (error != null) {
-                Timber.w(error, "Terra %s failed connection=%s reason=%s", label, connection, reason)
-            } else {
-                Timber.d("Terra %s done connection=%s reason=%s success=%s", label, connection, reason, success)
-            }
+            if (error != null) Timber.w(
+                error,
+                "Terra %s failed connection=%s reason=%s",
+                label,
+                connection,
+                reason
+            )
+            else Timber.d(
+                "Terra %s done connection=%s reason=%s success=%s",
+                label,
+                connection,
+                reason,
+                success
+            )
             if (cont.isActive) cont.resume(Unit)
         }
     }

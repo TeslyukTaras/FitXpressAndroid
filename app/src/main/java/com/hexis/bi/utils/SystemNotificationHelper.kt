@@ -6,7 +6,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.hexis.bi.R
 import com.hexis.bi.ui.MainActivity
@@ -16,7 +15,6 @@ import com.hexis.bi.utils.constants.SystemTrayNotificationId
 
 object SystemNotificationHelper {
     fun createChannels(application: Application) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val mgr = application.getSystemService(NotificationManager::class.java) ?: return
         val bodyScan = NotificationChannel(
             SystemTrayChannel.BODY_SCAN_ID,

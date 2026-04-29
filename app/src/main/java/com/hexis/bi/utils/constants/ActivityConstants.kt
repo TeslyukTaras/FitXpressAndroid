@@ -47,15 +47,9 @@ internal object ActivityConstants {
     const val DAYS_IN_WEEK = 7
     const val MONTHS_IN_YEAR = 12
 
-    // Day-of-month values labelled on the Month tab x-axis
+    // Day-of-month values labeled on the Month tab x-axis
     val MONTH_LABEL_DAYS: Set<Int> = setOf(1, 7, 14, 21, 28)
 
     // Mock-data ranges
-    const val MOCK_PERIOD_STEPS_MIN = 1_500
-    const val MOCK_PERIOD_STEPS_MAX = 6_000
-    const val MOCK_MONTH_STEPS_MIN = 150_000
-    const val MOCK_MONTH_STEPS_MAX = 250_000
-    const val MOCK_TREND_PCT_MIN = -20
-    const val MOCK_TREND_PCT_MAX = 20
     const val TREND_FLAT_THRESHOLD = 2
 }

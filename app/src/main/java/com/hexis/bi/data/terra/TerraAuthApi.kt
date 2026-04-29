@@ -24,7 +24,7 @@ class TerraAuthApi(private val client: OkHttpClient) {
                 .build()
 
             client.newCall(request).execute().use { response ->
-                val body = response.body?.string().orEmpty()
+                val body = response.body.string()
                 if (!response.isSuccessful) error("Terra auth ${response.code}: $body")
                 val parsed = terraJson.decodeFromString(TokenResponse.serializer(), body)
                 val token = parsed.token ?: error("Terra auth returned no token: $body")
