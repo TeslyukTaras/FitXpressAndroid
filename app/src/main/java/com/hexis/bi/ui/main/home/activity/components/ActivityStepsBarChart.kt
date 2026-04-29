@@ -360,6 +360,7 @@ internal fun ChartBar(
     isHighlighted: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val minBarHeight = dimensionResource(R.dimen.chart_bar_min_height)
     val barBrush = if (isSelected || isHighlighted)
         Brush.verticalGradient(listOf(LightGradientBlue, Blue300))
     else Brush.verticalGradient(listOf(LightBlue, LightBlue))
@@ -377,7 +378,7 @@ internal fun ChartBar(
     ) {
         val fillModifier =
             if (fraction > 0f) Modifier.fillMaxHeight(fraction)
-            else Modifier.height(1.dp)
+            else Modifier.height(minBarHeight)
 
         Box(
             modifier = Modifier

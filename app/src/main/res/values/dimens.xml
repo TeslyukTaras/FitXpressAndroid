@@ -65,6 +65,7 @@
     <dimen name="activity_year_bar_width">32dp</dimen>
     <dimen name="activity_trend_padding">34dp</dimen>
     <dimen name="activity_chart_pointer_vertical_padding">5dp</dimen>
+    <dimen name="chart_bar_min_height">1dp</dimen>
 
     <!-- Scan -->
     <dimen name="scan_corner_length">68dp</dimen>
