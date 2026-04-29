@@ -39,6 +39,9 @@ abstract class BaseViewModel(
         _isLoading.value = loading
     }
 
+    protected fun string(@StringRes resId: Int, vararg formatArgs: Any): String =
+        appContext.getString(resId, *formatArgs)
+
     protected fun setError(message: String?) {
         if (message != null) {
             Timber.tag(this::class.java.simpleName).e("UI error: %s", message)

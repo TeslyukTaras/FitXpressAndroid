@@ -41,8 +41,90 @@ class HealthConnectionsViewModel(
     private val terraManagerHolder: TerraManagerHolder,
 ) : BaseViewModel(application) {
 
-    private val _state = MutableStateFlow(HealthConnectionsState())
+    private val _state = MutableStateFlow(
+        HealthConnectionsState(
+            sdkProviders = buildSdkProviders(),
+            wearableProviders = buildWearableProviders(),
+            otherProviders = buildOtherProviders(),
+        ),
+    )
     val state = _state.asStateFlow()
+
+    private fun buildSdkProviders(): List<TerraProviderUi> = listOf(
+        TerraProviderUi(
+            code = TerraProviders.HEALTH_CONNECT,
+            label = string(R.string.provider_health_connect),
+            iconRes = R.drawable.ic_google,
+        ),
+    )
+
+    private fun buildWearableProviders(): List<TerraProviderUi> = listOf(
+        TerraProviderUi(TerraProviders.OURA, string(R.string.provider_oura)),
+        TerraProviderUi(TerraProviders.WHOOP, string(R.string.provider_whoop)),
+        TerraProviderUi(TerraProviders.FITBIT, string(R.string.provider_fitbit)),
+        TerraProviderUi(TerraProviders.GARMIN, string(R.string.provider_garmin)),
+        TerraProviderUi(TerraProviders.POLAR, string(R.string.provider_polar)),
+        TerraProviderUi(TerraProviders.COROS, string(R.string.provider_coros)),
+        TerraProviderUi(TerraProviders.SUUNTO, string(R.string.provider_suunto)),
+        TerraProviderUi(TerraProviders.WITHINGS, string(R.string.provider_withings)),
+        TerraProviderUi(TerraProviders.ZEPP, string(R.string.provider_zepp)),
+        TerraProviderUi(TerraProviders.BIOSTRAP, string(R.string.provider_biostrap)),
+        TerraProviderUi(TerraProviders.HEALTHGAUGE, string(R.string.provider_healthgauge)),
+        TerraProviderUi(TerraProviders.INBODY, string(R.string.provider_inbody)),
+        TerraProviderUi(TerraProviders.SOMNOFY, string(R.string.provider_somnofy)),
+        TerraProviderUi(TerraProviders.CORE, string(R.string.provider_core)),
+        TerraProviderUi(TerraProviders.MOXY, string(R.string.provider_moxy)),
+        TerraProviderUi(TerraProviders.PUL, string(R.string.provider_pul)),
+        TerraProviderUi(TerraProviders.OMRON, string(R.string.provider_omron)),
+        TerraProviderUi(TerraProviders.CARDIOMOOD, string(R.string.provider_cardiomood)),
+    )
+
+    private fun buildOtherProviders(): List<TerraProviderUi> = listOf(
+        TerraProviderUi(TerraProviders.GOOGLE, string(R.string.provider_google)),
+        TerraProviderUi(TerraProviders.PELOTON, string(R.string.provider_peloton)),
+        TerraProviderUi(TerraProviders.WAHOO, string(R.string.provider_wahoo)),
+        TerraProviderUi(TerraProviders.HAMMERHEAD, string(R.string.provider_hammerhead)),
+        TerraProviderUi(TerraProviders.XOSS, string(R.string.provider_xoss)),
+        TerraProviderUi(TerraProviders.BRYTONSPORT, string(R.string.provider_brytonsport)),
+        TerraProviderUi(TerraProviders.LEZYNE, string(R.string.provider_lezyne)),
+        TerraProviderUi(TerraProviders.TECHNOGYM, string(R.string.provider_technogym)),
+        TerraProviderUi(TerraProviders.CONCEPT2, string(R.string.provider_concept2)),
+        TerraProviderUi(TerraProviders.DECATHLON, string(R.string.provider_decathlon)),
+        TerraProviderUi(TerraProviders.CATAPULTONE, string(R.string.provider_catapultone)),
+        TerraProviderUi(TerraProviders.TRIDOT, string(R.string.provider_tridot)),
+        TerraProviderUi(TerraProviders.ULTRAHUMAN, string(R.string.provider_ultrahuman)),
+        TerraProviderUi(TerraProviders.TRAININGPEAKS, string(R.string.provider_trainingpeaks)),
+        TerraProviderUi(TerraProviders.TRAINERROAD, string(R.string.provider_trainerroad)),
+        TerraProviderUi(TerraProviders.FINALSURGE, string(R.string.provider_finalsurge)),
+        TerraProviderUi(TerraProviders.ELITEHRV, string(R.string.provider_elitehrv)),
+        TerraProviderUi(TerraProviders.HEVY, string(R.string.provider_hevy)),
+        TerraProviderUi(TerraProviders.TRAINXHALE, string(R.string.provider_trainxhale)),
+        TerraProviderUi(TerraProviders.TRAINASONE, string(R.string.provider_trainasone)),
+        TerraProviderUi(TerraProviders.ROUVY, string(R.string.provider_rouvy)),
+        TerraProviderUi(TerraProviders.ZWIFT, string(R.string.provider_zwift)),
+        TerraProviderUi(TerraProviders.RIDEWITHGPS, string(R.string.provider_ridewithgps)),
+        TerraProviderUi(TerraProviders.MAPMYTRACKS, string(R.string.provider_mapmytracks)),
+        TerraProviderUi(TerraProviders.MAPMYFITNESS, string(R.string.provider_mapmyfitness)),
+        TerraProviderUi(TerraProviders.KOMOOT, string(R.string.provider_komoot)),
+        TerraProviderUi(TerraProviders.CYCLINGANALYTICS, string(R.string.provider_cyclinganalytics)),
+        TerraProviderUi(TerraProviders.VELOHERO, string(R.string.provider_velohero)),
+        TerraProviderUi(TerraProviders.XERT, string(R.string.provider_xert)),
+        TerraProviderUi(TerraProviders.TREDICT, string(R.string.provider_tredict)),
+        TerraProviderUi(TerraProviders.UNDERARMOUR, string(R.string.provider_underarmour)),
+        TerraProviderUi(TerraProviders.CLUE, string(R.string.provider_clue)),
+        TerraProviderUi(TerraProviders.FLO, string(R.string.provider_flo)),
+        TerraProviderUi(TerraProviders.WGER, string(R.string.provider_wger)),
+        TerraProviderUi(TerraProviders.NUTRACHECK, string(R.string.provider_nutracheck)),
+        TerraProviderUi(TerraProviders.MACROSFIRST, string(R.string.provider_macrosfirst)),
+        TerraProviderUi(TerraProviders.MYMACROSPLUS, string(R.string.provider_mymacrosplus)),
+        TerraProviderUi(TerraProviders.MYFITNESSPAL, string(R.string.provider_myfitnesspal)),
+        TerraProviderUi(TerraProviders.CRONOMETER, string(R.string.provider_cronometer)),
+        TerraProviderUi(TerraProviders.FATSECRET, string(R.string.provider_fatsecret)),
+        TerraProviderUi(TerraProviders.EATTHISMUCH, string(R.string.provider_eatthismuch)),
+        TerraProviderUi(TerraProviders.KETOMOJOEU, string(R.string.provider_ketomojoeu)),
+        TerraProviderUi(TerraProviders.KETOMOJOUS, string(R.string.provider_ketomojous)),
+        TerraProviderUi(TerraProviders.BODITRAX, string(R.string.provider_boditrax)),
+    )
 
     init {
         healthConnectionsRepository.observeConnections()
@@ -92,22 +174,11 @@ class HealthConnectionsViewModel(
         }
     }
 
-    fun onOuraRowClick() {
-        if (isWearableConnected(TerraProviders.OURA)) {
-            disconnectWearableByProvider(
-                TerraProviders.OURA,
-                appContext.getString(R.string.health_connection_oura)
-            )
-        } else {
-            onConnectOura()
-        }
-    }
-
     fun onDummyRowClick() {
         if (isWearableConnected(TerraProviders.DUMMY)) {
             disconnectWearableByProvider(
                 TerraProviders.DUMMY,
-                appContext.getString(R.string.health_connection_dummy)
+                string(R.string.health_connection_dummy)
             )
         } else {
             onConnectDummy()
@@ -121,8 +192,6 @@ class HealthConnectionsViewModel(
             startWidgetSession(provider)
         }
     }
-
-    fun onConnectOura() = startWidgetSession(TerraProviders.OURA)
 
     fun onConnectDummy() = startWidgetSession(TerraProviders.DUMMY)
 
