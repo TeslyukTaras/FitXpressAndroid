@@ -74,10 +74,15 @@ internal suspend fun <T> TerraRestSourceResolver.fetchMergedFromAllSources(
     if (identities.isEmpty()) return Result.success(emptyList())
 
     val perSource = ArrayList<List<T>>(identities.size)
+    var lastError: Throwable? = null
     for (id in identities) {
-        val rows = fetchJson(id.terraUserId, start, end).getOrElse { return Result.failure(it) }
+        val rows = fetchJson(id.terraUserId, start, end).getOrElse {
+            lastError = it
+            continue
+        }
         perSource.add(parse(rows))
     }
+    if (perSource.isEmpty() && lastError != null) return Result.failure(lastError!!)
     return Result.success(merge(perSource))
 }
 
