@@ -337,15 +337,17 @@ class SleepViewModel(
     ): List<WeeklyStageData> {
         if (current.isEmpty()) return emptyStageList()
         val currAvg = averageStageMinutes(current)
-        val prevAvg = if (previous.isEmpty()) emptyMap() else averageStageMinutes(previous)
+        val prevAvg = if (previous.isEmpty()) null else averageStageMinutes(previous)
         return SleepStage.entries.map { stage ->
             val cur = currAvg[stage] ?: 0
-            val prev = prevAvg[stage] ?: 0
-            WeeklyStageData(
-                stage = stage,
-                durationMinutes = cur,
-                trend = if (cur >= prev) StageTrend.Up else StageTrend.Down,
-            )
+            val prev = prevAvg?.get(stage) ?: 0
+            val trend = when {
+                prevAvg == null -> null
+                cur > prev -> StageTrend.Up
+                cur < prev -> StageTrend.Down
+                else -> null
+            }
+            WeeklyStageData(stage = stage, durationMinutes = cur, trend = trend)
         }
     }
 
@@ -360,10 +362,10 @@ class SleepViewModel(
     }
 
     private fun emptyStageList() = listOf(
-        WeeklyStageData(SleepStage.Deep, 0, StageTrend.Up),
-        WeeklyStageData(SleepStage.REM, 0, StageTrend.Up),
-        WeeklyStageData(SleepStage.Light, 0, StageTrend.Up),
-        WeeklyStageData(SleepStage.Awake, 0, StageTrend.Up),
+        WeeklyStageData(SleepStage.Deep, 0),
+        WeeklyStageData(SleepStage.REM, 0),
+        WeeklyStageData(SleepStage.Light, 0),
+        WeeklyStageData(SleepStage.Awake, 0),
     )
 
     private fun avgMinutes(entries: List<DailySleepEntry>): Int {

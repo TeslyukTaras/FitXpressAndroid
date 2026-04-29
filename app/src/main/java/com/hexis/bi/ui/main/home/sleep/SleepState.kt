@@ -59,7 +59,7 @@ data class DailySleepEntry(
 data class WeeklyStageData(
     val stage: SleepStage,
     val durationMinutes: Int,
-    val trend: StageTrend,
+    val trend: StageTrend? = null,
 )
 
 data class SleepState(
