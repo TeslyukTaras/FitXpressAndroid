@@ -27,7 +27,7 @@ class ScanReminderBroadcastReceiver : BroadcastReceiver() {
                     try {
                         app.scanReminderWorkRunner().run(kind)
                     } catch (e: Exception) {
-                        Timber.Forest.w(
+                        Timber.w(
                             e,
                             "ScanReminderBroadcastReceiver: run failed kind=%s",
                             kind

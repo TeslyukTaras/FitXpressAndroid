@@ -48,7 +48,7 @@ class NotificationPermissionCoordinator(
             )
         }
         if (result.isFailure) {
-            Timber.Forest.w(
+            Timber.w(
                 result.exceptionOrNull(),
                 "reconcilePushSetting: failed to disable push in Firestore"
             )

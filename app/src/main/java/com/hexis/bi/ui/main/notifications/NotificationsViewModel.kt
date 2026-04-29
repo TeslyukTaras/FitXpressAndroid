@@ -1,13 +1,12 @@
 package com.hexis.bi.ui.main.notifications
 
 import android.app.Application
-import com.hexis.bi.data.notification.NotificationInboxRepository
-import com.hexis.bi.utils.constants.NotificationUi
 import androidx.lifecycle.viewModelScope
+import com.hexis.bi.data.notification.NotificationInboxRepository
 import com.hexis.bi.ui.base.BaseViewModel
+import com.hexis.bi.utils.constants.NotificationUi
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
 class NotificationsViewModel(
     application: Application,

@@ -28,7 +28,6 @@ fun SleepMetricsCard(
     restfulnessMax: Int,
     hrv: Int,
     restingHeartRate: Int,
-    hasSleepData: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -46,23 +45,22 @@ fun SleepMetricsCard(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
 
-        val dash = stringResource(R.string.sleep_placeholder)
         MetricRow(
             label = stringResource(R.string.sleep_metric_restfulness),
-            value = if (hasSleepData) "$restfulness/$restfulnessMax" else dash,
-            unit = if (hasSleepData) stringResource(R.string.unit_percent) else null,
+            value = "${restfulness.coerceAtLeast(0)}/$restfulnessMax",
+            unit = stringResource(R.string.unit_percent),
         )
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
         MetricRow(
             label = stringResource(R.string.sleep_metric_hrv),
-            value = if (hasSleepData) hrv.toString() else dash,
-            unit = if (hasSleepData) stringResource(R.string.unit_ms) else null,
+            value = hrv.coerceAtLeast(0).toString(),
+            unit = stringResource(R.string.unit_ms),
         )
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
         MetricRow(
             label = stringResource(R.string.sleep_metric_resting_heart_rate),
-            value = if (hasSleepData) restingHeartRate.toString() else dash,
-            unit = if (hasSleepData) stringResource(R.string.unit_bpm) else null,
+            value = restingHeartRate.coerceAtLeast(0).toString(),
+            unit = stringResource(R.string.unit_bpm),
         )
     }
 }

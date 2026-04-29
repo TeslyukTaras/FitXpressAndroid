@@ -159,6 +159,7 @@
     <string name="home_card_activity">Activity</string>
     <string name="home_card_activity_score">Activity Score</string>
     <string name="home_card_recovery">Recovery</string>
+    <string name="home_recovery_score_value">%1$d/100</string>
     <string name="home_card_scan">Scan</string>
     <string name="home_score_vbi">VBI Score</string>
     <string name="home_score_vli">VLI Score</string>
@@ -207,10 +208,11 @@
     <string name="sleep_recovery_subtitle">Better sleep consistency often improves recovery.</string>
     <string name="sleep_insight_good">Solid sleep score — your body got the recovery it needed last night.</string>
     <string name="sleep_insight_fair">Decent rest. Slightly longer or more consistent sleep would boost recovery.</string>
-    <string name="sleep_insight_poor">Short or fragmented sleep detected. Prioritise a longer, steadier night to support recovery.</string>
+    <string name="sleep_insight_poor">Short or fragmented sleep detected. Prioritize a longer, steadier night to support recovery.</string>
     <string name="sleep_empty_title">No sleep data yet</string>
     <string name="sleep_empty_subtitle">Sync a wearable via Terra to see last night\'s sleep.</string>
     <string name="sleep_error_title">Couldn\'t load sleep data</string>
+    <string name="recovery_error_title">Couldn\'t load recovery data</string>
     <string name="action_retry">Retry</string>
     <string name="sleep_settings_title">Sleep settings</string>
     <string name="sleep_settings_goal">Sleep goal</string>
@@ -266,6 +268,8 @@
     <!-- Data layer errors -->
     <string name="error_session_expired">Session expired. Please sign in again.</string>
     <string name="error_no_email_on_account">No email address is linked to this account.</string>
+    <string name="error_no_google_credential">No Google account available on this device. Add one in system settings and try again.</string>
+    <string name="error_google_sign_in_cancelled">Google sign-in was cancelled.</string>
     <string name="error_profile_not_found">Your profile could not be found.</string>
 
     <!-- Firebase auth errors -->
@@ -296,7 +300,6 @@
     <string name="health_connection_status_connected">Connected</string>
     <string name="health_connection_status_not_connected">Not connected</string>
     <string name="health_connection_wearable">Connect wearable</string>
-    <string name="health_connection_wearable_count">%1$d connected</string>
 
     <!-- Health connection errors & messages -->
     <string name="error_sign_in_required">Sign in to connect a wearable</string>
@@ -351,6 +354,19 @@
     <string name="recovery_metric_heart">Heart</string>
     <string name="recovery_metric_stress">Stress</string>
     <string name="recovery_metric_activity_load">Activity load</string>
+    <string name="recovery_metric_heart_bpm">%1$d bpm</string>
+    <string name="recovery_stress_low">Low</string>
+    <string name="recovery_stress_medium">Medium</string>
+    <string name="recovery_stress_high">High</string>
+    <string name="recovery_load_light">Light</string>
+    <string name="recovery_load_moderate">Moderate</string>
+    <string name="recovery_load_heavy">Heavy</string>
+    <string name="recovery_trend_up">Improving</string>
+    <string name="recovery_trend_down">Decreasing</string>
+    <string name="recovery_trend_flat">Stable</string>
+    <string name="recovery_trend_up_description">Recovery improved compared with last week.</string>
+    <string name="recovery_trend_down_description">Recovery decreased compared with last week.</string>
+    <string name="recovery_trend_flat_description">Recovery stayed stable this week.</string>
     <string name="recovery_info_title">Recovery and body progress</string>
     <string name="recovery_info_body">Recovery reflects how ready your body is based on recent signals.</string>
     <string name="recovery_last_7_days">Last 7 days</string>

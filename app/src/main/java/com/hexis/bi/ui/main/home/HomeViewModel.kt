@@ -6,6 +6,8 @@ import com.hexis.bi.R
 import com.hexis.bi.data.activity.ActivityRepository
 import com.hexis.bi.data.activity.ActivitySummary
 import com.hexis.bi.data.notification.NotificationInboxRepository
+import com.hexis.bi.data.recovery.RecoveryRepository
+import com.hexis.bi.data.recovery.RecoverySnapshot
 import com.hexis.bi.data.sleep.SleepRepository
 import com.hexis.bi.data.sleep.SleepSession
 import com.hexis.bi.data.terra.TerraManagerHolder
@@ -13,6 +15,7 @@ import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.suit.SuitRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.base.UiEvent
+import com.hexis.bi.ui.main.home.recovery.RecoveryStatus
 import com.hexis.bi.utils.calculateAge
 import com.hexis.bi.utils.constants.ActivityConstants
 import com.hexis.bi.utils.constants.SleepConstants
@@ -28,7 +31,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.util.Locale
 
 sealed interface HomeEvent : UiEvent {
     data object NavigateToLogin : HomeEvent
@@ -36,12 +38,13 @@ sealed interface HomeEvent : UiEvent {
 
 class HomeViewModel(
     application: Application,
-    private val userRepository: UserRepository,
-    private val suitRepository: SuitRepository,
+    userRepository: UserRepository,
+    suitRepository: SuitRepository,
     private val sleepRepository: SleepRepository,
     private val activityRepository: ActivityRepository,
+    private val recoveryRepository: RecoveryRepository,
     private val terraManagerHolder: TerraManagerHolder,
-    private val notificationInbox: NotificationInboxRepository,
+    notificationInbox: NotificationInboxRepository,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(
@@ -57,6 +60,7 @@ class HomeViewModel(
                     appContext,
                     ActivityConstants.DEFAULT_STEP_GOAL,
                 ),
+                HomeOverviewDefaults.placeholderRecoveryCard(appContext),
             ),
         ),
     )
@@ -124,7 +128,7 @@ class HomeViewModel(
     }
 
     /**
-     * Updates only the sleep card subtitle when [sleepGoalHours] changes from Firestore settings,
+     * Updates only the sleep card subtitle when sleepGoalHours changes from Firestore settings,
      * without re-hitting Terra REST for duration.
      */
     private fun patchSleepOverviewGoalSubtitle(goalHours: Int) {
@@ -132,7 +136,12 @@ class HomeViewModel(
         _state.update { s ->
             val current = s.overviewCards.getOrNull(OVERVIEW_SLEEP_INDEX) ?: return@update s
             if (current.subtitle == subtitle) return@update s
-            s.copy(overviewCards = s.overviewCards.replaced(OVERVIEW_SLEEP_INDEX, current.copy(subtitle = subtitle)))
+            s.copy(
+                overviewCards = s.overviewCards.replaced(
+                    OVERVIEW_SLEEP_INDEX,
+                    current.copy(subtitle = subtitle)
+                )
+            )
         }
     }
 
@@ -148,7 +157,12 @@ class HomeViewModel(
         _state.update { s ->
             val current = s.overviewCards.getOrNull(OVERVIEW_ACTIVITY_INDEX) ?: return@update s
             if (current.subtitle == subtitle) return@update s
-            s.copy(overviewCards = s.overviewCards.replaced(OVERVIEW_ACTIVITY_INDEX, current.copy(subtitle = subtitle)))
+            s.copy(
+                overviewCards = s.overviewCards.replaced(
+                    OVERVIEW_ACTIVITY_INDEX,
+                    current.copy(subtitle = subtitle)
+                )
+            )
         }
     }
 
@@ -161,8 +175,10 @@ class HomeViewModel(
             terraManagerHolder.awaitCurrentOrTimeout()
             val sleepJob = async { loadSleepOverview() }
             val activityJob = async { loadActivityOverview() }
+            val recoveryJob = async { loadRecoveryOverview() }
             sleepJob.await()
             activityJob.await()
+            recoveryJob.await()
         }
     }
 
@@ -173,16 +189,25 @@ class HomeViewModel(
         sleepRepository.getSessionForNight(LocalDate.now()).fold(
             onSuccess = { session ->
                 val card = session.toSleepOverviewCard(goalSubtitle)
-                _state.update { it.copy(overviewCards = it.overviewCards.replaced(OVERVIEW_SLEEP_INDEX, card)) }
+                _state.update {
+                    it.copy(
+                        overviewCards = it.overviewCards.replaced(
+                            OVERVIEW_SLEEP_INDEX,
+                            card
+                        )
+                    )
+                }
             },
             onFailure = {
-                val card = HomeOverviewDefaults.sleepCard(
-                    context = appContext,
-                    goalSubtitle = goalSubtitle,
-                    value = appContext.getString(R.string.sleep_placeholder),
-                    valueLabel = null,
-                )
-                _state.update { it.copy(overviewCards = it.overviewCards.replaced(OVERVIEW_SLEEP_INDEX, card)) }
+                val card = (null as SleepSession?).toSleepOverviewCard(goalSubtitle)
+                _state.update {
+                    it.copy(
+                        overviewCards = it.overviewCards.replaced(
+                            OVERVIEW_SLEEP_INDEX,
+                            card
+                        )
+                    )
+                }
             },
         )
     }
@@ -197,50 +222,90 @@ class HomeViewModel(
         activityRepository.getSummaryForDate(LocalDate.now()).fold(
             onSuccess = { summary ->
                 val card = summary.toActivityOverviewCard(goalSubtitle)
-                _state.update { it.copy(overviewCards = it.overviewCards.replaced(OVERVIEW_ACTIVITY_INDEX, card)) }
+                _state.update {
+                    it.copy(
+                        overviewCards = it.overviewCards.replaced(
+                            OVERVIEW_ACTIVITY_INDEX,
+                            card
+                        )
+                    )
+                }
             },
             onFailure = {
-                val card = HomeOverviewDefaults.activityCard(
-                    context = appContext,
-                    goalSubtitle = goalSubtitle,
-                    value = appContext.getString(R.string.sleep_placeholder),
-                    valueLabel = null,
-                )
-                _state.update { it.copy(overviewCards = it.overviewCards.replaced(OVERVIEW_ACTIVITY_INDEX, card)) }
+                val card = (null as ActivitySummary?).toActivityOverviewCard(goalSubtitle)
+                _state.update {
+                    it.copy(
+                        overviewCards = it.overviewCards.replaced(
+                            OVERVIEW_ACTIVITY_INDEX,
+                            card
+                        )
+                    )
+                }
             },
         )
     }
 
     private fun SleepSession?.toSleepOverviewCard(goalSubtitle: String): OverviewCardData {
-        val placeholder = appContext.getString(R.string.sleep_placeholder)
-        val hasDuration = this != null && durationMinutes > 0
-        val valueText = if (hasDuration) {
-            "%.1f".format(Locale.US, durationMinutes / 60f)
-        } else {
-            placeholder
-        }
+        val hours = (this?.durationMinutes ?: 0).coerceAtLeast(0) / 60f
         return HomeOverviewDefaults.sleepCard(
             context = appContext,
             goalSubtitle = goalSubtitle,
-            value = valueText,
-            valueLabel = if (hasDuration) appContext.getString(R.string.unit_hours_short) else null,
+            value = HomeOverviewDefaults.formatSleepHours(hours),
+            valueLabel = appContext.getString(R.string.unit_hours_short),
+        )
+    }
+
+    private suspend fun loadRecoveryOverview() {
+        recoveryRepository.getSnapshotForDate(LocalDate.now()).fold(
+            onSuccess = { snapshot ->
+                val card = snapshot.toRecoveryOverviewCard()
+                _state.update {
+                    it.copy(
+                        overviewCards = it.overviewCards.replaced(
+                            OVERVIEW_RECOVERY_INDEX,
+                            card
+                        )
+                    )
+                }
+            },
+            onFailure = {
+                val card = (null as RecoverySnapshot?).toRecoveryOverviewCard()
+                _state.update {
+                    it.copy(
+                        overviewCards = it.overviewCards.replaced(
+                            OVERVIEW_RECOVERY_INDEX,
+                            card
+                        )
+                    )
+                }
+            },
+        )
+    }
+
+    private fun RecoverySnapshot?.toRecoveryOverviewCard(): OverviewCardData {
+        val score = (this?.score ?: 0).coerceAtLeast(0)
+        return HomeOverviewDefaults.recoveryCard(
+            context = appContext,
+            value = appContext.getString(R.string.home_recovery_score_value, score),
+            statusSubtitle = appContext.getString(RecoveryStatus.fromScore(score).labelRes),
         )
     }
 
     private fun ActivitySummary?.toActivityOverviewCard(goalSubtitle: String): OverviewCardData {
-        val placeholder = appContext.getString(R.string.sleep_placeholder)
-        val hasSteps = this != null && steps > 0
-        val valueText = if (hasSteps) HomeOverviewDefaults.formatSteps(steps) else placeholder
+        val steps = (this?.steps ?: 0).coerceAtLeast(0)
         return HomeOverviewDefaults.activityCard(
             context = appContext,
             goalSubtitle = goalSubtitle,
-            value = valueText,
-            valueLabel = if (hasSteps) appContext.getString(R.string.home_activity_value_label) else null,
+            value = HomeOverviewDefaults.formatSteps(steps),
+            valueLabel = appContext.getString(R.string.home_activity_value_label),
         )
     }
 }
 
-private fun List<OverviewCardData>.replaced(index: Int, card: OverviewCardData): List<OverviewCardData> {
+private fun List<OverviewCardData>.replaced(
+    index: Int,
+    card: OverviewCardData
+): List<OverviewCardData> {
     if (index !in indices) return this
     return toMutableList().also { it[index] = card }
 }

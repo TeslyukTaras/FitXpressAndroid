@@ -78,6 +78,7 @@ fun RecoveryScreen(
                             onInfoClick = viewModel::showInfoSheet,
                             onPreviousDay = viewModel::previousDay,
                             onNextDay = viewModel::nextDay,
+                            onRetry = viewModel::retryDayLoad,
                         )
                     }
 
@@ -86,6 +87,7 @@ fun RecoveryScreen(
                             state = state,
                             onPreviousWeek = viewModel::previousWeek,
                             onNextWeek = viewModel::nextWeek,
+                            onRetry = viewModel::retrySummaryLoad,
                         )
                     }
                 }

@@ -20,6 +20,8 @@ import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.scan.ThreeDLookRepository
 import com.hexis.bi.data.scan.api.ThreeDLookApi
+import com.hexis.bi.data.recovery.RecoveryRepository
+import com.hexis.bi.data.recovery.TerraDerivedRecoveryRepository
 import com.hexis.bi.data.sleep.SleepRepository
 import com.hexis.bi.data.sleep.TerraApiSleepRepository
 import com.hexis.bi.data.store.AppPreferencesDataStore
@@ -114,10 +116,13 @@ val appModule = module {
     single { TerraConnector(get(), get()) }
     single<SleepRepository> { TerraApiSleepRepository(api = get(), sourceResolver = get()) }
     single<ActivityRepository> { TerraApiActivityRepository(api = get(), sourceResolver = get()) }
+    single<RecoveryRepository> {
+        TerraDerivedRecoveryRepository(sleepRepository = get(), activityRepository = get())
+    }
     viewModel { MainViewModel(get(), get()) }
     viewModel { LoginViewModel(get(), get(), get(), androidApplication()) }
     viewModel { SignUpViewModel(get(), get(), get(), androidApplication()) }
-    viewModel { HomeViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
+    viewModel { HomeViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { EditProfileViewModel(androidApplication(), get(), get(), get()) }
     viewModel { ForgotPasswordViewModel(get(), androidApplication()) }
     viewModel { ScanPreferencesViewModel(androidApplication(), get(), get()) }
@@ -138,7 +143,7 @@ val appModule = module {
     viewModel { NotificationsViewModel(androidApplication(), get()) }
     viewModel { SleepViewModel(androidApplication(), get(), get()) }
     viewModel { ActivityViewModel(androidApplication(), get(), get(), get()) }
-    viewModel { RecoveryViewModel(androidApplication()) }
+    viewModel { RecoveryViewModel(androidApplication(), get()) }
     viewModel { ScanViewModel(androidApplication(), get()) }
     viewModel { StartScanViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { ResultsViewModel(androidApplication(), get(), get(), get()) }

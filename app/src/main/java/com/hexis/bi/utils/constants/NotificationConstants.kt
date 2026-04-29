@@ -57,6 +57,6 @@ object ScanReminderAlarms {
 }
 
 object NotificationPendingIntent {
-    @JvmField
-    val FOR_LAUNCH_ACTIVITY: Int = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    const val FOR_LAUNCH_ACTIVITY: Int =
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
 }

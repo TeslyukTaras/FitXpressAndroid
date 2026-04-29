@@ -106,7 +106,7 @@ fun AppTextField(
                         focusedIndicatorColor = MaterialTheme.colorScheme.tertiary,
                         unfocusedIndicatorColor = MaterialTheme.colorScheme.tertiary,
                         errorIndicatorColor = MaterialTheme.colorScheme.tertiary,
-                        // Trailing icon colour is controlled per state so
+                        // Trailing icon color is controlled per state so
                         // Icon composables in the slot can omit explicit tint
                         focusedTrailingIconColor = MaterialTheme.colorScheme.secondary,
                         unfocusedTrailingIconColor = MaterialTheme.colorScheme.secondary,

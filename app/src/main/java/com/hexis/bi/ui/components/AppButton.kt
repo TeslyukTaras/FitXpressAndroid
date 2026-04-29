@@ -26,7 +26,7 @@ import com.hexis.bi.utils.gradientBackground
  * Primary action button.
  *
  * By default, renders a blue gradient background. Pass [containerColor] to replace the gradient
- * with a solid colour (e.g. [com.hexis.bi.ui.theme.Red300] for destructive actions).
+ * with a solid color (e.g. [com.hexis.bi.ui.theme.Red300] for destructive actions).
  */
 @Composable
 fun AppButton(

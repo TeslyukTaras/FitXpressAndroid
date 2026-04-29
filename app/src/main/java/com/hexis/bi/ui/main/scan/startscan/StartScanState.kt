@@ -19,9 +19,6 @@ data class StartScanState(
     val shouldNavigateBack: Boolean = false,
     val retakeOnErrorDismiss: Boolean = false,
 ) {
-    val currentInstructions: List<ScanInstruction>
-        get() = steps.getOrElse(currentStep - 1) { emptyList() }
-
     val isProcessing: Boolean
         get() = scanProgress is ScanProgress.Submitting || scanProgress is ScanProgress.Processing
 }

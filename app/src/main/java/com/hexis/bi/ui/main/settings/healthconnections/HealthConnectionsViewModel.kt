@@ -37,7 +37,7 @@ class HealthConnectionsViewModel(
     private val terraConnector: TerraConnector,
     private val terraWidgetApi: TerraWidgetApi,
     private val healthConnectionsRepository: HealthConnectionsRepository,
-    private val terraCallbackHandler: TerraCallbackHandler,
+    terraCallbackHandler: TerraCallbackHandler,
     private val firebaseAuth: FirebaseAuth,
     private val terraApi: TerraApi,
     private val terraManagerHolder: TerraManagerHolder,
@@ -81,6 +81,7 @@ class HealthConnectionsViewModel(
                     connectHealthConnect(activity)
                 }
             }
+
             HealthProvider.AppleHealth -> Unit
         }
     }
@@ -106,40 +107,46 @@ class HealthConnectionsViewModel(
     fun onConnectDummy() = startWidgetSession(TerraProviders.DUMMY)
 
     private fun isWearableConnected(terraProvider: String): Boolean =
-        _state.value.wearableConnections.any { it.provider.equals(terraProvider, ignoreCase = true) }
+        _state.value.wearableConnections.any {
+            it.provider.equals(
+                terraProvider,
+                ignoreCase = true
+            )
+        }
 
-    private fun disconnectWearableByProvider(terraProvider: String, @StringRes nameRes: Int) = launch(
-        onError = { setError(R.string.error_connection_save_failed) },
-    ) {
-        if (firebaseAuth.currentUser?.uid == null) {
-            setError(R.string.error_sign_in_required)
-            return@launch
-        }
-        val connections = healthConnectionsRepository.getConnections().getOrElse {
-            setError(R.string.error_connection_save_failed)
-            return@launch
-        }
-        val ids = connections
-            .filter { it.active && it.provider.equals(terraProvider, ignoreCase = true) }
-            .map { it.terraUserId }
-            .distinct()
-        if (ids.isEmpty()) {
-            setMessage(R.string.msg_health_connect_nothing_to_disconnect)
-            return@launch
-        }
-        val label = appContext.getString(nameRes)
-        for (id in ids) {
-            terraApi.deauthenticateUser(id).onFailure { e ->
-                Timber.w(e, "Terra deauthenticateUser failed user_id=%s", id)
+    private fun disconnectWearableByProvider(terraProvider: String, @StringRes nameRes: Int) =
+        launch(
+            onError = { setError(R.string.error_connection_save_failed) },
+        ) {
+            if (firebaseAuth.currentUser?.uid == null) {
+                setError(R.string.error_sign_in_required)
+                return@launch
             }
-        }
-        for (id in ids) {
-            healthConnectionsRepository.deactivateConnection(id).onFailure {
-                Timber.w(it, "deactivateConnection failed for %s", id)
+            val connections = healthConnectionsRepository.getConnections().getOrElse {
+                setError(R.string.error_connection_save_failed)
+                return@launch
             }
+            val ids = connections
+                .filter { it.active && it.provider.equals(terraProvider, ignoreCase = true) }
+                .map { it.terraUserId }
+                .distinct()
+            if (ids.isEmpty()) {
+                setMessage(R.string.msg_health_connect_nothing_to_disconnect)
+                return@launch
+            }
+            val label = appContext.getString(nameRes)
+            for (id in ids) {
+                terraApi.deauthenticateUser(id).onFailure { e ->
+                    Timber.w(e, "Terra deauthenticateUser failed user_id=%s", id)
+                }
+            }
+            for (id in ids) {
+                healthConnectionsRepository.deactivateConnection(id).onFailure {
+                    Timber.w(it, "deactivateConnection failed for %s", id)
+                }
+            }
+            setMessage(R.string.msg_wearable_disconnected, label)
         }
-        setMessage(R.string.msg_wearable_disconnected, label)
-    }
 
     private fun startWidgetSession(providers: String) = launch(
         onError = { setError(R.string.error_wearable_start_failed) },
@@ -178,7 +185,12 @@ class HealthConnectionsViewModel(
             return@launch
         }
         val hcFirestoreIds = connections
-            .filter { it.active && it.provider.equals(TerraProviders.HEALTH_CONNECT, ignoreCase = true) }
+            .filter {
+                it.active && it.provider.equals(
+                    TerraProviders.HEALTH_CONNECT,
+                    ignoreCase = true
+                )
+            }
             .map { it.terraUserId }
             .distinct()
         val sdkId = terraManagerHolder.current?.getUserId(Connections.HEALTH_CONNECT)
@@ -252,13 +264,19 @@ class HealthConnectionsViewModel(
     private fun handleCallbackOutcome(outcome: TerraCallbackHandler.Outcome) {
         when (outcome) {
             is TerraCallbackHandler.Outcome.Success ->
-                setMessage(R.string.msg_wearable_connected, outcome.provider.replaceFirstChar { it.titlecase() })
+                setMessage(
+                    R.string.msg_wearable_connected,
+                    outcome.provider.replaceFirstChar { it.titlecase() })
+
             is TerraCallbackHandler.Outcome.Failure ->
                 setError(R.string.error_wearable_connect_failed, outcome.reason)
+
             is TerraCallbackHandler.Outcome.SaveFailed ->
                 setError(R.string.error_connection_save_failed)
+
             TerraCallbackHandler.Outcome.Malformed ->
                 setError(R.string.error_connection_callback_invalid)
+
             TerraCallbackHandler.Outcome.Ignored -> Unit
         }
     }

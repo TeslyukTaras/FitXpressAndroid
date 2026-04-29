@@ -26,20 +26,16 @@ data class IntelligenceScoreData(
 
 internal const val OVERVIEW_SLEEP_INDEX = 0
 internal const val OVERVIEW_ACTIVITY_INDEX = 1
+internal const val OVERVIEW_RECOVERY_INDEX = 2
 
 internal fun buildOverviewCards(
     sleepCard: OverviewCardData,
     activityCard: OverviewCardData,
-): List<OverviewCardData> = listOf(sleepCard, activityCard) + defaultOverviewCardsTail
+    recoveryCard: OverviewCardData,
+): List<OverviewCardData> = listOf(sleepCard, activityCard, recoveryCard) + defaultOverviewCardsTail
 
-/** Recovery and scan — still mock data until those features are wired. */
+/** Scan — still mock data until that feature is wired. */
 private val defaultOverviewCardsTail = listOf(
-    OverviewCardData(
-        title = "Recovery",
-        iconRes = R.drawable.ic_refresh,
-        value = "82/100",
-        subtitle = "Ready",
-    ),
     OverviewCardData(
         title = "Scan",
         iconRes = R.drawable.ic_body,

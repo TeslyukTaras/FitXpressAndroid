@@ -2,8 +2,10 @@ package com.hexis.bi.ui.main.home
 
 import android.content.Context
 import com.hexis.bi.R
+import com.hexis.bi.ui.main.home.recovery.RecoveryStatus
 import com.hexis.bi.utils.constants.ActivityConstants
 import com.hexis.bi.utils.constants.SleepConstants
+import java.util.Locale
 
 internal object HomeOverviewDefaults {
 
@@ -11,8 +13,8 @@ internal object HomeOverviewDefaults {
         sleepCard(
             context = context,
             goalSubtitle = context.getString(R.string.home_sleep_goal, goalHours.toString()),
-            value = context.getString(R.string.sleep_placeholder),
-            valueLabel = null,
+            value = formatSleepHours(0f),
+            valueLabel = context.getString(R.string.unit_hours_short),
         )
 
     fun sleepCard(
@@ -34,8 +36,8 @@ internal object HomeOverviewDefaults {
         activityCard(
             context = context,
             goalSubtitle = context.getString(R.string.home_activity_goal, formatSteps(stepsGoal)),
-            value = context.getString(R.string.sleep_placeholder),
-            valueLabel = null,
+            value = formatSteps(0),
+            valueLabel = context.getString(R.string.home_activity_value_label),
         )
 
     fun activityCard(
@@ -53,5 +55,29 @@ internal object HomeOverviewDefaults {
         variant = variant,
     )
 
-    internal fun formatSteps(steps: Int): String = "%,d".format(steps)
+    fun placeholderRecoveryCard(context: Context): OverviewCardData =
+        recoveryCard(
+            context = context,
+            value = context.getString(R.string.home_recovery_score_value, 0),
+            statusSubtitle = context.getString(RecoveryStatus.fromScore(0).labelRes),
+        )
+
+    fun recoveryCard(
+        context: Context,
+        value: String,
+        statusSubtitle: String,
+        variant: OverviewCardVariant = OverviewCardVariant.Default,
+    ): OverviewCardData = OverviewCardData(
+        title = context.getString(R.string.home_card_recovery),
+        iconRes = R.drawable.ic_refresh,
+        value = value,
+        valueLabel = null,
+        subtitle = statusSubtitle,
+        variant = variant,
+    )
+
+    internal fun formatSteps(steps: Int): String = "%,d".format(steps.coerceAtLeast(0))
+
+    internal fun formatSleepHours(hours: Float): String =
+        "%.1f".format(Locale.US, hours.coerceAtLeast(0f))
 }

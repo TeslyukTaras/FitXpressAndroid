@@ -20,7 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
-import com.hexis.bi.ui.main.home.recovery.RecoveryStatus
+import com.hexis.bi.ui.main.home.recovery.RecoveryTrend
 import com.hexis.bi.ui.theme.Blue200
 import com.hexis.bi.ui.theme.Blue300
 import com.hexis.bi.ui.theme.Lime200
@@ -29,11 +29,9 @@ import com.hexis.bi.utils.gradientBackground
 @Composable
 fun RecoveryScoreCards(
     avgScore: Int,
-    trendLabel: String,
-    trendDescription: String,
+    trend: RecoveryTrend,
     modifier: Modifier = Modifier,
 ) {
-    val trendStatus = RecoveryStatus.fromScore(avgScore)
 
     Row(
         modifier = modifier
@@ -94,9 +92,9 @@ fun RecoveryScoreCards(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                     Text(
-                        text = trendLabel,
+                        text = stringResource(trend.labelRes),
                         style = MaterialTheme.typography.labelMedium,
-                        color = trendStatus.color,
+                        color = trend.color,
                     )
                 }
 
@@ -104,7 +102,7 @@ fun RecoveryScoreCards(
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
                 Text(
-                    text = trendDescription,
+                    text = stringResource(trend.descriptionRes),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.secondary,
                 )

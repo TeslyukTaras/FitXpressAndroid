@@ -108,9 +108,6 @@ private fun WeeklyStageCell(
     data: WeeklyStageData,
     modifier: Modifier = Modifier,
 ) {
-    val trendIcon = if (data.trend == StageTrend.Up) "↑" else "↓"
-    val trendTint = if (data.trend == StageTrend.Up) Green else Red100
-
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -120,12 +117,14 @@ private fun WeeklyStageCell(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground,
         )
-        Spacer(Modifier.width(dimensionResource(R.dimen.spacer_s)))
-        Text(
-            text = trendIcon,
-            style = MaterialTheme.typography.bodyMedium,
-            color = trendTint,
-        )
+        if (data.trend != null) {
+            Spacer(Modifier.width(dimensionResource(R.dimen.spacer_s)))
+            Text(
+                text = if (data.trend == StageTrend.Up) "↑" else "↓",
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (data.trend == StageTrend.Up) Green else Red100,
+            )
+        }
         Spacer(Modifier.weight(1f))
         Text(
             text = formatSleepDuration(data.durationMinutes),

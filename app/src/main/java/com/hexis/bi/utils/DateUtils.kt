@@ -87,14 +87,15 @@ fun hour12ToHour24(hour12: Int, isPm: Boolean): Int = when {
 }
 
 @Composable
-fun formatSleepDuration(minutes: Int): String =
-    if (minutes <= 0) stringResource(R.string.sleep_placeholder)
-    else if (minutes >= SleepConstants.MINUTES_PER_HOUR) stringResource(
+fun formatSleepDuration(minutes: Int): String {
+    val safe = minutes.coerceAtLeast(0)
+    return if (safe >= SleepConstants.MINUTES_PER_HOUR) stringResource(
         R.string.sleep_duration_hours_minutes,
-        minutes / SleepConstants.MINUTES_PER_HOUR,
-        minutes % SleepConstants.MINUTES_PER_HOUR,
+        safe / SleepConstants.MINUTES_PER_HOUR,
+        safe % SleepConstants.MINUTES_PER_HOUR,
     )
-    else stringResource(R.string.sleep_duration_minutes, minutes)
+    else stringResource(R.string.sleep_duration_minutes, safe)
+}
 
 @Composable
 fun formatHour(hour: Int): String =
