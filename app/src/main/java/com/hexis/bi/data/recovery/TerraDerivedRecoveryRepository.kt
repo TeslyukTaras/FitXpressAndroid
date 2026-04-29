@@ -9,7 +9,13 @@ import com.hexis.bi.utils.constants.RecoveryConstants
 import com.hexis.bi.utils.constants.SleepConstants
 import com.hexis.bi.utils.constants.TerraCacheConstants
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import kotlin.math.roundToInt
+
+private object RecoveryRepositoryConstants {
+    const val DAY_LOOKBACK_DAYS = 1L
+    const val DAY_LOOKAHEAD_DAYS = 1L
+}
 
 /**
  * Recovery isn't its own Terra endpoint — we derive it from sleep + activity data
@@ -25,8 +31,11 @@ class TerraDerivedRecoveryRepository(
     )
 
     override suspend fun getSnapshotForDate(date: LocalDate): Result<RecoverySnapshot?> =
-        getSnapshotsForRange(date, date).map {
-            it.firstOrNull { snap -> snap.date == date } ?: it.lastOrNull()
+        getSnapshotsForRange(
+            date.minusDays(RecoveryRepositoryConstants.DAY_LOOKBACK_DAYS),
+            date.plusDays(RecoveryRepositoryConstants.DAY_LOOKAHEAD_DAYS),
+        ).map { rows ->
+            rows.minByOrNull { kotlin.math.abs(ChronoUnit.DAYS.between(it.date, date)) }
         }
 
     override suspend fun getSnapshotsForRange(
