@@ -171,6 +171,12 @@
     <string name="home_activity_goal">Goal: %1$s</string>
     <string name="home_nav_home">Home</string>
     <string name="home_nav_body">Body</string>
+    <string name="body_scan_history_subtitle">Recent body scans history</string>
+    <string name="body_scan_history_empty">No saved scans yet. Complete a scan to see history.</string>
+    <string name="body_scan_history_measurements">Measurements: %1$d</string>
+    <string name="body_scan_history_model_ready">3D model available</string>
+    <string name="body_scan_history_model_missing">3D model not available</string>
+    <string name="body_scan_history_unknown_date">Unknown date</string>
     <string name="cd_avatar">User avatar</string>
     <string name="cd_notification">Notifications</string>
     <string name="cd_settings">Settings</string>

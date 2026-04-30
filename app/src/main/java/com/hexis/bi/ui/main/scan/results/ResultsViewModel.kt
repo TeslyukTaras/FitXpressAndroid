@@ -35,22 +35,43 @@ class ResultsViewModel(
     }
 
     private fun loadMeasurements() = launch(showLoading = false) {
-        val result = scanResultRepository.latestResult ?: return@launch
+        val selectedScanId = scanResultRepository.selectedScanId
+        if (selectedScanId != null) {
+            val scans = scanHistoryRepository.getRecentScans(limit = 100).getOrElse { return@launch }
+            val selectedIndex = scans.indexOfFirst { it.id == selectedScanId }
+            if (selectedIndex >= 0) {
+                val current = scans[selectedIndex]
+                val previous = scans.getOrNull(selectedIndex + 1)?.takeIf { it.measurements.isNotEmpty() }
+                val beforePrevious = scans.getOrNull(selectedIndex + 2)?.takeIf { it.measurements.isNotEmpty() }
+                val rows = MeasurementMapper.mapFromRecords(
+                    current = current,
+                    previous = previous,
+                    beforePrevious = beforePrevious,
+                )
+                _state.update {
+                    it.copy(
+                        measurements = rows,
+                        model3dUrl = current.model3dUrl,
+                        todayDate = current.timestamp.millisToShortMonthDay(),
+                        previousDate = previous?.timestamp?.millisToShortMonthDay(),
+                    )
+                }
+                return@launch
+            }
+        }
 
-        // The current scan is already persisted, so the prior readings start at index 1.
+        val result = scanResultRepository.latestResult ?: return@launch
         val (previousScan, beforePreviousScan) = scanHistoryRepository.getPreviousTwoScans()
             .getOrElse { null to null }
             .let { (prev, beforePrev) ->
                 prev?.takeIf { it.measurements.isNotEmpty() } to
                     beforePrev?.takeIf { it.measurements.isNotEmpty() }
             }
-
         val rows = MeasurementMapper.map(
             current = result.response,
             previous = previousScan,
             beforePrevious = beforePreviousScan,
         )
-
         _state.update {
             it.copy(
                 measurements = rows,
@@ -67,5 +88,9 @@ class ResultsViewModel(
 
     fun toggleColorAnalysis() {
         _state.update { it.copy(colorAnalysisEnabled = !it.colorAnalysisEnabled) }
+    }
+
+    fun toggleSkinAreas() {
+        _state.update { it.copy(showSkinAreas = !it.showSkinAreas) }
     }
 }

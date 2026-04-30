@@ -81,7 +81,7 @@ class ScanHistoryRepository(
     }
 
     suspend fun getLatestScan(): Result<ScanRecord?> =
-        getRecentScans(limit = 1).map { it.firstOrNull() }
+        fetchRecentScans(limit = 1).map { it.firstOrNull() }
 
     /**
      * Returns the two scans that precede the just-persisted current scan, in order
@@ -91,20 +91,23 @@ class ScanHistoryRepository(
      * Either side may be null if the user doesn't have enough history yet.
      */
     suspend fun getPreviousTwoScans(): Result<Pair<ScanRecord?, ScanRecord?>> =
-        getRecentScans(limit = 3).map { scans ->
+        fetchRecentScans(limit = 3).map { scans ->
             scans.getOrNull(1) to scans.getOrNull(2)
         }
+
+    suspend fun getRecentScans(limit: Long = 20L): Result<List<ScanRecord>> =
+        fetchRecentScans(limit = limit)
 
     /** True if any saved scan in recent history has [ScanRecord.timestamp] in the inclusive range. */
     suspend fun hasScanSavedBetween(
         startMillisInclusive: Long,
         endMillisInclusive: Long,
         lookback: Long = 50L,
-    ): Result<Boolean> = getRecentScans(limit = lookback).map { scans ->
+    ): Result<Boolean> = fetchRecentScans(limit = lookback).map { scans ->
         scans.any { it.timestamp in startMillisInclusive..endMillisInclusive }
     }
 
-    private suspend fun getRecentScans(limit: Long): Result<List<ScanRecord>> = runCatching {
+    private suspend fun fetchRecentScans(limit: Long): Result<List<ScanRecord>> = runCatching {
         val snapshot = scansCollection()
             .orderBy(FIELD_SAVED_AT, Query.Direction.DESCENDING)
             .limit(limit)

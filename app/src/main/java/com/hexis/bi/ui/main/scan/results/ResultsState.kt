@@ -40,4 +40,5 @@ data class ResultsState(
     val model3dUrl: String? = null,
     val todayDate: String = "",
     val previousDate: String? = null,
+    val showSkinAreas: Boolean = false,
 )

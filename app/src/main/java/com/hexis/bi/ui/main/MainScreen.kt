@@ -28,6 +28,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.hexis.bi.R
 import com.hexis.bi.data.user.UserRepository
+import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.ui.components.AppButton
 import com.hexis.bi.ui.components.AppDialog
 import com.hexis.bi.ui.components.AppOutlinedButton
@@ -63,6 +64,7 @@ fun MainScreen(
     val showBottomBar = currentRoute in Route.Main.tabRoutes
 
     val userRepository: UserRepository = koinInject()
+    val scanResultRepository: ScanResultRepository = koinInject()
     val scope = rememberCoroutineScope()
     var showProfileIncompleteDialog by remember { mutableStateOf(false) }
 
@@ -96,6 +98,7 @@ fun MainScreen(
                     ScanScreen(
                         onBack = { navController.popBackStackOnce() },
                         onScanComplete = {
+                            scanResultRepository.selectedScanId = null
                             navController.navigate(Route.Main.SCAN_RESULTS) {
                                 popUpTo(Route.Main.SCAN) { inclusive = true }
                             }
@@ -108,7 +111,12 @@ fun MainScreen(
                     ResultsScreen(onBack = { navController.popBackStackOnce() })
                 }
                 composable(Route.Main.BODY) {
-                    BodyScreen()
+                    BodyScreen(
+                        onOpenScanResults = { scanId ->
+                            scanResultRepository.selectedScanId = scanId
+                            navController.navigate(Route.Main.SCAN_RESULTS)
+                        },
+                    )
                 }
                 composable(Route.Main.NOTIFICATIONS) {
                     NotificationsScreen(onBack = { navController.popBackStackOnce() })

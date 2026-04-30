@@ -77,6 +77,42 @@ object MeasurementMapper {
         }
     }
 
+    fun mapFromRecords(
+        current: ScanRecord,
+        previous: ScanRecord?,
+        beforePrevious: ScanRecord?,
+    ): List<MeasurementRow> {
+        val currentMap = current.measurements
+        val previousMap = previous?.measurements
+        val beforePreviousMap = beforePrevious?.measurements
+
+        return entries.mapNotNull { entry ->
+            val todayCm = currentMap[entry.apiKey] ?: return@mapNotNull null
+            val prevCm = previousMap?.get(entry.apiKey)
+            val beforePrevCm = beforePreviousMap?.get(entry.apiKey)
+
+            val todayValue = MeasurementValue(
+                cm = todayCm,
+                deltaCm = if (prevCm != null) todayCm - prevCm else 0f,
+                change = if (prevCm != null) classifyChange(todayCm - prevCm, entry.decreaseIsPositive) else null,
+            )
+
+            val previousValue = prevCm?.let {
+                MeasurementValue(
+                    cm = it,
+                    deltaCm = if (beforePrevCm != null) it - beforePrevCm else 0f,
+                    change = if (beforePrevCm != null) classifyChange(it - beforePrevCm, entry.decreaseIsPositive) else null,
+                )
+            }
+
+            MeasurementRow(
+                bodyPartRes = entry.bodyPartRes,
+                today = todayValue,
+                previous = previousValue,
+            )
+        }
+    }
+
     private fun extractMeasurements(response: MeasurementResponse): Map<String, Float> {
         val result = mutableMapOf<String, Float>()
         response.circumferenceParams?.let { result += jsonObjectToFloatMap(it) }

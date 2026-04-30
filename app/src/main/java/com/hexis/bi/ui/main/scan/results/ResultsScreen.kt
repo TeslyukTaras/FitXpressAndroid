@@ -22,6 +22,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,6 +55,7 @@ fun ResultsScreen(
     viewModel: ResultsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var isModelInteracting by remember { mutableStateOf(false) }
 
     BaseScreen(
         modifier = modifier,
@@ -64,7 +68,12 @@ fun ResultsScreen(
             )
         },
     ) {
-        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+        Column(
+            modifier = Modifier.verticalScroll(
+                state = rememberScrollState(),
+                enabled = !isModelInteracting,
+            )
+        ) {
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
 
             AppTabSelector(
@@ -77,7 +86,11 @@ fun ResultsScreen(
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-            BodyVisualizationCard()
+            BodyVisualizationCard(
+                model3dUrl = state.model3dUrl,
+                showSkinAreas = state.showSkinAreas,
+                onModelInteractionChanged = { isModelInteracting = it },
+            )
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
@@ -103,13 +116,30 @@ fun ResultsScreen(
 }
 
 @Composable
-private fun BodyVisualizationCard(modifier: Modifier = Modifier) {
-    Box(modifier = modifier.fillMaxWidth()) {
-        Image(
-            painter = painterResource(R.drawable.img_3d_placeholder),
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.fillMaxWidth()
+private fun BodyVisualizationCard(
+    model3dUrl: String?,
+    showSkinAreas: Boolean,
+    onModelInteractionChanged: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val previewModifier = Modifier
+        .fillMaxWidth()
+        .height(dimensionResource(R.dimen.scan_results_preview_height))
+    if (model3dUrl.isNullOrBlank()) {
+        Box(modifier = modifier.fillMaxWidth()) {
+            Image(
+                painter = painterResource(R.drawable.img_3d_placeholder),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = previewModifier,
+            )
+        }
+    } else {
+        MetricAvatarPreview(
+            modelUrl = model3dUrl,
+            showSkinAreas = showSkinAreas,
+            onInteractionChanged = onModelInteractionChanged,
+            modifier = modifier.then(previewModifier),
         )
     }
 }
@@ -162,7 +192,6 @@ private fun MeasurementsCard(
             .clip(MaterialTheme.shapes.medium)
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Title row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -191,7 +220,6 @@ private fun MeasurementsCard(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
 
-        // Sub-header row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
