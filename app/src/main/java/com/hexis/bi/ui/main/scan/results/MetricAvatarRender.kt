@@ -5,6 +5,7 @@ import android.graphics.PixelFormat
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
+import android.util.AttributeSet
 import android.view.MotionEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -20,6 +21,9 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
@@ -37,10 +41,6 @@ import java.nio.FloatBuffer
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
-/**
- * Renders the metric avatar (body OBJ model) into a Compose surface with drag-to-rotate gestures.
- * Falls back to a Retry button when the OBJ download or parse fails.
- */
 @Composable
 internal fun MetricAvatarPreview(
     modelUrl: String,
@@ -49,22 +49,18 @@ internal fun MetricAvatarPreview(
     showSkinAreas: Boolean = false,
 ) {
     val context = LocalContext.current
-    // Capture the latest callback so we don't recreate the GLSurfaceView on each recomposition.
     val latestOnInteraction by rememberUpdatedState(onInteractionChanged)
-    val view = remember(context) {
-        MetricAvatarSurfaceView(context) { latestOnInteraction(it) }
-    }
+    val view = remember(context) { MetricAvatarSurfaceView(context) { latestOnInteraction(it) } }
     var hasError by remember { mutableStateOf(false) }
     var reloadKey by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(view, showSkinAreas) {
-        view.setShowSkinAreas(showSkinAreas)
-    }
+    LaunchedEffect(view, showSkinAreas) { view.setShowSkinAreas(showSkinAreas) }
 
     LaunchedEffect(modelUrl, reloadKey) {
         runCatching { withContext(Dispatchers.IO) { ObjParser.parse(modelUrl) } }
             .onSuccess { mesh ->
                 view.queueEvent { view.setMesh(mesh) }
+                view.requestRender()
                 hasError = false
             }
             .onFailure { e ->
@@ -73,11 +69,16 @@ internal fun MetricAvatarPreview(
             }
     }
 
-    Box(modifier = modifier) {
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = { view },
-        )
+    Box(
+        modifier = modifier.background(
+            Brush.radialGradient(
+                colors = listOf(Color(0xFFFEFEFE), Color(0xFFC3C0C5)),
+                center = Offset.Unspecified,
+                radius = Float.POSITIVE_INFINITY,
+            ),
+        ),
+    ) {
+        AndroidView(modifier = Modifier.fillMaxSize(), factory = { view })
         if (hasError) {
             Box(
                 modifier = Modifier
@@ -85,13 +86,10 @@ internal fun MetricAvatarPreview(
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center,
             ) {
-                AppButton(
-                    text = stringResource(R.string.action_retry),
-                    onClick = {
-                        hasError = false
-                        reloadKey++
-                    },
-                )
+                AppButton(text = stringResource(R.string.action_retry), onClick = {
+                    hasError = false
+                    reloadKey++
+                })
             }
         }
     }
@@ -100,21 +98,32 @@ internal fun MetricAvatarPreview(
 private const val TOUCH_YAW_SENSITIVITY = 0.25f
 private const val TOUCH_PITCH_SENSITIVITY = 0.2f
 
-private class MetricAvatarSurfaceView(
-    context: Context,
-    private val onInteractionChanged: (Boolean) -> Unit,
-) : GLSurfaceView(context) {
+private class MetricAvatarSurfaceView : GLSurfaceView {
     private val avatarRenderer = MetricAvatarRenderer()
+    private var onInteractionChanged: (Boolean) -> Unit = {}
     private var lastX = 0f
     private var lastY = 0f
 
-    init {
+    constructor(context: Context) : super(context) {
+        initView()
+    }
+
+    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
+        initView()
+    }
+
+    constructor(context: Context, onInteractionChanged: (Boolean) -> Unit) : super(context) {
+        this.onInteractionChanged = onInteractionChanged
+        initView()
+    }
+
+    private fun initView() {
         setEGLContextClientVersion(2)
         setEGLConfigChooser(8, 8, 8, 8, 16, 0)
         holder.setFormat(PixelFormat.TRANSLUCENT)
         setZOrderOnTop(true)
         setRenderer(avatarRenderer)
-        renderMode = RENDERMODE_CONTINUOUSLY
+        renderMode = RENDERMODE_WHEN_DIRTY
     }
 
     fun setMesh(mesh: ObjMesh) {
@@ -123,6 +132,7 @@ private class MetricAvatarSurfaceView(
 
     fun setShowSkinAreas(show: Boolean) {
         queueEvent { avatarRenderer.setShowSkinAreas(show) }
+        requestRender()
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -138,18 +148,27 @@ private class MetricAvatarSurfaceView(
                 val dy = event.y - lastY
                 queueEvent {
                     avatarRenderer.rotateBy(
-                        deltaYaw = dx * TOUCH_YAW_SENSITIVITY,
-                        deltaPitch = dy * TOUCH_PITCH_SENSITIVITY,
+                        dyaw = dx * TOUCH_YAW_SENSITIVITY,
+                        dpitch = dy * TOUCH_PITCH_SENSITIVITY,
                     )
                 }
+                requestRender()
                 lastX = event.x
                 lastY = event.y
             }
 
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+            MotionEvent.ACTION_UP -> {
+                performClick()
                 onInteractionChanged(false)
             }
+
+            MotionEvent.ACTION_CANCEL -> onInteractionChanged(false)
         }
+        return true
+    }
+
+    override fun performClick(): Boolean {
+        super.performClick()
         return true
     }
 }
@@ -158,39 +177,89 @@ internal data class ObjMesh(val vertexBuffer: FloatBuffer, val vertexCount: Int)
 
 private object ObjParser {
     private const val NORMALIZED_TARGET_SIZE = 3.0f
-    private const val CONNECT_TIMEOUT_MS = 10_000
-    private const val READ_TIMEOUT_MS = 15_000
-    // Each vertex emits position (x,y,z) + barycentric coord (bx,by,bz). Bary lets the fragment
-    // shader draw a true triangle-edge wireframe with screen-space (depth-aware) line width.
-    private const val FLOATS_PER_VERTEX = 6
+    private const val FLOATS_PER_VERTEX = 9
     private const val BYTES_PER_FLOAT = 4
+    private const val VERTEX_MERGE_RADIUS = 0.015f
+
+    private data class Cluster(
+        var x: Float,
+        var y: Float,
+        var z: Float,
+        var count: Int,
+        var cx: Int,
+        var cy: Int,
+        var cz: Int
+    )
+
+    private data class ClusterResult(val vertices: List<FloatArray>, val remap: IntArray) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+            other as ClusterResult
+            return vertices == other.vertices && remap.contentEquals(other.remap)
+        }
+
+        override fun hashCode(): Int {
+            var result = vertices.hashCode()
+            result = 31 * result + remap.contentHashCode()
+            return result
+        }
+    }
+
+    private fun distSq(a: FloatArray, b: FloatArray): Float {
+        val dx = a[0] - b[0]
+        val dy = a[1] - b[1]
+        val dz = a[2] - b[2]
+        return dx * dx + dy * dy + dz * dz
+    }
 
     fun parse(url: String): ObjMesh {
         val vertices = ArrayList<FloatArray>()
-        val triangles = ArrayList<Float>()
+        val faces = ArrayList<IntArray>()
         val connection = URL(url).openConnection().apply {
-            connectTimeout = CONNECT_TIMEOUT_MS
-            readTimeout = READ_TIMEOUT_MS
+            connectTimeout = 10000
+            readTimeout = 15000
         }
+
         BufferedReader(InputStreamReader(connection.getInputStream())).use { reader ->
             reader.lineSequence().forEach { line ->
                 when {
                     line.startsWith("v ") -> parseVertex(line, vertices)
-                    line.startsWith("f ") -> parseFace(line, vertices, triangles)
+                    line.startsWith("f ") -> parseFaceIndices(line, vertices.size)?.let {
+                        faces.add(
+                            it
+                        )
+                    }
                 }
             }
         }
-        if (triangles.isEmpty()) error("OBJ has no triangles")
-        normalize(triangles)
 
-        val buffer = ByteBuffer
-            .allocateDirect(triangles.size * BYTES_PER_FLOAT)
-            .order(ByteOrder.nativeOrder())
-            .asFloatBuffer()
-            .apply {
+        if (faces.isEmpty()) throw IllegalArgumentException("OBJ contains no supported faces")
+
+        val usedVertices = BooleanArray(vertices.size)
+        faces.forEach { face -> face.forEach { index -> usedVertices[index] = true } }
+        normalizeVertices(vertices, usedVertices)
+
+        val clusterResult = clusterCloseVertices(vertices, usedVertices)
+        val triangles = ArrayList<Float>()
+        val emittedTriangles = HashSet<String>()
+
+        faces.forEach { face ->
+            appendClusteredFace(
+                face,
+                clusterResult,
+                emittedTriangles,
+                triangles
+            )
+        }
+        if (triangles.isEmpty()) throw IllegalArgumentException("OBJ contains no supported triangles")
+
+        val buffer = ByteBuffer.allocateDirect(triangles.size * BYTES_PER_FLOAT)
+            .order(ByteOrder.nativeOrder()).asFloatBuffer().apply {
                 put(triangles.toFloatArray())
                 position(0)
             }
+
         return ObjMesh(vertexBuffer = buffer, vertexCount = triangles.size / FLOATS_PER_VERTEX)
     }
 
@@ -202,81 +271,212 @@ private object ObjParser {
                 parts[1].toFloatOrNull() ?: 0f,
                 parts[2].toFloatOrNull() ?: 0f,
                 parts[3].toFloatOrNull() ?: 0f,
-            ),
+            )
         )
     }
 
-    private fun parseFace(
-        line: String,
-        vertices: List<FloatArray>,
-        triangles: MutableList<Float>,
-    ) {
+    private fun parseFaceIndices(line: String, vertexCount: Int): IntArray? {
         val faceParts = line.trim().split(Regex("\\s+")).drop(1)
-        if (faceParts.size < 3) return
+        if (faceParts.size < 3) return null
 
-        // Resolve indices first; reject the whole face if any token is malformed or out of range.
-        // Bailing per-token would produce orphan triangles with mismatched vertex counts.
         val indices = ArrayList<Int>(faceParts.size)
         for (token in faceParts) {
-            val raw = token.substringBefore("/").toIntOrNull() ?: return
-            // OBJ supports negative indices, counted backwards from the current vertex list.
-            val resolved = if (raw < 0) vertices.size + raw else raw - 1
-            if (resolved !in vertices.indices) return
-            indices.add(resolved)
+            val rawIndex = token.substringBefore("/").toIntOrNull() ?: return null
+            val index = if (rawIndex < 0) vertexCount + rawIndex else rawIndex - 1
+            if (index !in 0 until vertexCount) return null
+            indices.add(index)
         }
 
-        // Triangulate as a fan from the first vertex, assigning each of the three vertices
-        // a unit-basis barycentric so fwidth() in the fragment shader can detect edges.
-        for (i in 1 until indices.size - 1) {
-            appendVertex(triangles, vertices[indices[0]], 1f, 0f, 0f)
-            appendVertex(triangles, vertices[indices[i]], 0f, 1f, 0f)
-            appendVertex(triangles, vertices[indices[i + 1]], 0f, 0f, 1f)
+        return indices.toIntArray()
+    }
+
+    private fun appendClusteredFace(
+        face: IntArray,
+        clusterResult: ClusterResult,
+        emittedTriangles: MutableSet<String>,
+        triangles: MutableList<Float>,
+    ) {
+        val remap = clusterResult.remap
+        val clusteredVertices = clusterResult.vertices
+
+        for (i in 1 until face.size - 1) {
+            val c0 = remap[face[0]]
+            val c1 = remap[face[i]]
+            val c2 = remap[face[i + 1]]
+
+            if (c0 < 0 || c1 < 0 || c2 < 0) continue
+            if (c0 == c1 || c1 == c2 || c2 == c0) continue
+
+            val key = triangleKey(c0, c1, c2)
+            if (!emittedTriangles.add(key)) continue
+
+            val v0 = clusteredVertices[c0]
+            val v1 = clusteredVertices[c1]
+            val v2 = clusteredVertices[c2]
+
+            var mx = 1f
+            var my = 1f
+            var mz = 1f
+            val d01 = distSq(v0, v1)
+            val d12 = distSq(v1, v2)
+            val d20 = distSq(v2, v0)
+            if (d12 >= d20 && d12 >= d01) mx = 0f else if (d20 >= d01) my = 0f else mz = 0f
+
+            appendVertex(triangles, v0, 1f, 0f, 0f, mx, my, mz)
+            appendVertex(triangles, v1, 0f, 1f, 0f, mx, my, mz)
+            appendVertex(triangles, v2, 0f, 0f, 1f, mx, my, mz)
+        }
+    }
+
+    private fun clusterCloseVertices(
+        vertices: List<FloatArray>,
+        usedVertices: BooleanArray
+    ): ClusterResult {
+        val clusters = ArrayList<Cluster>()
+        val remap = IntArray(vertices.size) { -1 }
+        val grid = HashMap<String, MutableList<Int>>()
+        val radiusSq = VERTEX_MERGE_RADIUS * VERTEX_MERGE_RADIUS
+
+        vertices.forEachIndexed { vertexIndex, vertex ->
+            if (!usedVertices[vertexIndex]) return@forEachIndexed
+
+            if (isProtectedDetailVertex(vertex)) {
+                val clusterIndex = clusters.size
+                clusters.add(Cluster(vertex[0], vertex[1], vertex[2], 1, 0, 0, 0))
+                remap[vertexIndex] = clusterIndex
+                return@forEachIndexed
+            }
+
+            val cellX = cellOf(vertex[0])
+            val cellY = cellOf(vertex[1])
+            val cellZ = cellOf(vertex[2])
+            var bestCluster = -1
+            var bestDistSq = radiusSq
+
+            for (x in cellX - 1..cellX + 1) {
+                for (y in cellY - 1..cellY + 1) {
+                    for (z in cellZ - 1..cellZ + 1) {
+                        grid[gridKey(x, y, z)]?.forEach { clusterIndex ->
+                            val cluster = clusters[clusterIndex]
+                            val dx = vertex[0] - cluster.x
+                            val dy = vertex[1] - cluster.y
+                            val dz = vertex[2] - cluster.z
+                            val d = dx * dx + dy * dy + dz * dz
+                            if (d <= bestDistSq) {
+                                bestDistSq = d
+                                bestCluster = clusterIndex
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (bestCluster >= 0) {
+                addVertexToCluster(bestCluster, vertex, clusters, grid)
+                remap[vertexIndex] = bestCluster
+            } else {
+                val clusterIndex = clusters.size
+                clusters.add(Cluster(vertex[0], vertex[1], vertex[2], 1, cellX, cellY, cellZ))
+                grid.getOrPut(gridKey(cellX, cellY, cellZ)) { ArrayList() }.add(clusterIndex)
+                remap[vertexIndex] = clusterIndex
+            }
+        }
+
+        val mergedVertices =
+            clusters.map { cluster -> floatArrayOf(cluster.x, cluster.y, cluster.z) }
+        return ClusterResult(vertices = mergedVertices, remap = remap)
+    }
+
+    private fun isProtectedDetailVertex(vertex: FloatArray): Boolean {
+        val x = vertex[0]
+        val y = vertex[1]
+        val head = y >= 1.08f
+        val hands = kotlin.math.abs(x) >= 0.36f && y >= -1.05f && y <= 0.05f
+        val feet = y <= -1.32f
+        return head || hands || feet
+    }
+
+    private fun addVertexToCluster(
+        clusterIndex: Int,
+        vertex: FloatArray,
+        clusters: MutableList<Cluster>,
+        grid: MutableMap<String, MutableList<Int>>,
+    ) {
+        val cluster = clusters[clusterIndex]
+        val oldKey = gridKey(cluster.cx, cluster.cy, cluster.cz)
+        val newCount = cluster.count + 1
+
+        cluster.x = (cluster.x * cluster.count + vertex[0]) / newCount
+        cluster.y = (cluster.y * cluster.count + vertex[1]) / newCount
+        cluster.z = (cluster.z * cluster.count + vertex[2]) / newCount
+        cluster.count = newCount
+
+        val newCellX = cellOf(cluster.x)
+        val newCellY = cellOf(cluster.y)
+        val newCellZ = cellOf(cluster.z)
+        val newKey = gridKey(newCellX, newCellY, newCellZ)
+
+        if (newKey != oldKey) {
+            grid[oldKey]?.remove(clusterIndex)
+            cluster.cx = newCellX
+            cluster.cy = newCellY
+            cluster.cz = newCellZ
+            grid.getOrPut(newKey) { ArrayList() }.add(clusterIndex)
         }
     }
 
     private fun appendVertex(
         into: MutableList<Float>,
-        vertex: FloatArray,
-        bx: Float,
-        by: Float,
-        bz: Float,
+        v: FloatArray,
+        b1: Float,
+        b2: Float,
+        b3: Float,
+        m1: Float,
+        m2: Float,
+        m3: Float,
     ) {
-        into.add(vertex[0])
-        into.add(vertex[1])
-        into.add(vertex[2])
-        into.add(bx)
-        into.add(by)
-        into.add(bz)
+        into.add(v[0]); into.add(v[1]); into.add(v[2])
+        into.add(b1); into.add(b2); into.add(b3)
+        into.add(m1); into.add(m2); into.add(m3)
     }
 
-    private fun normalize(triangles: MutableList<Float>) {
-        var minX = Float.POSITIVE_INFINITY
-        var minY = Float.POSITIVE_INFINITY
-        var minZ = Float.POSITIVE_INFINITY
-        var maxX = Float.NEGATIVE_INFINITY
-        var maxY = Float.NEGATIVE_INFINITY
-        var maxZ = Float.NEGATIVE_INFINITY
-        for (i in triangles.indices step FLOATS_PER_VERTEX) {
-            val x = triangles[i]
-            val y = triangles[i + 1]
-            val z = triangles[i + 2]
-            if (x < minX) minX = x
-            if (y < minY) minY = y
-            if (z < minZ) minZ = z
-            if (x > maxX) maxX = x
-            if (y > maxY) maxY = y
-            if (z > maxZ) maxZ = z
+    private fun normalizeVertices(vertices: MutableList<FloatArray>, usedVertices: BooleanArray) {
+        var minX = Float.MAX_VALUE
+        var maxX = -Float.MAX_VALUE
+        var minY = Float.MAX_VALUE
+        var maxY = -Float.MAX_VALUE
+        var minZ = Float.MAX_VALUE
+        var maxZ = -Float.MAX_VALUE
+
+        vertices.forEachIndexed { index, vertex ->
+            if (!usedVertices[index]) return@forEachIndexed
+            minX = minOf(minX, vertex[0]); maxX = maxOf(maxX, vertex[0])
+            minY = minOf(minY, vertex[1]); maxY = maxOf(maxY, vertex[1])
+            minZ = minOf(minZ, vertex[2]); maxZ = maxOf(maxZ, vertex[2])
         }
-        val cx = (minX + maxX) * 0.5f
-        val cy = (minY + maxY) * 0.5f
-        val cz = (minZ + maxZ) * 0.5f
-        val largestExtent = maxOf(maxX - minX, maxY - minY, maxZ - minZ, 1e-6f)
-        val scale = NORMALIZED_TARGET_SIZE / largestExtent
-        for (i in triangles.indices step FLOATS_PER_VERTEX) {
-            triangles[i] = (triangles[i] - cx) * scale
-            triangles[i + 1] = (triangles[i + 1] - cy) * scale
-            triangles[i + 2] = (triangles[i + 2] - cz) * scale
+
+        val cx = (minX + maxX) / 2f
+        val cy = (minY + maxY) / 2f
+        val cz = (minZ + maxZ) / 2f
+        val scale = NORMALIZED_TARGET_SIZE / maxOf(maxX - minX, maxY - minY, maxZ - minZ, 1e-6f)
+
+        vertices.forEach { vertex ->
+            vertex[0] = (vertex[0] - cx) * scale
+            vertex[1] = (vertex[1] - cy) * scale
+            vertex[2] = (vertex[2] - cz) * scale
         }
+    }
+
+    private fun cellOf(value: Float): Int =
+        kotlin.math.floor((value / VERTEX_MERGE_RADIUS).toDouble()).toInt()
+
+    private fun gridKey(x: Int, y: Int, z: Int): String = "$x:$y:$z"
+
+    private fun triangleKey(a: Int, b: Int, c: Int): String {
+        val x = minOf(a, b, c)
+        val z = maxOf(a, b, c)
+        val y = a + b + c - x - z
+        return "$x:$y:$z"
     }
 }
 
@@ -285,22 +485,24 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
     private var program = 0
     private var aPosition = 0
     private var aBary = 0
+    private var aEdgeMask = 0
     private var uMvp = 0
     private var uSkinColor = 0
     private var uSuitColor = 0
-    private var uSuitLevel = 0
     private var uShowSkin = 0
     private var uModelView = 0
     private var uMeshColor = 0
     private var showSkinAreas = false
-    private val projection = FloatArray(MATRIX_SIZE)
-    private val view = FloatArray(MATRIX_SIZE)
-    private val model = FloatArray(MATRIX_SIZE)
-    private val temp = FloatArray(MATRIX_SIZE)
-    private val mvp = FloatArray(MATRIX_SIZE)
+
+    private val projection = FloatArray(16)
+    private val view = FloatArray(16)
+    private val model = FloatArray(16)
+    private val temp = FloatArray(16)
+    private val mvp = FloatArray(16)
+
     private var yaw = 0f
-    private var pitch = INITIAL_PITCH_DEG
-    private var viewDistance = INITIAL_VIEW_DISTANCE
+    private var pitch = -12f
+    private var viewDistance = 3.2f
 
     fun setMesh(value: ObjMesh) {
         mesh = value
@@ -310,22 +512,23 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
         showSkinAreas = show
     }
 
-    fun rotateBy(deltaYaw: Float, deltaPitch: Float) {
-        yaw += deltaYaw
-        pitch = (pitch + deltaPitch).coerceIn(MIN_PITCH_DEG, MAX_PITCH_DEG)
+    fun rotateBy(dyaw: Float, dpitch: Float) {
+        yaw += dyaw
+        pitch = (pitch + dpitch).coerceIn(-55f, 35f)
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES20.glClearColor(0f, 0f, 0f, 0f)
         GLES20.glEnable(GLES20.GL_DEPTH_TEST)
-        program = createProgram(VERTEX_SHADER, FRAGMENT_SHADER)
+        program = createProgram()
         if (program == 0) return
+
         aPosition = GLES20.glGetAttribLocation(program, "aPosition")
         aBary = GLES20.glGetAttribLocation(program, "aBary")
+        aEdgeMask = GLES20.glGetAttribLocation(program, "aEdgeMask")
         uMvp = GLES20.glGetUniformLocation(program, "uMvp")
         uSkinColor = GLES20.glGetUniformLocation(program, "uSkinColor")
         uSuitColor = GLES20.glGetUniformLocation(program, "uSuitColor")
-        uSuitLevel = GLES20.glGetUniformLocation(program, "uSuitLevel")
         uShowSkin = GLES20.glGetUniformLocation(program, "uShowSkin")
         uModelView = GLES20.glGetUniformLocation(program, "uModelView")
         uMeshColor = GLES20.glGetUniformLocation(program, "uMeshColor")
@@ -334,28 +537,21 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
         val aspect = width.toFloat() / height.toFloat().coerceAtLeast(1f)
-        Matrix.perspectiveM(projection, 0, FOV_DEG, aspect, FRUSTUM_NEAR, FRUSTUM_FAR)
-        val tanHalfFov = kotlin.math.tan(Math.toRadians(FOV_DEG / 2.0)).toFloat()
-            .coerceAtLeast(0.001f)
-        // Frame the model independently of parser scale so future scale changes
-        // actually move it on screen.
-        val halfHeight = 1.0f
-        val halfWidth = 1.0f
-        val distForHeight = halfHeight / tanHalfFov
-        val distForWidth = halfWidth / (tanHalfFov * aspect.coerceAtLeast(MIN_ASPECT_FOR_FRAMING))
-        viewDistance = maxOf(distForHeight, distForWidth) * VIEW_DISTANCE_SAFETY_MARGIN
-        Matrix.setLookAtM(
-            view, 0,
-            0f, EYE_HEIGHT, viewDistance,
-            0f, 0f, 0f,
-            0f, 1f, 0f,
-        )
+        Matrix.perspectiveM(projection, 0, 42f, aspect, 0.1f, 100f)
+
+        val tanHalfFov = kotlin.math.tan(Math.toRadians(42.0 / 2.0)).toFloat().coerceAtLeast(0.001f)
+        val distForHeight = 1.0f / tanHalfFov
+        val distForWidth = 1.0f / (tanHalfFov * aspect.coerceAtLeast(0.6f))
+        viewDistance = maxOf(distForHeight, distForWidth) * 1.25f
+
+        Matrix.setLookAtM(view, 0, 0f, 0.85f, viewDistance, 0f, 0f, 0f, 0f, 1f, 0f)
     }
 
     override fun onDrawFrame(gl: GL10?) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
-        val currentMesh = mesh ?: return
+        val m = mesh ?: return
         if (program == 0) return
+
         GLES20.glUseProgram(program)
 
         Matrix.setIdentityM(model, 0)
@@ -366,46 +562,49 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
         Matrix.multiplyMM(mvp, 0, projection, 0, temp, 0)
 
         GLES20.glUniformMatrix4fv(uMvp, 1, false, mvp, 0)
-        // temp = view * model; fragment uses it to push model-space normals into view space for rim lighting.
         GLES20.glUniformMatrix4fv(uModelView, 1, false, temp, 0)
-        GLES20.glUniform4f(uSkinColor, SKIN_R, SKIN_G, SKIN_B, 1f)
-        GLES20.glUniform4f(uSuitColor, SUIT_R, SUIT_G, SUIT_B, 1f)
-        GLES20.glUniform4f(uMeshColor, MESH_R, MESH_G, MESH_B, 1f)
-        GLES20.glUniform1f(uSuitLevel, SUIT_LEVEL)
+        GLES20.glUniform4f(uSkinColor, 0.84f, 0.68f, 0.58f, 1f)
+        GLES20.glUniform4f(uSuitColor, 0f, 0.02f, 0.06f, 1f)
+        GLES20.glUniform4f(uMeshColor, 0f, 0.188f, 1f, 1f)
         GLES20.glUniform1f(uShowSkin, if (showSkinAreas) 1f else 0f)
 
-        val buf = currentMesh.vertexBuffer
+        val buf = m.vertexBuffer
         buf.position(0)
-        GLES20.glVertexAttribPointer(
-            aPosition, 3, GLES20.GL_FLOAT, false, FLOAT_STRIDE, buf,
-        )
+        GLES20.glVertexAttribPointer(aPosition, 3, GLES20.GL_FLOAT, false, 36, buf)
         GLES20.glEnableVertexAttribArray(aPosition)
+
         if (aBary >= 0) {
-            buf.position(POSITION_FLOAT_COUNT)
-            GLES20.glVertexAttribPointer(
-                aBary, 3, GLES20.GL_FLOAT, false, FLOAT_STRIDE, buf,
-            )
+            buf.position(3)
+            GLES20.glVertexAttribPointer(aBary, 3, GLES20.GL_FLOAT, false, 36, buf)
             GLES20.glEnableVertexAttribArray(aBary)
         }
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, currentMesh.vertexCount)
+
+        if (aEdgeMask >= 0) {
+            buf.position(6)
+            GLES20.glVertexAttribPointer(aEdgeMask, 3, GLES20.GL_FLOAT, false, 36, buf)
+            GLES20.glEnableVertexAttribArray(aEdgeMask)
+        }
+
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, m.vertexCount)
         GLES20.glDisableVertexAttribArray(aPosition)
         if (aBary >= 0) GLES20.glDisableVertexAttribArray(aBary)
+        if (aEdgeMask >= 0) GLES20.glDisableVertexAttribArray(aEdgeMask)
     }
 
-    private fun createProgram(vsSource: String, fsSource: String): Int {
-        val vertexShader = compileShader(GLES20.GL_VERTEX_SHADER, vsSource)
-        val fragmentShader = compileShader(GLES20.GL_FRAGMENT_SHADER, fsSource)
-        if (vertexShader == 0 || fragmentShader == 0) return 0
+    private fun createProgram(): Int {
+        val vs = compileShader(GLES20.GL_VERTEX_SHADER, VERTEX_SHADER)
+        val fs = compileShader(GLES20.GL_FRAGMENT_SHADER, FRAGMENT_SHADER)
+        if (vs == 0 || fs == 0) return 0
+
         val programId = GLES20.glCreateProgram()
-        if (programId == 0) return 0
-        GLES20.glAttachShader(programId, vertexShader)
-        GLES20.glAttachShader(programId, fragmentShader)
+        GLES20.glAttachShader(programId, vs)
+        GLES20.glAttachShader(programId, fs)
         GLES20.glLinkProgram(programId)
-        val status = IntArray(1)
-        GLES20.glGetProgramiv(programId, GLES20.GL_LINK_STATUS, status, 0)
-        if (status[0] == GLES20.GL_FALSE) {
-            Timber.e("GL program link failed: %s", GLES20.glGetProgramInfoLog(programId))
-            GLES20.glDeleteProgram(programId)
+
+        val linkStatus = IntArray(1)
+        GLES20.glGetProgramiv(programId, GLES20.GL_LINK_STATUS, linkStatus, 0)
+        if (linkStatus[0] == 0) {
+            Timber.e("GL Link Error: %s", GLES20.glGetProgramInfoLog(programId))
             return 0
         }
         return programId
@@ -413,13 +612,13 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
 
     private fun compileShader(type: Int, source: String): Int {
         val shader = GLES20.glCreateShader(type)
-        if (shader == 0) return 0
         GLES20.glShaderSource(shader, source)
         GLES20.glCompileShader(shader)
+
         val status = IntArray(1)
         GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, status, 0)
-        if (status[0] == GLES20.GL_FALSE) {
-            Timber.e("GL shader compile failed: %s", GLES20.glGetShaderInfoLog(shader))
+        if (status[0] == 0) {
+            Timber.e("Shader Compile Error: %s", GLES20.glGetShaderInfoLog(shader))
             GLES20.glDeleteShader(shader)
             return 0
         }
@@ -427,110 +626,57 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
     }
 
     private companion object {
-        private const val MATRIX_SIZE = 16
-        // Per-vertex layout: 3 floats position + 3 floats barycentric = 6 floats / 24 bytes.
-        private const val POSITION_FLOAT_COUNT = 3
-        private const val FLOAT_STRIDE = 24
-
-        private const val FOV_DEG = 42f
-        private const val FRUSTUM_NEAR = 0.1f
-        private const val FRUSTUM_FAR = 100f
-        private const val EYE_HEIGHT = 0.85f
-        private const val MIN_ASPECT_FOR_FRAMING = 0.6f
-        private const val VIEW_DISTANCE_SAFETY_MARGIN = 1.25f
-        private const val INITIAL_VIEW_DISTANCE = 3.2f
-        private const val INITIAL_PITCH_DEG = -12f
-        private const val MIN_PITCH_DEG = -55f
-        private const val MAX_PITCH_DEG = 35f
-
-        // Approximate body styling: skin tone for exposed areas, dark suit elsewhere.
-        private const val SKIN_R = 0.84f
-        private const val SKIN_G = 0.68f
-        private const val SKIN_B = 0.58f
-        // Suit fill stays black; the mesh wireframe + rim glow use theme Blue300 (#0030FF).
-        private const val SUIT_R = 0.00f
-        private const val SUIT_G = 0.00f
-        private const val SUIT_B = 0.00f
-        private const val SUIT_LEVEL = 0.52f
-        private const val MESH_R = 0.00f
-        private const val MESH_G = 0.188f
-        private const val MESH_B = 1.00f
-
-        private const val VERTEX_SHADER = """
-            attribute vec3 aPosition;
-            attribute vec3 aBary;
-            uniform mat4 uMvp;
-            varying float vModelY;
-            varying vec3 vModelPos;
-            varying vec3 vBary;
+        const val VERTEX_SHADER = """
+            attribute vec3 aPosition; attribute vec3 aBary; attribute vec3 aEdgeMask;
+            uniform mat4 uMvp; varying float vModelY; varying vec3 vModelPos; 
+            varying vec3 vBary; varying vec3 vEdgeMask;
             void main() {
-                vModelY = aPosition.y;
-                vModelPos = aPosition;
-                vBary = aBary;
+                vModelY = aPosition.y; vModelPos = aPosition; vBary = aBary; vEdgeMask = aEdgeMask;
                 gl_Position = uMvp * vec4(aPosition, 1.0);
             }
         """
 
-        private const val FRAGMENT_SHADER = """
+        const val FRAGMENT_SHADER = """
             #extension GL_OES_standard_derivatives : enable
             precision mediump float;
-            varying float vModelY;
-            varying vec3 vModelPos;
-            varying vec3 vBary;
-            uniform vec4 uSkinColor;
-            uniform vec4 uSuitColor;
-            uniform vec4 uMeshColor;
-            uniform float uSuitLevel;
-            uniform float uShowSkin;
-            uniform mat4 uModelView;
+            varying float vModelY; varying vec3 vModelPos; varying vec3 vBary; varying vec3 vEdgeMask;
+            uniform vec4 uSkinColor; uniform vec4 uSuitColor; uniform vec4 uMeshColor; 
+            uniform float uShowSkin; uniform mat4 uModelView;
+            
             void main() {
-                // Skin masks (head / palms / feet) — only contribute when host enables them.
-                float headMask = step(1.08, vModelY);
-                float handMask =
-                    step(0.36, abs(vModelPos.x)) *
-                    step(-1.05, vModelY) *
-                    step(vModelY, 0.05);
-                float feetMask = step(vModelY, -1.32);
-                float skinMask = min(1.0, headMask + handMask + feetMask) * uShowSkin;
+                float head = step(1.08, vModelY);
+                float hands = step(0.36, abs(vModelPos.x)) * step(-1.05, vModelY) * step(vModelY, 0.05);
+                float feet = step(vModelY, -1.32);
+                float skinMask = min(1.0, head + hands + feet) * uShowSkin;
 
-                // View-space face normal (flat per-triangle) used for shading + rim.
-                // Derivatives give a model-space normal; uModelView pushes it to view space
-                // so the camera sits at +Z.
-                vec3 fdx = dFdx(vModelPos);
-                vec3 fdy = dFdy(vModelPos);
-                vec3 nModel = normalize(cross(fdx, fdy));
-                vec3 nView = normalize((uModelView * vec4(nModel, 0.0)).xyz);
+                vec3 fdx = dFdx(vModelPos); vec3 fdy = dFdy(vModelPos);
+                vec3 nView = normalize((uModelView * vec4(normalize(cross(fdx, fdy)), 0.0)).xyz);
+                
+                vec3 lightDir = normalize(vec3(0.0, 0.6, 0.8));
+                float brightness = smoothstep(-0.15, 0.55, dot(nView, lightDir));
+                float falloff = pow(brightness, 1.8); 
 
-                // Lambert shading: key light from upper-front-right, soft fill from below-left.
-                vec3 keyDir = normalize(vec3(0.45, 0.55, 0.85));
-                vec3 fillDir = normalize(vec3(-0.50, -0.30, 0.60));
-                float key = max(dot(nView, keyDir), 0.0);
-                float fill = max(dot(nView, fillDir), 0.0) * 0.35;
-                float ambient = 0.25;
-                float shade = clamp(ambient + key * 0.85 + fill, 0.0, 1.0);
+                vec3 body = mix(vec3(0.0, 0.004, 0.015), uSuitColor.rgb + vec3(0.0, 0.06, 0.18), falloff);
 
-                // True triangle-edge wireframe: barycentric coords reach 0 at each edge of the
-                // source triangle. fwidth() gives the screen-space derivative magnitude, so the
-                // line stays a constant pixel width regardless of distance — depth-aware lines
-                // that thin out toward the silhouette / far-away parts.
                 vec3 baryWidth = fwidth(vBary);
-                vec3 baryAA = smoothstep(vec3(0.0), baryWidth * 1.6, vBary);
-                float edge = 1.0 - min(min(baryAA.x, baryAA.y), baryAA.z);
-                // Slight thickness lift so the wireframe reads even at oblique angles.
-                edge = clamp(edge * 1.15, 0.0, 1.0);
-                vec3 shadedMesh = uMeshColor.rgb * shade;
-                vec3 suitMesh = mix(uSuitColor.rgb, shadedMesh, edge);
+                vec3 baryAA = smoothstep(vec3(0.0), baryWidth * 1.1, vBary);
+                vec3 edgeVec = mix(vec3(1.0), baryAA, vEdgeMask);
+                float edge = 1.0 - min(min(edgeVec.x, edgeVec.y), edgeVec.z);
 
-                // Rim glow: silhouette edges (surface facing perpendicular to camera) light up.
-                float silhouette = 1.0 - abs(nView.z);
-                // Two-lobe glow: a wide soft halo plus a tighter bright edge.
-                float rimSoft = pow(silhouette, 1.4);
-                float rimSharp = pow(silhouette, 4.0);
-                vec3 rimTint = uMeshColor.rgb + vec3(0.05, 0.15, 0.25);
-                vec3 lit = suitMesh + rimTint * (rimSoft * 1.35 + rimSharp * 1.10);
+                vec3 halfDir = normalize(lightDir + vec3(0.0, 0.0, 1.0));
+                float spec = pow(max(dot(nView, halfDir), 0.0), 64.0);
+                vec3 wireCol = uMeshColor.rgb + (vec3(0.7, 0.9, 1.0) * spec * 1.8);
+                
+                vec3 finalBodyCol = mix(body, wireCol, edge * (0.05 + falloff * 0.85));
 
-                vec3 finalRgb = mix(lit, uSkinColor.rgb, skinMask);
-                gl_FragColor = vec4(finalRgb, 1.0);
+                float maxBary = max(max(vBary.x, vBary.y), vBary.z);
+                float pointMask = smoothstep(0.88, 0.95, maxBary);
+                vec3 pointColor = uMeshColor.rgb + vec3(0.4, 0.6, 1.0);
+                finalBodyCol = mix(finalBodyCol, pointColor, pointMask * (0.2 + falloff * 0.3));
+
+                float rim = pow(1.0 - max(nView.z, 0.0), 8.0);
+                vec3 res = finalBodyCol + uMeshColor.rgb * rim * 0.5;
+                gl_FragColor = vec4(mix(res, uSkinColor.rgb, skinMask), 1.0);
             }
         """
     }
