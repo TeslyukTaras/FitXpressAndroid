@@ -20,8 +20,12 @@ data class TerraRestIdentity(
 /**
  * Builds a stable ordered list of Terra REST identities for multi-source pulls.
  *
- * Order: wearable / widget connections first (most recently connected first), then Health Connect
- * rows from Firestore, then a live SDK-only Health Connect user id when it is not already listed.
+ * Order:
+ *  1. Wearable widget connections (Oura, Whoop, Garmin, …), most recently connected first.
+ *  2. Health Connect rows from Firestore, then the live SDK-only Health Connect user id.
+ *  3. App widget connections (Peloton, Strava-likes, nutrition apps, …), most recently connected first.
+ *
+ * Higher tiers win on per-key conflicts during gap-fill merge.
  */
 class TerraRestSourceResolver(
     private val healthConnections: HealthConnectionsRepository,
@@ -38,11 +42,13 @@ class TerraRestSourceResolver(
         val seen = LinkedHashSet<String>()
         val out = ArrayList<TerraRestIdentity>()
 
+        // Tier 1: wearables.
         active
-            .filter { !it.provider.equals(TerraProviders.HEALTH_CONNECT, ignoreCase = true) }
+            .filter { it.provider.uppercase() in TerraProviders.WEARABLE_CODES }
             .sortedByConnectionRecency()
             .forUniqueTerraIds(seen, out)
 
+        // Tier 2: Health Connect (Firestore-backed rows, then live SDK id).
         active
             .filter { it.provider.equals(TerraProviders.HEALTH_CONNECT, ignoreCase = true) }
             .sortedByConnectionRecency()
@@ -52,6 +58,17 @@ class TerraRestSourceResolver(
         if (!sdkHc.isNullOrBlank() && seen.add(sdkHc)) {
             out.add(TerraRestIdentity(terraUserId = sdkHc, provider = TerraProviders.HEALTH_CONNECT))
         }
+
+        // Tier 3: third-party apps. Includes any unknown / unclassified providers as a safety net so
+        // a newly added provider is still pulled rather than silently dropped.
+        active
+            .filter {
+                val code = it.provider.uppercase()
+                code !in TerraProviders.WEARABLE_CODES &&
+                    code != TerraProviders.HEALTH_CONNECT
+            }
+            .sortedByConnectionRecency()
+            .forUniqueTerraIds(seen, out)
 
         return Result.success(out)
     }
