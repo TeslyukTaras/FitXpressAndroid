@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -97,6 +99,8 @@ fun ResultsScreen(
                 isPreviewSectionLoading = state.isPreviewSectionLoading,
                 showSkinAreas = state.showSkinAreas,
                 onModelInteractionChanged = { isModelInteracting = it },
+                measurements = state.measurements,
+                isMetric = state.isMetric,
             )
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
@@ -132,8 +136,25 @@ private fun ScanResultsPreviewSection(
     isPreviewSectionLoading: Boolean,
     showSkinAreas: Boolean,
     onModelInteractionChanged: (Boolean) -> Unit,
+    measurements: List<MeasurementRow>,
+    isMetric: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    var visualTransform by remember { mutableStateOf<VisualAvatarTransform?>(null) }
+
+    var measurementGuide by remember(model3dUrl) { mutableStateOf<MetricAvatarMeasurementGuide?>(null) }
+
+    LaunchedEffect(model3dUrl) {
+        measurementGuide = null
+        visualTransform = null
+    }
+
+    LaunchedEffect(selectedTab, isPreviewSectionLoading) {
+        if (selectedTab != ResultsTab.Visual || isPreviewSectionLoading) {
+            visualTransform = null
+        }
+    }
+
     val previewModifier = Modifier
         .fillMaxWidth()
         .height(dimensionResource(R.dimen.scan_results_preview_height))
@@ -165,13 +186,31 @@ private fun ScanResultsPreviewSection(
             else -> when (selectedTab) {
                 ResultsTab.Visual -> {
                     if (!model3dUrl.isNullOrBlank()) {
-                        MetricAvatarPreview(
-                            modelUrl = model3dUrl,
-                            showSkinAreas = showSkinAreas,
-                            onInteractionChanged = onModelInteractionChanged,
-                            modifier = Modifier.fillMaxSize(),
-                            useGradientBackground = false,
-                        )
+                        Box(Modifier.fillMaxSize()) {
+                            MetricAvatarPreview(
+                                modelUrl = model3dUrl,
+                                showSkinAreas = showSkinAreas,
+                                onInteractionChanged = onModelInteractionChanged,
+                                modifier = Modifier.fillMaxSize(),
+                                useGradientBackground = false,
+                                leaderSegments = null,
+                                onMeasurementGuideLoaded = { measurementGuide = it },
+                                onVisualTransformChanged = { yaw, pitch, w, h ->
+                                    visualTransform = VisualAvatarTransform(yaw, pitch, w, h)
+                                },
+                            )
+                            if (!isPreviewSectionLoading && visualTransform != null) {
+                                MeasurementLeaderOverlay(
+                                    measurements = measurements,
+                                    isMetric = isMetric,
+                                    transform = visualTransform,
+                                    measurementGuide = measurementGuide,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .pointerInteropFilter(onTouchEvent = { false }),
+                                )
+                            }
+                        }
                     }
                 }
                 ResultsTab.Posture -> {

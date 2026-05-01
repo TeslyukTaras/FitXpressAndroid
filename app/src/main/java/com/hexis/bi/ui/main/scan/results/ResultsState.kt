@@ -27,6 +27,8 @@ data class MeasurementValue(
 
 data class MeasurementRow(
     @StringRes val bodyPartRes: Int,
+    /** Key for [MeasurementVisualAnchors] leader table; matches MeasurementMapper `apiKey`. */
+    val visualAnchorKey: String,
     val today: MeasurementValue,
     val previous: MeasurementValue?,
 )

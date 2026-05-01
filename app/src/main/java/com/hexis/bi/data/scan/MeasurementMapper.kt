@@ -78,6 +78,7 @@ object MeasurementMapper {
 
             MeasurementRow(
                 bodyPartRes = entry.bodyPartRes,
+                visualAnchorKey = entry.apiKey,
                 today = todayValue,
                 previous = previousValue,
             )
@@ -143,6 +144,7 @@ object MeasurementMapper {
 
             MeasurementRow(
                 bodyPartRes = entry.bodyPartRes,
+                visualAnchorKey = entry.apiKey,
                 today = todayValue,
                 previous = previousValue,
             )

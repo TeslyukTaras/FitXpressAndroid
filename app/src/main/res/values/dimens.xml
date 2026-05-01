@@ -72,7 +72,7 @@
     <dimen name="scan_corner_stroke_width">4dp</dimen>
     <dimen name="scan_corner_radius">6dp</dimen>
     <dimen name="scanner_line_stroke_width">3dp</dimen>
-    <dimen name="scan_results_preview_height">550dp</dimen>
+    <dimen name="scan_results_preview_height">600dp</dimen>
     <dimen name="scan_history_thumb_width">60dp</dimen>
     <dimen name="scan_history_thumb_icon_padding">10dp</dimen>
 

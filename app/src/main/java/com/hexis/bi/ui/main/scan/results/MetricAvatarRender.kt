@@ -5,6 +5,8 @@ import android.graphics.PixelFormat
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
+import android.os.Handler
+import android.os.Looper
 import android.util.AttributeSet
 import android.view.MotionEvent
 import androidx.compose.foundation.background
@@ -29,9 +31,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -50,6 +54,17 @@ import java.nio.FloatBuffer
 import java.util.concurrent.CopyOnWriteArrayList
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
+
+/**
+ * RGB stops for [MetricAvatarPreviewBackgroundBrush] / GL preview background — keep in sync with
+ * [MetricAvatarPreviewBackgroundColors].
+ */
+private const val PREVIEW_GRADIENT_INNER_R = 254f / 255f
+private const val PREVIEW_GRADIENT_INNER_G = 254f / 255f
+private const val PREVIEW_GRADIENT_INNER_B = 254f / 255f
+private const val PREVIEW_GRADIENT_OUTER_R = 195f / 255f
+private const val PREVIEW_GRADIENT_OUTER_G = 192f / 255f
+private const val PREVIEW_GRADIENT_OUTER_B = 197f / 255f
 
 private val MetricAvatarPreviewBackgroundColors =
     listOf(Color(0xFFFEFEFE), Color(0xFFC3C0C5))
@@ -120,14 +135,40 @@ internal fun MetricAvatarPreview(
     initialPitchDegrees: Float = INITIAL_PITCH_DEG,
     /** When set (Compare tab), both previews share yaw/pitch via this link. */
     compareRotationLink: CompareRotationLink? = null,
+    /** Invoked on the main thread when yaw/pitch or viewport size change (Visual overlay). Ignored when [compareRotationLink] is non-null. */
+    onVisualTransformChanged: ((yawDeg: Float, pitchDeg: Float, viewWidthPx: Int, viewHeightPx: Int) -> Unit)? = null,
+    /** 3D leader segments (depth-tested in GL). Null or empty clears. */
+    leaderSegments: List<ModelLeaderSegment>? = null,
+    /** Invoked on the main thread after OBJ parse (anchors + slice polylines for circumference labels). */
+    onMeasurementGuideLoaded: ((MetricAvatarMeasurementGuide) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val latestOnInteraction by rememberUpdatedState(onInteractionChanged)
+    val latestTransform by rememberUpdatedState(onVisualTransformChanged)
+    val latestAnchors by rememberUpdatedState(onMeasurementGuideLoaded)
     val view = remember(context) { MetricAvatarSurfaceView(context) { latestOnInteraction(it) } }
     var loadState by remember { mutableStateOf(MetricAvatarLoadState.Loading) }
     var reloadKey by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(view, showSkinAreas) { view.setShowSkinAreas(showSkinAreas) }
+
+    DisposableEffect(view) {
+        view.onResume()
+        onDispose { view.onPause() }
+    }
+
+    LaunchedEffect(view, leaderSegments, loadState, compareRotationLink) {
+        when {
+            loadState != MetricAvatarLoadState.Ready -> view.setLeaderSegments(null)
+            compareRotationLink != null -> view.setLeaderSegments(null)
+            else -> view.setLeaderSegments(leaderSegments)
+        }
+    }
+
+    DisposableEffect(view, latestTransform) {
+        view.setVisualTransformListener(latestTransform)
+        onDispose { view.setVisualTransformListener(null) }
+    }
 
     DisposableEffect(view, compareRotationLink) {
         view.setCompareRotationLink(compareRotationLink)
@@ -150,6 +191,7 @@ internal fun MetricAvatarPreview(
                 } else {
                     view.applyLoadedMesh(mesh, initialYawDegrees, initialPitchDegrees)
                 }
+                latestAnchors?.invoke(mesh.measurementGuide)
                 loadState = MetricAvatarLoadState.Ready
             }
             .onFailure { e ->
@@ -167,6 +209,7 @@ internal fun MetricAvatarPreview(
         AndroidView(
             modifier = Modifier
                 .fillMaxSize()
+                .clip(RectangleShape)
                 .alpha(if (loadState == MetricAvatarLoadState.Ready) 1f else 0f),
             factory = { view },
         )
@@ -254,7 +297,12 @@ private class MetricAvatarSurfaceView : GLSurfaceView {
             EGL_STENCIL_BITS,
         )
         holder.setFormat(PixelFormat.TRANSLUCENT)
-        setZOrderOnTop(true)
+        /**
+         * Keep default z-order (**not** [setZOrderOnTop]) so this view participates in normal
+         * window compositing: scrolled content and widgets drawn after this view can appear on top,
+         * and the surface tears down with the screen instead of lingering above during transitions.
+         * Translucent EGL + [GLES20.glClearColor] alpha 0 preserves the gradient behind the mesh.
+         */
         setRenderer(avatarRenderer)
         renderMode = RENDERMODE_WHEN_DIRTY
     }
@@ -285,6 +333,17 @@ private class MetricAvatarSurfaceView : GLSurfaceView {
     fun setShowSkinAreas(show: Boolean) {
         queueEvent { avatarRenderer.setShowSkinAreas(show) }
         requestRender()
+    }
+
+    fun setVisualTransformListener(listener: ((Float, Float, Int, Int) -> Unit)?) {
+        avatarRenderer.setVisualTransformListener(listener)
+    }
+
+    fun setLeaderSegments(segments: List<ModelLeaderSegment>?) {
+        queueEvent {
+            avatarRenderer.setLeaderSegments(segments)
+            requestRender()
+        }
     }
 
     fun setBaseOrientation(yawDeg: Float, pitchDeg: Float) {
@@ -340,7 +399,81 @@ private class MetricAvatarSurfaceView : GLSurfaceView {
     }
 }
 
-internal data class ObjMesh(val vertexBuffer: FloatBuffer, val vertexCount: Int)
+internal data class ObjMesh(
+    val vertexBuffer: FloatBuffer,
+    val vertexCount: Int,
+    /** Anchors + mesh cross-sections from OBJ (see [buildMeasurementGuide]). */
+    val measurementGuide: MetricAvatarMeasurementGuide,
+    /** Solid neck cap (position-only buffer); fills the opening where the head was clipped. */
+    val neckCapVertexBuffer: FloatBuffer? = null,
+    val neckCapVertexCount: Int = 0,
+)
+
+private fun buildNeckCapMeshBuffer(
+    packedNeck: FloatArray?,
+    planeNormal: FloatArray,
+): Pair<FloatBuffer?, Int> {
+    if (packedNeck == null || packedNeck.size < 9) return null to 0
+    val pts = ArrayList<FloatArray>(packedNeck.size / 3)
+    var i = 0
+    while (i + 2 < packedNeck.size) {
+        pts.add(floatArrayOf(packedNeck[i], packedNeck[i + 1], packedNeck[i + 2]))
+        i += 3
+    }
+    if (pts.size < 3) return null to 0
+    val nx = planeNormal[0]
+    val ny = planeNormal[1]
+    val nz = planeNormal[2]
+    val inset = 0.005f
+    fun off(p: FloatArray) = floatArrayOf(
+        p[0] - nx * inset,
+        p[1] - ny * inset,
+        p[2] - nz * inset,
+    )
+    var cx = 0f
+    var cy = 0f
+    var cz = 0f
+    for (p in pts) {
+        cx += p[0]
+        cy += p[1]
+        cz += p[2]
+    }
+    val inv = 1f / pts.size
+    cx *= inv
+    cy *= inv
+    cz *= inv
+    val c = off(floatArrayOf(cx, cy, cz))
+    val p0 = off(pts[0])
+    val p1 = off(pts[1])
+    fun sub(a: FloatArray, b: FloatArray) = floatArrayOf(a[0] - b[0], a[1] - b[1], a[2] - b[2])
+    fun cross(a: FloatArray, b: FloatArray) = floatArrayOf(
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0],
+    )
+    val cr = cross(sub(p0, c), sub(p1, c))
+    val flip = cr[0] * nx + cr[1] * ny + cr[2] * nz < 0f
+    val tri = ArrayList<Float>(pts.size * 9)
+    for (k in pts.indices) {
+        val k1 = (k + 1) % pts.size
+        val va = off(pts[if (flip) k1 else k])
+        val vb = off(pts[if (flip) k else k1])
+        tri.add(c[0])
+        tri.add(c[1])
+        tri.add(c[2])
+        tri.add(va[0])
+        tri.add(va[1])
+        tri.add(va[2])
+        tri.add(vb[0])
+        tri.add(vb[1])
+        tri.add(vb[2])
+    }
+    val fa = tri.toFloatArray()
+    val bb = ByteBuffer.allocateDirect(fa.size * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
+    bb.put(fa)
+    bb.position(0)
+    return bb to (fa.size / 3)
+}
 
 private object ObjParser {
     private const val NORMALIZED_TARGET_SIZE = 3.0f
@@ -353,9 +486,8 @@ private object ObjParser {
 
     /**
      * Body regions where vertices are not merged aggressively.
-     * Values mirror the skin-mask thresholds in [MetricAvatarRenderer]'s fragment shader.
+     * Head uses the neck clip plane from [MetricAvatarMeasurementGuide.neckClipPlane].
      */
-    private const val PROTECTED_REGION_HEAD_MIN_Y = 1.08f
     private const val PROTECTED_REGION_HANDS_ABS_X = 0.36f
     private const val PROTECTED_REGION_HANDS_MIN_Y = -1.05f
     private const val PROTECTED_REGION_HANDS_MAX_Y = 0.05f
@@ -420,7 +552,10 @@ private object ObjParser {
         faces.forEach { face -> face.forEach { index -> usedVertices[index] = true } }
         normalizeVertices(vertices, usedVertices)
 
-        val clusterResult = clusterCloseVertices(vertices, usedVertices)
+        val measurementGuide = buildMeasurementGuide(vertices, usedVertices, faces)
+
+        val clusterResult = clusterCloseVertices(vertices, usedVertices, measurementGuide.neckClipPlane)
+
         val triangles = ArrayList<Float>()
         val emittedTriangles = HashSet<String>()
 
@@ -440,7 +575,22 @@ private object ObjParser {
                 position(0)
             }
 
-        return ObjMesh(vertexBuffer = buffer, vertexCount = triangles.size / FLOATS_PER_VERTEX)
+        val (capBuf, capVerts) = buildNeckCapMeshBuffer(
+            measurementGuide.crossSectionPolylines["neck"],
+            floatArrayOf(
+                measurementGuide.neckClipPlane[0],
+                measurementGuide.neckClipPlane[1],
+                measurementGuide.neckClipPlane[2],
+            ),
+        )
+
+        return ObjMesh(
+            vertexBuffer = buffer,
+            vertexCount = triangles.size / FLOATS_PER_VERTEX,
+            measurementGuide = measurementGuide,
+            neckCapVertexBuffer = capBuf,
+            neckCapVertexCount = capVerts,
+        )
     }
 
     private fun parseVertex(line: String, vertices: MutableList<FloatArray>) {
@@ -510,7 +660,8 @@ private object ObjParser {
 
     private fun clusterCloseVertices(
         vertices: List<FloatArray>,
-        usedVertices: BooleanArray
+        usedVertices: BooleanArray,
+        neckClipPlane: FloatArray,
     ): ClusterResult {
         val clusters = ArrayList<Cluster>()
         val remap = IntArray(vertices.size) { -1 }
@@ -520,7 +671,7 @@ private object ObjParser {
         vertices.forEachIndexed { vertexIndex, vertex ->
             if (!usedVertices[vertexIndex]) return@forEachIndexed
 
-            if (isProtectedDetailVertex(vertex)) {
+            if (isProtectedDetailVertex(vertex, neckClipPlane)) {
                 val clusterIndex = clusters.size
                 clusters.add(Cluster(vertex[0], vertex[1], vertex[2], 1, 0, 0, 0))
                 remap[vertexIndex] = clusterIndex
@@ -567,14 +718,15 @@ private object ObjParser {
         return ClusterResult(vertices = mergedVertices, remap = remap)
     }
 
-    private fun isProtectedDetailVertex(vertex: FloatArray): Boolean {
+    private fun isProtectedDetailVertex(vertex: FloatArray, neckClipPlane: FloatArray): Boolean {
         val x = vertex[0]
         val y = vertex[1]
-        val head = y >= PROTECTED_REGION_HEAD_MIN_Y
+        val towardHead = vertex[0] * neckClipPlane[0] + vertex[1] * neckClipPlane[1] +
+            vertex[2] * neckClipPlane[2] + neckClipPlane[3] > 1e-5f
         val hands = kotlin.math.abs(x) >= PROTECTED_REGION_HANDS_ABS_X &&
-            y >= PROTECTED_REGION_HANDS_MIN_Y && y <= PROTECTED_REGION_HANDS_MAX_Y
+                y >= PROTECTED_REGION_HANDS_MIN_Y && y <= PROTECTED_REGION_HANDS_MAX_Y
         val feet = y <= PROTECTED_REGION_FEET_MAX_Y
-        return head || hands || feet
+        return towardHead || hands || feet
     }
 
     private fun addVertexToCluster(
@@ -673,19 +825,186 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
     private var uShowSkin = 0
     private var uModelView = 0
     private var uMeshColor = 0
+    private var uNeckClipPlane = 0
     private var showSkinAreas = false
+
+    private var neckCapProgram = 0
+    private var neckCapAPos = 0
+    private var neckCapUMvp = 0
+    private var neckCapUColor = 0
+
+    private var leaderProgram = 0
+    private var leaderAPos = 0
+    private var leaderUMvp = 0
+    private var leaderUColor = 0
+    private var leaderLineBuffer: FloatBuffer? = null
+    private var leaderLineVertCount = 0
+
+    private var gradientProgram = 0
+    private var gradientAClip = 0
+    private var gradientLocResolution = 0
+    private var gradientLocInner = 0
+    private var gradientLocOuter = 0
+    private var fullscreenClipBuffer: FloatBuffer? = null
 
     private var rotationLink: CompareRotationLink? = null
 
-    private val projection = FloatArray(MATRIX_SIZE)
-    private val view = FloatArray(MATRIX_SIZE)
-    private val model = FloatArray(MATRIX_SIZE)
-    private val temp = FloatArray(MATRIX_SIZE)
-    private val mvp = FloatArray(MATRIX_SIZE)
+    private val projection = FloatArray(MetricAvatarCamera.MATRIX_SIZE)
+    private val view = FloatArray(MetricAvatarCamera.MATRIX_SIZE)
+    private val model = FloatArray(MetricAvatarCamera.MATRIX_SIZE)
+    private val temp = FloatArray(MetricAvatarCamera.MATRIX_SIZE)
+    private val mvp = FloatArray(MetricAvatarCamera.MATRIX_SIZE)
 
     private var yaw = 0f
     private var pitch = INITIAL_PITCH_DEG
-    private var viewDistance = INITIAL_VIEW_DISTANCE
+    private var viewDistance = MetricAvatarCamera.INITIAL_VIEW_DISTANCE
+
+    private var viewportWidth = 0
+    private var viewportHeight = 0
+    private var visualTransformListener: ((Float, Float, Int, Int) -> Unit)? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var lastPostedYaw = Float.NaN
+    private var lastPostedPitch = Float.NaN
+
+    fun setVisualTransformListener(listener: ((Float, Float, Int, Int) -> Unit)?) {
+        visualTransformListener = listener
+        if (listener == null) {
+            lastPostedYaw = Float.NaN
+            lastPostedPitch = Float.NaN
+        }
+    }
+
+    private fun scheduleVisualTransformNotify(force: Boolean) {
+        val listener = visualTransformListener ?: return
+        if (rotationLink != null) return
+        if (viewportWidth <= 0 || viewportHeight <= 0) return
+        val y = modelYaw()
+        val p = modelPitch()
+        if (!force &&
+            kotlin.math.abs(y - lastPostedYaw) < 0.025f &&
+            kotlin.math.abs(p - lastPostedPitch) < 0.025f
+        ) {
+            return
+        }
+        lastPostedYaw = y
+        lastPostedPitch = p
+        val w = viewportWidth
+        val h = viewportHeight
+        mainHandler.post { listener(y, p, w, h) }
+    }
+
+    fun setLeaderSegments(segments: List<ModelLeaderSegment>?) {
+        rebuildLeaderBuffers(segments)
+    }
+
+    private fun rebuildLeaderBuffers(segments: List<ModelLeaderSegment>?) {
+        if (segments.isNullOrEmpty()) {
+            leaderLineBuffer = null
+            leaderLineVertCount = 0
+            return
+        }
+        val lineBb = ByteBuffer.allocateDirect(segments.size * 6 * BYTES_PER_FLOAT_GL)
+            .order(ByteOrder.nativeOrder())
+            .asFloatBuffer()
+        for (s in segments) {
+            lineBb.put(s.ax)
+            lineBb.put(s.ay)
+            lineBb.put(s.az)
+            lineBb.put(s.ex)
+            lineBb.put(s.ey)
+            lineBb.put(s.ez)
+        }
+        lineBb.position(0)
+        leaderLineBuffer = lineBb
+        leaderLineVertCount = segments.size * 2
+    }
+
+    private fun drawPreviewBackgroundGradient() {
+        val prog = gradientProgram
+        val buf = fullscreenClipBuffer
+        if (prog == 0 || buf == null) {
+            GLES20.glClearColor(
+                PREVIEW_GRADIENT_INNER_R,
+                PREVIEW_GRADIENT_INNER_G,
+                PREVIEW_GRADIENT_INNER_B,
+                1f,
+            )
+            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+            return
+        }
+        GLES20.glDisable(GLES20.GL_DEPTH_TEST)
+        GLES20.glDepthMask(false)
+
+        GLES20.glUseProgram(prog)
+        GLES20.glUniform2f(
+            gradientLocResolution,
+            viewportWidth.coerceAtLeast(1).toFloat(),
+            viewportHeight.coerceAtLeast(1).toFloat(),
+        )
+        GLES20.glUniform3f(
+            gradientLocInner,
+            PREVIEW_GRADIENT_INNER_R,
+            PREVIEW_GRADIENT_INNER_G,
+            PREVIEW_GRADIENT_INNER_B,
+        )
+        GLES20.glUniform3f(
+            gradientLocOuter,
+            PREVIEW_GRADIENT_OUTER_R,
+            PREVIEW_GRADIENT_OUTER_G,
+            PREVIEW_GRADIENT_OUTER_B,
+        )
+
+        buf.position(0)
+        GLES20.glVertexAttribPointer(gradientAClip, 2, GLES20.GL_FLOAT, false, 0, buf)
+        GLES20.glEnableVertexAttribArray(gradientAClip)
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 3)
+        GLES20.glDisableVertexAttribArray(gradientAClip)
+
+        GLES20.glDepthMask(true)
+        GLES20.glEnable(GLES20.GL_DEPTH_TEST)
+    }
+
+    private fun drawNeckCap(m: ObjMesh) {
+        val capBuf = m.neckCapVertexBuffer ?: return
+        val capCount = m.neckCapVertexCount
+        if (capCount <= 0 || neckCapProgram == 0 || neckCapAPos < 0) return
+
+        GLES20.glEnable(GLES20.GL_POLYGON_OFFSET_FILL)
+        GLES20.glPolygonOffset(-1.5f, -2f)
+
+        GLES20.glUseProgram(neckCapProgram)
+        GLES20.glUniformMatrix4fv(neckCapUMvp, 1, false, mvp, 0)
+        GLES20.glUniform4f(neckCapUColor, SUIT_R * 0.94f, SUIT_G + 0.04f, SUIT_B + 0.12f, 1f)
+
+        capBuf.position(0)
+        GLES20.glVertexAttribPointer(neckCapAPos, 3, GLES20.GL_FLOAT, false, 0, capBuf)
+        GLES20.glEnableVertexAttribArray(neckCapAPos)
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, capCount)
+        GLES20.glDisableVertexAttribArray(neckCapAPos)
+
+        GLES20.glDisable(GLES20.GL_POLYGON_OFFSET_FILL)
+    }
+
+    private fun drawLeaderOverlay() {
+        val prog = leaderProgram
+        if (prog == 0) return
+        val lines = leaderLineBuffer ?: return
+
+        GLES20.glUseProgram(prog)
+        GLES20.glUniformMatrix4fv(leaderUMvp, 1, false, mvp, 0)
+        GLES20.glUniform4f(leaderUColor, 1f, 0.84f, 0.15f, 1f)
+
+        GLES20.glDepthMask(false)
+
+        lines.position(0)
+        GLES20.glVertexAttribPointer(leaderAPos, 3, GLES20.GL_FLOAT, false, 0, lines)
+        GLES20.glEnableVertexAttribArray(leaderAPos)
+        GLES20.glLineWidth(2f)
+        GLES20.glDrawArrays(GLES20.GL_LINES, 0, leaderLineVertCount)
+
+        GLES20.glDisableVertexAttribArray(leaderAPos)
+        GLES20.glDepthMask(true)
+    }
 
     fun setRotationLink(link: CompareRotationLink?) {
         rotationLink = link
@@ -730,8 +1049,34 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
-        GLES20.glClearColor(0f, 0f, 0f, 0f)
+        GLES20.glClearColor(
+            PREVIEW_GRADIENT_INNER_R,
+            PREVIEW_GRADIENT_INNER_G,
+            PREVIEW_GRADIENT_INNER_B,
+            1f,
+        )
         GLES20.glEnable(GLES20.GL_DEPTH_TEST)
+
+        gradientProgram = createGradientProgram()
+        if (gradientProgram != 0) {
+            gradientAClip = GLES20.glGetAttribLocation(gradientProgram, "aClip")
+            gradientLocResolution = GLES20.glGetUniformLocation(gradientProgram, "uResolution")
+            gradientLocInner = GLES20.glGetUniformLocation(gradientProgram, "uInner")
+            gradientLocOuter = GLES20.glGetUniformLocation(gradientProgram, "uOuter")
+        }
+        val clipBb = ByteBuffer.allocateDirect(6 * BYTES_PER_FLOAT_GL)
+            .order(ByteOrder.nativeOrder())
+            .asFloatBuffer()
+        clipBb.put(
+            floatArrayOf(
+                -1f, -1f,
+                3f, -1f,
+                -1f, 3f,
+            ),
+        )
+        clipBb.position(0)
+        fullscreenClipBuffer = clipBb
+
         program = createProgram()
         if (program == 0) return
 
@@ -744,24 +1089,57 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
         uShowSkin = GLES20.glGetUniformLocation(program, "uShowSkin")
         uModelView = GLES20.glGetUniformLocation(program, "uModelView")
         uMeshColor = GLES20.glGetUniformLocation(program, "uMeshColor")
+        uNeckClipPlane = GLES20.glGetUniformLocation(program, "uNeckClipPlane")
+
+        neckCapProgram = createNeckCapProgram()
+        if (neckCapProgram != 0) {
+            neckCapAPos = GLES20.glGetAttribLocation(neckCapProgram, "aPos")
+            neckCapUMvp = GLES20.glGetUniformLocation(neckCapProgram, "uMvp")
+            neckCapUColor = GLES20.glGetUniformLocation(neckCapProgram, "uColor")
+        }
+
+        leaderProgram = createLeaderProgram()
+        if (leaderProgram != 0) {
+            leaderAPos = GLES20.glGetAttribLocation(leaderProgram, "aPos")
+            leaderUMvp = GLES20.glGetUniformLocation(leaderProgram, "uMvp")
+            leaderUColor = GLES20.glGetUniformLocation(leaderProgram, "uColor")
+        }
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
+        viewportWidth = width
+        viewportHeight = height
         val aspect = width.toFloat() / height.toFloat().coerceAtLeast(1f)
-        Matrix.perspectiveM(projection, 0, FOV_DEG, aspect, FRUSTUM_NEAR, FRUSTUM_FAR)
-
-        val tanHalfFov = kotlin.math.tan(Math.toRadians(FOV_DEG / 2.0)).toFloat()
-            .coerceAtLeast(MIN_TAN_HALF_FOV)
-        val distForHeight = 1.0f / tanHalfFov
-        val distForWidth = 1.0f / (tanHalfFov * aspect.coerceAtLeast(MIN_ASPECT_FOR_FRAMING))
-        viewDistance = maxOf(distForHeight, distForWidth) * VIEW_DISTANCE_SAFETY_MARGIN
-
-        Matrix.setLookAtM(view, 0, 0f, EYE_HEIGHT, viewDistance, 0f, 0f, 0f, 0f, 1f, 0f)
+        Matrix.perspectiveM(
+            projection,
+            0,
+            MetricAvatarCamera.FOV_DEG,
+            aspect,
+            MetricAvatarCamera.FRUSTUM_NEAR,
+            MetricAvatarCamera.FRUSTUM_FAR,
+        )
+        viewDistance = computeMetricAvatarViewDistance(width, height)
+        Matrix.setLookAtM(
+            view,
+            0,
+            0f,
+            MetricAvatarCamera.EYE_HEIGHT,
+            viewDistance,
+            0f,
+            0f,
+            0f,
+            0f,
+            1f,
+            0f,
+        )
+        scheduleVisualTransformNotify(force = true)
     }
 
     override fun onDrawFrame(gl: GL10?) {
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
+        drawPreviewBackgroundGradient()
+        GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT)
+
         val m = mesh ?: return
         if (program == 0) return
 
@@ -770,6 +1148,7 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
         Matrix.setIdentityM(model, 0)
         Matrix.rotateM(model, 0, modelPitch(), 1f, 0f, 0f)
         Matrix.rotateM(model, 0, modelYaw(), 0f, 1f, 0f)
+        Matrix.translateM(model, 0, 0f, MetricAvatarCamera.HEADLESS_BODY_FRAMING_OFFSET_Y, 0f)
 
         Matrix.multiplyMM(temp, 0, view, 0, model, 0)
         Matrix.multiplyMM(mvp, 0, projection, 0, temp, 0)
@@ -780,6 +1159,7 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
         GLES20.glUniform4f(uSuitColor, SUIT_R, SUIT_G, SUIT_B, 1f)
         GLES20.glUniform4f(uMeshColor, MESH_R, MESH_G, MESH_B, 1f)
         GLES20.glUniform1f(uShowSkin, if (showSkinAreas) 1f else 0f)
+        GLES20.glUniform4fv(uNeckClipPlane, 1, m.measurementGuide.neckClipPlane, 0)
 
         val buf = m.vertexBuffer
         buf.position(0)
@@ -808,6 +1188,12 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
         GLES20.glDisableVertexAttribArray(aPosition)
         if (aBary >= 0) GLES20.glDisableVertexAttribArray(aBary)
         if (aEdgeMask >= 0) GLES20.glDisableVertexAttribArray(aEdgeMask)
+
+        drawNeckCap(m)
+
+        drawLeaderOverlay()
+
+        scheduleVisualTransformNotify(force = false)
     }
 
     private fun createProgram(): Int {
@@ -829,6 +1215,63 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
         return programId
     }
 
+    private fun createGradientProgram(): Int {
+        val vs = compileShader(GLES20.GL_VERTEX_SHADER, GRADIENT_VERTEX_SHADER)
+        val fs = compileShader(GLES20.GL_FRAGMENT_SHADER, GRADIENT_FRAGMENT_SHADER)
+        if (vs == 0 || fs == 0) return 0
+
+        val programId = GLES20.glCreateProgram()
+        GLES20.glAttachShader(programId, vs)
+        GLES20.glAttachShader(programId, fs)
+        GLES20.glLinkProgram(programId)
+
+        val linkStatus = IntArray(1)
+        GLES20.glGetProgramiv(programId, GLES20.GL_LINK_STATUS, linkStatus, 0)
+        if (linkStatus[0] == 0) {
+            Timber.e("GL Gradient Link Error: %s", GLES20.glGetProgramInfoLog(programId))
+            return 0
+        }
+        return programId
+    }
+
+    private fun createLeaderProgram(): Int {
+        val vs = compileShader(GLES20.GL_VERTEX_SHADER, LEADER_VERTEX_SHADER)
+        val fs = compileShader(GLES20.GL_FRAGMENT_SHADER, LEADER_FRAGMENT_SHADER)
+        if (vs == 0 || fs == 0) return 0
+
+        val programId = GLES20.glCreateProgram()
+        GLES20.glAttachShader(programId, vs)
+        GLES20.glAttachShader(programId, fs)
+        GLES20.glLinkProgram(programId)
+
+        val linkStatus = IntArray(1)
+        GLES20.glGetProgramiv(programId, GLES20.GL_LINK_STATUS, linkStatus, 0)
+        if (linkStatus[0] == 0) {
+            Timber.e("GL Leader Link Error: %s", GLES20.glGetProgramInfoLog(programId))
+            return 0
+        }
+        return programId
+    }
+
+    private fun createNeckCapProgram(): Int {
+        val vs = compileShader(GLES20.GL_VERTEX_SHADER, NECK_CAP_VERTEX_SHADER)
+        val fs = compileShader(GLES20.GL_FRAGMENT_SHADER, NECK_CAP_FRAGMENT_SHADER)
+        if (vs == 0 || fs == 0) return 0
+
+        val programId = GLES20.glCreateProgram()
+        GLES20.glAttachShader(programId, vs)
+        GLES20.glAttachShader(programId, fs)
+        GLES20.glLinkProgram(programId)
+
+        val linkStatus = IntArray(1)
+        GLES20.glGetProgramiv(programId, GLES20.GL_LINK_STATUS, linkStatus, 0)
+        if (linkStatus[0] == 0) {
+            Timber.e("GL Neck Cap Link Error: %s", GLES20.glGetProgramInfoLog(programId))
+            return 0
+        }
+        return programId
+    }
+
     private fun compileShader(type: Int, source: String): Int {
         val shader = GLES20.glCreateShader(type)
         GLES20.glShaderSource(shader, source)
@@ -845,19 +1288,6 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
     }
 
     private companion object {
-        private const val MATRIX_SIZE = 16
-
-        /** Default camera distance before [onSurfaceChanged] recomputes framing. */
-        private const val INITIAL_VIEW_DISTANCE = 3.2f
-
-        private const val FOV_DEG = 42f
-        private const val FRUSTUM_NEAR = 0.1f
-        private const val FRUSTUM_FAR = 100f
-        private const val MIN_TAN_HALF_FOV = 0.001f
-        private const val MIN_ASPECT_FOR_FRAMING = 0.6f
-        private const val VIEW_DISTANCE_SAFETY_MARGIN = 1.25f
-        private const val EYE_HEIGHT = 0.85f
-
         private const val SKIN_R = 0.84f
         private const val SKIN_G = 0.68f
         private const val SKIN_B = 0.58f
@@ -879,6 +1309,64 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
         private const val BARY_FLOAT_OFFSET = FLOATS_PER_ATTRIB
         private const val EDGE_MASK_FLOAT_OFFSET = FLOATS_PER_ATTRIB * 2
 
+        /** Radial gradient matching [MetricAvatarPreviewBackgroundBrush] (center → edge). */
+        private const val GRADIENT_VERTEX_SHADER = """
+            attribute vec2 aClip;
+            void main() {
+                gl_Position = vec4(aClip, 0.0, 1.0);
+            }
+        """
+
+        private const val GRADIENT_FRAGMENT_SHADER = """
+            precision mediump float;
+            uniform vec2 uResolution;
+            uniform vec3 uInner;
+            uniform vec3 uOuter;
+            void main() {
+                vec2 uv = vec2(
+                    gl_FragCoord.x / uResolution.x,
+                    1.0 - gl_FragCoord.y / uResolution.y
+                );
+                vec2 c = vec2(0.5, 0.5);
+                float d = distance(uv, c) * 1.41421356;
+                float t = clamp(d, 0.0, 1.0);
+                vec3 col = mix(uInner, uOuter, t);
+                gl_FragColor = vec4(col, 1.0);
+            }
+        """
+
+        private const val LEADER_VERTEX_SHADER = """
+            uniform mat4 uMvp;
+            attribute vec3 aPos;
+            void main() {
+                gl_Position = uMvp * vec4(aPos, 1.0);
+            }
+        """
+
+        private const val LEADER_FRAGMENT_SHADER = """
+            precision mediump float;
+            uniform vec4 uColor;
+            void main() {
+                gl_FragColor = uColor;
+            }
+        """
+
+        private const val NECK_CAP_VERTEX_SHADER = """
+            uniform mat4 uMvp;
+            attribute vec3 aPos;
+            void main() {
+                gl_Position = uMvp * vec4(aPos, 1.0);
+            }
+        """
+
+        private const val NECK_CAP_FRAGMENT_SHADER = """
+            precision mediump float;
+            uniform vec4 uColor;
+            void main() {
+                gl_FragColor = uColor;
+            }
+        """
+
         const val VERTEX_SHADER = """
             attribute vec3 aPosition; attribute vec3 aBary; attribute vec3 aEdgeMask;
             uniform mat4 uMvp; varying float vModelY; varying vec3 vModelPos; 
@@ -889,18 +1377,19 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
             }
         """
 
-        const val FRAGMENT_SHADER = """
+        private const val FRAGMENT_SHADER = """
             #extension GL_OES_standard_derivatives : enable
             precision mediump float;
             varying float vModelY; varying vec3 vModelPos; varying vec3 vBary; varying vec3 vEdgeMask;
             uniform vec4 uSkinColor; uniform vec4 uSuitColor; uniform vec4 uMeshColor; 
             uniform float uShowSkin; uniform mat4 uModelView;
+            uniform vec4 uNeckClipPlane;
             
             void main() {
-                float head = step(1.08, vModelY);
-                float hands = step(0.36, abs(vModelPos.x)) * step(-1.05, vModelY) * step(vModelY, 0.05);
-                float feet = step(vModelY, -1.32);
-                float skinMask = min(1.0, head + hands + feet) * uShowSkin;
+                if (dot(vModelPos, uNeckClipPlane.xyz) + uNeckClipPlane.w > 0.001) discard;
+                float hands = step(0.36, abs(vModelPos.x)) * step(-1.05, vModelPos.y) * step(vModelPos.y, 0.05);
+                float feet = step(vModelPos.y, -1.32);
+                float skinMask = min(1.0, hands + feet) * uShowSkin;
 
                 vec3 fdx = dFdx(vModelPos); vec3 fdy = dFdy(vModelPos);
                 vec3 nView = normalize((uModelView * vec4(normalize(cross(fdx, fdy)), 0.0)).xyz);
