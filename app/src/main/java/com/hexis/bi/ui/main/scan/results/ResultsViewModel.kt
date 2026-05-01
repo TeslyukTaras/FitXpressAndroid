@@ -37,7 +37,10 @@ class ResultsViewModel(
     private fun loadMeasurements() = launch(showLoading = false) {
         val selectedScanId = scanResultRepository.selectedScanId
         if (selectedScanId != null) {
-            val scans = scanHistoryRepository.getRecentScans(limit = 100).getOrElse { return@launch }
+            val scans = scanHistoryRepository.getRecentScans(limit = 100).getOrElse {
+                _state.update { it.copy(isPreviewSectionLoading = false) }
+                return@launch
+            }
             val selectedIndex = scans.indexOfFirst { it.id == selectedScanId }
             if (selectedIndex >= 0) {
                 val current = scans[selectedIndex]
@@ -52,6 +55,8 @@ class ResultsViewModel(
                     it.copy(
                         measurements = rows,
                         model3dUrl = current.model3dUrl,
+                        previousModel3dUrl = previous?.model3dUrl?.takeUnless { url -> url.isNullOrBlank() },
+                        isPreviewSectionLoading = false,
                         todayDate = current.timestamp.millisToShortMonthDay(),
                         previousDate = previous?.timestamp?.millisToShortMonthDay(),
                     )
@@ -60,7 +65,10 @@ class ResultsViewModel(
             }
         }
 
-        val result = scanResultRepository.latestResult ?: return@launch
+        val result = scanResultRepository.latestResult ?: run {
+            _state.update { it.copy(isPreviewSectionLoading = false) }
+            return@launch
+        }
         val (previousScan, beforePreviousScan) = scanHistoryRepository.getPreviousTwoScans()
             .getOrElse { null to null }
             .let { (prev, beforePrev) ->
@@ -76,6 +84,8 @@ class ResultsViewModel(
             it.copy(
                 measurements = rows,
                 model3dUrl = result.response.model3dUrl,
+                previousModel3dUrl = previousScan?.model3dUrl?.takeUnless { url -> url.isNullOrBlank() },
+                isPreviewSectionLoading = false,
                 todayDate = System.currentTimeMillis().millisToShortMonthDay(),
                 previousDate = previousScan?.timestamp?.millisToShortMonthDay(),
             )

@@ -18,6 +18,10 @@ data class ScanRecord(
     val timestamp: Long = 0L,
     val model3dUrl: String? = null,
     val measurements: Map<String, Float> = emptyMap(),
+    /** Front-view linear / ANFA-style params (from API `front_linear_params`). */
+    val frontLinearParams: Map<String, Float> = emptyMap(),
+    /** Side-view linear / ANFA-style params (from API `side_linear_params`). */
+    val sideLinearParams: Map<String, Float> = emptyMap(),
 )
 
 class ScanHistoryRepository(
@@ -125,13 +129,32 @@ class ScanHistoryRepository(
                 }
             }
 
+            val frontLinearParams = loadNumericParamMap(doc, SUB_FRONT_LINEAR_PARAMS)
+            val sideLinearParams = loadNumericParamMap(doc, SUB_SIDE_LINEAR_PARAMS)
+
             ScanRecord(
                 id = doc.id,
                 timestamp = doc.getTimestamp(FIELD_SAVED_AT)?.toDate()?.time ?: 0L,
                 model3dUrl = doc.getString(FIELD_MODEL_3D_URL),
                 measurements = measurements,
+                frontLinearParams = frontLinearParams,
+                sideLinearParams = sideLinearParams,
             )
         }
+    }
+
+    private suspend fun loadNumericParamMap(
+        doc: com.google.firebase.firestore.DocumentSnapshot,
+        sub: String,
+    ): Map<String, Float> {
+        val subDoc = doc.reference.collection(sub).document(PARAMS_DOC_ID).get().await()
+        val out = LinkedHashMap<String, Float>()
+        subDoc.data?.forEach { (key, value) ->
+            val f = (value as? Number)?.toFloat()
+                ?: (value as? String)?.toFloatOrNull()
+            if (f != null) out[key] = f
+        }
+        return out
     }
 
     private fun jsonObjectToNumericMap(obj: JsonObject): Map<String, Double> =

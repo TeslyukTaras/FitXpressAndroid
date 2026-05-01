@@ -40,6 +40,7 @@ import com.hexis.bi.ui.main.home.recovery.RecoveryScreen
 import com.hexis.bi.ui.main.home.sleep.SleepScreen
 import com.hexis.bi.ui.main.notifications.NotificationsScreen
 import com.hexis.bi.ui.main.scan.ScanScreen
+import com.hexis.bi.ui.main.scan.history.ScanHistoryScreen
 import com.hexis.bi.ui.main.scan.results.ResultsScreen
 import com.hexis.bi.ui.main.settings.SettingsScreen
 import com.hexis.bi.ui.main.settings.editprofile.EditProfileScreen
@@ -110,12 +111,18 @@ fun MainScreen(
                 composable(Route.Main.SCAN_RESULTS) {
                     ResultsScreen(onBack = { navController.popBackStackOnce() })
                 }
-                composable(Route.Main.BODY) {
-                    BodyScreen(
-                        onOpenScanResults = { scanId ->
+                composable(Route.Main.SCAN_HISTORY) {
+                    ScanHistoryScreen(
+                        onBack = { navController.popBackStackOnce() },
+                        onOpenScan = { scanId ->
                             scanResultRepository.selectedScanId = scanId
                             navController.navigate(Route.Main.SCAN_RESULTS)
                         },
+                    )
+                }
+                composable(Route.Main.BODY) {
+                    BodyScreen(
+                        onHistoryClick = { navController.navigate(Route.Main.SCAN_HISTORY) },
                     )
                 }
                 composable(Route.Main.NOTIFICATIONS) {

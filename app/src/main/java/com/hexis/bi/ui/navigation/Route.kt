@@ -23,6 +23,7 @@ internal object Route {
         const val ACTIVITY = "main/activity"
         const val SCAN = "main/scan"
         const val SCAN_RESULTS = "main/scan/results"
+        const val SCAN_HISTORY = "main/scan/history"
 
         /** Routes that show the bottom navigation bar. */
         val tabRoutes = setOf(HOME, BODY)

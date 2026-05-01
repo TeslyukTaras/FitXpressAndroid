@@ -1,5 +1,6 @@
 package com.hexis.bi.data.scan
 
+import androidx.annotation.StringRes
 import com.hexis.bi.R
 import com.hexis.bi.data.scan.api.MeasurementResponse
 import com.hexis.bi.ui.main.scan.results.MeasurementChange
@@ -14,6 +15,12 @@ import kotlin.math.abs
  * Maps a 3DLOOK API response (+ optional previous scan) into [MeasurementRow] list
  * for the Results screen table.
  */
+data class TopChangeVsPrevious(
+    @StringRes val bodyPartRes: Int,
+    val deltaCm: Float,
+    val change: MeasurementChange?,
+)
+
 object MeasurementMapper {
 
     /** Entries define which API fields map to which table rows, in display order. */
@@ -75,6 +82,35 @@ object MeasurementMapper {
                 previous = previousValue,
             )
         }
+    }
+
+    /**
+     * Circumference with the largest absolute delta vs [previous];
+     * null if there is no prior scan, no overlapping keys, or all deltas are negligible.
+     */
+    fun topChangeVsPreviousScan(current: ScanRecord, previous: ScanRecord?): TopChangeVsPrevious? {
+        if (previous == null) return null
+        var bestEntry: MappingEntry? = null
+        var bestAbs = 0f
+        var bestDelta = 0f
+        for (entry in entries) {
+            val cur = current.measurements[entry.apiKey] ?: continue
+            val prev = previous.measurements[entry.apiKey] ?: continue
+            val delta = cur - prev
+            if (abs(delta) < CHANGE_EPSILON_CM) continue
+            val a = abs(delta)
+            if (a > bestAbs) {
+                bestAbs = a
+                bestEntry = entry
+                bestDelta = delta
+            }
+        }
+        val e = bestEntry ?: return null
+        return TopChangeVsPrevious(
+            bodyPartRes = e.bodyPartRes,
+            deltaCm = bestDelta,
+            change = classifyChange(bestDelta, e.decreaseIsPositive),
+        )
     }
 
     fun mapFromRecords(

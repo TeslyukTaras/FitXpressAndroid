@@ -1,6 +1,5 @@
 package com.hexis.bi.ui.main.scan.results
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,12 +7,14 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -21,6 +22,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,7 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -36,7 +39,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.unit.LayoutDirection
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
@@ -46,6 +49,7 @@ import com.hexis.bi.ui.theme.Green
 import com.hexis.bi.ui.theme.Red100
 import com.hexis.bi.utils.cmToFeetAndInches
 import com.hexis.bi.utils.cmToInches
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -86,21 +90,26 @@ fun ResultsScreen(
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-            BodyVisualizationCard(
+            ScanResultsPreviewSection(
+                selectedTab = state.selectedTab,
                 model3dUrl = state.model3dUrl,
+                previousModel3dUrl = state.previousModel3dUrl,
+                isPreviewSectionLoading = state.isPreviewSectionLoading,
                 showSkinAreas = state.showSkinAreas,
                 onModelInteractionChanged = { isModelInteracting = it },
             )
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-            ColorAnalysisCard(
-                modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium)),
-                enabled = state.colorAnalysisEnabled,
-                onToggle = viewModel::toggleColorAnalysis,
-            )
+            if (state.selectedTab == ResultsTab.Visual) {
+                ColorAnalysisCard(
+                    modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+                    enabled = state.colorAnalysisEnabled,
+                    onToggle = viewModel::toggleColorAnalysis,
+                )
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+            }
 
             MeasurementsCard(
                 modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium)),
@@ -116,8 +125,11 @@ fun ResultsScreen(
 }
 
 @Composable
-private fun BodyVisualizationCard(
+private fun ScanResultsPreviewSection(
+    selectedTab: ResultsTab,
     model3dUrl: String?,
+    previousModel3dUrl: String?,
+    isPreviewSectionLoading: Boolean,
     showSkinAreas: Boolean,
     onModelInteractionChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -125,21 +137,160 @@ private fun BodyVisualizationCard(
     val previewModifier = Modifier
         .fillMaxWidth()
         .height(dimensionResource(R.dimen.scan_results_preview_height))
-    if (model3dUrl.isNullOrBlank()) {
-        Box(modifier = modifier.fillMaxWidth()) {
-            Image(
-                painter = painterResource(R.drawable.img_3d_placeholder),
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
-                modifier = previewModifier,
-            )
+    Box(
+        modifier = modifier
+            .then(previewModifier)
+            .metricAvatarPreviewGradientBackground(),
+    ) {
+        when {
+            isPreviewSectionLoading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
+                    ) {
+                        CircularProgressIndicator()
+                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
+                        Text(
+                            text = stringResource(R.string.scan_results_loading),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            else -> when (selectedTab) {
+                ResultsTab.Visual -> {
+                    if (!model3dUrl.isNullOrBlank()) {
+                        MetricAvatarPreview(
+                            modelUrl = model3dUrl,
+                            showSkinAreas = showSkinAreas,
+                            onInteractionChanged = onModelInteractionChanged,
+                            modifier = Modifier.fillMaxSize(),
+                            useGradientBackground = false,
+                        )
+                    }
+                }
+                ResultsTab.Posture -> {
+                    if (!model3dUrl.isNullOrBlank()) {
+                        MetricAvatarPreview(
+                            modelUrl = model3dUrl,
+                            showSkinAreas = showSkinAreas,
+                            onInteractionChanged = onModelInteractionChanged,
+                            modifier = Modifier.fillMaxSize(),
+                            useGradientBackground = false,
+                            initialYawDegrees = MetricAvatarSideProfileYawDegrees,
+                        )
+                    }
+                }
+                ResultsTab.Compare -> {
+                    CompareModelsPanel(
+                        currentModelUrl = model3dUrl,
+                        previousModelUrl = previousModel3dUrl,
+                        showSkinAreas = showSkinAreas,
+                        onInteractionChanged = onModelInteractionChanged,
+                    )
+                }
+            }
         }
-    } else {
-        MetricAvatarPreview(
-            modelUrl = model3dUrl,
-            showSkinAreas = showSkinAreas,
-            onInteractionChanged = onModelInteractionChanged,
-            modifier = modifier.then(previewModifier),
+    }
+}
+
+@Composable
+private fun CompareModelsPanel(
+    currentModelUrl: String?,
+    previousModelUrl: String?,
+    showSkinAreas: Boolean,
+    onInteractionChanged: (Boolean) -> Unit,
+) {
+    val compareRotationLink = remember(currentModelUrl, previousModelUrl) { CompareRotationLink() }
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                Column(Modifier.fillMaxSize()) {
+                    Text(
+                        text = stringResource(R.string.scan_results_compare_current),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.secondary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = dimensionResource(R.dimen.spacer_2xs)),
+                    )
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                        when {
+                            currentModelUrl.isNullOrBlank() -> Unit
+                            else -> {
+                                key(currentModelUrl) {
+                                    MetricAvatarPreview(
+                                        modelUrl = currentModelUrl,
+                                        showSkinAreas = showSkinAreas,
+                                        onInteractionChanged = onInteractionChanged,
+                                        modifier = Modifier.fillMaxSize(),
+                                        useGradientBackground = false,
+                                        compareRotationLink = compareRotationLink,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            VerticalDivider(
+                modifier = Modifier.fillMaxHeight(),
+                color = MaterialTheme.colorScheme.secondaryFixed,
+            )
+            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                Column(Modifier.fillMaxSize()) {
+                    Text(
+                        text = stringResource(R.string.scan_results_compare_previous),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.secondary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = dimensionResource(R.dimen.spacer_2xs)),
+                    )
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                        when {
+                            previousModelUrl.isNullOrBlank() -> {
+                                GradientCenteredLabel(messageRes = R.string.scan_results_compare_no_previous)
+                            }
+                            else -> {
+                                key(previousModelUrl) {
+                                    MetricAvatarPreview(
+                                        modelUrl = previousModelUrl,
+                                        showSkinAreas = showSkinAreas,
+                                        onInteractionChanged = onInteractionChanged,
+                                        modifier = Modifier.fillMaxSize(),
+                                        useGradientBackground = false,
+                                        compareRotationLink = compareRotationLink,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GradientCenteredLabel(messageRes: Int) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = stringResource(messageRes),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
         )
     }
 }

@@ -9,9 +9,16 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -21,10 +28,12 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import com.hexis.bi.R
@@ -38,8 +47,66 @@ import java.net.URL
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
+import java.util.concurrent.CopyOnWriteArrayList
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
+
+private val MetricAvatarPreviewBackgroundColors =
+    listOf(Color(0xFFFEFEFE), Color(0xFFC3C0C5))
+
+/** Single brush instance so the preview background is identical in every state. */
+internal val MetricAvatarPreviewBackgroundBrush: Brush =
+    Brush.radialGradient(
+        colors = MetricAvatarPreviewBackgroundColors,
+        center = Offset.Unspecified,
+        radius = Float.POSITIVE_INFINITY,
+    )
+
+internal fun Modifier.metricAvatarPreviewGradientBackground(): Modifier =
+    background(MetricAvatarPreviewBackgroundBrush)
+
+/** Default starting orientation for the rotatable mesh, in degrees. */
+private const val INITIAL_PITCH_DEG = -12f
+private const val MIN_PITCH_DEG = -55f
+private const val MAX_PITCH_DEG = 35f
+
+/** Shared yaw/pitch for Compare tab so both models rotate together. */
+internal class CompareRotationLink {
+    @Volatile
+    var yaw: Float = 0f
+
+    @Volatile
+    var pitch: Float = INITIAL_PITCH_DEG
+
+    private val invalidateCallbacks = CopyOnWriteArrayList<() -> Unit>()
+
+    fun addInvalidateCallback(callback: () -> Unit) {
+        invalidateCallbacks.add(callback)
+    }
+
+    fun removeInvalidateCallback(callback: () -> Unit) {
+        invalidateCallbacks.remove(callback)
+    }
+
+    fun applyRotationDelta(dyaw: Float, dpitch: Float) {
+        synchronized(this) {
+            yaw += dyaw
+            pitch = (pitch + dpitch).coerceIn(MIN_PITCH_DEG, MAX_PITCH_DEG)
+        }
+        invalidateCallbacks.forEach { it() }
+    }
+
+    fun replaceOrientation(yawDeg: Float, pitchDeg: Float) {
+        synchronized(this) {
+            yaw = yawDeg
+            pitch = pitchDeg.coerceIn(MIN_PITCH_DEG, MAX_PITCH_DEG)
+        }
+        invalidateCallbacks.forEach { it() }
+    }
+}
+
+/** Initial yaw (degrees) for a side/profile view of the mesh on the Posture tab. */
+internal const val MetricAvatarSideProfileYawDegrees = 90f
 
 @Composable
 internal fun MetricAvatarPreview(
@@ -47,62 +114,121 @@ internal fun MetricAvatarPreview(
     onInteractionChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     showSkinAreas: Boolean = false,
+    /** When false, the parent already drew [metricAvatarPreviewGradientBackground]. */
+    useGradientBackground: Boolean = true,
+    initialYawDegrees: Float = 0f,
+    initialPitchDegrees: Float = INITIAL_PITCH_DEG,
+    /** When set (Compare tab), both previews share yaw/pitch via this link. */
+    compareRotationLink: CompareRotationLink? = null,
 ) {
     val context = LocalContext.current
     val latestOnInteraction by rememberUpdatedState(onInteractionChanged)
     val view = remember(context) { MetricAvatarSurfaceView(context) { latestOnInteraction(it) } }
-    var hasError by remember { mutableStateOf(false) }
+    var loadState by remember { mutableStateOf(MetricAvatarLoadState.Loading) }
     var reloadKey by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(view, showSkinAreas) { view.setShowSkinAreas(showSkinAreas) }
 
-    LaunchedEffect(modelUrl, reloadKey) {
+    DisposableEffect(view, compareRotationLink) {
+        view.setCompareRotationLink(compareRotationLink)
+        onDispose { view.setCompareRotationLink(null) }
+    }
+
+    LaunchedEffect(
+        modelUrl,
+        reloadKey,
+        initialYawDegrees,
+        initialPitchDegrees,
+        compareRotationLink
+    ) {
+        compareRotationLink?.let { view.setCompareRotationLink(it) }
+        loadState = MetricAvatarLoadState.Loading
         runCatching { withContext(Dispatchers.IO) { ObjParser.parse(modelUrl) } }
             .onSuccess { mesh ->
-                view.queueEvent { view.setMesh(mesh) }
-                view.requestRender()
-                hasError = false
+                if (compareRotationLink != null) {
+                    view.applyLoadedMeshForCompare(mesh)
+                } else {
+                    view.applyLoadedMesh(mesh, initialYawDegrees, initialPitchDegrees)
+                }
+                loadState = MetricAvatarLoadState.Ready
             }
             .onFailure { e ->
                 Timber.w(e, "Metric avatar OBJ load failed url=%s", modelUrl)
-                hasError = true
+                loadState = MetricAvatarLoadState.Error
             }
     }
 
-    Box(
-        modifier = modifier.background(
-            Brush.radialGradient(
-                colors = listOf(Color(0xFFFEFEFE), Color(0xFFC3C0C5)),
-                center = Offset.Unspecified,
-                radius = Float.POSITIVE_INFINITY,
-            ),
-        ),
-    ) {
-        AndroidView(modifier = Modifier.fillMaxSize(), factory = { view })
-        if (hasError) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center,
-            ) {
-                AppButton(text = stringResource(R.string.action_retry), onClick = {
-                    hasError = false
-                    reloadKey++
-                })
+    val containerModifier = if (useGradientBackground) {
+        modifier.metricAvatarPreviewGradientBackground()
+    } else {
+        modifier
+    }
+    Box(modifier = containerModifier) {
+        AndroidView(
+            modifier = Modifier
+                .fillMaxSize()
+                .alpha(if (loadState == MetricAvatarLoadState.Ready) 1f else 0f),
+            factory = { view },
+        )
+        when (loadState) {
+            MetricAvatarLoadState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
+                    ) {
+                        CircularProgressIndicator()
+                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
+                        Text(
+                            text = stringResource(R.string.scan_results_avatar_loading),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
+            MetricAvatarLoadState.Error -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    AppButton(
+                        text = stringResource(R.string.action_retry),
+                        onClick = { reloadKey++ })
+                }
+            }
+
+            MetricAvatarLoadState.Ready -> { /* GL surface visible */
             }
         }
     }
 }
 
+private enum class MetricAvatarLoadState {
+    Loading,
+    Ready,
+    Error,
+}
+
 private const val TOUCH_YAW_SENSITIVITY = 0.25f
 private const val TOUCH_PITCH_SENSITIVITY = 0.2f
+
+private const val EGL_CONTEXT_CLIENT_VERSION = 2
+private const val EGL_COLOR_CHANNEL_BITS = 8
+private const val EGL_DEPTH_BITS = 16
+private const val EGL_STENCIL_BITS = 0
 
 private class MetricAvatarSurfaceView : GLSurfaceView {
     private val avatarRenderer = MetricAvatarRenderer()
     private var onInteractionChanged: (Boolean) -> Unit = {}
     private var lastX = 0f
     private var lastY = 0f
+    private var boundCompareLink: CompareRotationLink? = null
+    private val compareRenderNotify: () -> Unit = { requestRender() }
 
     constructor(context: Context) : super(context) {
         initView()
@@ -118,21 +244,54 @@ private class MetricAvatarSurfaceView : GLSurfaceView {
     }
 
     private fun initView() {
-        setEGLContextClientVersion(2)
-        setEGLConfigChooser(8, 8, 8, 8, 16, 0)
+        setEGLContextClientVersion(EGL_CONTEXT_CLIENT_VERSION)
+        setEGLConfigChooser(
+            EGL_COLOR_CHANNEL_BITS,
+            EGL_COLOR_CHANNEL_BITS,
+            EGL_COLOR_CHANNEL_BITS,
+            EGL_COLOR_CHANNEL_BITS,
+            EGL_DEPTH_BITS,
+            EGL_STENCIL_BITS,
+        )
         holder.setFormat(PixelFormat.TRANSLUCENT)
         setZOrderOnTop(true)
         setRenderer(avatarRenderer)
         renderMode = RENDERMODE_WHEN_DIRTY
     }
 
-    fun setMesh(mesh: ObjMesh) {
-        avatarRenderer.setMesh(mesh)
+    fun applyLoadedMesh(mesh: ObjMesh, yawDeg: Float, pitchDeg: Float) {
+        queueEvent {
+            avatarRenderer.setRotationLink(null)
+            avatarRenderer.setBaseOrientation(yawDeg, pitchDeg)
+            avatarRenderer.setMesh(mesh)
+            requestRender()
+        }
+    }
+
+    fun applyLoadedMeshForCompare(mesh: ObjMesh) {
+        queueEvent {
+            avatarRenderer.setMesh(mesh)
+            requestRender()
+        }
+    }
+
+    fun setCompareRotationLink(link: CompareRotationLink?) {
+        boundCompareLink?.removeInvalidateCallback(compareRenderNotify)
+        boundCompareLink = link
+        avatarRenderer.setRotationLink(link)
+        link?.addInvalidateCallback(compareRenderNotify)
     }
 
     fun setShowSkinAreas(show: Boolean) {
         queueEvent { avatarRenderer.setShowSkinAreas(show) }
         requestRender()
+    }
+
+    fun setBaseOrientation(yawDeg: Float, pitchDeg: Float) {
+        queueEvent {
+            avatarRenderer.setBaseOrientation(yawDeg, pitchDeg)
+            requestRender()
+        }
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -146,13 +305,21 @@ private class MetricAvatarSurfaceView : GLSurfaceView {
             MotionEvent.ACTION_MOVE -> {
                 val dx = event.x - lastX
                 val dy = event.y - lastY
-                queueEvent {
-                    avatarRenderer.rotateBy(
-                        dyaw = dx * TOUCH_YAW_SENSITIVITY,
-                        dpitch = dy * TOUCH_PITCH_SENSITIVITY,
+                val link = boundCompareLink
+                if (link != null) {
+                    link.applyRotationDelta(
+                        dx * TOUCH_YAW_SENSITIVITY,
+                        dy * TOUCH_PITCH_SENSITIVITY,
                     )
+                } else {
+                    queueEvent {
+                        avatarRenderer.rotateBy(
+                            dyaw = dx * TOUCH_YAW_SENSITIVITY,
+                            dpitch = dy * TOUCH_PITCH_SENSITIVITY,
+                        )
+                    }
+                    requestRender()
                 }
-                requestRender()
                 lastX = event.x
                 lastY = event.y
             }
@@ -179,7 +346,20 @@ private object ObjParser {
     private const val NORMALIZED_TARGET_SIZE = 3.0f
     private const val FLOATS_PER_VERTEX = 9
     private const val BYTES_PER_FLOAT = 4
-    private const val VERTEX_MERGE_RADIUS = 0.015f
+    private const val VERTEX_MERGE_RADIUS = 0.012f
+
+    private const val OBJ_URL_CONNECT_TIMEOUT_MS = 10_000
+    private const val OBJ_URL_READ_TIMEOUT_MS = 15_000
+
+    /**
+     * Body regions where vertices are not merged aggressively.
+     * Values mirror the skin-mask thresholds in [MetricAvatarRenderer]'s fragment shader.
+     */
+    private const val PROTECTED_REGION_HEAD_MIN_Y = 1.08f
+    private const val PROTECTED_REGION_HANDS_ABS_X = 0.36f
+    private const val PROTECTED_REGION_HANDS_MIN_Y = -1.05f
+    private const val PROTECTED_REGION_HANDS_MAX_Y = 0.05f
+    private const val PROTECTED_REGION_FEET_MAX_Y = -1.32f
 
     private data class Cluster(
         var x: Float,
@@ -217,8 +397,8 @@ private object ObjParser {
         val vertices = ArrayList<FloatArray>()
         val faces = ArrayList<IntArray>()
         val connection = URL(url).openConnection().apply {
-            connectTimeout = 10000
-            readTimeout = 15000
+            connectTimeout = OBJ_URL_CONNECT_TIMEOUT_MS
+            readTimeout = OBJ_URL_READ_TIMEOUT_MS
         }
 
         BufferedReader(InputStreamReader(connection.getInputStream())).use { reader ->
@@ -390,9 +570,10 @@ private object ObjParser {
     private fun isProtectedDetailVertex(vertex: FloatArray): Boolean {
         val x = vertex[0]
         val y = vertex[1]
-        val head = y >= 1.08f
-        val hands = kotlin.math.abs(x) >= 0.36f && y >= -1.05f && y <= 0.05f
-        val feet = y <= -1.32f
+        val head = y >= PROTECTED_REGION_HEAD_MIN_Y
+        val hands = kotlin.math.abs(x) >= PROTECTED_REGION_HANDS_ABS_X &&
+            y >= PROTECTED_REGION_HANDS_MIN_Y && y <= PROTECTED_REGION_HANDS_MAX_Y
+        val feet = y <= PROTECTED_REGION_FEET_MAX_Y
         return head || hands || feet
     }
 
@@ -494,18 +675,34 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
     private var uMeshColor = 0
     private var showSkinAreas = false
 
-    private val projection = FloatArray(16)
-    private val view = FloatArray(16)
-    private val model = FloatArray(16)
-    private val temp = FloatArray(16)
-    private val mvp = FloatArray(16)
+    private var rotationLink: CompareRotationLink? = null
+
+    private val projection = FloatArray(MATRIX_SIZE)
+    private val view = FloatArray(MATRIX_SIZE)
+    private val model = FloatArray(MATRIX_SIZE)
+    private val temp = FloatArray(MATRIX_SIZE)
+    private val mvp = FloatArray(MATRIX_SIZE)
 
     private var yaw = 0f
-    private var pitch = -12f
-    private var viewDistance = 3.2f
+    private var pitch = INITIAL_PITCH_DEG
+    private var viewDistance = INITIAL_VIEW_DISTANCE
+
+    fun setRotationLink(link: CompareRotationLink?) {
+        rotationLink = link
+    }
 
     fun setMesh(value: ObjMesh) {
         mesh = value
+    }
+
+    fun setBaseOrientation(yawDeg: Float, pitchDeg: Float) {
+        val link = rotationLink
+        if (link != null) {
+            link.replaceOrientation(yawDeg, pitchDeg)
+        } else {
+            yaw = yawDeg
+            pitch = pitchDeg.coerceIn(MIN_PITCH_DEG, MAX_PITCH_DEG)
+        }
     }
 
     fun setShowSkinAreas(show: Boolean) {
@@ -513,8 +710,23 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
     }
 
     fun rotateBy(dyaw: Float, dpitch: Float) {
-        yaw += dyaw
-        pitch = (pitch + dpitch).coerceIn(-55f, 35f)
+        val link = rotationLink
+        if (link != null) {
+            link.applyRotationDelta(dyaw, dpitch)
+        } else {
+            yaw += dyaw
+            pitch = (pitch + dpitch).coerceIn(MIN_PITCH_DEG, MAX_PITCH_DEG)
+        }
+    }
+
+    private fun modelYaw(): Float {
+        val link = rotationLink
+        return if (link != null) synchronized(link) { link.yaw } else yaw
+    }
+
+    private fun modelPitch(): Float {
+        val link = rotationLink
+        return if (link != null) synchronized(link) { link.pitch } else pitch
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
@@ -537,14 +749,15 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
         val aspect = width.toFloat() / height.toFloat().coerceAtLeast(1f)
-        Matrix.perspectiveM(projection, 0, 42f, aspect, 0.1f, 100f)
+        Matrix.perspectiveM(projection, 0, FOV_DEG, aspect, FRUSTUM_NEAR, FRUSTUM_FAR)
 
-        val tanHalfFov = kotlin.math.tan(Math.toRadians(42.0 / 2.0)).toFloat().coerceAtLeast(0.001f)
+        val tanHalfFov = kotlin.math.tan(Math.toRadians(FOV_DEG / 2.0)).toFloat()
+            .coerceAtLeast(MIN_TAN_HALF_FOV)
         val distForHeight = 1.0f / tanHalfFov
-        val distForWidth = 1.0f / (tanHalfFov * aspect.coerceAtLeast(0.6f))
-        viewDistance = maxOf(distForHeight, distForWidth) * 1.25f
+        val distForWidth = 1.0f / (tanHalfFov * aspect.coerceAtLeast(MIN_ASPECT_FOR_FRAMING))
+        viewDistance = maxOf(distForHeight, distForWidth) * VIEW_DISTANCE_SAFETY_MARGIN
 
-        Matrix.setLookAtM(view, 0, 0f, 0.85f, viewDistance, 0f, 0f, 0f, 0f, 1f, 0f)
+        Matrix.setLookAtM(view, 0, 0f, EYE_HEIGHT, viewDistance, 0f, 0f, 0f, 0f, 1f, 0f)
     }
 
     override fun onDrawFrame(gl: GL10?) {
@@ -555,33 +768,39 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
         GLES20.glUseProgram(program)
 
         Matrix.setIdentityM(model, 0)
-        Matrix.rotateM(model, 0, pitch, 1f, 0f, 0f)
-        Matrix.rotateM(model, 0, yaw, 0f, 1f, 0f)
+        Matrix.rotateM(model, 0, modelPitch(), 1f, 0f, 0f)
+        Matrix.rotateM(model, 0, modelYaw(), 0f, 1f, 0f)
 
         Matrix.multiplyMM(temp, 0, view, 0, model, 0)
         Matrix.multiplyMM(mvp, 0, projection, 0, temp, 0)
 
         GLES20.glUniformMatrix4fv(uMvp, 1, false, mvp, 0)
         GLES20.glUniformMatrix4fv(uModelView, 1, false, temp, 0)
-        GLES20.glUniform4f(uSkinColor, 0.84f, 0.68f, 0.58f, 1f)
-        GLES20.glUniform4f(uSuitColor, 0f, 0.02f, 0.06f, 1f)
-        GLES20.glUniform4f(uMeshColor, 0f, 0.188f, 1f, 1f)
+        GLES20.glUniform4f(uSkinColor, SKIN_R, SKIN_G, SKIN_B, 1f)
+        GLES20.glUniform4f(uSuitColor, SUIT_R, SUIT_G, SUIT_B, 1f)
+        GLES20.glUniform4f(uMeshColor, MESH_R, MESH_G, MESH_B, 1f)
         GLES20.glUniform1f(uShowSkin, if (showSkinAreas) 1f else 0f)
 
         val buf = m.vertexBuffer
         buf.position(0)
-        GLES20.glVertexAttribPointer(aPosition, 3, GLES20.GL_FLOAT, false, 36, buf)
+        GLES20.glVertexAttribPointer(
+            aPosition, FLOATS_PER_ATTRIB, GLES20.GL_FLOAT, false, VERTEX_STRIDE_BYTES, buf,
+        )
         GLES20.glEnableVertexAttribArray(aPosition)
 
         if (aBary >= 0) {
-            buf.position(3)
-            GLES20.glVertexAttribPointer(aBary, 3, GLES20.GL_FLOAT, false, 36, buf)
+            buf.position(BARY_FLOAT_OFFSET)
+            GLES20.glVertexAttribPointer(
+                aBary, FLOATS_PER_ATTRIB, GLES20.GL_FLOAT, false, VERTEX_STRIDE_BYTES, buf,
+            )
             GLES20.glEnableVertexAttribArray(aBary)
         }
 
         if (aEdgeMask >= 0) {
-            buf.position(6)
-            GLES20.glVertexAttribPointer(aEdgeMask, 3, GLES20.GL_FLOAT, false, 36, buf)
+            buf.position(EDGE_MASK_FLOAT_OFFSET)
+            GLES20.glVertexAttribPointer(
+                aEdgeMask, FLOATS_PER_ATTRIB, GLES20.GL_FLOAT, false, VERTEX_STRIDE_BYTES, buf,
+            )
             GLES20.glEnableVertexAttribArray(aEdgeMask)
         }
 
@@ -626,6 +845,40 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
     }
 
     private companion object {
+        private const val MATRIX_SIZE = 16
+
+        /** Default camera distance before [onSurfaceChanged] recomputes framing. */
+        private const val INITIAL_VIEW_DISTANCE = 3.2f
+
+        private const val FOV_DEG = 42f
+        private const val FRUSTUM_NEAR = 0.1f
+        private const val FRUSTUM_FAR = 100f
+        private const val MIN_TAN_HALF_FOV = 0.001f
+        private const val MIN_ASPECT_FOR_FRAMING = 0.6f
+        private const val VIEW_DISTANCE_SAFETY_MARGIN = 1.25f
+        private const val EYE_HEIGHT = 0.85f
+
+        private const val SKIN_R = 0.84f
+        private const val SKIN_G = 0.68f
+        private const val SKIN_B = 0.58f
+        private const val SUIT_R = 0f
+        private const val SUIT_G = 0.02f
+        private const val SUIT_B = 0.06f
+        private const val MESH_R = 0f
+        private const val MESH_G = 0.188f
+        private const val MESH_B = 1f
+
+        /** XYZ components per vertex attribute in the packed interleaved buffer. */
+        private const val FLOATS_PER_ATTRIB = 3
+
+        /** Stride in bytes: position(3) + bary(3) + edge mask(3) floats × 4 bytes. */
+        private const val FLOATS_PER_INTERLEAVED_VERTEX = 9
+        private const val BYTES_PER_FLOAT_GL = 4
+        private const val VERTEX_STRIDE_BYTES = FLOATS_PER_INTERLEAVED_VERTEX * BYTES_PER_FLOAT_GL
+
+        private const val BARY_FLOAT_OFFSET = FLOATS_PER_ATTRIB
+        private const val EDGE_MASK_FLOAT_OFFSET = FLOATS_PER_ATTRIB * 2
+
         const val VERTEX_SHADER = """
             attribute vec3 aPosition; attribute vec3 aBary; attribute vec3 aEdgeMask;
             uniform mat4 uMvp; varying float vModelY; varying vec3 vModelPos; 

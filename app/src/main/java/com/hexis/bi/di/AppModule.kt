@@ -48,6 +48,7 @@ import com.hexis.bi.ui.main.home.recovery.RecoveryViewModel
 import com.hexis.bi.ui.main.home.sleep.SleepViewModel
 import com.hexis.bi.ui.main.notifications.NotificationsViewModel
 import com.hexis.bi.ui.main.scan.ScanViewModel
+import com.hexis.bi.ui.main.scan.history.ScanHistoryViewModel
 import com.hexis.bi.ui.main.scan.results.ResultsViewModel
 import com.hexis.bi.ui.main.scan.startscan.StartScanViewModel
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountViewModel
@@ -142,13 +143,14 @@ val appModule = module {
     viewModel { MySuitViewModel(androidApplication(), get(), get()) }
     viewModel { NotificationsSettingsViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { NotificationsViewModel(androidApplication(), get()) }
-    viewModel { BodyViewModel(androidApplication(), get()) }
+    viewModel { BodyViewModel(androidApplication()) }
     viewModel { SleepViewModel(androidApplication(), get(), get()) }
     viewModel { ActivityViewModel(androidApplication(), get(), get(), get()) }
     viewModel { RecoveryViewModel(androidApplication(), get()) }
     viewModel { ScanViewModel(androidApplication(), get()) }
     viewModel { StartScanViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { ResultsViewModel(androidApplication(), get(), get(), get()) }
+    viewModel { ScanHistoryViewModel(androidApplication(), get()) }
     viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get()) }
     viewModel { OnboardingViewModel(androidApplication(), get(), get()) }
 }
