@@ -1,5 +1,8 @@
 package com.hexis.bi.ui.main.scan.results
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
@@ -52,7 +56,11 @@ import com.hexis.bi.ui.theme.Red100
 import com.hexis.bi.utils.cmToFeetAndInches
 import com.hexis.bi.utils.cmToInches
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
+
+private const val RESULTS_PREVIEW_EXIT_FADE_MS = 200
+private const val RESULTS_PREVIEW_EXIT_SETTLE_MS = 24
 
 @Composable
 fun ResultsScreen(
@@ -62,6 +70,26 @@ fun ResultsScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var isModelInteracting by remember { mutableStateOf(false) }
+    var pendingExitAfterPreviewHidden by remember { mutableStateOf(false) }
+
+    val previewAlpha by animateFloatAsState(
+        targetValue = if (pendingExitAfterPreviewHidden) 0f else 1f,
+        animationSpec = tween(durationMillis = RESULTS_PREVIEW_EXIT_FADE_MS),
+        label = "resultsPreviewAlpha",
+    )
+
+    LaunchedEffect(pendingExitAfterPreviewHidden) {
+        if (!pendingExitAfterPreviewHidden) return@LaunchedEffect
+        delay(RESULTS_PREVIEW_EXIT_FADE_MS.toLong() + RESULTS_PREVIEW_EXIT_SETTLE_MS)
+        onBack()
+    }
+
+    fun requestBack() {
+        if (pendingExitAfterPreviewHidden) return
+        pendingExitAfterPreviewHidden = true
+    }
+
+    BackHandler(enabled = true) { requestBack() }
 
     BaseScreen(
         modifier = modifier,
@@ -69,7 +97,7 @@ fun ResultsScreen(
         topBar = {
             BaseTopBar(
                 title = stringResource(R.string.scan_results_title),
-                onBack = onBack,
+                onBack = { requestBack() },
                 background = MaterialTheme.colorScheme.surfaceVariant,
             )
         },
@@ -101,6 +129,7 @@ fun ResultsScreen(
                 onModelInteractionChanged = { isModelInteracting = it },
                 measurements = state.measurements,
                 isMetric = state.isMetric,
+                modifier = Modifier.graphicsLayer { alpha = previewAlpha },
             )
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
@@ -142,11 +171,14 @@ private fun ScanResultsPreviewSection(
 ) {
     var visualTransform by remember { mutableStateOf<VisualAvatarTransform?>(null) }
 
+    var avatarMeshReady by remember(model3dUrl) { mutableStateOf(false) }
+
     var measurementGuide by remember(model3dUrl) { mutableStateOf<MetricAvatarMeasurementGuide?>(null) }
 
     LaunchedEffect(model3dUrl) {
         measurementGuide = null
         visualTransform = null
+        avatarMeshReady = false
     }
 
     LaunchedEffect(selectedTab, isPreviewSectionLoading) {
@@ -184,8 +216,22 @@ private fun ScanResultsPreviewSection(
                 }
             }
             else -> when (selectedTab) {
-                ResultsTab.Visual -> {
+                ResultsTab.Compare -> {
+                    CompareModelsPanel(
+                        currentModelUrl = model3dUrl,
+                        previousModelUrl = previousModel3dUrl,
+                        showSkinAreas = showSkinAreas,
+                        onInteractionChanged = onModelInteractionChanged,
+                    )
+                }
+                ResultsTab.Visual,
+                ResultsTab.Posture,
+                -> {
                     if (!model3dUrl.isNullOrBlank()) {
+                        val profileYaw = when (selectedTab) {
+                            ResultsTab.Posture -> MetricAvatarSideProfileYawDegrees
+                            else -> 0f
+                        }
                         Box(Modifier.fillMaxSize()) {
                             MetricAvatarPreview(
                                 modelUrl = model3dUrl,
@@ -193,13 +239,25 @@ private fun ScanResultsPreviewSection(
                                 onInteractionChanged = onModelInteractionChanged,
                                 modifier = Modifier.fillMaxSize(),
                                 useGradientBackground = false,
+                                initialYawDegrees = profileYaw,
                                 leaderSegments = null,
                                 onMeasurementGuideLoaded = { measurementGuide = it },
-                                onVisualTransformChanged = { yaw, pitch, w, h ->
-                                    visualTransform = VisualAvatarTransform(yaw, pitch, w, h)
-                                },
+                                onAvatarReady = { avatarMeshReady = true },
+                                onVisualTransformChanged =
+                                    if (selectedTab == ResultsTab.Visual) {
+                                        { yaw, pitch, w, h ->
+                                            visualTransform =
+                                                VisualAvatarTransform(yaw, pitch, w, h)
+                                        }
+                                    } else {
+                                        null
+                                    },
                             )
-                            if (!isPreviewSectionLoading && visualTransform != null) {
+                            if (selectedTab == ResultsTab.Visual &&
+                                !isPreviewSectionLoading &&
+                                visualTransform != null &&
+                                avatarMeshReady
+                            ) {
                                 MeasurementLeaderOverlay(
                                     measurements = measurements,
                                     isMetric = isMetric,
@@ -212,26 +270,6 @@ private fun ScanResultsPreviewSection(
                             }
                         }
                     }
-                }
-                ResultsTab.Posture -> {
-                    if (!model3dUrl.isNullOrBlank()) {
-                        MetricAvatarPreview(
-                            modelUrl = model3dUrl,
-                            showSkinAreas = showSkinAreas,
-                            onInteractionChanged = onModelInteractionChanged,
-                            modifier = Modifier.fillMaxSize(),
-                            useGradientBackground = false,
-                            initialYawDegrees = MetricAvatarSideProfileYawDegrees,
-                        )
-                    }
-                }
-                ResultsTab.Compare -> {
-                    CompareModelsPanel(
-                        currentModelUrl = model3dUrl,
-                        previousModelUrl = previousModel3dUrl,
-                        showSkinAreas = showSkinAreas,
-                        onInteractionChanged = onModelInteractionChanged,
-                    )
                 }
             }
         }

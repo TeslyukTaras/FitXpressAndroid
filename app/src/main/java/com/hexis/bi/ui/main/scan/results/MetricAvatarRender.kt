@@ -141,11 +141,14 @@ internal fun MetricAvatarPreview(
     leaderSegments: List<ModelLeaderSegment>? = null,
     /** Invoked on the main thread after OBJ parse (anchors + slice polylines for circumference labels). */
     onMeasurementGuideLoaded: ((MetricAvatarMeasurementGuide) -> Unit)? = null,
+    /** Invoked on the main thread when the mesh is loaded and the GL surface is visible (opaque). */
+    onAvatarReady: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val latestOnInteraction by rememberUpdatedState(onInteractionChanged)
     val latestTransform by rememberUpdatedState(onVisualTransformChanged)
     val latestAnchors by rememberUpdatedState(onMeasurementGuideLoaded)
+    val latestOnAvatarReady by rememberUpdatedState(onAvatarReady)
     val view = remember(context) { MetricAvatarSurfaceView(context) { latestOnInteraction(it) } }
     var loadState by remember { mutableStateOf(MetricAvatarLoadState.Loading) }
     var reloadKey by remember { mutableIntStateOf(0) }
@@ -175,13 +178,17 @@ internal fun MetricAvatarPreview(
         onDispose { view.setCompareRotationLink(null) }
     }
 
-    LaunchedEffect(
-        modelUrl,
-        reloadKey,
-        initialYawDegrees,
-        initialPitchDegrees,
-        compareRotationLink
-    ) {
+    LaunchedEffect(loadState, modelUrl, reloadKey) {
+        if (loadState == MetricAvatarLoadState.Ready) {
+            latestOnAvatarReady?.invoke()
+        }
+    }
+
+    val latestYawAtLoad by rememberUpdatedState(initialYawDegrees)
+    val latestPitchAtLoad by rememberUpdatedState(initialPitchDegrees)
+
+    /** OBJ fetch/parse only when URL or compare mode changes — not when base yaw/pitch change (Visual ↔ Posture). */
+    LaunchedEffect(modelUrl, reloadKey, compareRotationLink) {
         compareRotationLink?.let { view.setCompareRotationLink(it) }
         loadState = MetricAvatarLoadState.Loading
         runCatching { withContext(Dispatchers.IO) { ObjParser.parse(modelUrl) } }
@@ -189,7 +196,7 @@ internal fun MetricAvatarPreview(
                 if (compareRotationLink != null) {
                     view.applyLoadedMeshForCompare(mesh)
                 } else {
-                    view.applyLoadedMesh(mesh, initialYawDegrees, initialPitchDegrees)
+                    view.applyLoadedMesh(mesh, latestYawAtLoad, latestPitchAtLoad)
                 }
                 latestAnchors?.invoke(mesh.measurementGuide)
                 loadState = MetricAvatarLoadState.Ready
@@ -198,6 +205,11 @@ internal fun MetricAvatarPreview(
                 Timber.w(e, "Metric avatar OBJ load failed url=%s", modelUrl)
                 loadState = MetricAvatarLoadState.Error
             }
+    }
+
+    LaunchedEffect(initialYawDegrees, initialPitchDegrees, loadState, compareRotationLink) {
+        if (loadState != MetricAvatarLoadState.Ready || compareRotationLink != null) return@LaunchedEffect
+        view.setBaseOrientation(initialYawDegrees, initialPitchDegrees)
     }
 
     val containerModifier = if (useGradientBackground) {

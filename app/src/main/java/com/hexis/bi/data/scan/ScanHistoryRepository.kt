@@ -13,6 +13,22 @@ import kotlinx.serialization.json.JsonPrimitive
 import timber.log.Timber
 import java.util.Date
 
+/**
+ * How much to load from Firestore for a scan query.
+ *
+ * Parent scan documents are always read in full (no `.select()` field mask in this build).
+ * Projection controls **subcollection** reads and **merged maps** on [ScanRecord]:
+ *
+ * - [TIMESTAMPS_ONLY]: no subcollections — for date-range checks (e.g. reminders).
+ * - [LIST_SUMMARY]: `circumferenceParams/data` only per scan — history list + top change vs previous.
+ * - [FULL]: circumference + front + side linear subdocs each once; merged [measurements] + linear maps; [model3dUrl] from parent — Results / deltas.
+ */
+enum class ScanFetchProjection {
+    TIMESTAMPS_ONLY,
+    LIST_SUMMARY,
+    FULL,
+}
+
 data class ScanRecord(
     val id: String = "",
     val timestamp: Long = 0L,
@@ -85,7 +101,7 @@ class ScanHistoryRepository(
     }
 
     suspend fun getLatestScan(): Result<ScanRecord?> =
-        fetchRecentScans(limit = 1).map { it.firstOrNull() }
+        fetchRecentScans(limit = 1, projection = ScanFetchProjection.FULL).map { it.firstOrNull() }
 
     /**
      * Returns the two scans that precede the just-persisted current scan, in order
@@ -95,61 +111,120 @@ class ScanHistoryRepository(
      * Either side may be null if the user doesn't have enough history yet.
      */
     suspend fun getPreviousTwoScans(): Result<Pair<ScanRecord?, ScanRecord?>> =
-        fetchRecentScans(limit = 3).map { scans ->
+        fetchRecentScans(limit = 3, projection = ScanFetchProjection.FULL).map { scans ->
             scans.getOrNull(1) to scans.getOrNull(2)
         }
 
-    suspend fun getRecentScans(limit: Long = 20L): Result<List<ScanRecord>> =
-        fetchRecentScans(limit = limit)
+    suspend fun getRecentScans(
+        limit: Long = 20L,
+        projection: ScanFetchProjection = ScanFetchProjection.FULL,
+    ): Result<List<ScanRecord>> =
+        fetchRecentScans(limit = limit, projection = projection)
+
+    /**
+     * Loads one scan by document id with full measurement subdocs (for Results fast path).
+     */
+    suspend fun getScanRecordById(scanId: String): Result<ScanRecord?> = runCatching {
+        val doc = scansCollection().document(scanId).get().await()
+        if (!doc.exists()) return@runCatching null
+        buildFullScanRecord(doc)
+    }
+
+    /**
+     * Scans strictly older than [savedAtCutoff], newest first (for previous / before-previous rows).
+     */
+    suspend fun getOlderScanRecordsBefore(
+        savedAtCutoff: Timestamp,
+        limit: Long = 2,
+    ): Result<List<ScanRecord>> = runCatching {
+        val snapshot = scansCollection()
+            .whereLessThan(FIELD_SAVED_AT, savedAtCutoff)
+            .orderBy(FIELD_SAVED_AT, Query.Direction.DESCENDING)
+            .limit(limit)
+            .get()
+            .await()
+        snapshot.documents.map { buildFullScanRecord(it) }
+    }
 
     /** True if any saved scan in recent history has [ScanRecord.timestamp] in the inclusive range. */
     suspend fun hasScanSavedBetween(
         startMillisInclusive: Long,
         endMillisInclusive: Long,
         lookback: Long = 50L,
-    ): Result<Boolean> = fetchRecentScans(limit = lookback).map { scans ->
+    ): Result<Boolean> = fetchRecentScans(
+        limit = lookback,
+        projection = ScanFetchProjection.TIMESTAMPS_ONLY,
+    ).map { scans ->
         scans.any { it.timestamp in startMillisInclusive..endMillisInclusive }
     }
 
-    private suspend fun fetchRecentScans(limit: Long): Result<List<ScanRecord>> = runCatching {
-        val snapshot = scansCollection()
+    private suspend fun fetchRecentScans(
+        limit: Long,
+        projection: ScanFetchProjection,
+    ): Result<List<ScanRecord>> = runCatching {
+        val query = scansCollection()
             .orderBy(FIELD_SAVED_AT, Query.Direction.DESCENDING)
             .limit(limit)
-            .get()
-            .await()
+
+        val snapshot = query.get().await()
 
         snapshot.documents.map { doc ->
-            val measurements = LinkedHashMap<String, Float>()
-            MEASUREMENT_SUBCOLLECTIONS.forEach { sub ->
-                val subDoc = doc.reference.collection(sub).document(PARAMS_DOC_ID).get().await()
-                subDoc.data?.forEach { (key, value) ->
-                    val f = (value as? Number)?.toFloat()
-                        ?: (value as? String)?.toFloatOrNull()
-                    if (f != null) measurements.putIfAbsent(key, f)
-                }
+            when (projection) {
+                ScanFetchProjection.TIMESTAMPS_ONLY -> ScanRecord(
+                    id = doc.id,
+                    timestamp = doc.getTimestamp(FIELD_SAVED_AT)?.toDate()?.time ?: 0L,
+                    model3dUrl = null,
+                    measurements = emptyMap(),
+                    frontLinearParams = emptyMap(),
+                    sideLinearParams = emptyMap(),
+                )
+                ScanFetchProjection.LIST_SUMMARY -> ScanRecord(
+                    id = doc.id,
+                    timestamp = doc.getTimestamp(FIELD_SAVED_AT)?.toDate()?.time ?: 0L,
+                    model3dUrl = null,
+                    measurements = loadSubNumericParams(doc, SUB_CIRCUMFERENCE_PARAMS),
+                    frontLinearParams = emptyMap(),
+                    sideLinearParams = emptyMap(),
+                )
+                ScanFetchProjection.FULL -> buildFullScanRecord(doc)
             }
-
-            val frontLinearParams = loadNumericParamMap(doc, SUB_FRONT_LINEAR_PARAMS)
-            val sideLinearParams = loadNumericParamMap(doc, SUB_SIDE_LINEAR_PARAMS)
-
-            ScanRecord(
-                id = doc.id,
-                timestamp = doc.getTimestamp(FIELD_SAVED_AT)?.toDate()?.time ?: 0L,
-                model3dUrl = doc.getString(FIELD_MODEL_3D_URL),
-                measurements = measurements,
-                frontLinearParams = frontLinearParams,
-                sideLinearParams = sideLinearParams,
-            )
         }
     }
 
-    private suspend fun loadNumericParamMap(
+    /** Circumference + front/side linear maps merged into [measurements]; each subdoc read once. */
+    private suspend fun buildFullScanRecord(
+        doc: com.google.firebase.firestore.DocumentSnapshot,
+    ): ScanRecord {
+        val circumference = loadSubNumericParams(doc, SUB_CIRCUMFERENCE_PARAMS)
+        val frontLinearParams = loadSubNumericParams(doc, SUB_FRONT_LINEAR_PARAMS)
+        val sideLinearParams = loadSubNumericParams(doc, SUB_SIDE_LINEAR_PARAMS)
+
+        val measurements = LinkedHashMap<String, Float>()
+        circumference.forEach { (k, v) -> measurements[k] = v }
+        frontLinearParams.forEach { (k, v) -> measurements.putIfAbsent(k, v) }
+        sideLinearParams.forEach { (k, v) -> measurements.putIfAbsent(k, v) }
+
+        return ScanRecord(
+            id = doc.id,
+            timestamp = doc.getTimestamp(FIELD_SAVED_AT)?.toDate()?.time ?: 0L,
+            model3dUrl = doc.getString(FIELD_MODEL_3D_URL),
+            measurements = measurements,
+            frontLinearParams = frontLinearParams,
+            sideLinearParams = sideLinearParams,
+        )
+    }
+
+    private suspend fun loadSubNumericParams(
         doc: com.google.firebase.firestore.DocumentSnapshot,
         sub: String,
-    ): Map<String, Float> {
+    ): LinkedHashMap<String, Float> {
         val subDoc = doc.reference.collection(sub).document(PARAMS_DOC_ID).get().await()
+        return parseNumericMap(subDoc.data)
+    }
+
+    private fun parseNumericMap(data: Map<String, Any>?): LinkedHashMap<String, Float> {
         val out = LinkedHashMap<String, Float>()
-        subDoc.data?.forEach { (key, value) ->
+        data?.forEach { (key, value) ->
             val f = (value as? Number)?.toFloat()
                 ?: (value as? String)?.toFloatOrNull()
             if (f != null) out[key] = f
@@ -181,12 +256,6 @@ class ScanHistoryRepository(
         private const val SUB_SUBSCRIPTION_INFO = "subscriptionInfo"
 
         private const val PARAMS_DOC_ID = "data"
-
-        private val MEASUREMENT_SUBCOLLECTIONS = listOf(
-            SUB_CIRCUMFERENCE_PARAMS,
-            SUB_FRONT_LINEAR_PARAMS,
-            SUB_SIDE_LINEAR_PARAMS,
-        )
 
         private const val FIELD_ID = "id"
         private const val FIELD_STATUS = "status"

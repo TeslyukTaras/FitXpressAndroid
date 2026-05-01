@@ -105,30 +105,40 @@ internal fun MeasurementLeaderOverlay(
                 val start = labelStarts[row.visualAnchorKey] ?: continue
 
                 if (row.visualAnchorKey in CircumferenceVisualKeys) {
-                    val packed = measurementGuide?.crossSectionPolylines?.get(row.visualAnchorKey)
-                    if (packed != null && packed.size >= 9) {
-                        val poly = projectPackedPolylineToOverlay(packed, transform, sx, sy)
-                        if (poly.size >= 8) {
-                            val slicePath = Path().apply {
-                                moveTo(poly[0].x, poly[0].y)
-                                for (k in 1 until poly.size) {
-                                    lineTo(poly[k].x, poly[k].y)
-                                }
-                                close()
-                            }
-                            val attach = leaderAttachPointForCircumferenceSlice(poly, start)
-                            drawPath(
-                                path = slicePath,
-                                color = LeaderStrokeColor,
-                                style = Stroke(width = strokePx * 0.92f),
-                            )
-                            drawPath(
-                                path = leaderLinePath(start = start, end = attach),
-                                color = LeaderStrokeColor,
-                                style = Stroke(width = strokePx),
-                            )
-                            continue
+                    val packedPrimary = measurementGuide?.crossSectionPolylines?.get(row.visualAnchorKey)
+                    val packedOpp = measurementGuide?.crossSectionPolylinesOpposite
+                        ?.get(row.visualAnchorKey)
+                    val polys = ArrayList<List<Offset>>(2)
+                    if (packedPrimary != null && packedPrimary.size >= 9) {
+                        val poly = projectPackedPolylineToOverlay(
+                            packedPrimary,
+                            transform,
+                            sx,
+                            sy,
+                        )
+                        if (poly.size >= 8) polys.add(poly)
+                    }
+                    if (packedOpp != null && packedOpp.size >= 9) {
+                        val poly = projectPackedPolylineToOverlay(
+                            packedOpp,
+                            transform,
+                            sx,
+                            sy,
+                        )
+                        if (poly.size >= 8) polys.add(poly)
+                    }
+                    if (polys.isNotEmpty()) {
+                        val attach = if (polys.size == 1) {
+                            leaderAttachPointForCircumferenceSlice(polys[0], start)
+                        } else {
+                            leaderAttachPointForCircumferenceSlices(polys, start)
                         }
+                        drawPath(
+                            path = leaderLinePath(start = start, end = attach),
+                            color = LeaderStrokeColor,
+                            style = Stroke(width = strokePx),
+                        )
+                        continue
                     }
                 }
 

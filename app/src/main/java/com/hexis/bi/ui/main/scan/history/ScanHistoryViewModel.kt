@@ -3,6 +3,7 @@ package com.hexis.bi.ui.main.scan.history
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.hexis.bi.data.scan.ScanFetchProjection
 import com.hexis.bi.data.scan.MeasurementMapper
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.utils.constants.DateFormatConstants
@@ -31,7 +32,7 @@ class ScanHistoryViewModel(
     fun refresh() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            scanHistoryRepository.getRecentScans(MAX_SCANS).fold(
+            scanHistoryRepository.getRecentScans(MAX_SCANS, ScanFetchProjection.LIST_SUMMARY).fold(
                 onSuccess = { scans ->
                     val items = scans.mapIndexed { index, scan ->
                         val prev = scans.getOrNull(index + 1)

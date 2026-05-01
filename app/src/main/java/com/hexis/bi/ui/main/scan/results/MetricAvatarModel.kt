@@ -177,6 +177,9 @@ internal val CircumferenceVisualKeys = setOf(
     "calf",
 )
 
+/** Limb circumferences: UI draws **two** rings (left + right); leader picks the nearer ring in screen space. */
+internal val BilateralCircumferenceKeys = setOf("bicep", "forearm", "thigh", "calf")
+
 private val measurementAnchorKeys = listOf(
     "neck", "shoulders", "chest", "forearm", "bicep",
     "upperWaist", "waist", "lowerWaist", "thigh", "calf",
@@ -191,6 +194,10 @@ internal data class MetricAvatarMeasurementGuide(
     val anchorPoints: Map<String, FloatArray>,
     /** Circumference keys: packed model-space [x,y,z, x,y,z, …] ordered around the slice. */
     val crossSectionPolylines: Map<String, FloatArray>,
+    /**
+     * [BilateralCircumferenceKeys] only: packed polyline for the **opposite** limb (mirror lateral).
+     */
+    val crossSectionPolylinesOpposite: Map<String, FloatArray> = emptyMap(),
     /**
      * Head clip in model space: plane `nx*x + ny*y + nz*z + d = 0`; discard where `dot(p,n)+d > 0`
      * (toward head). Matches the neck slice plane + anchor.
@@ -236,11 +243,28 @@ internal fun buildMeasurementGuide(
             measurementKey = key,
             anchor = anchor,
             planeNormal = planeNormal,
+            flipLateralFilter = false,
         )
         if (packed != null && packed.size >= 9) slices[key] = packed
     }
+    val oppositeSlices = LinkedHashMap<String, FloatArray>()
+    for (key in BilateralCircumferenceKeys) {
+        val primary = anchors[key] ?: continue
+        val anchorOpp = mirrorX(primary)
+        val planeNormalOpp = slicePlaneNormalForOpposite(key, anchors, anchorOpp)
+        val packed = computeCrossSectionPacked(
+            vertices = vertices,
+            usedVertices = usedVertices,
+            faces = faces,
+            measurementKey = key,
+            anchor = anchorOpp,
+            planeNormal = planeNormalOpp,
+            flipLateralFilter = true,
+        )
+        if (packed != null && packed.size >= 9) oppositeSlices[key] = packed
+    }
     val neckClipPlane = computeNeckClipPlane(anchors)
-    return MetricAvatarMeasurementGuide(anchors, slices, neckClipPlane)
+    return MetricAvatarMeasurementGuide(anchors, slices, oppositeSlices, neckClipPlane)
 }
 
 /**
@@ -273,6 +297,35 @@ private fun slicePlaneNormalFor(
         if (th != null && ca != null) limbAxis(mirrorX(th), ca) else floatArrayOf(0f, 1f, 0f)
     }
     else -> floatArrayOf(0f, 1f, 0f)
+}
+
+/**
+ * Slice normal for the **mirror** limb ring ([mirrorX] of the primary band anchor).
+ * Primary [slicePlaneNormalFor] targets one lateral side per key; this targets the other.
+ */
+private fun slicePlaneNormalForOpposite(
+    key: String,
+    anchors: Map<String, FloatArray>,
+    oppositeBandAnchor: FloatArray,
+): FloatArray = when (key) {
+    "bicep" -> limbAxis(lateralShoulderTowardLimb(anchors, leftSide = false), oppositeBandAnchor)
+    "forearm" -> limbAxis(lateralShoulderTowardLimb(anchors, leftSide = true), oppositeBandAnchor)
+    "thigh" -> {
+        val hip = virtualHipMirrored(anchors)
+        if (hip != null) limbAxis(hip, oppositeBandAnchor) else floatArrayOf(0f, 1f, 0f)
+    }
+    "calf" -> {
+        val th = anchors["thigh"]
+        if (th != null) limbAxis(th, oppositeBandAnchor) else floatArrayOf(0f, 1f, 0f)
+    }
+    else -> slicePlaneNormalFor(key, anchors)
+}
+
+/** Hip root above the **right** leg when the scanned thigh anchor is on the left (mirrored X). */
+private fun virtualHipMirrored(anchors: Map<String, FloatArray>): FloatArray? {
+    val lw = anchors["lowerWaist"] ?: return null
+    val th = anchors["thigh"] ?: return null
+    return floatArrayOf(-th[0], lw[1], th[2])
 }
 
 private fun mirrorX(a: FloatArray): FloatArray = floatArrayOf(-a[0], a[1], a[2])
@@ -572,6 +625,7 @@ private fun computeCrossSectionPacked(
     measurementKey: String,
     anchor: FloatArray,
     planeNormal: FloatArray,
+    flipLateralFilter: Boolean = false,
 ): FloatArray? {
     val offsetsAlongNormal =
         floatArrayOf(0f, 0.004f, -0.004f, 0.008f, -0.008f, 0.012f, -0.012f)
@@ -598,9 +652,15 @@ private fun computeCrossSectionPacked(
             }
         }
         val raw = collectSlicePoints(vertices, usedVertices, faces, planePoint, planeNormal)
-        var filtered = filterSlicePointsForMeasurement(raw, measurementKey, anchor)
+        var filtered = filterSlicePointsForMeasurement(raw, measurementKey, anchor, flipLateralFilter = flipLateralFilter)
         if (filtered.size < MIN_CROSS_SECTION_POINTS) {
-            filtered = filterSlicePointsForMeasurement(raw, measurementKey, anchor, relaxed = true)
+            filtered = filterSlicePointsForMeasurement(
+                raw,
+                measurementKey,
+                anchor,
+                relaxed = true,
+                flipLateralFilter = flipLateralFilter,
+            )
         }
         if (filtered.size < MIN_CROSS_SECTION_POINTS / 2) {
             filtered = raw
@@ -617,12 +677,14 @@ private fun computeCrossSectionPacked(
  * Key-specific cleanup: **shoulders** keep full lateral breadth (no tight median).
  * **Chest** tight median + drop wide lateral arm hits. **Waist** looser median so torso rim isn’t clipped.
  * **Left limbs** (bicep, thigh): negative **x**. **Right** forearm / calf: positive **x**.
+ * [flipLateralFilter] selects the opposite lateral when building the mirror limb ring.
  */
 private fun filterSlicePointsForMeasurement(
     points: List<FloatArray>,
     key: String,
     anchor: FloatArray,
     relaxed: Boolean = false,
+    flipLateralFilter: Boolean = false,
 ): List<FloatArray> {
     if (points.size < 8) return points
     var p = points
@@ -638,15 +700,28 @@ private fun filterSlicePointsForMeasurement(
             val nearArm = filterPointsNearAnchorXZ(p, ax, az, ballR)
             if (nearArm.size >= MIN_CROSS_SECTION_POINTS / 2) p = nearArm
             val thr = if (relaxed) -0.065f else -0.115f
-            val left = p.filter { it[0] < thr }
-            p = when {
-                left.size >= MIN_CROSS_SECTION_POINTS / 2 -> left
-                relaxed && left.isNotEmpty() -> left
-                else -> p
-            }
-            if (!relaxed) {
-                val outer = p.filter { it[0] < -0.095f }
-                if (outer.size >= 8) p = outer
+            if (!flipLateralFilter) {
+                val left = p.filter { it[0] < thr }
+                p = when {
+                    left.size >= MIN_CROSS_SECTION_POINTS / 2 -> left
+                    relaxed && left.isNotEmpty() -> left
+                    else -> p
+                }
+                if (!relaxed) {
+                    val outer = p.filter { it[0] < -0.095f }
+                    if (outer.size >= 8) p = outer
+                }
+            } else {
+                val right = p.filter { it[0] > -thr }
+                p = when {
+                    right.size >= MIN_CROSS_SECTION_POINTS / 2 -> right
+                    relaxed && right.isNotEmpty() -> right
+                    else -> p
+                }
+                if (!relaxed) {
+                    val outer = p.filter { it[0] > 0.095f }
+                    if (outer.size >= 8) p = outer
+                }
             }
         }
         "forearm" -> {
@@ -659,11 +734,20 @@ private fun filterSlicePointsForMeasurement(
             val nearArm = filterPointsNearAnchorXZ(p, ax, az, ballR)
             if (nearArm.size >= MIN_CROSS_SECTION_POINTS / 2) p = nearArm
             val thr = if (relaxed) 0.048f else 0.082f
-            val right = p.filter { it[0] > thr }
-            p = when {
-                right.size >= MIN_CROSS_SECTION_POINTS / 2 -> right
-                relaxed && right.isNotEmpty() -> right
-                else -> p
+            if (!flipLateralFilter) {
+                val right = p.filter { it[0] > thr }
+                p = when {
+                    right.size >= MIN_CROSS_SECTION_POINTS / 2 -> right
+                    relaxed && right.isNotEmpty() -> right
+                    else -> p
+                }
+            } else {
+                val left = p.filter { it[0] < -thr }
+                p = when {
+                    left.size >= MIN_CROSS_SECTION_POINTS / 2 -> left
+                    relaxed && left.isNotEmpty() -> left
+                    else -> p
+                }
             }
         }
         "thigh" -> {
@@ -671,11 +755,20 @@ private fun filterSlicePointsForMeasurement(
             val nearLeg = filterPointsNearAnchorXZ(p, ax, az, ballR)
             if (nearLeg.size >= MIN_CROSS_SECTION_POINTS / 2) p = nearLeg
             val thr = if (relaxed) -0.035f else -0.048f
-            val leg = p.filter { it[0] < thr }
-            p = when {
-                leg.size >= MIN_CROSS_SECTION_POINTS / 2 -> leg
-                relaxed && leg.isNotEmpty() -> leg
-                else -> p
+            if (!flipLateralFilter) {
+                val leg = p.filter { it[0] < thr }
+                p = when {
+                    leg.size >= MIN_CROSS_SECTION_POINTS / 2 -> leg
+                    relaxed && leg.isNotEmpty() -> leg
+                    else -> p
+                }
+            } else {
+                val leg = p.filter { it[0] > -thr }
+                p = when {
+                    leg.size >= MIN_CROSS_SECTION_POINTS / 2 -> leg
+                    relaxed && leg.isNotEmpty() -> leg
+                    else -> p
+                }
             }
         }
         "calf" -> {
@@ -683,11 +776,20 @@ private fun filterSlicePointsForMeasurement(
             val nearLeg = filterPointsNearAnchorXZ(p, ax, az, ballR)
             if (nearLeg.size >= MIN_CROSS_SECTION_POINTS / 2) p = nearLeg
             val thr = if (relaxed) 0.035f else 0.048f
-            val leg = p.filter { it[0] > thr }
-            p = when {
-                leg.size >= MIN_CROSS_SECTION_POINTS / 2 -> leg
-                relaxed && leg.isNotEmpty() -> leg
-                else -> p
+            if (!flipLateralFilter) {
+                val leg = p.filter { it[0] > thr }
+                p = when {
+                    leg.size >= MIN_CROSS_SECTION_POINTS / 2 -> leg
+                    relaxed && leg.isNotEmpty() -> leg
+                    else -> p
+                }
+            } else {
+                val leg = p.filter { it[0] < -thr }
+                p = when {
+                    leg.size >= MIN_CROSS_SECTION_POINTS / 2 -> leg
+                    relaxed && leg.isNotEmpty() -> leg
+                    else -> p
+                }
             }
         }
         "neck" -> {
@@ -1011,3 +1113,22 @@ internal fun leaderAttachPointForCircumferenceSlice(
     poly: List<Offset>,
     pillStart: Offset,
 ): Offset = closestPointOnClosedPolyline(poly, pillStart)
+
+/** Leader meets the closer of several limb rings (screen space), e.g. left vs right biceps while rotating. */
+internal fun leaderAttachPointForCircumferenceSlices(
+    polylines: List<List<Offset>>,
+    pillStart: Offset,
+): Offset {
+    var best = pillStart
+    var bestD = Float.MAX_VALUE
+    for (poly in polylines) {
+        if (poly.size < 4) continue
+        val q = closestPointOnClosedPolyline(poly, pillStart)
+        val d = distSq(pillStart, q)
+        if (d < bestD) {
+            bestD = d
+            best = q
+        }
+    }
+    return best
+}
