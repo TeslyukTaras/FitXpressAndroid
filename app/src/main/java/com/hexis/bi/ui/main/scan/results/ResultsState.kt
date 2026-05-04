@@ -44,8 +44,4 @@ data class ResultsState(
     val todayDate: String = "",
     val previousDate: String? = null,
     val showSkinAreas: Boolean = false,
-    /** Firestore document id for this results session (persist preview PNG once). */
-    val firestoreScanId: String? = null,
-    /** True when [ScanRecord.modelPreviewPngBase64] already exists — skip capture. */
-    val modelPreviewAlreadyStored: Boolean = false,
 )

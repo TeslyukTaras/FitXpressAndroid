@@ -9,7 +9,6 @@ import android.os.Handler
 import android.os.Looper
 import android.util.AttributeSet
 import android.view.MotionEvent
-import android.view.SurfaceView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,12 +30,13 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -44,7 +44,6 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.AppButton
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.BufferedReader
@@ -145,17 +144,12 @@ internal fun MetricAvatarPreview(
     onMeasurementGuideLoaded: ((MetricAvatarMeasurementGuide) -> Unit)? = null,
     /** Invoked on the main thread when the mesh is loaded and the GL surface is visible (opaque). */
     onAvatarReady: (() -> Unit)? = null,
-    /**
-     * Once after the first frame is ready — capture a low-res PNG for scan history when appropriate.
-     */
-    onSurfaceReadyForThumbnail: ((SurfaceView) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val latestOnInteraction by rememberUpdatedState(onInteractionChanged)
     val latestTransform by rememberUpdatedState(onVisualTransformChanged)
     val latestAnchors by rememberUpdatedState(onMeasurementGuideLoaded)
     val latestOnAvatarReady by rememberUpdatedState(onAvatarReady)
-    val latestSurfaceThumbnail by rememberUpdatedState(onSurfaceReadyForThumbnail)
     val view = remember(context) { MetricAvatarSurfaceView(context) { latestOnInteraction(it) } }
     var loadState by remember { mutableStateOf(MetricAvatarLoadState.Loading) }
     var reloadKey by remember { mutableIntStateOf(0) }
@@ -219,15 +213,6 @@ internal fun MetricAvatarPreview(
         view.setBaseOrientation(initialYawDegrees, initialPitchDegrees)
     }
 
-    var thumbnailNotifyDone by remember(modelUrl, reloadKey) { mutableStateOf(false) }
-    LaunchedEffect(loadState, modelUrl, reloadKey, latestSurfaceThumbnail, compareRotationLink) {
-        if (thumbnailNotifyDone || loadState != MetricAvatarLoadState.Ready) return@LaunchedEffect
-        val cb = latestSurfaceThumbnail ?: return@LaunchedEffect
-        thumbnailNotifyDone = true
-        delay(96)
-        cb(view)
-    }
-
     val containerModifier = if (useGradientBackground) {
         modifier.metricAvatarPreviewGradientBackground()
     } else {
@@ -238,7 +223,11 @@ internal fun MetricAvatarPreview(
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RectangleShape)
-                .alpha(if (loadState == MetricAvatarLoadState.Ready) 1f else 0f),
+                .graphicsLayer {
+                    alpha = if (loadState == MetricAvatarLoadState.Ready) 1f else 0f
+                    // Keep GL layer composited so the surface still lays out while loading (avoids 0×0 / stuck first frame on some devices).
+                    compositingStrategy = CompositingStrategy.Auto
+                },
             factory = { view },
         )
         when (loadState) {
@@ -365,6 +354,7 @@ private class MetricAvatarSurfaceView : GLSurfaceView {
 
     fun setVisualTransformListener(listener: ((Float, Float, Int, Int) -> Unit)?) {
         avatarRenderer.setVisualTransformListener(listener)
+        requestRender()
     }
 
     fun setLeaderSegments(segments: List<ModelLeaderSegment>?) {
@@ -897,6 +887,10 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
     fun setVisualTransformListener(listener: ((Float, Float, Int, Int) -> Unit)?) {
         visualTransformListener = listener
         if (listener == null) {
+            lastPostedYaw = Float.NaN
+            lastPostedPitch = Float.NaN
+        } else {
+            // Force the next draw to post yaw/pitch/viewport to Compose (e.g. Visual tab overlay).
             lastPostedYaw = Float.NaN
             lastPostedPitch = Float.NaN
         }

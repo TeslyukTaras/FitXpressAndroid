@@ -4,7 +4,6 @@ import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.SetOptions
 import com.hexis.bi.data.scan.api.MeasurementResponse
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.COLLECTION_SCANS
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.COLLECTION_USERS
@@ -133,15 +132,6 @@ class ScanHistoryRepository(
         batch.commit().await()
         Timber.d("saveScan: wrote %s with %d fields", docId, mainData.size)
     }
-
-    /** Persists a small PNG preview (base64) for the scan history list. */
-    suspend fun updateScanModelPreview(scanDocumentId: String, pngBase64: String): Result<Unit> =
-        runCatching {
-            scansCollection().document(scanDocumentId).set(
-                mapOf(FIELD_MODEL_PREVIEW_PNG_BASE64 to pngBase64),
-                SetOptions.merge(),
-            ).await()
-        }
 
     suspend fun getLatestScan(): Result<ScanRecord?> =
         fetchRecentScans(limit = 1, projection = ScanFetchProjection.FULL).map { it.firstOrNull() }

@@ -2,10 +2,8 @@ package com.hexis.bi.ui.main.scan.results
 
 import android.app.Application
 import com.google.firebase.Timestamp
-import android.view.SurfaceView
 import com.hexis.bi.data.scan.MeasurementMapper
 import com.hexis.bi.data.scan.ScanHistoryRepository
-import com.hexis.bi.data.scan.ScanModelPreviewCapture
 import com.hexis.bi.data.scan.ScanResult
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.scan.ScanRecord
@@ -17,8 +15,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.Dispatchers
 import java.util.Date
 
 class ResultsViewModel(
@@ -27,8 +23,6 @@ class ResultsViewModel(
     private val scanResultRepository: ScanResultRepository,
     private val scanHistoryRepository: ScanHistoryRepository,
 ) : BaseViewModel(application) {
-
-    private var thumbnailCaptureAttemptedForScanId: String? = null
 
     private val _state = MutableStateFlow(ResultsState())
     val state: StateFlow<ResultsState> = _state.asStateFlow()
@@ -58,12 +52,10 @@ class ResultsViewModel(
                     _state.update { it.copy(isPreviewSectionLoading = false) }
                     return@launch
                 }
-                thumbnailCaptureAttemptedForScanId = null
                 applyHistoryImmediate(current)
                 launch(showLoading = false) { enrichHistoryNeighbors(current) }
             }
             latest != null -> {
-                thumbnailCaptureAttemptedForScanId = null
                 applyFreshScanImmediate(latest)
                 launch(showLoading = false) { enrichFreshScanWithNeighbors() }
             }
@@ -87,8 +79,6 @@ class ResultsViewModel(
                 isPreviewSectionLoading = false,
                 todayDate = System.currentTimeMillis().millisToShortMonthDay(),
                 previousDate = null,
-                firestoreScanId = result.firestoreScanDocumentId,
-                modelPreviewAlreadyStored = false,
             )
         }
     }
@@ -129,8 +119,6 @@ class ResultsViewModel(
                 isPreviewSectionLoading = false,
                 todayDate = current.timestamp.millisToShortMonthDay(),
                 previousDate = null,
-                firestoreScanId = current.id.takeIf { id -> id.isNotBlank() },
-                modelPreviewAlreadyStored = !current.modelPreviewPngBase64.isNullOrBlank(),
             )
         }
     }
@@ -160,33 +148,5 @@ class ResultsViewModel(
 
     fun toggleSkinAreas() {
         _state.update { it.copy(showSkinAreas = !it.showSkinAreas) }
-    }
-
-    /**
-     * Called once the GL [SurfaceView] has presented the mesh — captures a low-res PNG if the scan
-     * document does not yet store a preview.
-     */
-    fun onModelSurfaceReadyForThumbnail(surfaceView: SurfaceView) {
-        val scanId = _state.value.firestoreScanId ?: return
-        if (_state.value.modelPreviewAlreadyStored) return
-        if (thumbnailCaptureAttemptedForScanId == scanId) return
-        thumbnailCaptureAttemptedForScanId = scanId
-        launch(showLoading = false, onError = { thumbnailCaptureAttemptedForScanId = null }) {
-            val b64 = withContext(Dispatchers.Main.immediate) {
-                ScanModelPreviewCapture.captureToPngBase64(surfaceView)
-            }
-            if (b64.isNullOrBlank()) {
-                thumbnailCaptureAttemptedForScanId = null
-                return@launch
-            }
-            scanHistoryRepository.updateScanModelPreview(scanId, b64).fold(
-                onSuccess = {
-                    _state.update { it.copy(modelPreviewAlreadyStored = true) }
-                },
-                onFailure = {
-                    thumbnailCaptureAttemptedForScanId = null
-                },
-            )
-        }
     }
 }

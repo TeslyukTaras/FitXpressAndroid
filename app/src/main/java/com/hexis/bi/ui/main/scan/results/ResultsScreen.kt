@@ -1,6 +1,5 @@
 package com.hexis.bi.ui.main.scan.results
 
-import android.view.SurfaceView
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -130,12 +129,6 @@ fun ResultsScreen(
                 measurements = state.measurements,
                 isMetric = state.isMetric,
                 modifier = Modifier.graphicsLayer { alpha = previewAlpha },
-                onSurfaceReadyForThumbnail =
-                    if (state.firestoreScanId != null && !state.modelPreviewAlreadyStored) {
-                        viewModel::onModelSurfaceReadyForThumbnail
-                    } else {
-                        null
-                    },
             )
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
@@ -174,7 +167,6 @@ private fun ScanResultsPreviewSection(
     measurements: List<MeasurementRow>,
     isMetric: Boolean,
     modifier: Modifier = Modifier,
-    onSurfaceReadyForThumbnail: ((SurfaceView) -> Unit)? = null,
 ) {
     var visualTransform by remember { mutableStateOf<VisualAvatarTransform?>(null) }
 
@@ -229,7 +221,6 @@ private fun ScanResultsPreviewSection(
                         previousModelUrl = previousModel3dUrl,
                         showSkinAreas = showSkinAreas,
                         onInteractionChanged = onModelInteractionChanged,
-                        onSurfaceReadyForThumbnail = onSurfaceReadyForThumbnail,
                     )
                 }
                 ResultsTab.Visual,
@@ -251,7 +242,6 @@ private fun ScanResultsPreviewSection(
                                 leaderSegments = null,
                                 onMeasurementGuideLoaded = { measurementGuide = it },
                                 onAvatarReady = { avatarMeshReady = true },
-                                onSurfaceReadyForThumbnail = onSurfaceReadyForThumbnail,
                                 onVisualTransformChanged =
                                     if (selectedTab == ResultsTab.Visual) {
                                         { yaw, pitch, w, h ->
@@ -278,6 +268,8 @@ private fun ScanResultsPreviewSection(
                                 )
                             }
                         }
+                    } else {
+                        GradientCenteredLabel(messageRes = R.string.scan_results_preview_unavailable)
                     }
                 }
             }
@@ -291,7 +283,6 @@ private fun CompareModelsPanel(
     previousModelUrl: String?,
     showSkinAreas: Boolean,
     onInteractionChanged: (Boolean) -> Unit,
-    onSurfaceReadyForThumbnail: ((SurfaceView) -> Unit)? = null,
 ) {
     val compareRotationLink = remember(currentModelUrl, previousModelUrl) { CompareRotationLink() }
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
@@ -309,7 +300,9 @@ private fun CompareModelsPanel(
                     )
                     Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                         when {
-                            currentModelUrl.isNullOrBlank() -> Unit
+                            currentModelUrl.isNullOrBlank() -> {
+                                GradientCenteredLabel(messageRes = R.string.scan_results_preview_unavailable)
+                            }
                             else -> {
                                 key(currentModelUrl) {
                                     MetricAvatarPreview(
@@ -319,7 +312,6 @@ private fun CompareModelsPanel(
                                         modifier = Modifier.fillMaxSize(),
                                         useGradientBackground = false,
                                         compareRotationLink = compareRotationLink,
-                                        onSurfaceReadyForThumbnail = onSurfaceReadyForThumbnail,
                                     )
                                 }
                             }

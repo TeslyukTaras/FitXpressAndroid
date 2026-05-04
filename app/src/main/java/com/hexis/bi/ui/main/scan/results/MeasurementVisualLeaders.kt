@@ -45,7 +45,6 @@ import com.hexis.bi.utils.cmToFeetAndInches
 private data class LeaderLabelLines(val title: String, val valueLine: String)
 
 private val PillSurfaceColor = Color.White.copy(alpha = 0.85f)
-/** Material Blue 300 */
 private val PillValueBlue300 = Color(0xFF64B5F6)
 private val PillLabelBlack = Color.Black
 private val LeaderStrokeColor = Color(0xFF90A4AE)
@@ -116,7 +115,7 @@ internal fun MeasurementLeaderOverlay(
                             sx,
                             sy,
                         )
-                        if (poly.size >= 8) polys.add(poly)
+                        if (poly.size >= 4) polys.add(poly)
                     }
                     if (packedOpp != null && packedOpp.size >= 9) {
                         val poly = projectPackedPolylineToOverlay(
@@ -125,27 +124,13 @@ internal fun MeasurementLeaderOverlay(
                             sx,
                             sy,
                         )
-                        if (poly.size >= 8) polys.add(poly)
+                        if (poly.size >= 4) polys.add(poly)
                     }
                     if (polys.isNotEmpty()) {
                         val attach = if (polys.size == 1) {
                             leaderAttachPointForCircumferenceSlice(polys[0], start)
                         } else {
                             leaderAttachPointForCircumferenceSlices(polys, start)
-                        }
-                        for (poly in polys) {
-                            val slicePath = Path().apply {
-                                moveTo(poly[0].x, poly[0].y)
-                                for (k in 1 until poly.size) {
-                                    lineTo(poly[k].x, poly[k].y)
-                                }
-                                close()
-                            }
-                            drawPath(
-                                path = slicePath,
-                                color = LeaderStrokeColor,
-                                style = Stroke(width = strokePx * 0.92f),
-                            )
                         }
                         drawPath(
                             path = leaderLinePath(start = start, end = attach),

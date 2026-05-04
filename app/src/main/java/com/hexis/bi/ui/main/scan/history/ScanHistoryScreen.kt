@@ -1,5 +1,6 @@
 package com.hexis.bi.ui.main.scan.history
 
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Base64
 import androidx.compose.foundation.Image
@@ -49,6 +50,8 @@ import com.hexis.bi.ui.theme.GrayText
 import com.hexis.bi.ui.theme.Green
 import com.hexis.bi.ui.theme.OneTimeGrey
 import com.hexis.bi.ui.theme.Red100
+import kotlin.math.max
+import kotlin.math.roundToInt
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -153,29 +156,7 @@ private fun ScanHistoryCard(
                 .clip(MaterialTheme.shapes.extraSmall),
             contentAlignment = Alignment.Center,
         ) {
-            val thumb = remember(item.modelPreviewPngBase64) {
-                item.modelPreviewPngBase64?.let { b64 ->
-                    runCatching {
-                        val bytes = Base64.decode(b64, Base64.NO_WRAP)
-                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
-                    }.getOrNull()
-                }
-            }
-            if (thumb != null) {
-                Image(
-                    bitmap = thumb,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
-            } else {
-                Icon(
-                    painter = painterResource(R.drawable.ic_body_filled),
-                    contentDescription = null,
-                    modifier = Modifier.size(dimensionResource(R.dimen.icon_normalized)),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-            }
+            ScanHistoryCardThumbnail(modelPreviewPngBase64 = item.modelPreviewPngBase64)
         }
         Spacer(Modifier.size(dimensionResource(R.dimen.spacer_m)))
         Column(modifier = Modifier.weight(1f)) {
@@ -197,6 +178,52 @@ private fun ScanHistoryCard(
             )
         }
     }
+}
+
+@Composable
+private fun ScanHistoryCardThumbnail(
+    modelPreviewPngBase64: String?,
+    modifier: Modifier = Modifier,
+) {
+    val bitmap = remember(modelPreviewPngBase64) {
+        decodeScanHistoryPreviewBitmap(modelPreviewPngBase64)
+    }
+    Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        if (bitmap != null) {
+            Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = stringResource(R.string.cd_scan_history_thumbnail),
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        } else {
+            Icon(
+                painter = painterResource(R.drawable.ic_body_filled),
+                contentDescription = null,
+                modifier = Modifier.size(dimensionResource(R.dimen.icon_normalized)),
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    }
+}
+
+private const val SCAN_HISTORY_PREVIEW_DECODE_MAX_PX = 256
+
+private fun decodeScanHistoryPreviewBitmap(base64: String?): Bitmap? {
+    if (base64.isNullOrBlank()) return null
+    val payload = base64.trim()
+        .removePrefix("data:image/png;base64,")
+        .removePrefix("data:image/jpeg;base64,")
+    val decoded = runCatching {
+        Base64.decode(payload, Base64.DEFAULT)
+    }.getOrNull() ?: return null
+    val bmp = BitmapFactory.decodeByteArray(decoded, 0, decoded.size) ?: return null
+    val maxPx = SCAN_HISTORY_PREVIEW_DECODE_MAX_PX
+    if (bmp.width <= maxPx && bmp.height <= maxPx) return bmp
+    val scale = maxPx.toFloat() / max(bmp.width, bmp.height).toFloat()
+    val nw = (bmp.width * scale).roundToInt().coerceAtLeast(1)
+    val nh = (bmp.height * scale).roundToInt().coerceAtLeast(1)
+    return Bitmap.createScaledBitmap(bmp, nw, nh, true)
 }
 
 @Composable

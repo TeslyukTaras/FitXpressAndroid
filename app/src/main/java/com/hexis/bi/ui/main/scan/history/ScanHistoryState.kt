@@ -14,6 +14,6 @@ data class ScanHistoryListItem(
     val dateLabel: String,
     val timeLabel: String,
     val topChange: TopChangeVsPrevious?,
-    /** Low-res PNG thumbnail (base64), optional for legacy scans. */
+    /** Optional cached list thumbnail from Firestore (LIST_SUMMARY projection). */
     val modelPreviewPngBase64: String? = null,
 )
