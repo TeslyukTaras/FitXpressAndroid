@@ -9,6 +9,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.AttributeSet
 import android.view.MotionEvent
+import android.view.SurfaceView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +44,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.AppButton
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.BufferedReader
@@ -143,12 +145,17 @@ internal fun MetricAvatarPreview(
     onMeasurementGuideLoaded: ((MetricAvatarMeasurementGuide) -> Unit)? = null,
     /** Invoked on the main thread when the mesh is loaded and the GL surface is visible (opaque). */
     onAvatarReady: (() -> Unit)? = null,
+    /**
+     * Once after the first frame is ready — capture a low-res PNG for scan history when appropriate.
+     */
+    onSurfaceReadyForThumbnail: ((SurfaceView) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val latestOnInteraction by rememberUpdatedState(onInteractionChanged)
     val latestTransform by rememberUpdatedState(onVisualTransformChanged)
     val latestAnchors by rememberUpdatedState(onMeasurementGuideLoaded)
     val latestOnAvatarReady by rememberUpdatedState(onAvatarReady)
+    val latestSurfaceThumbnail by rememberUpdatedState(onSurfaceReadyForThumbnail)
     val view = remember(context) { MetricAvatarSurfaceView(context) { latestOnInteraction(it) } }
     var loadState by remember { mutableStateOf(MetricAvatarLoadState.Loading) }
     var reloadKey by remember { mutableIntStateOf(0) }
@@ -210,6 +217,15 @@ internal fun MetricAvatarPreview(
     LaunchedEffect(initialYawDegrees, initialPitchDegrees, loadState, compareRotationLink) {
         if (loadState != MetricAvatarLoadState.Ready || compareRotationLink != null) return@LaunchedEffect
         view.setBaseOrientation(initialYawDegrees, initialPitchDegrees)
+    }
+
+    var thumbnailNotifyDone by remember(modelUrl, reloadKey) { mutableStateOf(false) }
+    LaunchedEffect(loadState, modelUrl, reloadKey, latestSurfaceThumbnail, compareRotationLink) {
+        if (thumbnailNotifyDone || loadState != MetricAvatarLoadState.Ready) return@LaunchedEffect
+        val cb = latestSurfaceThumbnail ?: return@LaunchedEffect
+        thumbnailNotifyDone = true
+        delay(96)
+        cb(view)
     }
 
     val containerModifier = if (useGradientBackground) {

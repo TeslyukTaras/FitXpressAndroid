@@ -1,5 +1,8 @@
 package com.hexis.bi.ui.main.scan.history
 
+import android.graphics.BitmapFactory
+import android.util.Base64
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,9 +25,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -147,12 +153,29 @@ private fun ScanHistoryCard(
                 .clip(MaterialTheme.shapes.extraSmall),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_body_filled),
-                contentDescription = null,
-                modifier = Modifier.size(dimensionResource(R.dimen.icon_normalized)),
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
+            val thumb = remember(item.modelPreviewPngBase64) {
+                item.modelPreviewPngBase64?.let { b64 ->
+                    runCatching {
+                        val bytes = Base64.decode(b64, Base64.NO_WRAP)
+                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+                    }.getOrNull()
+                }
+            }
+            if (thumb != null) {
+                Image(
+                    bitmap = thumb,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                Icon(
+                    painter = painterResource(R.drawable.ic_body_filled),
+                    contentDescription = null,
+                    modifier = Modifier.size(dimensionResource(R.dimen.icon_normalized)),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
         }
         Spacer(Modifier.size(dimensionResource(R.dimen.spacer_m)))
         Column(modifier = Modifier.weight(1f)) {

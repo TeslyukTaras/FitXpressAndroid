@@ -13,11 +13,13 @@ import com.hexis.bi.data.reminder.ScanReminderScheduler
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.calculateAge
+import com.hexis.bi.utils.formatAsScanDocId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import timber.log.Timber
+import java.util.Date
 
 class StartScanViewModel(
     application: Application,
@@ -160,14 +162,17 @@ class StartScanViewModel(
 
             when (progress) {
                 is ScanProgress.Success -> {
+                    val savedAtMillis = System.currentTimeMillis()
+                    val scanDocId = Date(savedAtMillis).formatAsScanDocId()
                     // Store result for Results screen
                     scanResultRepository.latestResult = ScanResult(
                         measurementId = progress.response.id,
                         response = progress.response,
+                        firestoreScanDocumentId = scanDocId,
                     )
 
                     // Save to Firestore history
-                    scanHistoryRepository.saveScan(progress.response)
+                    scanHistoryRepository.saveScan(progress.response, savedAtMillis)
                     scanReminderScheduler.onNotificationSettingsOrScanChanged()
                     notificationInbox.appendInbox(
                         R.string.notif_body_scan_done_title,

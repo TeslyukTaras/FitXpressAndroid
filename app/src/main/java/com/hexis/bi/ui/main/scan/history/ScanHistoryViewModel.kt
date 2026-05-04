@@ -42,6 +42,7 @@ class ScanHistoryViewModel(
                         dateLabel = formatDate(scan.timestamp),
                         timeLabel = formatTime(scan.timestamp),
                         topChange = MeasurementMapper.topChangeVsPreviousScan(scan, prev),
+                        modelPreviewPngBase64 = scan.modelPreviewPngBase64,
                     )
                 }
                 val dateRangeText = when {

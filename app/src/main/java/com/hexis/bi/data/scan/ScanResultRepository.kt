@@ -14,4 +14,6 @@ class ScanResultRepository {
 data class ScanResult(
     val measurementId: String,
     val response: MeasurementResponse,
+    /** Firestore document id under `users/{uid}/scans/{id}` (see [ScanHistoryRepository.saveScan]). */
+    val firestoreScanDocumentId: String? = null,
 )

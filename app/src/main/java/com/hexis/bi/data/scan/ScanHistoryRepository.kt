@@ -4,6 +4,7 @@ import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.SetOptions
 import com.hexis.bi.data.scan.api.MeasurementResponse
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.COLLECTION_SCANS
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.COLLECTION_USERS
@@ -24,6 +25,7 @@ import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_HEIGHT
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_ID
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_LEAN_BODY_MASS
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_MODEL_3D_URL
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_MODEL_PREVIEW_PNG_BASE64
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_SAVED_AT
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_STATUS
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_URL
@@ -63,6 +65,8 @@ data class ScanRecord(
     val id: String = "",
     val timestamp: Long = 0L,
     val model3dUrl: String? = null,
+    /** Low-res PNG of the 3D preview (base64), for history thumbnails; optional on older scans. */
+    val modelPreviewPngBase64: String? = null,
     val measurements: Map<String, Float> = emptyMap(),
     /** Front-view linear / ANFA-style params (from API `front_linear_params`). */
     val frontLinearParams: Map<String, Float> = emptyMap(),
@@ -129,6 +133,15 @@ class ScanHistoryRepository(
         batch.commit().await()
         Timber.d("saveScan: wrote %s with %d fields", docId, mainData.size)
     }
+
+    /** Persists a small PNG preview (base64) for the scan history list. */
+    suspend fun updateScanModelPreview(scanDocumentId: String, pngBase64: String): Result<Unit> =
+        runCatching {
+            scansCollection().document(scanDocumentId).set(
+                mapOf(FIELD_MODEL_PREVIEW_PNG_BASE64 to pngBase64),
+                SetOptions.merge(),
+            ).await()
+        }
 
     suspend fun getLatestScan(): Result<ScanRecord?> =
         fetchRecentScans(limit = 1, projection = ScanFetchProjection.FULL).map { it.firstOrNull() }
@@ -204,6 +217,7 @@ class ScanHistoryRepository(
                     id = doc.id,
                     timestamp = doc.getTimestamp(FIELD_SAVED_AT)?.toDate()?.time ?: 0L,
                     model3dUrl = null,
+                    modelPreviewPngBase64 = null,
                     measurements = emptyMap(),
                     frontLinearParams = emptyMap(),
                     sideLinearParams = emptyMap(),
@@ -212,6 +226,7 @@ class ScanHistoryRepository(
                     id = doc.id,
                     timestamp = doc.getTimestamp(FIELD_SAVED_AT)?.toDate()?.time ?: 0L,
                     model3dUrl = null,
+                    modelPreviewPngBase64 = doc.getString(FIELD_MODEL_PREVIEW_PNG_BASE64),
                     measurements = loadSubNumericParams(doc, SUB_CIRCUMFERENCE_PARAMS),
                     frontLinearParams = emptyMap(),
                     sideLinearParams = emptyMap(),
@@ -238,6 +253,7 @@ class ScanHistoryRepository(
             id = doc.id,
             timestamp = doc.getTimestamp(FIELD_SAVED_AT)?.toDate()?.time ?: 0L,
             model3dUrl = doc.getString(FIELD_MODEL_3D_URL),
+            modelPreviewPngBase64 = doc.getString(FIELD_MODEL_PREVIEW_PNG_BASE64),
             measurements = measurements,
             frontLinearParams = frontLinearParams,
             sideLinearParams = sideLinearParams,

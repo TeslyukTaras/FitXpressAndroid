@@ -14,4 +14,6 @@ data class ScanHistoryListItem(
     val dateLabel: String,
     val timeLabel: String,
     val topChange: TopChangeVsPrevious?,
+    /** Low-res PNG thumbnail (base64), optional for legacy scans. */
+    val modelPreviewPngBase64: String? = null,
 )

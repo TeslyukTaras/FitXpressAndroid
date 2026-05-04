@@ -133,6 +133,20 @@ internal fun MeasurementLeaderOverlay(
                         } else {
                             leaderAttachPointForCircumferenceSlices(polys, start)
                         }
+                        for (poly in polys) {
+                            val slicePath = Path().apply {
+                                moveTo(poly[0].x, poly[0].y)
+                                for (k in 1 until poly.size) {
+                                    lineTo(poly[k].x, poly[k].y)
+                                }
+                                close()
+                            }
+                            drawPath(
+                                path = slicePath,
+                                color = LeaderStrokeColor,
+                                style = Stroke(width = strokePx * 0.92f),
+                            )
+                        }
                         drawPath(
                             path = leaderLinePath(start = start, end = attach),
                             color = LeaderStrokeColor,

@@ -19,6 +19,7 @@ object ScanFirestoreConstants {
     const val FIELD_SAVED_AT = "savedAt"
     const val FIELD_GENDER = "gender"
     const val FIELD_MODEL_3D_URL = "model3dUrl"
+    const val FIELD_MODEL_PREVIEW_PNG_BASE64 = "modelPreviewPngBase64"
     const val FIELD_HEIGHT = "height"
     const val FIELD_WEIGHT = "weight"
     const val FIELD_AGE = "age"
