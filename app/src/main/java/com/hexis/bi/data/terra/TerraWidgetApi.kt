@@ -47,16 +47,16 @@ class TerraWidgetApi(private val client: OkHttpClient) {
     suspend fun authenticateUser(referenceId: String, resource: String): Result<String> =
         withContext(Dispatchers.IO) {
             try {
-                val url = "$TERRA_BASE_URL/auth/authenticateUser".toHttpUrl().newBuilder()
-                    .addQueryParameter("resource", resource)
-                    .addQueryParameter("reference_id", referenceId)
-                    .addQueryParameter("auth_success_redirect_url", TerraDeepLinks.SUCCESS_URL)
-                    .addQueryParameter("auth_failure_redirect_url", TerraDeepLinks.FAILURE_URL)
-                    .addQueryParameter("language", "en")
+                val url = "$TERRA_BASE_URL${Path.AUTHENTICATE_USER}".toHttpUrl().newBuilder()
+                    .addQueryParameter(Query.RESOURCE, resource)
+                    .addQueryParameter(Query.REFERENCE_ID, referenceId)
+                    .addQueryParameter(Query.AUTH_SUCCESS_REDIRECT_URL, TerraDeepLinks.SUCCESS_URL)
+                    .addQueryParameter(Query.AUTH_FAILURE_REDIRECT_URL, TerraDeepLinks.FAILURE_URL)
+                    .addQueryParameter(Query.LANGUAGE, DEFAULT_LANGUAGE)
                     .build()
 
                 val request = terraRequest(url.toString())
-                    .post("{}".toRequestBody(TERRA_JSON_MEDIA))
+                    .post(EMPTY_JSON_BODY.toRequestBody(TERRA_JSON_MEDIA))
                     .build()
 
                 client.newCall(request).execute().use { response ->
@@ -90,7 +90,7 @@ class TerraWidgetApi(private val client: OkHttpClient) {
                     ),
                 )
 
-                val request = terraRequest("$TERRA_BASE_URL/auth/generateWidgetSession")
+                val request = terraRequest("$TERRA_BASE_URL${Path.GENERATE_WIDGET_SESSION}")
                     .post(payload.toRequestBody(TERRA_JSON_MEDIA))
                     .build()
 
@@ -106,4 +106,22 @@ class TerraWidgetApi(private val client: OkHttpClient) {
                 Result.failure(e)
             }
         }
+
+    private object Path {
+        const val AUTHENTICATE_USER = "/auth/authenticateUser"
+        const val GENERATE_WIDGET_SESSION = "/auth/generateWidgetSession"
+    }
+
+    private object Query {
+        const val RESOURCE = "resource"
+        const val REFERENCE_ID = "reference_id"
+        const val AUTH_SUCCESS_REDIRECT_URL = "auth_success_redirect_url"
+        const val AUTH_FAILURE_REDIRECT_URL = "auth_failure_redirect_url"
+        const val LANGUAGE = "language"
+    }
+
+    private companion object {
+        const val DEFAULT_LANGUAGE = "en"
+        const val EMPTY_JSON_BODY = "{}"
+    }
 }
