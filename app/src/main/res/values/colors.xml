@@ -7,4 +7,13 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Scan results: measurement leader pills + canvas leaders (Compose overlay on avatar preview). -->
+    <color name="measurement_leader_pill_surface">#D9FFFFFF</color>
+    <color name="measurement_leader_pill_value">#FF64B5F6</color>
+    <color name="measurement_leader_stroke">#FF90A4AE</color>
+
+    <!-- Metric avatar 3D preview radial gradient (Compose + GL read same res in [MetricAvatarRenderer]). -->
+    <color name="metric_avatar_preview_gradient_inner">#FFFEFEFE</color>
+    <color name="metric_avatar_preview_gradient_outer">#FFC3C0C5</color>
 </resources>

@@ -33,14 +33,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.AppButton
 import kotlinx.coroutines.Dispatchers
@@ -56,30 +57,27 @@ import java.util.concurrent.CopyOnWriteArrayList
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
+private object MetricAvatarNeckCapBuild {
+    const val PLANE_INSET_MODEL_UNITS = 0.005f
+}
+
 /**
- * RGB stops for [MetricAvatarPreviewBackgroundBrush] / GL preview background — keep in sync with
- * [MetricAvatarPreviewBackgroundColors].
+ * Radial preview backdrop behind the GL mesh — uses [@color/metric_avatar_preview_gradient_inner] /
+ * [@color/metric_avatar_preview_gradient_outer] (same as [MetricAvatarRenderer] GL uniforms).
  */
-private const val PREVIEW_GRADIENT_INNER_R = 254f / 255f
-private const val PREVIEW_GRADIENT_INNER_G = 254f / 255f
-private const val PREVIEW_GRADIENT_INNER_B = 254f / 255f
-private const val PREVIEW_GRADIENT_OUTER_R = 195f / 255f
-private const val PREVIEW_GRADIENT_OUTER_G = 192f / 255f
-private const val PREVIEW_GRADIENT_OUTER_B = 197f / 255f
-
-private val MetricAvatarPreviewBackgroundColors =
-    listOf(Color(0xFFFEFEFE), Color(0xFFC3C0C5))
-
-/** Single brush instance so the preview background is identical in every state. */
-internal val MetricAvatarPreviewBackgroundBrush: Brush =
-    Brush.radialGradient(
-        colors = MetricAvatarPreviewBackgroundColors,
-        center = Offset.Unspecified,
-        radius = Float.POSITIVE_INFINITY,
-    )
-
-internal fun Modifier.metricAvatarPreviewGradientBackground(): Modifier =
-    background(MetricAvatarPreviewBackgroundBrush)
+@Composable
+internal fun Modifier.metricAvatarPreviewGradientBackground(): Modifier {
+    val inner = colorResource(R.color.metric_avatar_preview_gradient_inner)
+    val outer = colorResource(R.color.metric_avatar_preview_gradient_outer)
+    val brush = remember(inner, outer) {
+        Brush.radialGradient(
+            colors = listOf(inner, outer),
+            center = Offset.Unspecified,
+            radius = Float.POSITIVE_INFINITY,
+        )
+    }
+    return this.background(brush)
+}
 
 /** Default starting orientation for the rotatable mesh, in degrees. */
 private const val INITIAL_PITCH_DEG = -12f
@@ -320,6 +318,7 @@ private class MetricAvatarSurfaceView : GLSurfaceView {
          * and the surface tears down with the screen instead of lingering above during transitions.
          * Translucent EGL + [GLES20.glClearColor] alpha 0 preserves the gradient behind the mesh.
          */
+        avatarRenderer.setPreviewGradientFromResources(context)
         setRenderer(avatarRenderer)
         renderMode = RENDERMODE_WHEN_DIRTY
     }
@@ -431,7 +430,7 @@ private fun buildNeckCapMeshBuffer(
     packedNeck: FloatArray?,
     planeNormal: FloatArray,
 ): Pair<FloatBuffer?, Int> {
-    if (packedNeck == null || packedNeck.size < 9) return null to 0
+    if (packedNeck == null || packedNeck.size < MetricAvatarPackedGeometry.MIN_PACKED_POLYLINE_FLOATS) return null to 0
     val pts = ArrayList<FloatArray>(packedNeck.size / 3)
     var i = 0
     while (i + 2 < packedNeck.size) {
@@ -442,7 +441,7 @@ private fun buildNeckCapMeshBuffer(
     val nx = planeNormal[0]
     val ny = planeNormal[1]
     val nz = planeNormal[2]
-    val inset = 0.005f
+    val inset = MetricAvatarNeckCapBuild.PLANE_INSET_MODEL_UNITS
     fun off(p: FloatArray) = floatArrayOf(
         p[0] - nx * inset,
         p[1] - ny * inset,
@@ -501,6 +500,9 @@ private object ObjParser {
 
     private const val OBJ_URL_CONNECT_TIMEOUT_MS = 10_000
     private const val OBJ_URL_READ_TIMEOUT_MS = 15_000
+
+    /** Minimum whitespace-separated tokens for a valid `v x y z` vertex line. */
+    private const val OBJ_VERTEX_LINE_MIN_TOKENS = 4
 
     /**
      * Body regions where vertices are not merged aggressively.
@@ -613,7 +615,7 @@ private object ObjParser {
 
     private fun parseVertex(line: String, vertices: MutableList<FloatArray>) {
         val parts = line.trim().split(Regex("\\s+"))
-        if (parts.size < 4) return
+        if (parts.size < OBJ_VERTEX_LINE_MIN_TOKENS) return
         vertices.add(
             floatArrayOf(
                 parts[1].toFloatOrNull() ?: 0f,
@@ -865,6 +867,14 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
     private var gradientLocOuter = 0
     private var fullscreenClipBuffer: FloatBuffer? = null
 
+    /** GL clear / gradient uniforms — loaded from [@color/metric_avatar_preview_gradient_*] via [setPreviewGradientFromResources]. */
+    private var previewGradientInnerR = 254f / 255f
+    private var previewGradientInnerG = 254f / 255f
+    private var previewGradientInnerB = 254f / 255f
+    private var previewGradientOuterR = 195f / 255f
+    private var previewGradientOuterG = 192f / 255f
+    private var previewGradientOuterB = 197f / 255f
+
     private var rotationLink: CompareRotationLink? = null
 
     private val projection = FloatArray(MetricAvatarCamera.MATRIX_SIZE)
@@ -883,6 +893,17 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
     private val mainHandler = Handler(Looper.getMainLooper())
     private var lastPostedYaw = Float.NaN
     private var lastPostedPitch = Float.NaN
+
+    fun setPreviewGradientFromResources(context: Context) {
+        val inner = ContextCompat.getColor(context, R.color.metric_avatar_preview_gradient_inner)
+        val outer = ContextCompat.getColor(context, R.color.metric_avatar_preview_gradient_outer)
+        previewGradientInnerR = android.graphics.Color.red(inner) / 255f
+        previewGradientInnerG = android.graphics.Color.green(inner) / 255f
+        previewGradientInnerB = android.graphics.Color.blue(inner) / 255f
+        previewGradientOuterR = android.graphics.Color.red(outer) / 255f
+        previewGradientOuterG = android.graphics.Color.green(outer) / 255f
+        previewGradientOuterB = android.graphics.Color.blue(outer) / 255f
+    }
 
     fun setVisualTransformListener(listener: ((Float, Float, Int, Int) -> Unit)?) {
         visualTransformListener = listener
@@ -903,8 +924,8 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
         val y = modelYaw()
         val p = modelPitch()
         if (!force &&
-            kotlin.math.abs(y - lastPostedYaw) < 0.025f &&
-            kotlin.math.abs(p - lastPostedPitch) < 0.025f
+            kotlin.math.abs(y - lastPostedYaw) < VISUAL_TRANSFORM_POST_MIN_DELTA &&
+            kotlin.math.abs(p - lastPostedPitch) < VISUAL_TRANSFORM_POST_MIN_DELTA
         ) {
             return
         }
@@ -946,10 +967,10 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
         val buf = fullscreenClipBuffer
         if (prog == 0 || buf == null) {
             GLES20.glClearColor(
-                PREVIEW_GRADIENT_INNER_R,
-                PREVIEW_GRADIENT_INNER_G,
-                PREVIEW_GRADIENT_INNER_B,
-                1f,
+                previewGradientInnerR,
+                previewGradientInnerG,
+                previewGradientInnerB,
+                PREVIEW_CLEAR_ALPHA,
             )
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
             return
@@ -965,15 +986,15 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
         )
         GLES20.glUniform3f(
             gradientLocInner,
-            PREVIEW_GRADIENT_INNER_R,
-            PREVIEW_GRADIENT_INNER_G,
-            PREVIEW_GRADIENT_INNER_B,
+            previewGradientInnerR,
+            previewGradientInnerG,
+            previewGradientInnerB,
         )
         GLES20.glUniform3f(
             gradientLocOuter,
-            PREVIEW_GRADIENT_OUTER_R,
-            PREVIEW_GRADIENT_OUTER_G,
-            PREVIEW_GRADIENT_OUTER_B,
+            previewGradientOuterR,
+            previewGradientOuterG,
+            previewGradientOuterB,
         )
 
         buf.position(0)
@@ -992,11 +1013,17 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
         if (capCount <= 0 || neckCapProgram == 0 || neckCapAPos < 0) return
 
         GLES20.glEnable(GLES20.GL_POLYGON_OFFSET_FILL)
-        GLES20.glPolygonOffset(-1.5f, -2f)
+        GLES20.glPolygonOffset(NECK_CAP_POLYGON_OFFSET_FACTOR, NECK_CAP_POLYGON_OFFSET_UNITS)
 
         GLES20.glUseProgram(neckCapProgram)
         GLES20.glUniformMatrix4fv(neckCapUMvp, 1, false, mvp, 0)
-        GLES20.glUniform4f(neckCapUColor, SUIT_R * 0.94f, SUIT_G + 0.04f, SUIT_B + 0.12f, 1f)
+        GLES20.glUniform4f(
+            neckCapUColor,
+            SUIT_R * NECK_CAP_SUIT_R_SCALE,
+            SUIT_G + NECK_CAP_SUIT_G_BIAS,
+            SUIT_B + NECK_CAP_SUIT_B_BIAS,
+            PREVIEW_CLEAR_ALPHA,
+        )
 
         capBuf.position(0)
         GLES20.glVertexAttribPointer(neckCapAPos, 3, GLES20.GL_FLOAT, false, 0, capBuf)
@@ -1014,14 +1041,14 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
 
         GLES20.glUseProgram(prog)
         GLES20.glUniformMatrix4fv(leaderUMvp, 1, false, mvp, 0)
-        GLES20.glUniform4f(leaderUColor, 1f, 0.84f, 0.15f, 1f)
+        GLES20.glUniform4f(leaderUColor, LEADER_LINE_R, LEADER_LINE_G, LEADER_LINE_B, LEADER_LINE_A)
 
         GLES20.glDepthMask(false)
 
         lines.position(0)
         GLES20.glVertexAttribPointer(leaderAPos, 3, GLES20.GL_FLOAT, false, 0, lines)
         GLES20.glEnableVertexAttribArray(leaderAPos)
-        GLES20.glLineWidth(2f)
+        GLES20.glLineWidth(LEADER_LINE_WIDTH_PX)
         GLES20.glDrawArrays(GLES20.GL_LINES, 0, leaderLineVertCount)
 
         GLES20.glDisableVertexAttribArray(leaderAPos)
@@ -1072,10 +1099,10 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES20.glClearColor(
-            PREVIEW_GRADIENT_INNER_R,
-            PREVIEW_GRADIENT_INNER_G,
-            PREVIEW_GRADIENT_INNER_B,
-            1f,
+            previewGradientInnerR,
+            previewGradientInnerG,
+            previewGradientInnerB,
+            PREVIEW_CLEAR_ALPHA,
         )
         GLES20.glEnable(GLES20.GL_DEPTH_TEST)
 
@@ -1091,9 +1118,9 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
             .asFloatBuffer()
         clipBb.put(
             floatArrayOf(
-                -1f, -1f,
-                3f, -1f,
-                -1f, 3f,
+                CLIP_TRIANGLE_X0, CLIP_TRIANGLE_Y0,
+                CLIP_TRIANGLE_X1, CLIP_TRIANGLE_Y1,
+                CLIP_TRIANGLE_X2, CLIP_TRIANGLE_Y2,
             ),
         )
         clipBb.position(0)
@@ -1331,7 +1358,30 @@ private class MetricAvatarRenderer : GLSurfaceView.Renderer {
         private const val BARY_FLOAT_OFFSET = FLOATS_PER_ATTRIB
         private const val EDGE_MASK_FLOAT_OFFSET = FLOATS_PER_ATTRIB * 2
 
-        /** Radial gradient matching [MetricAvatarPreviewBackgroundBrush] (center → edge). */
+        private const val PREVIEW_CLEAR_ALPHA = 1f
+
+        private const val NECK_CAP_POLYGON_OFFSET_FACTOR = -1.5f
+        private const val NECK_CAP_POLYGON_OFFSET_UNITS = -2f
+        private const val NECK_CAP_SUIT_R_SCALE = 0.94f
+        private const val NECK_CAP_SUIT_G_BIAS = 0.04f
+        private const val NECK_CAP_SUIT_B_BIAS = 0.12f
+
+        private const val LEADER_LINE_R = 1f
+        private const val LEADER_LINE_G = 0.84f
+        private const val LEADER_LINE_B = 0.15f
+        private const val LEADER_LINE_A = 1f
+        private const val LEADER_LINE_WIDTH_PX = 2f
+
+        private const val VISUAL_TRANSFORM_POST_MIN_DELTA = 0.025f
+
+        private const val CLIP_TRIANGLE_X0 = -1f
+        private const val CLIP_TRIANGLE_Y0 = -1f
+        private const val CLIP_TRIANGLE_X1 = 3f
+        private const val CLIP_TRIANGLE_Y1 = -1f
+        private const val CLIP_TRIANGLE_X2 = -1f
+        private const val CLIP_TRIANGLE_Y2 = 3f
+
+        /** Radial gradient matching [@color/metric_avatar_preview_gradient_inner] / [_outer] (Compose + GL). */
         private const val GRADIENT_VERTEX_SHADER = """
             attribute vec2 aClip;
             void main() {

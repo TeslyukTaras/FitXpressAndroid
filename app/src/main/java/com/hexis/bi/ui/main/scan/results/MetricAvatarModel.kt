@@ -36,6 +36,25 @@ internal object MetricAvatarCamera {
     const val HEADLESS_BODY_FRAMING_OFFSET_Y = 0.12f
     /** Camera distance multiplier — lower = closer camera / larger figure in the preview. */
     const val HEADLESS_PREVIEW_DISTANCE_SCALE = 0.82f
+
+    /** Reject [projectModelPointToViewPx] when NDC lands outside this padded box (numerical slack). */
+    const val PROJECTION_NDC_VALID_MIN = -1.5f
+    const val PROJECTION_NDC_VALID_MAX = 1.5f
+
+    /** Map NDC in [-1,1] to pixel span along each axis (matches GL clip → viewport convention). */
+    const val PROJECTION_NDC_AXIS_HALF = 1f
+    const val PROJECTION_NDC_TO_PIXEL_SCALE = 0.5f
+}
+
+/**
+ * Shared thresholds for packed XYZ rings / polylines (OBJ slice data + Visual overlay leaders).
+ */
+internal object MetricAvatarPackedGeometry {
+    /** Minimum packed floats for a ring sample (three model-space points × XYZ). */
+    const val MIN_PACKED_POLYLINE_FLOATS = 9
+
+    /** Minimum projected screen vertices before treating a contour as drawable / closed. */
+    const val MIN_PROJECTED_POLYLINE_VERTICES = 4
 }
 
 internal fun computeMetricAvatarViewDistance(viewWidth: Int, viewHeight: Int): Float {
@@ -110,10 +129,16 @@ internal fun projectModelPointToViewPx(
     if (w <= 0f) return null
     val ndcX = clip[0] / w
     val ndcY = clip[1] / w
-    if (ndcX !in -1.5f..1.5f || ndcY !in -1.5f..1.5f) return null
+    if (ndcX !in MetricAvatarCamera.PROJECTION_NDC_VALID_MIN..MetricAvatarCamera.PROJECTION_NDC_VALID_MAX ||
+        ndcY !in MetricAvatarCamera.PROJECTION_NDC_VALID_MIN..MetricAvatarCamera.PROJECTION_NDC_VALID_MAX
+    ) {
+        return null
+    }
 
-    val px = (ndcX + 1f) * 0.5f * viewWidth
-    val py = (1f - ndcY) * 0.5f * viewHeight
+    val half = MetricAvatarCamera.PROJECTION_NDC_AXIS_HALF
+    val scale = MetricAvatarCamera.PROJECTION_NDC_TO_PIXEL_SCALE
+    val px = (ndcX + half) * scale * viewWidth
+    val py = (half - ndcY) * scale * viewHeight
     return Offset(px, py)
 }
 
@@ -673,7 +698,9 @@ internal fun buildMeasurementGuide(
             planeNormal = planeNormal,
             flipLateralFilter = false,
         )
-        if (packed != null && packed.size >= 9) slices[key] = packed
+        if (packed != null && packed.size >= MetricAvatarPackedGeometry.MIN_PACKED_POLYLINE_FLOATS) {
+            slices[key] = packed
+        }
     }
     val oppositeSlices = LinkedHashMap<String, FloatArray>()
     for (key in BilateralCircumferenceKeys) {
@@ -689,7 +716,9 @@ internal fun buildMeasurementGuide(
             planeNormal = planeNormalOpp,
             flipLateralFilter = true,
         )
-        if (packed != null && packed.size >= 9) oppositeSlices[key] = packed
+        if (packed != null && packed.size >= MetricAvatarPackedGeometry.MIN_PACKED_POLYLINE_FLOATS) {
+            oppositeSlices[key] = packed
+        }
     }
     val neckClipPlane = computeNeckClipPlane(anchors)
     return MetricAvatarMeasurementGuide(anchors, slices, oppositeSlices, neckClipPlane)
@@ -1668,7 +1697,7 @@ internal fun leaderAttachPointForCircumferenceSlices(
     var best = pillStart
     var bestD = Float.MAX_VALUE
     for (poly in polylines) {
-        if (poly.size < 4) continue
+        if (poly.size < MetricAvatarPackedGeometry.MIN_PROJECTED_POLYLINE_VERTICES) continue
         val q = closestPointOnClosedPolyline(poly, pillStart)
         val d = distSq(pillStart, q)
         if (d < bestD) {

@@ -109,7 +109,12 @@ fun MainScreen(
                     )
                 }
                 composable(Route.Main.SCAN_RESULTS) {
-                    ResultsScreen(onBack = { navController.popBackStackOnce() })
+                    ResultsScreen(
+                        onBack = {
+                            scanResultRepository.selectedScanId = null
+                            navController.popBackStackOnce()
+                        },
+                    )
                 }
                 composable(Route.Main.SCAN_HISTORY) {
                     ScanHistoryScreen(

@@ -2,6 +2,7 @@ package com.hexis.bi.data.scan
 
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.hexis.bi.data.scan.api.MeasurementResponse
@@ -38,6 +39,9 @@ import com.hexis.bi.utils.constants.ScanFirestoreConstants.SUB_SIDE_LINEAR_PARAM
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.SUB_SUBSCRIPTION_INFO
 import com.hexis.bi.utils.formatAsScanDocId
 import com.hexis.bi.utils.snakeToCamel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -176,7 +180,11 @@ class ScanHistoryRepository(
             .limit(limit)
             .get()
             .await()
-        snapshot.documents.map { buildFullScanRecord(it) }
+        coroutineScope {
+            snapshot.documents.map { doc ->
+                async { buildFullScanRecord(doc) }
+            }.awaitAll()
+        }
     }
 
     /** True if any saved scan in recent history has [ScanRecord.timestamp] in the inclusive range. */
@@ -195,53 +203,51 @@ class ScanHistoryRepository(
         limit: Long,
         projection: ScanFetchProjection,
     ): Result<List<ScanRecord>> = runCatching {
-        val query = scansCollection()
+        val snapshot = scansCollection()
             .orderBy(FIELD_SAVED_AT, Query.Direction.DESCENDING)
             .limit(limit)
+            .get()
+            .await()
 
-        val snapshot = query.get().await()
-
-        snapshot.documents.map { doc ->
-            when (projection) {
-                ScanFetchProjection.TIMESTAMPS_ONLY -> ScanRecord(
-                    id = doc.id,
-                    timestamp = doc.getTimestamp(FIELD_SAVED_AT)?.toDate()?.time ?: 0L,
-                    model3dUrl = null,
-                    modelPreviewPngBase64 = null,
-                    measurements = emptyMap(),
-                    frontLinearParams = emptyMap(),
-                    sideLinearParams = emptyMap(),
-                )
-                ScanFetchProjection.LIST_SUMMARY -> ScanRecord(
-                    id = doc.id,
-                    timestamp = doc.getTimestamp(FIELD_SAVED_AT)?.toDate()?.time ?: 0L,
-                    model3dUrl = null,
-                    modelPreviewPngBase64 = doc.getString(FIELD_MODEL_PREVIEW_PNG_BASE64),
-                    measurements = loadSubNumericParams(doc, SUB_CIRCUMFERENCE_PARAMS),
-                    frontLinearParams = emptyMap(),
-                    sideLinearParams = emptyMap(),
-                )
-                ScanFetchProjection.FULL -> buildFullScanRecord(doc)
-            }
+        coroutineScope {
+            snapshot.documents.map { doc ->
+                async {
+                    when (projection) {
+                        ScanFetchProjection.TIMESTAMPS_ONLY -> ScanRecord(
+                            id = doc.id,
+                            timestamp = doc.savedAtMillis(),
+                        )
+                        ScanFetchProjection.LIST_SUMMARY -> ScanRecord(
+                            id = doc.id,
+                            timestamp = doc.savedAtMillis(),
+                            modelPreviewPngBase64 = doc.getString(FIELD_MODEL_PREVIEW_PNG_BASE64),
+                            measurements = loadSubNumericParams(doc, SUB_CIRCUMFERENCE_PARAMS),
+                        )
+                        ScanFetchProjection.FULL -> buildFullScanRecord(doc)
+                    }
+                }
+            }.awaitAll()
         }
     }
 
     /** Circumference + front/side linear maps merged into [measurements]; each subdoc read once. */
-    private suspend fun buildFullScanRecord(
-        doc: com.google.firebase.firestore.DocumentSnapshot,
-    ): ScanRecord {
-        val circumference = loadSubNumericParams(doc, SUB_CIRCUMFERENCE_PARAMS)
-        val frontLinearParams = loadSubNumericParams(doc, SUB_FRONT_LINEAR_PARAMS)
-        val sideLinearParams = loadSubNumericParams(doc, SUB_SIDE_LINEAR_PARAMS)
+    private suspend fun buildFullScanRecord(doc: DocumentSnapshot): ScanRecord = coroutineScope {
+        val circumferenceDeferred = async { loadSubNumericParams(doc, SUB_CIRCUMFERENCE_PARAMS) }
+        val frontDeferred = async { loadSubNumericParams(doc, SUB_FRONT_LINEAR_PARAMS) }
+        val sideDeferred = async { loadSubNumericParams(doc, SUB_SIDE_LINEAR_PARAMS) }
+
+        val circumference = circumferenceDeferred.await()
+        val frontLinearParams = frontDeferred.await()
+        val sideLinearParams = sideDeferred.await()
 
         val measurements = LinkedHashMap<String, Float>()
         circumference.forEach { (k, v) -> measurements[k] = v }
         frontLinearParams.forEach { (k, v) -> measurements.putIfAbsent(k, v) }
         sideLinearParams.forEach { (k, v) -> measurements.putIfAbsent(k, v) }
 
-        return ScanRecord(
+        ScanRecord(
             id = doc.id,
-            timestamp = doc.getTimestamp(FIELD_SAVED_AT)?.toDate()?.time ?: 0L,
+            timestamp = doc.savedAtMillis(),
             model3dUrl = doc.getString(FIELD_MODEL_3D_URL),
             modelPreviewPngBase64 = doc.getString(FIELD_MODEL_PREVIEW_PNG_BASE64),
             measurements = measurements,
@@ -250,8 +256,11 @@ class ScanHistoryRepository(
         )
     }
 
+    private fun DocumentSnapshot.savedAtMillis(): Long =
+        getTimestamp(FIELD_SAVED_AT)?.toDate()?.time ?: 0L
+
     private suspend fun loadSubNumericParams(
-        doc: com.google.firebase.firestore.DocumentSnapshot,
+        doc: DocumentSnapshot,
         sub: String,
     ): LinkedHashMap<String, Float> {
         val subDoc = doc.reference.collection(sub).document(PARAMS_DOC_ID).get().await()

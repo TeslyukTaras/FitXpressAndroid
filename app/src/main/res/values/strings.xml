@@ -571,6 +571,8 @@
     <string name="unit_cm">cm</string>
     <string name="unit_ft">ft</string>
     <string name="unit_in">in</string>
+    <string name="measurement_leader_value_metric">%1$s %2$s</string>
+    <string name="measurement_leader_value_imperial">%1$s %2$s %3$s %4$s</string>
     <string name="format_value_decimal">%1$.1f</string>
     <string name="format_value_int">%1$d</string>
     <string name="format_delta_up">%1$+.1f %2$s ↑</string>

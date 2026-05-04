@@ -29,7 +29,7 @@ import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppButton
 import com.hexis.bi.ui.components.AppOutlinedButton
-import com.hexis.bi.ui.theme.OneTimeGrey
+import com.hexis.bi.ui.theme.HistoryCardBackground
 import com.hexis.bi.ui.theme.Yellow
 
 @Composable
@@ -95,7 +95,7 @@ private fun SuitNotDetectedCard(
         modifier = modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.medium)
-            .background(OneTimeGrey)
+            .background(HistoryCardBackground)
             .padding(dimensionResource(R.dimen.spacer_m)),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

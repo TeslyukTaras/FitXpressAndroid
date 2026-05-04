@@ -26,7 +26,8 @@ val Gray600 = Color(0xFFF0F0F0)
 
 val GrayText = Color(0xFF686868)
 
-val OneTimeGrey = Color(0xFFF3F3F3)
+/** Muted card surface (scan history rows, error callouts); light-only — consider theme tokens for dark mode later. */
+val HistoryCardBackground = Color(0xFFF3F3F3)
 val Bg = Color(0xFFF7F7FA)
 val White = Color(0xFFFFFFFF)
 

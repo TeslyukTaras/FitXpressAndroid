@@ -89,6 +89,10 @@ object MeasurementMapper {
     /**
      * Circumference with the largest absolute delta vs [previous];
      * null if there is no prior scan, no overlapping keys, or all deltas are negligible.
+     *
+     * All [entries] resolve to circumference keys, so [ScanFetchProjection.LIST_SUMMARY]
+     * (circumference subdoc only) is sufficient input here. If linear-param entries are
+     * ever added, this method requires [ScanFetchProjection.FULL].
      */
     fun topChangeVsPreviousScan(current: ScanRecord, previous: ScanRecord?): TopChangeVsPrevious? {
         if (previous == null) return null

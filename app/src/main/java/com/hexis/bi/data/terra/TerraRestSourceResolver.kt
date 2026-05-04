@@ -34,7 +34,10 @@ class TerraRestSourceResolver(
 
     suspend fun resolveOrderedIdentities(): Result<List<TerraRestIdentity>> {
         val connections = healthConnections.getConnections().getOrElse { e ->
-            Timber.w(e, "healthConnections.getConnections failed; continuing with SDK Health Connect id only")
+            Timber.w(
+                e,
+                "healthConnections.getConnections failed; continuing with SDK Health Connect id only"
+            )
             emptyList()
         }
 
@@ -56,16 +59,20 @@ class TerraRestSourceResolver(
 
         val sdkHc = terraManagerHolder.current?.getUserId(Connections.HEALTH_CONNECT)
         if (!sdkHc.isNullOrBlank() && seen.add(sdkHc)) {
-            out.add(TerraRestIdentity(terraUserId = sdkHc, provider = TerraProviders.HEALTH_CONNECT))
+            out.add(
+                TerraRestIdentity(
+                    terraUserId = sdkHc,
+                    provider = TerraProviders.HEALTH_CONNECT
+                )
+            )
         }
 
-        // Tier 3: third-party apps. Includes any unknown / unclassified providers as a safety net so
-        // a newly added provider is still pulled rather than silently dropped.
+        // Tier 3: known app / fitness integrations (see [TerraProviders.APP_CODES]) plus dev [TerraProviders.DUMMY].
+        // Unknown codes are excluded so mis-typed or future wearables are not merged as low-priority “apps”.
         active
             .filter {
                 val code = it.provider.uppercase()
-                code !in TerraProviders.WEARABLE_CODES &&
-                    code != TerraProviders.HEALTH_CONNECT
+                code in TerraProviders.APP_CODES || code == TerraProviders.DUMMY
             }
             .sortedByConnectionRecency()
             .forUniqueTerraIds(seen, out)
@@ -99,7 +106,7 @@ internal suspend fun <T> TerraRestSourceResolver.fetchMergedFromAllSources(
         }
         perSource.add(parse(rows))
     }
-    if (perSource.isEmpty() && lastError != null) return Result.failure(lastError!!)
+    if (perSource.isEmpty() && lastError != null) return Result.failure(lastError)
     return Result.success(merge(perSource))
 }
 

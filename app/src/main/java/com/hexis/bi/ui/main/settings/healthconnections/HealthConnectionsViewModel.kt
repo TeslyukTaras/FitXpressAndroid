@@ -41,13 +41,7 @@ class HealthConnectionsViewModel(
     private val terraManagerHolder: TerraManagerHolder,
 ) : BaseViewModel(application) {
 
-    private val _state = MutableStateFlow(
-        HealthConnectionsState(
-            sdkProviders = buildSdkProviders(),
-            wearableProviders = buildWearableProviders(),
-            otherProviders = buildOtherProviders(),
-        ),
-    )
+    private val _state = MutableStateFlow(HealthConnectionsState())
     val state = _state.asStateFlow()
 
     private fun buildSdkProviders(): List<TerraProviderUi> = listOf(
@@ -127,6 +121,14 @@ class HealthConnectionsViewModel(
     )
 
     init {
+        _state.update {
+            it.copy(
+                sdkProviders = buildSdkProviders(),
+                wearableProviders = buildWearableProviders(),
+                otherProviders = buildOtherProviders(),
+            )
+        }
+
         healthConnectionsRepository.observeConnections()
             .onEach { items ->
                 val active = items.filter { it.active }

@@ -25,29 +25,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.pointer.pointerInteropFilter
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hexis.bi.R
 import com.hexis.bi.utils.cmToFeetAndInches
 
-private data class LeaderLabelLines(val title: String, val valueLine: String)
 
-private val PillSurfaceColor = Color.White.copy(alpha = 0.85f)
-private val PillValueBlue300 = Color(0xFF64B5F6)
-private val PillLabelBlack = Color.Black
-private val LeaderStrokeColor = Color(0xFF90A4AE)
+/** Resolved measurement pill copy (body part name + primary value line). */
+private data class LeaderLabelLines(val title: String, val valueLine: String)
 
 @Composable
 internal fun MeasurementLeaderOverlay(
@@ -60,14 +55,15 @@ internal fun MeasurementLeaderOverlay(
 ) {
     if (transform == null || transform.widthPx <= 0 || transform.heightPx <= 0) return
 
-    val density = LocalDensity.current
-    val strokePx = with(density) { 1.25.dp.toPx() }
+    val strokeWidthDp = dimensionResource(R.dimen.measurement_leader_stroke_width)
+    val leaderStrokeColor = colorResource(R.color.measurement_leader_stroke)
+    val pillColumnMaxWidth = dimensionResource(R.dimen.measurement_leader_pill_column_max_width)
 
     val edgePadding = dimensionResource(R.dimen.padding_small)
     val pillCorner = dimensionResource(R.dimen.scan_corner_radius)
     val pillPaddingH = dimensionResource(R.dimen.spacer_xs)
     val pillPaddingV = dimensionResource(R.dimen.spacer_xxs)
-    val captionGap = 2.dp
+    val captionGap = dimensionResource(R.dimen.spacer_3xs)
 
     val measurementKeySig = remember(measurements) {
         measurements.joinToString("|") { it.visualAnchorKey }
@@ -94,8 +90,10 @@ internal fun MeasurementLeaderOverlay(
         Canvas(
             Modifier.fillMaxSize(),
         ) {
-            val sx = if (transform.widthPx > 0) size.width / transform.widthPx.toFloat() else 1f
-            val sy = if (transform.heightPx > 0) size.height / transform.heightPx.toFloat() else 1f
+            val sx =
+                if (transform.widthPx > 0) size.width / transform.widthPx.toFloat() else ScanResultsLayout.OVERLAY_SCALE_FALLBACK
+            val sy =
+                if (transform.heightPx > 0) size.height / transform.heightPx.toFloat() else ScanResultsLayout.OVERLAY_SCALE_FALLBACK
 
             for (row in measurements) {
                 val anchor = measurementGuide?.anchorPoints?.get(row.visualAnchorKey)
@@ -104,27 +102,32 @@ internal fun MeasurementLeaderOverlay(
                 val start = labelStarts[row.visualAnchorKey] ?: continue
 
                 if (row.visualAnchorKey in CircumferenceVisualKeys) {
-                    val packedPrimary = measurementGuide?.crossSectionPolylines?.get(row.visualAnchorKey)
+                    val packedPrimary =
+                        measurementGuide?.crossSectionPolylines?.get(row.visualAnchorKey)
                     val packedOpp = measurementGuide?.crossSectionPolylinesOpposite
                         ?.get(row.visualAnchorKey)
                     val polys = ArrayList<List<Offset>>(2)
-                    if (packedPrimary != null && packedPrimary.size >= 9) {
+                    if (packedPrimary != null && packedPrimary.size >= MetricAvatarPackedGeometry.MIN_PACKED_POLYLINE_FLOATS) {
                         val poly = projectPackedPolylineToOverlay(
                             packedPrimary,
                             transform,
                             sx,
                             sy,
                         )
-                        if (poly.size >= 4) polys.add(poly)
+                        if (poly.size >= MetricAvatarPackedGeometry.MIN_PROJECTED_POLYLINE_VERTICES) polys.add(
+                            poly
+                        )
                     }
-                    if (packedOpp != null && packedOpp.size >= 9) {
+                    if (packedOpp != null && packedOpp.size >= MetricAvatarPackedGeometry.MIN_PACKED_POLYLINE_FLOATS) {
                         val poly = projectPackedPolylineToOverlay(
                             packedOpp,
                             transform,
                             sx,
                             sy,
                         )
-                        if (poly.size >= 4) polys.add(poly)
+                        if (poly.size >= MetricAvatarPackedGeometry.MIN_PROJECTED_POLYLINE_VERTICES) polys.add(
+                            poly
+                        )
                     }
                     if (polys.isNotEmpty()) {
                         val attach = if (polys.size == 1) {
@@ -134,8 +137,8 @@ internal fun MeasurementLeaderOverlay(
                         }
                         drawPath(
                             path = leaderLinePath(start = start, end = attach),
-                            color = LeaderStrokeColor,
-                            style = Stroke(width = strokePx),
+                            color = leaderStrokeColor,
+                            style = Stroke(width = strokeWidthDp.toPx()),
                         )
                         continue
                     }
@@ -154,8 +157,8 @@ internal fun MeasurementLeaderOverlay(
                 val end = Offset(proj.x * sx, proj.y * sy)
                 drawPath(
                     path = leaderLinePath(start = start, end = end),
-                    color = LeaderStrokeColor,
-                    style = Stroke(width = strokePx),
+                    color = leaderStrokeColor,
+                    style = Stroke(width = strokeWidthDp.toPx()),
                 )
             }
         }
@@ -167,57 +170,57 @@ internal fun MeasurementLeaderOverlay(
                     .padding(horizontal = edgePadding),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .widthIn(max = 132.dp),
-                verticalArrangement = Arrangement.SpaceEvenly,
-                horizontalAlignment = Alignment.Start,
-            ) {
-                for (row in leftRows) {
-                    MeasurementEdgePill(
-                        row = row,
-                        isMetric = isMetric,
-                        isLeftColumn = true,
-                        overlayLayout = overlayLayout,
-                        pillCorner = pillCorner,
-                        pillPaddingH = pillPaddingH,
-                        pillPaddingV = pillPaddingV,
-                        captionGap = captionGap,
-                        onPlaced = { anchorKey: String, attachOffset: Offset ->
-                            labelStarts[anchorKey] = attachOffset
-                        },
-                    )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .widthIn(max = pillColumnMaxWidth),
+                    verticalArrangement = Arrangement.SpaceEvenly,
+                    horizontalAlignment = Alignment.Start,
+                ) {
+                    for (row in leftRows) {
+                        MeasurementEdgePill(
+                            row = row,
+                            isMetric = isMetric,
+                            isLeftColumn = true,
+                            overlayLayout = overlayLayout,
+                            pillCorner = pillCorner,
+                            pillPaddingH = pillPaddingH,
+                            pillPaddingV = pillPaddingV,
+                            captionGap = captionGap,
+                            onPlaced = { anchorKey: String, attachOffset: Offset ->
+                                labelStarts[anchorKey] = attachOffset
+                            },
+                        )
+                    }
                 }
-            }
 
-            Spacer(Modifier.weight(2.2f))
+                Spacer(Modifier.weight(2.2f))
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .widthIn(max = 132.dp),
-                verticalArrangement = Arrangement.SpaceEvenly,
-                horizontalAlignment = Alignment.End,
-            ) {
-                for (row in rightRows) {
-                    MeasurementEdgePill(
-                        row = row,
-                        isMetric = isMetric,
-                        isLeftColumn = false,
-                        overlayLayout = overlayLayout,
-                        pillCorner = pillCorner,
-                        pillPaddingH = pillPaddingH,
-                        pillPaddingV = pillPaddingV,
-                        captionGap = captionGap,
-                        onPlaced = { anchorKey: String, attachOffset: Offset ->
-                            labelStarts[anchorKey] = attachOffset
-                        },
-                    )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .widthIn(max = pillColumnMaxWidth),
+                    verticalArrangement = Arrangement.SpaceEvenly,
+                    horizontalAlignment = Alignment.End,
+                ) {
+                    for (row in rightRows) {
+                        MeasurementEdgePill(
+                            row = row,
+                            isMetric = isMetric,
+                            isLeftColumn = false,
+                            overlayLayout = overlayLayout,
+                            pillCorner = pillCorner,
+                            pillPaddingH = pillPaddingH,
+                            pillPaddingV = pillPaddingV,
+                            captionGap = captionGap,
+                            onPlaced = { anchorKey: String, attachOffset: Offset ->
+                                labelStarts[anchorKey] = attachOffset
+                            },
+                        )
+                    }
                 }
-            }
             }
         }
     }
@@ -247,20 +250,28 @@ private fun MeasurementEdgePill(
 ) {
     val lines = formatLeaderLabelLines(row, isMetric)
 
+    val pillSurface = colorResource(R.color.measurement_leader_pill_surface)
+    val pillValueColor = colorResource(R.color.measurement_leader_pill_value)
+    val pillLabelColor = colorResource(R.color.black)
+    val valueTextSize = dimensionResource(R.dimen.measurement_leader_pill_value_text_size).value.sp
+    val titleTextSize = dimensionResource(R.dimen.measurement_leader_pill_title_text_size).value.sp
+    val zeroElevation = dimensionResource(R.dimen.elevation_none)
+
     Surface(
         shape = RoundedCornerShape(pillCorner),
-        color = PillSurfaceColor,
-        shadowElevation = 0.dp,
-        tonalElevation = 0.dp,
+        color = pillSurface,
+        shadowElevation = zeroElevation,
+        tonalElevation = zeroElevation,
         modifier = Modifier.onGloballyPositioned { coords ->
             val ov = overlayLayout ?: return@onGloballyPositioned
             val topLeft = ov.localPositionOf(coords, Offset.Zero)
             val w = coords.size.width.toFloat()
             val h = coords.size.height.toFloat()
+            val yMid = ScanResultsLayout.PILL_LEADER_ATTACH_Y_FRACTION
             val attach = if (isLeftColumn) {
-                Offset(topLeft.x + w, topLeft.y + h * 0.5f)
+                Offset(topLeft.x + w, topLeft.y + h * yMid)
             } else {
-                Offset(topLeft.x, topLeft.y + h * 0.5f)
+                Offset(topLeft.x, topLeft.y + h * yMid)
             }
             onPlaced(row.visualAnchorKey, attach)
         },
@@ -272,8 +283,8 @@ private fun MeasurementEdgePill(
             Text(
                 text = lines.valueLine,
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    fontSize = 14.sp,
-                    color = PillValueBlue300,
+                    fontSize = valueTextSize,
+                    color = pillValueColor,
                     fontWeight = FontWeight.SemiBold,
                 ),
             )
@@ -281,8 +292,8 @@ private fun MeasurementEdgePill(
             Text(
                 text = lines.title,
                 style = MaterialTheme.typography.bodySmall.copy(
-                    fontSize = 12.sp,
-                    color = PillLabelBlack,
+                    fontSize = titleTextSize,
+                    color = pillLabelColor,
                 ),
                 textAlign = TextAlign.Center,
             )
@@ -294,16 +305,20 @@ private fun MeasurementEdgePill(
 private fun formatLeaderLabelLines(row: MeasurementRow, isMetric: Boolean): LeaderLabelLines {
     val name = stringResource(row.bodyPartRes)
     val valueLine = if (isMetric) {
-        val v = stringResource(R.string.format_value_decimal, row.today.cm)
-        val u = stringResource(R.string.unit_cm)
-        "$v $u"
+        stringResource(
+            R.string.measurement_leader_value_metric,
+            stringResource(R.string.format_value_decimal, row.today.cm),
+            stringResource(R.string.unit_cm),
+        )
     } else {
         val (feet, inches) = row.today.cm.cmToFeetAndInches()
-        val feetText = stringResource(R.string.format_value_int, feet)
-        val ftUnit = stringResource(R.string.unit_ft)
-        val inchesText = stringResource(R.string.format_value_decimal, inches)
-        val inUnit = stringResource(R.string.unit_in)
-        "$feetText $ftUnit $inchesText $inUnit"
+        stringResource(
+            R.string.measurement_leader_value_imperial,
+            stringResource(R.string.format_value_int, feet),
+            stringResource(R.string.unit_ft),
+            stringResource(R.string.format_value_decimal, inches),
+            stringResource(R.string.unit_in),
+        )
     }
     return LeaderLabelLines(title = name, valueLine = valueLine)
 }

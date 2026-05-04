@@ -25,8 +25,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,10 +51,12 @@ import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.main.scan.results.MeasurementChange
 import com.hexis.bi.ui.theme.GrayText
 import com.hexis.bi.ui.theme.Green
-import com.hexis.bi.ui.theme.OneTimeGrey
+import com.hexis.bi.ui.theme.HistoryCardBackground
 import com.hexis.bi.ui.theme.Red100
 import kotlin.math.max
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -144,7 +149,7 @@ private fun ScanHistoryCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.medium)
-            .background(OneTimeGrey)
+            .background(HistoryCardBackground)
             .clickable(onClick = onClick)
             .padding(dimensionResource(R.dimen.spacer_m)),
         verticalAlignment = Alignment.CenterVertically,
@@ -185,13 +190,20 @@ private fun ScanHistoryCardThumbnail(
     modelPreviewPngBase64: String?,
     modifier: Modifier = Modifier,
 ) {
-    val bitmap = remember(modelPreviewPngBase64) {
-        decodeScanHistoryPreviewBitmap(modelPreviewPngBase64)
+    var bitmap by remember { mutableStateOf<Bitmap?>(null) }
+    LaunchedEffect(modelPreviewPngBase64) {
+        bitmap = null
+        val encoded = modelPreviewPngBase64
+        if (encoded.isNullOrBlank()) return@LaunchedEffect
+        bitmap = withContext(Dispatchers.Default) {
+            decodeScanHistoryPreviewBitmap(encoded)
+        }
     }
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        if (bitmap != null) {
+        val b = bitmap
+        if (b != null) {
             Image(
-                bitmap = bitmap.asImageBitmap(),
+                bitmap = b.asImageBitmap(),
                 contentDescription = stringResource(R.string.cd_scan_history_thumbnail),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,

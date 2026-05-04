@@ -149,4 +149,9 @@ class ResultsViewModel(
     fun toggleSkinAreas() {
         _state.update { it.copy(showSkinAreas = !it.showSkinAreas) }
     }
+
+    override fun onCleared() {
+        scanResultRepository.selectedScanId = null
+        super.onCleared()
+    }
 }

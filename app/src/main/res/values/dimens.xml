@@ -76,6 +76,12 @@
     <dimen name="scan_history_thumb_width">60dp</dimen>
     <dimen name="scan_history_thumb_icon_padding">10dp</dimen>
 
+    <!-- Measurement leader overlay (3D preview pills + leader strokes). -->
+    <dimen name="measurement_leader_stroke_width">1.25dp</dimen>
+    <dimen name="measurement_leader_pill_column_max_width">132dp</dimen>
+    <dimen name="measurement_leader_pill_value_text_size">14sp</dimen>
+    <dimen name="measurement_leader_pill_title_text_size">12sp</dimen>
+
     <!-- Component sizes -->
     <dimen name="size_indicator">4dp</dimen>
     <dimen name="size_indicator_bigger">6dp</dimen>
