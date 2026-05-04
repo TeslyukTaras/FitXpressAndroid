@@ -29,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -158,27 +159,29 @@ fun HealthConnectionsScreen(
 
                     if (filteredSdk.isNotEmpty()) {
                         filteredSdk.forEach { provider ->
-                            HealthConnectionRow(
-                                iconRes = provider.iconRes,
-                                title = provider.label,
-                                connected = state.wearableConnections.hasProvider(provider.code),
-                                onClick = {
-                                    if (provider.code.equals(
-                                            TerraProviders.HEALTH_CONNECT,
-                                            ignoreCase = true
-                                        ) &&
-                                        !context.isHealthConnectInstalled()
-                                    ) {
-                                        context.openHealthConnectInstall()
-                                    } else {
-                                        viewModel.onSdkProviderRowClick(
-                                            provider = provider.code,
-                                            displayName = provider.label,
-                                            activity = activity,
-                                        )
-                                    }
-                                },
-                            )
+                            key(provider.code) {
+                                HealthConnectionRow(
+                                    iconRes = provider.iconRes,
+                                    title = provider.label,
+                                    connected = state.wearableConnections.hasProvider(provider.code),
+                                    onClick = {
+                                        if (provider.code.equals(
+                                                TerraProviders.HEALTH_CONNECT,
+                                                ignoreCase = true
+                                            ) &&
+                                            !context.isHealthConnectInstalled()
+                                        ) {
+                                            context.openHealthConnectInstall()
+                                        } else {
+                                            viewModel.onSdkProviderRowClick(
+                                                provider = provider.code,
+                                                displayName = provider.label,
+                                                activity = activity,
+                                            )
+                                        }
+                                    },
+                                )
+                            }
                         }
                         needsDividerBeforeNext = true
                     }
@@ -186,17 +189,19 @@ fun HealthConnectionsScreen(
                     if (filteredWearables.isNotEmpty()) {
                         if (needsDividerBeforeNext) HealthConnectionsSectionDivider()
                         filteredWearables.forEach { provider ->
-                            HealthConnectionRow(
-                                iconRes = provider.iconRes,
-                                title = provider.label,
-                                connected = state.wearableConnections.hasProvider(provider.code),
-                                onClick = {
-                                    viewModel.onWidgetProviderRowClick(
-                                        provider.code,
-                                        provider.label
-                                    )
-                                },
-                            )
+                            key(provider.code) {
+                                HealthConnectionRow(
+                                    iconRes = provider.iconRes,
+                                    title = provider.label,
+                                    connected = state.wearableConnections.hasProvider(provider.code),
+                                    onClick = {
+                                        viewModel.onWidgetProviderRowClick(
+                                            provider.code,
+                                            provider.label
+                                        )
+                                    },
+                                )
+                            }
                         }
                         needsDividerBeforeNext = true
                     }
@@ -204,29 +209,33 @@ fun HealthConnectionsScreen(
                     if (filteredOther.isNotEmpty()) {
                         if (needsDividerBeforeNext) HealthConnectionsSectionDivider()
                         filteredOther.forEach { provider ->
-                            HealthConnectionRow(
-                                iconRes = provider.iconRes,
-                                title = provider.label,
-                                connected = state.wearableConnections.hasProvider(provider.code),
-                                onClick = {
-                                    viewModel.onWidgetProviderRowClick(
-                                        provider.code,
-                                        provider.label
-                                    )
-                                },
-                            )
+                            key(provider.code) {
+                                HealthConnectionRow(
+                                    iconRes = provider.iconRes,
+                                    title = provider.label,
+                                    connected = state.wearableConnections.hasProvider(provider.code),
+                                    onClick = {
+                                        viewModel.onWidgetProviderRowClick(
+                                            provider.code,
+                                            provider.label
+                                        )
+                                    },
+                                )
+                            }
                         }
                         needsDividerBeforeNext = true
                     }
 
                     if (TerraConfig.isSandbox && searchQuery.isBlank()) {
                         if (needsDividerBeforeNext) HealthConnectionsSectionDivider()
-                        HealthConnectionRow(
-                            iconRes = R.drawable.ic_connect,
-                            title = stringResource(R.string.health_connection_dummy),
-                            connected = state.wearableConnections.hasProvider(TerraProviders.DUMMY),
-                            onClick = { viewModel.onDummyRowClick() },
-                        )
+                        key(TerraProviders.DUMMY) {
+                            HealthConnectionRow(
+                                iconRes = R.drawable.ic_connect,
+                                title = stringResource(R.string.health_connection_dummy),
+                                connected = state.wearableConnections.hasProvider(TerraProviders.DUMMY),
+                                onClick = { viewModel.onDummyRowClick() },
+                            )
+                        }
                     }
                 }
             }
@@ -267,12 +276,14 @@ private fun HealthConnectionRow(
             .padding(all = dimensionResource(R.dimen.spacer_m)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            painter = painterResource(iconRes),
-            contentDescription = null,
-            tint = null,
-            modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
-        )
+        key(iconRes) {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                tint = null,
+                modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+            )
+        }
         Spacer(Modifier.width(dimensionResource(R.dimen.spacer_m)))
         Column(modifier = Modifier.weight(1f)) {
             Text(
