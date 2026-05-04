@@ -59,7 +59,7 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
 }
 
 private fun List<HealthConnection>.hasProvider(code: String): Boolean =
-    any { it.provider.equals(code, ignoreCase = true) }
+    any { TerraProviders.storedMatchesUi(it.provider, code) }
 
 private fun Context.isHealthConnectInstalled(): Boolean =
     runCatching { packageManager.getPackageInfo(HealthConnectConstants.PACKAGE_NAME, 0) }.isSuccess
@@ -179,7 +179,7 @@ fun HealthConnectionsScreen(
                     ProviderSectionHeader(title = stringResource(R.string.health_connections_section_wearables))
                     filteredWearables.forEach { provider ->
                         HealthConnectionRow(
-                            iconRes = R.drawable.ic_connect,
+                            iconRes = provider.iconRes,
                             title = provider.label,
                             connected = state.wearableConnections.hasProvider(provider.code),
                             onClick = { viewModel.onWidgetProviderRowClick(provider.code, provider.label) },
@@ -191,7 +191,7 @@ fun HealthConnectionsScreen(
                     ProviderSectionHeader(title = stringResource(R.string.health_connections_section_other))
                     filteredOther.forEach { provider ->
                         HealthConnectionRow(
-                            iconRes = R.drawable.ic_connect,
+                            iconRes = provider.iconRes,
                             title = provider.label,
                             connected = state.wearableConnections.hasProvider(provider.code),
                             onClick = { viewModel.onWidgetProviderRowClick(provider.code, provider.label) },

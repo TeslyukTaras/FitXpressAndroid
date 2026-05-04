@@ -4,10 +4,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 
-/** Produces a Terra Widget auth URL for web-based providers (Oura, Garmin, …). */
+/** Produces a Terra auth URL for web-based providers (Oura, Garmin, …). */
 class TerraWidgetApi(private val client: OkHttpClient) {
 
     @Serializable
@@ -26,6 +27,51 @@ class TerraWidgetApi(private val client: OkHttpClient) {
         val status: String? = null,
         val message: String? = null,
     )
+
+    @Serializable
+    private data class AuthenticateUserResponse(
+        val auth_url: String? = null,
+        val user_id: String? = null,
+        val status: String? = null,
+        val message: String? = null,
+    )
+
+    /**
+     * Generates a direct provider OAuth URL via `/auth/authenticateUser` — skips the Terra
+     * widget landing/agree page that [generateWidgetSession] shows. Use this for single-provider
+     * connect flows (one row click → one OAuth page).
+     *
+     * @param referenceId Firebase UID — Terra echoes it back via webhook/redirect.
+     * @param resource Single Terra provider code (e.g. `OURA`).
+     */
+    suspend fun authenticateUser(referenceId: String, resource: String): Result<String> =
+        withContext(Dispatchers.IO) {
+            try {
+                val url = "$TERRA_BASE_URL/auth/authenticateUser".toHttpUrl().newBuilder()
+                    .addQueryParameter("resource", resource)
+                    .addQueryParameter("reference_id", referenceId)
+                    .addQueryParameter("auth_success_redirect_url", TerraDeepLinks.SUCCESS_URL)
+                    .addQueryParameter("auth_failure_redirect_url", TerraDeepLinks.FAILURE_URL)
+                    .addQueryParameter("language", "en")
+                    .build()
+
+                val request = terraRequest(url.toString())
+                    .post("{}".toRequestBody(TERRA_JSON_MEDIA))
+                    .build()
+
+                client.newCall(request).execute().use { response ->
+                    val body = response.body.string()
+                    if (!response.isSuccessful) error("Terra authenticateUser ${response.code}: $body")
+                    val parsed = terraJson.decodeFromString(AuthenticateUserResponse.serializer(), body)
+                    val authUrl = parsed.auth_url
+                        ?: error("Terra authenticateUser returned no auth_url: $body")
+                    Result.success(authUrl)
+                }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                Result.failure(e)
+            }
+        }
 
     /**
      * @param referenceId Firebase UID — Terra echoes it back via webhook/redirect.
