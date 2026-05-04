@@ -300,9 +300,7 @@
     <string name="health_connection_status_connected">Connected</string>
     <string name="health_connection_status_not_connected">Not connected</string>
     <string name="health_connection_wearable">Connect wearable</string>
-    <string name="health_connections_section_sdk">SDK connections</string>
-    <string name="health_connections_section_wearables">Wearables</string>
-    <string name="health_connections_section_other">Other apps</string>
+    <string name="health_connections_empty_search_message">No results found for &quot;%1$s&quot;</string>
     <string name="search_placeholder">Search</string>
 
     <!-- Terra provider labels -->
