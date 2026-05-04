@@ -62,7 +62,7 @@ fun ScanHistoryScreen(
         containerColor = background,
         isLoading = state.isLoading,
         error = state.error,
-        onDismissError = viewModel::clearError,
+        onDismissError = viewModel::clearStateError,
         topBar = {
             Column(
                 Modifier

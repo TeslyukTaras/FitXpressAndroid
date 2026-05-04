@@ -5,6 +5,36 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.hexis.bi.data.scan.api.MeasurementResponse
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.COLLECTION_SCANS
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.COLLECTION_USERS
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_AGE
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_BMI
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_BMR
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_COMPLETED_AT
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_CREATED_AT
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_ESTIMATED_BMI
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_ESTIMATED_BMR
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_ESTIMATED_FAT_BODY_MASS
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_ESTIMATED_LEAN_BODY_MASS
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_ESTIMATED_WEIGHT
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_FAT_BODY_MASS
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_FAT_PERCENTAGE
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_GENDER
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_HEIGHT
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_ID
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_LEAN_BODY_MASS
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_MODEL_3D_URL
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_SAVED_AT
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_STATUS
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_URL
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_WEIGHT
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.PARAMS_DOC_ID
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.SCAN_HISTORY_DEFAULT_LIMIT
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.SCAN_HISTORY_TIMESTAMP_LOOKBACK
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.SUB_CIRCUMFERENCE_PARAMS
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.SUB_FRONT_LINEAR_PARAMS
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.SUB_SIDE_LINEAR_PARAMS
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.SUB_SUBSCRIPTION_INFO
 import com.hexis.bi.utils.formatAsScanDocId
 import com.hexis.bi.utils.snakeToCamel
 import kotlinx.coroutines.tasks.await
@@ -116,7 +146,7 @@ class ScanHistoryRepository(
         }
 
     suspend fun getRecentScans(
-        limit: Long = 20L,
+        limit: Long = SCAN_HISTORY_DEFAULT_LIMIT,
         projection: ScanFetchProjection = ScanFetchProjection.FULL,
     ): Result<List<ScanRecord>> =
         fetchRecentScans(limit = limit, projection = projection)
@@ -150,7 +180,7 @@ class ScanHistoryRepository(
     suspend fun hasScanSavedBetween(
         startMillisInclusive: Long,
         endMillisInclusive: Long,
-        lookback: Long = 50L,
+        lookback: Long = SCAN_HISTORY_TIMESTAMP_LOOKBACK,
     ): Result<Boolean> = fetchRecentScans(
         limit = lookback,
         projection = ScanFetchProjection.TIMESTAMPS_ONLY,
@@ -245,39 +275,4 @@ class ScanHistoryRepository(
             val converted: Any = prim.content.toDoubleOrNull() ?: prim.content
             key.snakeToCamel() to converted
         }.toMap()
-
-    companion object {
-        private const val COLLECTION_USERS = "users"
-        private const val COLLECTION_SCANS = "scans"
-
-        private const val SUB_CIRCUMFERENCE_PARAMS = "circumferenceParams"
-        private const val SUB_FRONT_LINEAR_PARAMS = "frontLinearParams"
-        private const val SUB_SIDE_LINEAR_PARAMS = "sideLinearParams"
-        private const val SUB_SUBSCRIPTION_INFO = "subscriptionInfo"
-
-        private const val PARAMS_DOC_ID = "data"
-
-        private const val FIELD_ID = "id"
-        private const val FIELD_STATUS = "status"
-        private const val FIELD_URL = "url"
-        private const val FIELD_CREATED_AT = "createdAt"
-        private const val FIELD_COMPLETED_AT = "completedAt"
-        private const val FIELD_SAVED_AT = "savedAt"
-        private const val FIELD_GENDER = "gender"
-        private const val FIELD_MODEL_3D_URL = "model3dUrl"
-        private const val FIELD_HEIGHT = "height"
-        private const val FIELD_WEIGHT = "weight"
-        private const val FIELD_AGE = "age"
-        private const val FIELD_BMI = "bmi"
-        private const val FIELD_BMR = "bmr"
-        private const val FIELD_FAT_PERCENTAGE = "fatPercentage"
-        private const val FIELD_LEAN_BODY_MASS = "leanBodyMass"
-        private const val FIELD_FAT_BODY_MASS = "fatBodyMass"
-        private const val FIELD_ESTIMATED_BMI = "estimatedBmi"
-        private const val FIELD_ESTIMATED_BMR = "estimatedBmr"
-        private const val FIELD_ESTIMATED_WEIGHT = "estimatedWeight"
-        private const val FIELD_ESTIMATED_LEAN_BODY_MASS = "estimatedLeanBodyMass"
-        private const val FIELD_ESTIMATED_FAT_BODY_MASS = "estimatedFatBodyMass"
-
-    }
 }

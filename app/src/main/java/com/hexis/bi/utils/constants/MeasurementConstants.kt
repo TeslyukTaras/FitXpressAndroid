@@ -8,4 +8,11 @@ object MeasurementConstants {
 
     const val UNIT_SYSTEM_METRIC = "Metric"
     const val UNIT_SYSTEM_IMPERIAL = "Imperial"
+
+    /** Below this cm delta a measurement is treated as unchanged (rounding noise). */
+    const val CHANGE_EPSILON_CM = 0.01f
+
+    /** Animation timings for the Results preview exit fade transition (ms). */
+    const val RESULTS_PREVIEW_EXIT_FADE_MS = 200
+    const val RESULTS_PREVIEW_EXIT_SETTLE_MS = 24
 }

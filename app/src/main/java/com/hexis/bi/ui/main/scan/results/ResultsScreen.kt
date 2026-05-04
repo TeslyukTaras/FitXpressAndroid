@@ -55,12 +55,11 @@ import com.hexis.bi.ui.theme.Green
 import com.hexis.bi.ui.theme.Red100
 import com.hexis.bi.utils.cmToFeetAndInches
 import com.hexis.bi.utils.cmToInches
+import com.hexis.bi.utils.constants.MeasurementConstants.RESULTS_PREVIEW_EXIT_FADE_MS
+import com.hexis.bi.utils.constants.MeasurementConstants.RESULTS_PREVIEW_EXIT_SETTLE_MS
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
-
-private const val RESULTS_PREVIEW_EXIT_FADE_MS = 200
-private const val RESULTS_PREVIEW_EXIT_SETTLE_MS = 24
 
 @Composable
 fun ResultsScreen(

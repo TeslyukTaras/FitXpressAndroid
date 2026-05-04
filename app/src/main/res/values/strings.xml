@@ -187,6 +187,8 @@
     <string name="scan_history_top_change_prefix">Top change: </string>
     <string name="scan_history_top_change_dash">—</string>
     <string name="cd_scan_history_calendar">Pick date range</string>
+    <string name="scan_history_date_range_same_year">%1$s – %2$s, %3$d</string>
+    <string name="scan_history_date_range_cross_year">%1$s – %2$s</string>
     <string name="cd_avatar">User avatar</string>
     <string name="cd_notification">Notifications</string>
     <string name="cd_settings">Settings</string>

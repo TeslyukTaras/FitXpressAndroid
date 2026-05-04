@@ -6,6 +6,7 @@ import com.hexis.bi.data.scan.api.MeasurementResponse
 import com.hexis.bi.ui.main.scan.results.MeasurementChange
 import com.hexis.bi.ui.main.scan.results.MeasurementRow
 import com.hexis.bi.ui.main.scan.results.MeasurementValue
+import com.hexis.bi.utils.constants.MeasurementConstants.CHANGE_EPSILON_CM
 import com.hexis.bi.utils.snakeToCamel
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -172,6 +173,4 @@ object MeasurementMapper {
         return if (isDesirable) MeasurementChange.Positive else MeasurementChange.Negative
     }
 
-    /** Below this cm delta we treat the measurement as unchanged (rounding noise). */
-    private const val CHANGE_EPSILON_CM = 0.01f
 }
