@@ -4,12 +4,10 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
-import android.net.Uri
 import androidx.annotation.DrawableRes
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,14 +19,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,7 +48,9 @@ import com.hexis.bi.data.healthconnections.HealthConnection
 import com.hexis.bi.data.terra.TerraConfig
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
+import com.hexis.bi.ui.components.AppSearchField
 import com.hexis.bi.ui.theme.Green
+import com.hexis.bi.utils.constants.HealthConnectConstants
 import com.hexis.bi.utils.constants.TerraProviders
 import org.koin.androidx.compose.koinViewModel
 
@@ -55,100 +61,24 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
 }
 
 private fun List<HealthConnection>.hasProvider(code: String): Boolean =
-    any { it.provider.equals(code, ignoreCase = true) }
-
-private const val HEALTH_CONNECT_PACKAGE = "com.google.android.apps.healthdata"
+    any { TerraProviders.storedMatchesUi(it.provider, code) }
 
 private fun Context.isHealthConnectInstalled(): Boolean =
-    runCatching { packageManager.getPackageInfo(HEALTH_CONNECT_PACKAGE, 0) }.isSuccess
+    runCatching { packageManager.getPackageInfo(HealthConnectConstants.PACKAGE_NAME, 0) }.isSuccess
 
 private fun Context.openHealthConnectInstall() {
-    val marketUri = Uri.parse("market://details?id=$HEALTH_CONNECT_PACKAGE")
-    val webUri = Uri.parse("https://play.google.com/store/apps/details?id=$HEALTH_CONNECT_PACKAGE")
     runCatching {
-        startActivity(Intent(Intent.ACTION_VIEW, marketUri))
+        startActivity(Intent(Intent.ACTION_VIEW, HealthConnectConstants.MARKET_URI.toUri()))
     }.onFailure {
-        runCatching { startActivity(Intent(Intent.ACTION_VIEW, webUri)) }
+        runCatching {
+            startActivity(Intent(Intent.ACTION_VIEW, HealthConnectConstants.PLAY_STORE_URI.toUri()))
+        }
     }
 }
 
-private data class TerraProviderUi(
-    val code: String,
-    val label: String,
-    @DrawableRes val iconRes: Int = R.drawable.ic_connect,
-)
-
-private val sdkProviders = listOf(
-    TerraProviderUi(TerraProviders.HEALTH_CONNECT, "Health Connect", R.drawable.ic_google),
-)
-
-private val wearableProviders = listOf(
-    TerraProviderUi(TerraProviders.OURA, "Oura"),
-    TerraProviderUi("WHOOP", "Whoop"),
-    TerraProviderUi("FITBIT", "Fitbit"),
-    TerraProviderUi("GARMIN", "Garmin"),
-    TerraProviderUi("POLAR", "Polar"),
-    TerraProviderUi("COROS", "Coros"),
-    TerraProviderUi("SUUNTO", "Suunto"),
-    TerraProviderUi("WITHINGS", "Withings"),
-    TerraProviderUi("ZEPP", "Zepp"),
-    TerraProviderUi("BIOSTRAP", "Biostrap"),
-    TerraProviderUi("HEALTHGAUGE", "Health Gauge"),
-    TerraProviderUi("INBODY", "InBody"),
-    TerraProviderUi("SOMNOFY", "Somnofy"),
-    TerraProviderUi("CORE", "Core"),
-    TerraProviderUi("MOXY", "Moxy Monitor"),
-    TerraProviderUi("PUL", "Pul"),
-    TerraProviderUi("OMRON", "Omron EU"),
-    TerraProviderUi("CARDIOMOOD", "Cardiomood"),
-)
-
-private val otherProviders = listOf(
-    TerraProviderUi("GOOGLE", "Google"),
-    TerraProviderUi("PELOTON", "Peloton"),
-    TerraProviderUi("WAHOO", "Wahoo"),
-    TerraProviderUi("HAMMERHEAD", "Hammerhead"),
-    TerraProviderUi("XOSS", "Xoss"),
-    TerraProviderUi("BRYTONSPORT", "Bryton Sport"),
-    TerraProviderUi("LEZYNE", "Lezyne"),
-    TerraProviderUi("TECHNOGYM", "Technogym"),
-    TerraProviderUi("CONCEPT2", "Concept2"),
-    TerraProviderUi("DECATHLON", "Decathlon"),
-    TerraProviderUi("CATAPULTONE", "Catapult One"),
-    TerraProviderUi("TRIDOT", "Tridot"),
-    TerraProviderUi("ULTRAHUMAN", "Ultrahuman"),
-    TerraProviderUi("TRAININGPEAKS", "TrainingPeaks"),
-    TerraProviderUi("TRAINERROAD", "TrainerRoad"),
-    TerraProviderUi("FINALSURGE", "FinalSurge"),
-    TerraProviderUi("ELITEHRV", "EliteHRV"),
-    TerraProviderUi("HEVY", "Hevy"),
-    TerraProviderUi("TRAINXHALE", "TrainXhale"),
-    TerraProviderUi("TRAINASONE", "TrainAsOne"),
-    TerraProviderUi("ROUVY", "Rouvy"),
-    TerraProviderUi("ZWIFT", "Zwift"),
-    TerraProviderUi("RIDEWITHGPS", "RideWithGPS"),
-    TerraProviderUi("MAPMYTRACKS", "Map My Tracks"),
-    TerraProviderUi("MAPMYFITNESS", "MapMyFitness"),
-    TerraProviderUi("KOMOOT", "Komoot"),
-    TerraProviderUi("CYCLINGANALYTICS", "Cycling Analytics"),
-    TerraProviderUi("VELOHERO", "VeloHero"),
-    TerraProviderUi("XERT", "Xert"),
-    TerraProviderUi("TREDICT", "Tredict"),
-    TerraProviderUi("UNDERARMOUR", "Under Armour"),
-    TerraProviderUi("CLUE", "Clue"),
-    TerraProviderUi("FLO", "Flo"),
-    TerraProviderUi("WGER", "Wger"),
-    TerraProviderUi("NUTRACHECK", "Nutracheck"),
-    TerraProviderUi("MACROSFIRST", "MacrosFirst"),
-    TerraProviderUi("MYMACROSPLUS", "My Macros+"),
-    TerraProviderUi("MYFITNESSPAL", "MyFitnessPal"),
-    TerraProviderUi("CRONOMETER", "Cronometer"),
-    TerraProviderUi("FATSECRET", "Fatsecret"),
-    TerraProviderUi("EATTHISMUCH", "EatThisMuch"),
-    TerraProviderUi("KETOMOJOEU", "Ketomojo EU"),
-    TerraProviderUi("KETOMOJOUS", "Ketomojo US"),
-    TerraProviderUi("BODITRAX", "Boditrax"),
-)
+private fun List<TerraProviderUi>.filterByQuery(query: String): List<TerraProviderUi> =
+    if (query.isBlank()) this
+    else filter { it.label.contains(query.trim(), ignoreCase = true) }
 
 @Composable
 fun HealthConnectionsScreen(
@@ -163,6 +93,7 @@ fun HealthConnectionsScreen(
     val context = LocalContext.current
     val activity = context.findActivity()
     val scrollState = rememberScrollState()
+    var searchQuery by remember { mutableStateOf("") }
 
     LaunchedEffect(state.widgetUrl) {
         val url = state.widgetUrl ?: return@LaunchedEffect
@@ -171,12 +102,19 @@ fun HealthConnectionsScreen(
                 .build()
                 .launchUrl(context, url.toUri())
         }
-        if (launched.isSuccess) {
-            viewModel.onWidgetOpened()
-        } else {
-            viewModel.onWidgetLaunchFailed()
-        }
+        if (launched.isSuccess) viewModel.onWidgetOpened()
+        else viewModel.onWidgetLaunchFailed()
     }
+
+    val filteredSdk = state.sdkProviders.filterByQuery(searchQuery)
+    val filteredWearables = state.wearableProviders.filterByQuery(searchQuery)
+    val filteredOther = state.otherProviders.filterByQuery(searchQuery)
+
+    val trimmedQuery = searchQuery.trim()
+    val hasSearchNoResults = trimmedQuery.isNotEmpty() &&
+            filteredSdk.isEmpty() &&
+            filteredWearables.isEmpty() &&
+            filteredOther.isEmpty()
 
     BaseScreen(
         modifier = modifier,
@@ -199,67 +137,106 @@ fun HealthConnectionsScreen(
                 .padding(horizontal = dimensionResource(R.dimen.padding_medium))
                 .padding(top = dimensionResource(R.dimen.padding_medium)),
         ) {
-            Text(
-                text = stringResource(R.string.health_connections_subtitle),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.secondary,
+            AppSearchField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
             )
 
-            Spacer(modifier = Modifier.padding(top = dimensionResource(R.dimen.spacer_m)))
+            Spacer(modifier = Modifier.padding(top = dimensionResource(R.dimen.spacer_l)))
 
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_m)),
-            ) {
-                ProviderSectionHeader(title = "SDK connections")
-                sdkProviders.forEach { provider ->
-                    HealthConnectionRow(
-                        iconRes = provider.iconRes,
-                        title = provider.label,
-                        connected = state.wearableConnections.hasProvider(provider.code),
-                        onClick = {
-                            if (provider.code.equals(TerraProviders.HEALTH_CONNECT, ignoreCase = true) &&
-                                !context.isHealthConnectInstalled()
-                            ) {
-                                context.openHealthConnectInstall()
-                            } else {
-                                viewModel.onSdkProviderRowClick(
-                                    provider = provider.code,
-                                    displayName = provider.label,
-                                    activity = activity,
+            if (hasSearchNoResults) HealthConnectionsSearchEmptyState(query = trimmedQuery)
+            else {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_m)),
+                ) {
+                    if (searchQuery.isBlank()) Text(
+                        text = stringResource(R.string.health_connections_subtitle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.secondary,
+                    )
+                    var needsDividerBeforeNext = false
+
+                    if (filteredSdk.isNotEmpty()) {
+                        filteredSdk.forEach { provider ->
+                            key(provider.code) {
+                                HealthConnectionRow(
+                                    iconRes = provider.iconRes,
+                                    title = provider.label,
+                                    connected = state.wearableConnections.hasProvider(provider.code),
+                                    onClick = {
+                                        if (provider.code.equals(
+                                                TerraProviders.HEALTH_CONNECT,
+                                                ignoreCase = true
+                                            ) &&
+                                            !context.isHealthConnectInstalled()
+                                        ) {
+                                            context.openHealthConnectInstall()
+                                        } else {
+                                            viewModel.onSdkProviderRowClick(
+                                                provider = provider.code,
+                                                displayName = provider.label,
+                                                activity = activity,
+                                            )
+                                        }
+                                    },
                                 )
                             }
-                        },
-                    )
-                }
+                        }
+                        needsDividerBeforeNext = true
+                    }
 
-                ProviderSectionHeader(title = "Wearables")
-                wearableProviders.forEach { provider ->
-                    HealthConnectionRow(
-                        iconRes = R.drawable.ic_connect,
-                        title = provider.label,
-                        connected = state.wearableConnections.hasProvider(provider.code),
-                        onClick = { viewModel.onWidgetProviderRowClick(provider.code, provider.label) },
-                    )
-                }
+                    if (filteredWearables.isNotEmpty()) {
+                        if (needsDividerBeforeNext) HealthConnectionsSectionDivider()
+                        filteredWearables.forEach { provider ->
+                            key(provider.code) {
+                                HealthConnectionRow(
+                                    iconRes = provider.iconRes,
+                                    title = provider.label,
+                                    connected = state.wearableConnections.hasProvider(provider.code),
+                                    onClick = {
+                                        viewModel.onWidgetProviderRowClick(
+                                            provider.code,
+                                            provider.label
+                                        )
+                                    },
+                                )
+                            }
+                        }
+                        needsDividerBeforeNext = true
+                    }
 
-                ProviderSectionHeader(title = "Other apps")
-                otherProviders.forEach { provider ->
-                    HealthConnectionRow(
-                        iconRes = R.drawable.ic_connect,
-                        title = provider.label,
-                        connected = state.wearableConnections.hasProvider(provider.code),
-                        onClick = { viewModel.onWidgetProviderRowClick(provider.code, provider.label) },
-                    )
-                }
+                    if (filteredOther.isNotEmpty()) {
+                        if (needsDividerBeforeNext) HealthConnectionsSectionDivider()
+                        filteredOther.forEach { provider ->
+                            key(provider.code) {
+                                HealthConnectionRow(
+                                    iconRes = provider.iconRes,
+                                    title = provider.label,
+                                    connected = state.wearableConnections.hasProvider(provider.code),
+                                    onClick = {
+                                        viewModel.onWidgetProviderRowClick(
+                                            provider.code,
+                                            provider.label
+                                        )
+                                    },
+                                )
+                            }
+                        }
+                        needsDividerBeforeNext = true
+                    }
 
-                if (TerraConfig.isSandbox) {
-                    HealthConnectionRow(
-                        iconRes = R.drawable.ic_connect,
-                        title = stringResource(R.string.health_connection_dummy),
-                        connected = state.wearableConnections.hasProvider(TerraProviders.DUMMY),
-                        onClick = { viewModel.onDummyRowClick() },
-                    )
+                    if (TerraConfig.isSandbox && searchQuery.isBlank()) {
+                        if (needsDividerBeforeNext) HealthConnectionsSectionDivider()
+                        key(TerraProviders.DUMMY) {
+                            HealthConnectionRow(
+                                iconRes = R.drawable.ic_connect,
+                                title = stringResource(R.string.health_connection_dummy),
+                                connected = state.wearableConnections.hasProvider(TerraProviders.DUMMY),
+                                onClick = { viewModel.onDummyRowClick() },
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -267,10 +244,16 @@ fun HealthConnectionsScreen(
 }
 
 @Composable
-private fun ProviderSectionHeader(title: String) {
+private fun HealthConnectionsSectionDivider() {
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+}
+
+@Composable
+private fun HealthConnectionsSearchEmptyState(query: String) {
     Text(
-        text = title,
-        style = MaterialTheme.typography.labelLarge,
+        text = stringResource(R.string.health_connections_empty_search_message, query),
+        modifier = Modifier.fillMaxWidth(),
+        style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.secondary,
     )
 }
@@ -290,15 +273,17 @@ private fun HealthConnectionRow(
             .clip(MaterialTheme.shapes.medium)
             .clickable(onClick = onClick)
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(all = dimensionResource(R.dimen.spacer_l)),
+            .padding(all = dimensionResource(R.dimen.spacer_m)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            painter = painterResource(iconRes),
-            contentDescription = null,
-            tint = null,
-            modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
-        )
+        key(iconRes) {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                tint = null,
+                modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+            )
+        }
         Spacer(Modifier.width(dimensionResource(R.dimen.spacer_m)))
         Column(modifier = Modifier.weight(1f)) {
             Text(
