@@ -1,10 +1,12 @@
 package com.hexis.bi.data.scan
 
+import androidx.annotation.StringRes
 import com.hexis.bi.R
 import com.hexis.bi.data.scan.api.MeasurementResponse
 import com.hexis.bi.ui.main.scan.results.MeasurementChange
 import com.hexis.bi.ui.main.scan.results.MeasurementRow
 import com.hexis.bi.ui.main.scan.results.MeasurementValue
+import com.hexis.bi.utils.constants.MeasurementConstants.CHANGE_EPSILON_CM
 import com.hexis.bi.utils.snakeToCamel
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -14,6 +16,12 @@ import kotlin.math.abs
  * Maps a 3DLOOK API response (+ optional previous scan) into [MeasurementRow] list
  * for the Results screen table.
  */
+data class TopChangeVsPrevious(
+    @StringRes val bodyPartRes: Int,
+    val deltaCm: Float,
+    val change: MeasurementChange?,
+)
+
 object MeasurementMapper {
 
     /** Entries define which API fields map to which table rows, in display order. */
@@ -71,6 +79,77 @@ object MeasurementMapper {
 
             MeasurementRow(
                 bodyPartRes = entry.bodyPartRes,
+                visualAnchorKey = entry.apiKey,
+                today = todayValue,
+                previous = previousValue,
+            )
+        }
+    }
+
+    /**
+     * Circumference with the largest absolute delta vs [previous];
+     * null if there is no prior scan, no overlapping keys, or all deltas are negligible.
+     *
+     * All [entries] resolve to circumference keys, so [ScanFetchProjection.LIST_SUMMARY]
+     * (circumference subdoc only) is sufficient input here. If linear-param entries are
+     * ever added, this method requires [ScanFetchProjection.FULL].
+     */
+    fun topChangeVsPreviousScan(current: ScanRecord, previous: ScanRecord?): TopChangeVsPrevious? {
+        if (previous == null) return null
+        var bestEntry: MappingEntry? = null
+        var bestAbs = 0f
+        var bestDelta = 0f
+        for (entry in entries) {
+            val cur = current.measurements[entry.apiKey] ?: continue
+            val prev = previous.measurements[entry.apiKey] ?: continue
+            val delta = cur - prev
+            if (abs(delta) < CHANGE_EPSILON_CM) continue
+            val a = abs(delta)
+            if (a > bestAbs) {
+                bestAbs = a
+                bestEntry = entry
+                bestDelta = delta
+            }
+        }
+        val e = bestEntry ?: return null
+        return TopChangeVsPrevious(
+            bodyPartRes = e.bodyPartRes,
+            deltaCm = bestDelta,
+            change = classifyChange(bestDelta, e.decreaseIsPositive),
+        )
+    }
+
+    fun mapFromRecords(
+        current: ScanRecord,
+        previous: ScanRecord?,
+        beforePrevious: ScanRecord?,
+    ): List<MeasurementRow> {
+        val currentMap = current.measurements
+        val previousMap = previous?.measurements
+        val beforePreviousMap = beforePrevious?.measurements
+
+        return entries.mapNotNull { entry ->
+            val todayCm = currentMap[entry.apiKey] ?: return@mapNotNull null
+            val prevCm = previousMap?.get(entry.apiKey)
+            val beforePrevCm = beforePreviousMap?.get(entry.apiKey)
+
+            val todayValue = MeasurementValue(
+                cm = todayCm,
+                deltaCm = if (prevCm != null) todayCm - prevCm else 0f,
+                change = if (prevCm != null) classifyChange(todayCm - prevCm, entry.decreaseIsPositive) else null,
+            )
+
+            val previousValue = prevCm?.let {
+                MeasurementValue(
+                    cm = it,
+                    deltaCm = if (beforePrevCm != null) it - beforePrevCm else 0f,
+                    change = if (beforePrevCm != null) classifyChange(it - beforePrevCm, entry.decreaseIsPositive) else null,
+                )
+            }
+
+            MeasurementRow(
+                bodyPartRes = entry.bodyPartRes,
+                visualAnchorKey = entry.apiKey,
                 today = todayValue,
                 previous = previousValue,
             )
@@ -98,6 +177,4 @@ object MeasurementMapper {
         return if (isDesirable) MeasurementChange.Positive else MeasurementChange.Negative
     }
 
-    /** Below this cm delta we treat the measurement as unchanged (rounding noise). */
-    private const val CHANGE_EPSILON_CM = 0.01f
 }

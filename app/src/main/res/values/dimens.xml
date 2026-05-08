@@ -72,6 +72,15 @@
     <dimen name="scan_corner_stroke_width">4dp</dimen>
     <dimen name="scan_corner_radius">6dp</dimen>
     <dimen name="scanner_line_stroke_width">3dp</dimen>
+    <dimen name="scan_results_preview_height">600dp</dimen>
+    <dimen name="scan_history_thumb_width">60dp</dimen>
+    <dimen name="scan_history_thumb_icon_padding">10dp</dimen>
+
+    <!-- Measurement leader overlay (3D preview pills + leader strokes). -->
+    <dimen name="measurement_leader_stroke_width">1.25dp</dimen>
+    <dimen name="measurement_leader_pill_column_max_width">132dp</dimen>
+    <dimen name="measurement_leader_pill_value_text_size">14sp</dimen>
+    <dimen name="measurement_leader_pill_title_text_size">12sp</dimen>
 
     <!-- Component sizes -->
     <dimen name="size_indicator">4dp</dimen>

@@ -68,7 +68,6 @@ class StartScanViewModel(
             } else if (state.currentStep < state.steps.size) {
                 state.copy(currentStep = state.currentStep + 1)
             } else {
-                // All steps done — request camera launch
                 state.copy(shouldLaunchCamera = true)
             }
         }
@@ -160,13 +159,11 @@ class StartScanViewModel(
 
             when (progress) {
                 is ScanProgress.Success -> {
-                    // Store result for Results screen
                     scanResultRepository.latestResult = ScanResult(
                         measurementId = progress.response.id,
                         response = progress.response,
                     )
 
-                    // Save to Firestore history
                     scanHistoryRepository.saveScan(progress.response)
                     scanReminderScheduler.onNotificationSettingsOrScanChanged()
                     notificationInbox.appendInbox(

@@ -28,6 +28,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.hexis.bi.R
 import com.hexis.bi.data.user.UserRepository
+import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.ui.components.AppButton
 import com.hexis.bi.ui.components.AppDialog
 import com.hexis.bi.ui.components.AppOutlinedButton
@@ -39,6 +40,7 @@ import com.hexis.bi.ui.main.home.recovery.RecoveryScreen
 import com.hexis.bi.ui.main.home.sleep.SleepScreen
 import com.hexis.bi.ui.main.notifications.NotificationsScreen
 import com.hexis.bi.ui.main.scan.ScanScreen
+import com.hexis.bi.ui.main.scan.history.ScanHistoryScreen
 import com.hexis.bi.ui.main.scan.results.ResultsScreen
 import com.hexis.bi.ui.main.settings.SettingsScreen
 import com.hexis.bi.ui.main.settings.editprofile.EditProfileScreen
@@ -63,6 +65,7 @@ fun MainScreen(
     val showBottomBar = currentRoute in Route.Main.tabRoutes
 
     val userRepository: UserRepository = koinInject()
+    val scanResultRepository: ScanResultRepository = koinInject()
     val scope = rememberCoroutineScope()
     var showProfileIncompleteDialog by remember { mutableStateOf(false) }
 
@@ -96,6 +99,7 @@ fun MainScreen(
                     ScanScreen(
                         onBack = { navController.popBackStackOnce() },
                         onScanComplete = {
+                            scanResultRepository.selectedScanId = null
                             navController.navigate(Route.Main.SCAN_RESULTS) {
                                 popUpTo(Route.Main.SCAN) { inclusive = true }
                             }
@@ -105,10 +109,26 @@ fun MainScreen(
                     )
                 }
                 composable(Route.Main.SCAN_RESULTS) {
-                    ResultsScreen(onBack = { navController.popBackStackOnce() })
+                    ResultsScreen(
+                        onBack = {
+                            scanResultRepository.selectedScanId = null
+                            navController.popBackStackOnce()
+                        },
+                    )
+                }
+                composable(Route.Main.SCAN_HISTORY) {
+                    ScanHistoryScreen(
+                        onBack = { navController.popBackStackOnce() },
+                        onOpenScan = { scanId ->
+                            scanResultRepository.selectedScanId = scanId
+                            navController.navigate(Route.Main.SCAN_RESULTS)
+                        },
+                    )
                 }
                 composable(Route.Main.BODY) {
-                    BodyScreen()
+                    BodyScreen(
+                        onHistoryClick = { navController.navigate(Route.Main.SCAN_HISTORY) },
+                    )
                 }
                 composable(Route.Main.NOTIFICATIONS) {
                     NotificationsScreen(onBack = { navController.popBackStackOnce() })

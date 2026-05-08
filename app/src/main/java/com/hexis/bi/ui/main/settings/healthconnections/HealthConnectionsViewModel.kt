@@ -158,6 +158,14 @@ class HealthConnectionsViewModel(
     }
 
     init {
+        _state.update {
+            it.copy(
+                sdkProviders = buildSdkProviders(),
+                wearableProviders = buildWearableProviders(),
+                otherProviders = buildOtherProviders(),
+            )
+        }
+
         healthConnectionsRepository.observeConnections()
             .onEach { items ->
                 val active = items.filter { it.active }

@@ -21,4 +21,7 @@ object DateFormatConstants {
 
     /** Sortable timestamp used as the Firestore document ID for a saved scan. */
     const val SCAN_DOC_ID_TIMESTAMP = "yyyy-MM-dd_HH-mm-ss"
+
+    const val SHORT_MONTH_DAY_YEAR = "MMM d, yyyy"
+    const val HOUR_MINUTE_24 = "HH:mm"
 }

@@ -19,7 +19,6 @@ enum class MeasurementChange {
     Positive, Negative
 }
 
-/** A single measurement cell: the value and the delta vs the prior reading. */
 data class MeasurementValue(
     val cm: Float,
     val deltaCm: Float,
@@ -28,6 +27,8 @@ data class MeasurementValue(
 
 data class MeasurementRow(
     @StringRes val bodyPartRes: Int,
+    /** Key for [MeasurementVisualAnchors] leader table; matches MeasurementMapper `apiKey`. */
+    val visualAnchorKey: String,
     val today: MeasurementValue,
     val previous: MeasurementValue?,
 )
@@ -38,6 +39,9 @@ data class ResultsState(
     val isMetric: Boolean = true,
     val measurements: List<MeasurementRow> = emptyList(),
     val model3dUrl: String? = null,
+    val previousModel3dUrl: String? = null,
+    val isPreviewSectionLoading: Boolean = true,
     val todayDate: String = "",
     val previousDate: String? = null,
+    val showSkinAreas: Boolean = false,
 )

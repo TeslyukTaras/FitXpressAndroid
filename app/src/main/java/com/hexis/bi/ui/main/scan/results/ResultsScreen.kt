@@ -1,6 +1,8 @@
 package com.hexis.bi.ui.main.scan.results
 
-import androidx.compose.foundation.Image
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,12 +10,14 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -21,11 +25,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInteropFilter
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -33,7 +45,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.unit.LayoutDirection
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
@@ -43,6 +55,10 @@ import com.hexis.bi.ui.theme.Green
 import com.hexis.bi.ui.theme.Red100
 import com.hexis.bi.utils.cmToFeetAndInches
 import com.hexis.bi.utils.cmToInches
+import com.hexis.bi.utils.constants.MeasurementConstants.RESULTS_PREVIEW_EXIT_FADE_MS
+import com.hexis.bi.utils.constants.MeasurementConstants.RESULTS_PREVIEW_EXIT_SETTLE_MS
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -52,6 +68,27 @@ fun ResultsScreen(
     viewModel: ResultsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var isModelInteracting by remember { mutableStateOf(false) }
+    var pendingExitAfterPreviewHidden by remember { mutableStateOf(false) }
+
+    val previewAlpha by animateFloatAsState(
+        targetValue = if (pendingExitAfterPreviewHidden) 0f else 1f,
+        animationSpec = tween(durationMillis = RESULTS_PREVIEW_EXIT_FADE_MS),
+        label = "resultsPreviewAlpha",
+    )
+
+    LaunchedEffect(pendingExitAfterPreviewHidden) {
+        if (!pendingExitAfterPreviewHidden) return@LaunchedEffect
+        delay(RESULTS_PREVIEW_EXIT_FADE_MS.toLong() + RESULTS_PREVIEW_EXIT_SETTLE_MS)
+        onBack()
+    }
+
+    fun requestBack() {
+        if (pendingExitAfterPreviewHidden) return
+        pendingExitAfterPreviewHidden = true
+    }
+
+    BackHandler(enabled = true) { requestBack() }
 
     BaseScreen(
         modifier = modifier,
@@ -59,12 +96,17 @@ fun ResultsScreen(
         topBar = {
             BaseTopBar(
                 title = stringResource(R.string.scan_results_title),
-                onBack = onBack,
+                onBack = { requestBack() },
                 background = MaterialTheme.colorScheme.surfaceVariant,
             )
         },
     ) {
-        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+        Column(
+            modifier = Modifier.verticalScroll(
+                state = rememberScrollState(),
+                enabled = !isModelInteracting,
+            )
+        ) {
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
 
             AppTabSelector(
@@ -77,17 +119,29 @@ fun ResultsScreen(
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-            BodyVisualizationCard()
-
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-            ColorAnalysisCard(
-                modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium)),
-                enabled = state.colorAnalysisEnabled,
-                onToggle = viewModel::toggleColorAnalysis,
+            ScanResultsPreviewSection(
+                selectedTab = state.selectedTab,
+                model3dUrl = state.model3dUrl,
+                previousModel3dUrl = state.previousModel3dUrl,
+                isPreviewSectionLoading = state.isPreviewSectionLoading,
+                showSkinAreas = state.showSkinAreas,
+                onModelInteractionChanged = { isModelInteracting = it },
+                measurements = state.measurements,
+                isMetric = state.isMetric,
+                modifier = Modifier.graphicsLayer { alpha = previewAlpha },
             )
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+            if (state.selectedTab == ResultsTab.Visual) {
+                ColorAnalysisCard(
+                    modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+                    enabled = state.colorAnalysisEnabled,
+                    onToggle = viewModel::toggleColorAnalysis,
+                )
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+            }
 
             MeasurementsCard(
                 modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium)),
@@ -103,13 +157,220 @@ fun ResultsScreen(
 }
 
 @Composable
-private fun BodyVisualizationCard(modifier: Modifier = Modifier) {
-    Box(modifier = modifier.fillMaxWidth()) {
-        Image(
-            painter = painterResource(R.drawable.img_3d_placeholder),
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.fillMaxWidth()
+private fun ScanResultsPreviewSection(
+    selectedTab: ResultsTab,
+    model3dUrl: String?,
+    previousModel3dUrl: String?,
+    isPreviewSectionLoading: Boolean,
+    showSkinAreas: Boolean,
+    onModelInteractionChanged: (Boolean) -> Unit,
+    measurements: List<MeasurementRow>,
+    isMetric: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    var visualTransform by remember { mutableStateOf<VisualAvatarTransform?>(null) }
+
+    var avatarMeshReady by remember(model3dUrl) { mutableStateOf(false) }
+
+    var measurementGuide by remember(model3dUrl) { mutableStateOf<MetricAvatarMeasurementGuide?>(null) }
+
+    LaunchedEffect(model3dUrl) {
+        measurementGuide = null
+        visualTransform = null
+        avatarMeshReady = false
+    }
+
+    LaunchedEffect(selectedTab, isPreviewSectionLoading) {
+        if (selectedTab != ResultsTab.Visual || isPreviewSectionLoading) {
+            visualTransform = null
+        }
+    }
+
+    val previewModifier = Modifier
+        .fillMaxWidth()
+        .height(dimensionResource(R.dimen.scan_results_preview_height))
+    Box(
+        modifier = modifier
+            .then(previewModifier)
+            .metricAvatarPreviewGradientBackground(),
+    ) {
+        when {
+            isPreviewSectionLoading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
+                    ) {
+                        CircularProgressIndicator()
+                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
+                        Text(
+                            text = stringResource(R.string.scan_results_loading),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            else -> when (selectedTab) {
+                ResultsTab.Compare -> {
+                    CompareModelsPanel(
+                        currentModelUrl = model3dUrl,
+                        previousModelUrl = previousModel3dUrl,
+                        showSkinAreas = showSkinAreas,
+                        onInteractionChanged = onModelInteractionChanged,
+                    )
+                }
+                ResultsTab.Visual,
+                ResultsTab.Posture,
+                -> {
+                    if (!model3dUrl.isNullOrBlank()) {
+                        val profileYaw = when (selectedTab) {
+                            ResultsTab.Posture -> MetricAvatarSideProfileYawDegrees
+                            else -> 0f
+                        }
+                        Box(Modifier.fillMaxSize()) {
+                            MetricAvatarPreview(
+                                modelUrl = model3dUrl,
+                                showSkinAreas = showSkinAreas,
+                                onInteractionChanged = onModelInteractionChanged,
+                                modifier = Modifier.fillMaxSize(),
+                                useGradientBackground = false,
+                                initialYawDegrees = profileYaw,
+                                leaderSegments = null,
+                                onMeasurementGuideLoaded = { measurementGuide = it },
+                                onAvatarReady = { avatarMeshReady = true },
+                                onVisualTransformChanged =
+                                    if (selectedTab == ResultsTab.Visual) {
+                                        { yaw, pitch, w, h ->
+                                            visualTransform =
+                                                VisualAvatarTransform(yaw, pitch, w, h)
+                                        }
+                                    } else {
+                                        null
+                                    },
+                            )
+                            if (selectedTab == ResultsTab.Visual &&
+                                !isPreviewSectionLoading &&
+                                visualTransform != null &&
+                                avatarMeshReady
+                            ) {
+                                MeasurementLeaderOverlay(
+                                    measurements = measurements,
+                                    isMetric = isMetric,
+                                    transform = visualTransform,
+                                    measurementGuide = measurementGuide,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .pointerInteropFilter(onTouchEvent = { false }),
+                                )
+                            }
+                        }
+                    } else {
+                        GradientCenteredLabel(messageRes = R.string.scan_results_preview_unavailable)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompareModelsPanel(
+    currentModelUrl: String?,
+    previousModelUrl: String?,
+    showSkinAreas: Boolean,
+    onInteractionChanged: (Boolean) -> Unit,
+) {
+    val compareRotationLink = remember(currentModelUrl, previousModelUrl) { CompareRotationLink() }
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                Column(Modifier.fillMaxSize()) {
+                    Text(
+                        text = stringResource(R.string.scan_results_compare_current),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.secondary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = dimensionResource(R.dimen.spacer_2xs)),
+                    )
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                        when {
+                            currentModelUrl.isNullOrBlank() -> {
+                                GradientCenteredLabel(messageRes = R.string.scan_results_preview_unavailable)
+                            }
+                            else -> {
+                                key(currentModelUrl) {
+                                    MetricAvatarPreview(
+                                        modelUrl = currentModelUrl,
+                                        showSkinAreas = showSkinAreas,
+                                        onInteractionChanged = onInteractionChanged,
+                                        modifier = Modifier.fillMaxSize(),
+                                        useGradientBackground = false,
+                                        compareRotationLink = compareRotationLink,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            VerticalDivider(
+                modifier = Modifier.fillMaxHeight(),
+                color = MaterialTheme.colorScheme.secondaryFixed,
+            )
+            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                Column(Modifier.fillMaxSize()) {
+                    Text(
+                        text = stringResource(R.string.scan_results_compare_previous),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.secondary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = dimensionResource(R.dimen.spacer_2xs)),
+                    )
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                        when {
+                            previousModelUrl.isNullOrBlank() -> {
+                                GradientCenteredLabel(messageRes = R.string.scan_results_compare_no_previous)
+                            }
+                            else -> {
+                                key(previousModelUrl) {
+                                    MetricAvatarPreview(
+                                        modelUrl = previousModelUrl,
+                                        showSkinAreas = showSkinAreas,
+                                        onInteractionChanged = onInteractionChanged,
+                                        modifier = Modifier.fillMaxSize(),
+                                        useGradientBackground = false,
+                                        compareRotationLink = compareRotationLink,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GradientCenteredLabel(messageRes: Int) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = stringResource(messageRes),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
         )
     }
 }
@@ -162,7 +423,6 @@ private fun MeasurementsCard(
             .clip(MaterialTheme.shapes.medium)
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Title row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -191,7 +451,6 @@ private fun MeasurementsCard(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
 
-        // Sub-header row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
