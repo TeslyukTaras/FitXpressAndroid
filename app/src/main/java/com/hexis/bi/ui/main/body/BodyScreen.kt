@@ -1,6 +1,8 @@
 package com.hexis.bi.ui.main.body
 
-import androidx.compose.foundation.layout.Box
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,18 +20,24 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
-import com.hexis.bi.ui.components.AppTabSelector
+import com.hexis.bi.ui.dark.DarkTabSelector
+import com.hexis.bi.ui.dark.darkScreenBackground
 import com.hexis.bi.ui.main.body.components.BisInfoBottomSheet
+import com.hexis.bi.ui.theme.dark.DarkTheme
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,12 +49,15 @@ fun BodyScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    Box(modifier = modifier.fillMaxSize()) {
+    LightStatusBarIcons(enabled = false)
+
+    DarkTheme {
         BaseScreen(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxSize()
-                .then(if (state.showBisInfo) Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop)) else Modifier),
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                .then(if (state.showBisInfo) Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop)) else Modifier)
+                .darkScreenBackground(),
+            containerColor = Color.Transparent,
         ) {
             Column(
                 modifier = Modifier
@@ -71,7 +82,7 @@ fun BodyScreen(
                             .align(Alignment.Top),
                         onClick = onHistoryClick,
                         colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.background,
+                            containerColor = Color.Transparent,
                         ),
                     ) {
                         Icon(
@@ -83,9 +94,9 @@ fun BodyScreen(
                     }
                 }
 
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
 
-                AppTabSelector(
+                DarkTabSelector(
                     tabs = BodyTab.entries,
                     selectedTab = state.selectedTab,
                     onTabSelected = viewModel::selectTab,
@@ -111,14 +122,41 @@ fun BodyScreen(
                         Text(
                             text = stringResource(R.string.body_tab_coming_soon),
                             style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.secondary,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
             }
         }
 
         if (state.showBisInfo) BisInfoBottomSheet(onDismiss = viewModel::dismissBisInfo)
     }
+}
+
+
+@Composable
+private fun LightStatusBarIcons(enabled: Boolean) {
+    val view = LocalView.current
+    if (view.isInEditMode) return
+    DisposableEffect(view, enabled) {
+        val controller = view.context.findActivity()
+            ?.window
+            ?.let { WindowCompat.getInsetsController(it, view) }
+        val previous = controller?.isAppearanceLightStatusBars
+        controller?.isAppearanceLightStatusBars = enabled
+        onDispose {
+            if (controller != null && previous != null) {
+                controller.isAppearanceLightStatusBars = previous
+            }
+        }
+    }
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }

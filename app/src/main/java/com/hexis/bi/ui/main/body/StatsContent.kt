@@ -60,7 +60,7 @@ internal fun StatsContent(
                     onBisInfoClick = onBisInfoClick,
                 )
 
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
                 BodyTrendChart(
                     chart = state.chart,

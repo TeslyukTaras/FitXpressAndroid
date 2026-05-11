@@ -27,12 +27,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.hexis.bi.R
-import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.data.scan.ScanResultRepository
+import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.components.AppButton
 import com.hexis.bi.ui.components.AppDialog
 import com.hexis.bi.ui.components.AppOutlinedButton
 import com.hexis.bi.ui.components.MainNavBottomBar
+import com.hexis.bi.ui.dark.DarkMainNavBottomBar
 import com.hexis.bi.ui.main.body.BodyScreen
 import com.hexis.bi.ui.main.home.HomeScreen
 import com.hexis.bi.ui.main.home.activity.ActivityScreen
@@ -50,6 +51,7 @@ import com.hexis.bi.ui.main.settings.notifications.NotificationsSettingsScreen
 import com.hexis.bi.ui.main.settings.scanpreferences.ScanPreferencesScreen
 import com.hexis.bi.ui.navigation.Route
 import com.hexis.bi.ui.navigation.popBackStackOnce
+import com.hexis.bi.ui.theme.dark.DarkTheme
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -70,133 +72,154 @@ fun MainScreen(
     var showProfileIncompleteDialog by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Box(modifier = Modifier.weight(1f)) {
-                NavHost(
-                    navController = navController,
-                    startDestination = Route.Main.HOME,
-                ) {
-                composable(Route.Main.HOME) {
-                    HomeScreen(
-                        onLogout = onLogout,
-                        onNotificationClick = { navController.navigate(Route.Main.NOTIFICATIONS) },
-                        onSettingsClick = { navController.navigate(Route.Main.SETTINGS) },
-                        onSleepClick = { navController.navigate(Route.Main.SLEEP) },
-                        onRecoveryClick = { navController.navigate(Route.Main.RECOVERY) },
-                        onActivityClick = { navController.navigate(Route.Main.ACTIVITY) },
-                    )
-                }
-                composable(Route.Main.SLEEP) {
-                    SleepScreen(onBack = { navController.popBackStackOnce() })
-                }
-                composable(Route.Main.RECOVERY) {
-                    RecoveryScreen(onBack = { navController.popBackStackOnce() })
-                }
-                composable(Route.Main.ACTIVITY) {
-                    ActivityScreen(onBack = { navController.popBackStackOnce() })
-                }
-                composable(Route.Main.SCAN) {
-                    ScanScreen(
-                        onBack = { navController.popBackStackOnce() },
-                        onScanComplete = {
-                            scanResultRepository.selectedScanId = null
-                            navController.navigate(Route.Main.SCAN_RESULTS) {
-                                popUpTo(Route.Main.SCAN) { inclusive = true }
-                            }
-                        },
-                        onConnectSuit = { navController.navigate(Route.Main.MY_SUIT) },
-                        onBuySuit = {},
-                    )
-                }
-                composable(Route.Main.SCAN_RESULTS) {
-                    ResultsScreen(
-                        onBack = {
-                            scanResultRepository.selectedScanId = null
-                            navController.popBackStackOnce()
-                        },
-                    )
-                }
-                composable(Route.Main.SCAN_HISTORY) {
-                    ScanHistoryScreen(
-                        onBack = { navController.popBackStackOnce() },
-                        onOpenScan = { scanId ->
-                            scanResultRepository.selectedScanId = scanId
-                            navController.navigate(Route.Main.SCAN_RESULTS)
-                        },
-                    )
-                }
-                composable(Route.Main.BODY) {
-                    BodyScreen(
-                        onHistoryClick = { navController.navigate(Route.Main.SCAN_HISTORY) },
-                    )
-                }
-                composable(Route.Main.NOTIFICATIONS) {
-                    NotificationsScreen(onBack = { navController.popBackStackOnce() })
-                }
-                composable(Route.Main.SETTINGS) {
-                    SettingsScreen(
-                        onBack = { navController.popBackStackOnce() },
-                        onLogout = onLogout,
-                        onDeleteAccount = onDeleteAccount,
-                        onNavigateToEditProfile = { navController.navigate(Route.Main.EDIT_PROFILE) },
-                        onNavigateToNotificationSettings = { navController.navigate(Route.Main.NOTIFICATION_SETTINGS) },
-                        onNavigateToHealthConnections = { navController.navigate(Route.Main.HEALTH_CONNECTIONS) },
-                        onNavigateToScanPreferences = { navController.navigate(Route.Main.SCAN_PREFERENCES) },
-                        onNavigateToMySuit = { navController.navigate(Route.Main.MY_SUIT) },
-                    )
-                }
-                composable(Route.Main.EDIT_PROFILE) {
-                    EditProfileScreen(onBack = { navController.popBackStackOnce() })
-                }
-                composable(Route.Main.NOTIFICATION_SETTINGS) {
-                    NotificationsSettingsScreen(onBack = { navController.popBackStackOnce() })
-                }
-                composable(Route.Main.HEALTH_CONNECTIONS) {
-                    HealthConnectionsScreen(onBack = { navController.popBackStackOnce() })
-                }
-                composable(Route.Main.SCAN_PREFERENCES) {
-                    ScanPreferencesScreen(onBack = { navController.popBackStackOnce() })
-                }
-                composable(Route.Main.MY_SUIT) {
-                    MySuitScreen(onBack = { navController.popBackStackOnce() })
-                }
+        NavHost(
+            modifier = Modifier.fillMaxSize(),
+            navController = navController,
+            startDestination = Route.Main.HOME,
+        ) {
+            composable(Route.Main.HOME) {
+                HomeScreen(
+                    onLogout = onLogout,
+                    onNotificationClick = { navController.navigate(Route.Main.NOTIFICATIONS) },
+                    onSettingsClick = { navController.navigate(Route.Main.SETTINGS) },
+                    onSleepClick = { navController.navigate(Route.Main.SLEEP) },
+                    onRecoveryClick = { navController.navigate(Route.Main.RECOVERY) },
+                    onActivityClick = { navController.navigate(Route.Main.ACTIVITY) },
+                )
+            }
+            composable(Route.Main.SLEEP) {
+                SleepScreen(onBack = { navController.popBackStackOnce() })
+            }
+            composable(Route.Main.RECOVERY) {
+                RecoveryScreen(onBack = { navController.popBackStackOnce() })
+            }
+            composable(Route.Main.ACTIVITY) {
+                ActivityScreen(onBack = { navController.popBackStackOnce() })
+            }
+            composable(Route.Main.SCAN) {
+                ScanScreen(
+                    onBack = { navController.popBackStackOnce() },
+                    onScanComplete = {
+                        scanResultRepository.selectedScanId = null
+                        navController.navigate(Route.Main.SCAN_RESULTS) {
+                            popUpTo(Route.Main.SCAN) { inclusive = true }
+                        }
+                    },
+                    onConnectSuit = { navController.navigate(Route.Main.MY_SUIT) },
+                    onBuySuit = {},
+                )
+            }
+            composable(Route.Main.SCAN_RESULTS) {
+                ResultsScreen(
+                    onBack = {
+                        scanResultRepository.selectedScanId = null
+                        navController.popBackStackOnce()
+                    },
+                )
+            }
+            composable(Route.Main.SCAN_HISTORY) {
+                ScanHistoryScreen(
+                    onBack = { navController.popBackStackOnce() },
+                    onOpenScan = { scanId ->
+                        scanResultRepository.selectedScanId = scanId
+                        navController.navigate(Route.Main.SCAN_RESULTS)
+                    },
+                )
+            }
+            composable(Route.Main.BODY) {
+                BodyScreen(
+                    onHistoryClick = { navController.navigate(Route.Main.SCAN_HISTORY) },
+                )
+            }
+            composable(Route.Main.NOTIFICATIONS) {
+                NotificationsScreen(onBack = { navController.popBackStackOnce() })
+            }
+            composable(Route.Main.SETTINGS) {
+                SettingsScreen(
+                    onBack = { navController.popBackStackOnce() },
+                    onLogout = onLogout,
+                    onDeleteAccount = onDeleteAccount,
+                    onNavigateToEditProfile = { navController.navigate(Route.Main.EDIT_PROFILE) },
+                    onNavigateToNotificationSettings = { navController.navigate(Route.Main.NOTIFICATION_SETTINGS) },
+                    onNavigateToHealthConnections = { navController.navigate(Route.Main.HEALTH_CONNECTIONS) },
+                    onNavigateToScanPreferences = { navController.navigate(Route.Main.SCAN_PREFERENCES) },
+                    onNavigateToMySuit = { navController.navigate(Route.Main.MY_SUIT) },
+                )
+            }
+            composable(Route.Main.EDIT_PROFILE) {
+                EditProfileScreen(onBack = { navController.popBackStackOnce() })
+            }
+            composable(Route.Main.NOTIFICATION_SETTINGS) {
+                NotificationsSettingsScreen(onBack = { navController.popBackStackOnce() })
+            }
+            composable(Route.Main.HEALTH_CONNECTIONS) {
+                HealthConnectionsScreen(onBack = { navController.popBackStackOnce() })
+            }
+            composable(Route.Main.SCAN_PREFERENCES) {
+                ScanPreferencesScreen(onBack = { navController.popBackStackOnce() })
+            }
+            composable(Route.Main.MY_SUIT) {
+                MySuitScreen(onBack = { navController.popBackStackOnce() })
             }
         }
 
         if (showBottomBar) {
-            MainNavBottomBar(
-                isHomeSelected = currentRoute == Route.Main.HOME,
-                isBodySelected = currentRoute == Route.Main.BODY,
-                onHomeClick = {
-                    navController.navigate(Route.Main.HOME) {
-                        launchSingleTop = true
-                        popUpTo(Route.Main.HOME) { inclusive = false }
-                    }
-                },
-                onBodyClick = {
-                    navController.navigate(Route.Main.BODY) {
-                        launchSingleTop = true
-                        popUpTo(Route.Main.HOME) { inclusive = false }
-                    }
-                },
-                onScanClick = {
-                    scope.launch {
-                        val profile = userRepository.getUser().getOrNull()
-                        val isComplete = profile != null
-                                && profile.heightCm != null
-                                && profile.weightKg != null
-                                && profile.dateOfBirth != null
-                        if (isComplete) {
-                            navController.navigate(Route.Main.SCAN) {
-                                launchSingleTop = true
-                            }
-                        } else {
-                            showProfileIncompleteDialog = true
+            val isHomeSelected = currentRoute == Route.Main.HOME
+            val isBodySelected = currentRoute == Route.Main.BODY
+            val onHomeClick: () -> Unit = {
+                navController.navigate(Route.Main.HOME) {
+                    launchSingleTop = true
+                    popUpTo(Route.Main.HOME) { inclusive = false }
+                }
+            }
+            val onBodyClick: () -> Unit = {
+                navController.navigate(Route.Main.BODY) {
+                    launchSingleTop = true
+                    popUpTo(Route.Main.HOME) { inclusive = false }
+                }
+            }
+            val onScanClick: () -> Unit = {
+                scope.launch {
+                    val profile = userRepository.getUser().getOrNull()
+                    val isComplete = profile != null
+                            && profile.heightCm != null
+                            && profile.weightKg != null
+                            && profile.dateOfBirth != null
+                    if (isComplete) {
+                        navController.navigate(Route.Main.SCAN) {
+                            launchSingleTop = true
                         }
+                    } else {
+                        showProfileIncompleteDialog = true
                     }
-                },
-            )
-        }
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth(),
+            ) {
+                if (isBodySelected) {
+                    DarkTheme {
+                        DarkMainNavBottomBar(
+                            isHomeSelected = isHomeSelected,
+                            isBodySelected = isBodySelected,
+                            onHomeClick = onHomeClick,
+                            onBodyClick = onBodyClick,
+                            onScanClick = onScanClick,
+                        )
+                    }
+                } else {
+                    MainNavBottomBar(
+                        isHomeSelected = isHomeSelected,
+                        isBodySelected = isBodySelected,
+                        onHomeClick = onHomeClick,
+                        onBodyClick = onBodyClick,
+                        onScanClick = onScanClick,
+                    )
+                }
+            }
         }
 
         if (showProfileIncompleteDialog) {

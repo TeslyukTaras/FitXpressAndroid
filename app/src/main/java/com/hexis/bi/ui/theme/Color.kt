@@ -58,3 +58,14 @@ val SubtitleBlue = Color(0xFF7272A8)
 val ShadowGray = Color(0xFFC8C8C8)
 val GridLineGray = Color(0x5EB5B5B5)
 val GridLineLightGray = Color(0xFFEFF0F3)
+
+val BodyToggleTrackBorder = Color(0x29F6F6F6)
+val BodyToggleSelectedChipFill = Color(0x33FFFFFF)
+val BodyToggleSelectedLabel = Color(0xFFF6F6F6)
+val BodyToggleUnselectedLabel = Color(0xFFE7E7E7)
+
+/** Transparent edge stop (`rgba(189, 190, 192, 0)`) for gradient dividers. */
+val GradientDividerEdge = Color(0x00BDBEC0)
+
+/** Center band `#EFF0F3` (same value as [GridLineLightGray]). */
+val GradientDividerCenter = GridLineLightGray

@@ -161,3 +161,21 @@ val Typography = Typography(
         letterSpacing = 0.sp,
     ),
 )
+
+internal val BodyToggleChipSelectedTextStyle = TextStyle(
+    fontFamily = Urbanist,
+    fontWeight = FontWeight.Medium,
+    fontSize = 13.sp,
+    lineHeight = 13.sp,
+    letterSpacing = 0.sp,
+    fontFeatureSettings = "lnum,pnum",
+)
+
+internal val BodyToggleChipUnselectedTextStyle = TextStyle(
+    fontFamily = Urbanist,
+    fontWeight = FontWeight.Normal,
+    fontSize = 13.sp,
+    lineHeight = 13.sp,
+    letterSpacing = 0.sp,
+    fontFeatureSettings = "lnum,pnum",
+)

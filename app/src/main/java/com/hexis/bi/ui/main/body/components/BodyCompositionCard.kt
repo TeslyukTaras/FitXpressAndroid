@@ -1,8 +1,5 @@
 package com.hexis.bi.ui.main.body.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -11,20 +8,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
+import com.hexis.bi.ui.components.AppHorizontalGradientDivider
+import com.hexis.bi.ui.components.AppVerticalGradientDivider
+import com.hexis.bi.ui.dark.bodyGlassCardFillBrush
 import com.hexis.bi.ui.main.body.BodyComposition
 import com.hexis.bi.ui.main.body.BodyMassUnit
+import com.hexis.bi.utils.constants.GlassConstants
+import com.hexis.bi.utils.glass
 import com.hexis.bi.utils.kgToLb
 
 @Composable
@@ -39,9 +37,12 @@ internal fun BodyCompositionCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
-            .background(MaterialTheme.colorScheme.background)
-            .padding(dimensionResource(R.dimen.spacer_m)),
+            .glass(
+                MaterialTheme.shapes.medium,
+                level = GlassConstants.LEVEL_DEFAULT,
+                fillBrush = { bodyGlassCardFillBrush(it) },
+            )
+            .padding(dimensionResource(R.dimen.spacer_l)),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -50,7 +51,7 @@ internal fun BodyCompositionCard(
             Text(
                 text = stringResource(R.string.body_composition_title),
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f),
             )
             BodyMassUnitToggle(
@@ -62,7 +63,11 @@ internal fun BodyCompositionCard(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-        Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+        ) {
             BodyMetricTile(
                 label = stringResource(R.string.body_metric_body_fat),
                 value = formatMassMetric(
@@ -80,7 +85,7 @@ internal fun BodyCompositionCard(
                 decreaseIsPositive = true,
                 modifier = Modifier.weight(1f),
             )
-            VerticalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+            AppVerticalGradientDivider()
             BodyMetricTile(
                 label = stringResource(R.string.body_metric_muscle_mass),
                 value = formatMassMetric(
@@ -100,10 +105,14 @@ internal fun BodyCompositionCard(
         }
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-        HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+        AppHorizontalGradientDivider()
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-        Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+        ) {
             BodyMetricTile(
                 label = stringResource(R.string.body_metric_weight),
                 value = formatWeight(composition.weightKg, isMetric),
@@ -111,7 +120,7 @@ internal fun BodyCompositionCard(
                 decreaseIsPositive = true,
                 modifier = Modifier.weight(1f),
             )
-            VerticalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+            AppVerticalGradientDivider()
             BodyMetricTile(
                 label = stringResource(R.string.body_metric_bis),
                 value = formatBis(composition.bisScore),
@@ -130,44 +139,17 @@ private fun BodyMassUnitToggle(
     onSelected: (BodyMassUnit) -> Unit,
 ) {
     val massLabel = stringResource(if (isMetric) R.string.unit_kg else R.string.unit_lb)
-    Row(
-        modifier = Modifier
-            .clip(CircleShape)
-            .padding(dimensionResource(R.dimen.spacer_3xs)),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        ToggleChip(
+    BodySegmentedToggleTrack {
+        BodySegmentedToggleChip(
             label = stringResource(R.string.unit_percent),
             isSelected = selected == BodyMassUnit.Percent,
             onClick = { onSelected(BodyMassUnit.Percent) },
         )
-        ToggleChip(
+        Spacer(Modifier.width(dimensionResource(R.dimen.spacer_s)))
+        BodySegmentedToggleChip(
             label = massLabel,
             isSelected = selected == BodyMassUnit.Mass,
             onClick = { onSelected(BodyMassUnit.Mass) },
-        )
-    }
-}
-
-@Composable
-private fun ToggleChip(label: String, isSelected: Boolean, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .width(dimensionResource(R.dimen.date_navigator_height))
-            .clip(CircleShape)
-            .then(
-                if (isSelected) Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
-                else Modifier
-            )
-            .clickable(onClick = onClick)
-            .padding(vertical = dimensionResource(R.dimen.spacer_xxs)),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (isSelected) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.onBackground,
         )
     }
 }

@@ -4,15 +4,17 @@ import androidx.credentials.CredentialManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
-import com.hexis.bi.data.auth.AuthRepository
-import com.hexis.bi.data.auth.FirebaseAuthRepository
 import com.hexis.bi.data.activity.ActivityRepository
 import com.hexis.bi.data.activity.TerraApiActivityRepository
+import com.hexis.bi.data.auth.AuthRepository
+import com.hexis.bi.data.auth.FirebaseAuthRepository
 import com.hexis.bi.data.healthconnections.FirestoreHealthConnectionsRepository
 import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
 import com.hexis.bi.data.network.httpLoggingInterceptor
 import com.hexis.bi.data.notification.NotificationInboxRepository
 import com.hexis.bi.data.preferences.UserPreferencesRepository
+import com.hexis.bi.data.recovery.RecoveryRepository
+import com.hexis.bi.data.recovery.TerraDerivedRecoveryRepository
 import com.hexis.bi.data.reminder.ScanReminderScheduler
 import com.hexis.bi.data.reminder.ScanReminderSchedulerImpl
 import com.hexis.bi.data.reminder.ScanReminderWorkRunner
@@ -20,8 +22,6 @@ import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.scan.ThreeDLookRepository
 import com.hexis.bi.data.scan.api.ThreeDLookApi
-import com.hexis.bi.data.recovery.RecoveryRepository
-import com.hexis.bi.data.recovery.TerraDerivedRecoveryRepository
 import com.hexis.bi.data.sleep.SleepRepository
 import com.hexis.bi.data.sleep.TerraApiSleepRepository
 import com.hexis.bi.data.store.AppPreferencesDataStore
@@ -95,7 +95,7 @@ val appModule = module {
             .connectTimeout(HTTP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .readTimeout(HTTP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .writeTimeout(HTTP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .apply { httpLoggingInterceptor()?.let { addInterceptor(it) } }
+            .apply { addInterceptor(httpLoggingInterceptor()) }
             .build()
     }
     single { ThreeDLookApi(get(), androidContext()) }
@@ -124,7 +124,19 @@ val appModule = module {
     viewModel { MainViewModel(get(), get()) }
     viewModel { LoginViewModel(get(), get(), get(), androidApplication()) }
     viewModel { SignUpViewModel(get(), get(), get(), androidApplication()) }
-    viewModel { HomeViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel {
+        HomeViewModel(
+            androidApplication(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get()
+        )
+    }
     viewModel { EditProfileViewModel(androidApplication(), get(), get(), get()) }
     viewModel { ForgotPasswordViewModel(get(), androidApplication()) }
     viewModel { ScanPreferencesViewModel(androidApplication(), get(), get()) }

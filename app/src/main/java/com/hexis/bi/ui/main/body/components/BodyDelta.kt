@@ -13,12 +13,10 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.Green
-import com.hexis.bi.ui.theme.Red100
+import com.hexis.bi.ui.theme.dark.DarkTheme
 import java.util.Locale
 import kotlin.math.abs
 
-/** Trend arrow + signed delta (e.g. "↗ + 0.6"). Colour: secondary when flat, green when improving, red otherwise. */
 @Composable
 internal fun BodyDelta(
     delta: Float,
@@ -27,9 +25,9 @@ internal fun BodyDelta(
 ) {
     val rising = delta > 0f
     val color = when {
-        delta == 0f -> MaterialTheme.colorScheme.secondary
-        rising != decreaseIsPositive -> Green
-        else -> Red100
+        delta == 0f -> MaterialTheme.colorScheme.onSurfaceVariant
+        rising != decreaseIsPositive -> DarkTheme.extendedColors.positive
+        else -> DarkTheme.extendedColors.negative
     }
     Row(
         modifier = modifier,
@@ -50,12 +48,10 @@ internal fun BodyDelta(
     }
 }
 
-/** Signed delta without a unit, e.g. "+ 0.6" / "− 1.2". */
 @Composable
 internal fun formatDelta(delta: Float): String =
     stringResource(R.string.delta_value, deltaSign(delta), deltaMagnitude(delta))
 
-/** Signed delta with a unit suffix, e.g. "+ 0.4 kg" / "− 0.6 %". */
 @Composable
 internal fun formatDelta(delta: Float, unit: String): String =
     stringResource(R.string.delta_value_with_unit, deltaSign(delta), deltaMagnitude(delta), unit)
