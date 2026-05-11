@@ -75,6 +75,11 @@ data class ScanRecord(
     val frontLinearParams: Map<String, Float> = emptyMap(),
     /** Side-view linear / ANFA-style params (from API `side_linear_params`). */
     val sideLinearParams: Map<String, Float> = emptyMap(),
+    val weightKg: Float? = null,
+    val bmi: Float? = null,
+    val fatPercentage: Float? = null,
+    val leanBodyMassKg: Float? = null,
+    val fatBodyMassKg: Float? = null,
 )
 
 class ScanHistoryRepository(
@@ -253,7 +258,20 @@ class ScanHistoryRepository(
             measurements = measurements,
             frontLinearParams = frontLinearParams,
             sideLinearParams = sideLinearParams,
+            weightKg = doc.numericField(FIELD_WEIGHT, FIELD_ESTIMATED_WEIGHT),
+            bmi = doc.numericField(FIELD_BMI, FIELD_ESTIMATED_BMI),
+            fatPercentage = doc.numericField(FIELD_FAT_PERCENTAGE),
+            leanBodyMassKg = doc.numericField(FIELD_LEAN_BODY_MASS, FIELD_ESTIMATED_LEAN_BODY_MASS),
+            fatBodyMassKg = doc.numericField(FIELD_FAT_BODY_MASS, FIELD_ESTIMATED_FAT_BODY_MASS),
         )
+    }
+
+    private fun DocumentSnapshot.numericField(vararg keys: String): Float? {
+        for (key in keys) {
+            val v = (get(key) as? Number)?.toFloat()
+            if (v != null) return v
+        }
+        return null
     }
 
     private fun DocumentSnapshot.savedAtMillis(): Long =

@@ -8,6 +8,10 @@ import com.hexis.bi.data.activity.ActivitySummary
 import com.hexis.bi.data.notification.NotificationInboxRepository
 import com.hexis.bi.data.recovery.RecoveryRepository
 import com.hexis.bi.data.recovery.RecoverySnapshot
+import com.hexis.bi.data.scan.MeasurementMapper
+import com.hexis.bi.data.scan.ScanFetchProjection
+import com.hexis.bi.data.scan.ScanHistoryRepository
+import com.hexis.bi.data.scan.ScanRecord
 import com.hexis.bi.data.sleep.SleepRepository
 import com.hexis.bi.data.sleep.SleepSession
 import com.hexis.bi.data.terra.TerraManagerHolder
@@ -17,7 +21,9 @@ import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.base.UiEvent
 import com.hexis.bi.ui.main.home.recovery.RecoveryStatus
 import com.hexis.bi.utils.calculateAge
+import com.hexis.bi.utils.cmToInches
 import com.hexis.bi.utils.constants.ActivityConstants
+import com.hexis.bi.utils.constants.DateFormatConstants
 import com.hexis.bi.utils.constants.SleepConstants
 import com.hexis.bi.utils.inchesToFeetAndInches
 import com.hexis.bi.utils.isMetricUnitSystem
@@ -30,7 +36,11 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.time.LocalDate
+import java.util.Date
+import java.util.Locale
+import kotlin.math.abs
 
 sealed interface HomeEvent : UiEvent {
     data object NavigateToLogin : HomeEvent
@@ -38,11 +48,12 @@ sealed interface HomeEvent : UiEvent {
 
 class HomeViewModel(
     application: Application,
-    userRepository: UserRepository,
+    private val userRepository: UserRepository,
     suitRepository: SuitRepository,
     private val sleepRepository: SleepRepository,
     private val activityRepository: ActivityRepository,
     private val recoveryRepository: RecoveryRepository,
+    private val scanHistoryRepository: ScanHistoryRepository,
     private val terraManagerHolder: TerraManagerHolder,
     notificationInbox: NotificationInboxRepository,
 ) : BaseViewModel(application) {
@@ -61,6 +72,7 @@ class HomeViewModel(
                     ActivityConstants.DEFAULT_STEP_GOAL,
                 ),
                 HomeOverviewDefaults.placeholderRecoveryCard(appContext),
+                HomeOverviewDefaults.placeholderScanCard(appContext),
             ),
         ),
     )
@@ -176,9 +188,11 @@ class HomeViewModel(
             val sleepJob = async { loadSleepOverview() }
             val activityJob = async { loadActivityOverview() }
             val recoveryJob = async { loadRecoveryOverview() }
+            val scanJob = async { loadScanOverview() }
             sleepJob.await()
             activityJob.await()
             recoveryJob.await()
+            scanJob.await()
         }
     }
 
@@ -298,6 +312,48 @@ class HomeViewModel(
             goalSubtitle = goalSubtitle,
             value = HomeOverviewDefaults.formatSteps(steps),
             valueLabel = appContext.getString(R.string.home_activity_value_label),
+        )
+    }
+
+    private suspend fun loadScanOverview() {
+        val isMetric = userRepository.getUser().getOrNull()?.unitSystem.isMetricUnitSystem()
+        // LIST_SUMMARY carries the circumference subdoc, which is all topChangeVsPreviousScan needs.
+        val card = scanHistoryRepository
+            .getRecentScans(limit = 2L, projection = ScanFetchProjection.LIST_SUMMARY)
+            .map { scans -> buildScanCard(scans.getOrNull(0), scans.getOrNull(1), isMetric) }
+            .getOrElse { HomeOverviewDefaults.placeholderScanCard(appContext) }
+        _state.update {
+            it.copy(overviewCards = it.overviewCards.replaced(OVERVIEW_SCAN_INDEX, card))
+        }
+    }
+
+    private fun buildScanCard(
+        latest: ScanRecord?,
+        previous: ScanRecord?,
+        isMetric: Boolean,
+    ): OverviewCardData {
+        latest ?: return HomeOverviewDefaults.placeholderScanCard(appContext)
+        val dateLabel = SimpleDateFormat(DateFormatConstants.SHORT_MONTH_DAY, Locale.getDefault())
+            .format(Date(latest.timestamp))
+        val topChange = MeasurementMapper.topChangeVsPreviousScan(latest, previous)
+            ?: return HomeOverviewDefaults.scanCard(
+                context = appContext,
+                value = dateLabel,
+                valueLabel = null,
+                subtitle = appContext.getString(R.string.home_scan_last_scan),
+            )
+        val magnitude = abs(if (isMetric) topChange.deltaCm else topChange.deltaCm.cmToInches())
+        val unit = appContext.getString(if (isMetric) R.string.unit_cm else R.string.unit_in)
+        val arrow = appContext.getString(
+            if (topChange.deltaCm < 0f) R.string.home_scan_arrow_down else R.string.home_scan_arrow_up
+        )
+        return HomeOverviewDefaults.scanCard(
+            context = appContext,
+            value = String.format(Locale.US, "%.1f %s", magnitude, unit),
+            valueLabel = appContext.getString(
+                R.string.home_scan_change_label, arrow, appContext.getString(topChange.bodyPartRes),
+            ),
+            subtitle = appContext.getString(R.string.home_scan_key_change, dateLabel),
         )
     }
 }

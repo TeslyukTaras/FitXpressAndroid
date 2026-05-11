@@ -124,7 +124,7 @@ val appModule = module {
     viewModel { MainViewModel(get(), get()) }
     viewModel { LoginViewModel(get(), get(), get(), androidApplication()) }
     viewModel { SignUpViewModel(get(), get(), get(), androidApplication()) }
-    viewModel { HomeViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { HomeViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { EditProfileViewModel(androidApplication(), get(), get(), get()) }
     viewModel { ForgotPasswordViewModel(get(), androidApplication()) }
     viewModel { ScanPreferencesViewModel(androidApplication(), get(), get()) }
@@ -143,7 +143,7 @@ val appModule = module {
     viewModel { MySuitViewModel(androidApplication(), get(), get()) }
     viewModel { NotificationsSettingsViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { NotificationsViewModel(androidApplication(), get()) }
-    viewModel { BodyViewModel(androidApplication()) }
+    viewModel { BodyViewModel(androidApplication(), get(), get()) }
     viewModel { SleepViewModel(androidApplication(), get(), get()) }
     viewModel { ActivityViewModel(androidApplication(), get(), get(), get()) }
     viewModel { RecoveryViewModel(androidApplication(), get()) }

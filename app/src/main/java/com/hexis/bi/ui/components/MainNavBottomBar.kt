@@ -110,21 +110,27 @@ private fun NavTab(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { onClick() },
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(dimensionResource(R.dimen.size_bottom_nav_center))
+            .clip(CircleShape)
+            .clickable { onClick() },
     ) {
-        Icon(
-            painter = painterResource(iconRes),
-            contentDescription = label,
-            tint = if (selected) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.secondary,
-            modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
-        )
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxs)))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = if (selected) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.secondary,
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = label,
+                tint = if (selected) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+            )
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxs)))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (selected) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.secondary,
+            )
+        }
     }
 }
