@@ -161,6 +161,15 @@
     <string name="home_card_recovery">Recovery</string>
     <string name="home_recovery_score_value">%1$d/100</string>
     <string name="home_card_scan">Scan</string>
+    <!-- Home "Scan" overview card. -->
+    <string name="home_scan_no_data">No scans yet</string>
+    <string name="home_scan_last_scan">Last scan</string>
+    <!-- Subtitle with the scan date, e.g. "Dec 15 • Key change". -->
+    <string name="home_scan_key_change">%1$s • Key change</string>
+    <!-- valueLabel: arrow + body part, e.g. "↓ Mid Waist". -->
+    <string name="home_scan_change_label">%1$s %2$s</string>
+    <string name="home_scan_arrow_down">↓</string>
+    <string name="home_scan_arrow_up">↑</string>
     <string name="home_score_vbi">VBI Score</string>
     <string name="home_score_vli">VLI Score</string>
     <string name="home_score_poa">POA Score</string>
@@ -183,6 +192,31 @@
     <string name="body_tab_posture">Posture</string>
     <string name="body_tab_compare">Compare</string>
     <string name="cd_body_history">Scan history</string>
+    <string name="cd_body_bis_info">About BIS</string>
+    <string name="body_composition_title">Body composition</string>
+    <string name="body_metric_body_fat">Body fat</string>
+    <string name="body_metric_muscle_mass">Muscle mass</string>
+    <string name="body_metric_weight">Weight</string>
+    <string name="body_metric_bis">BIS</string>
+    <string name="body_range_month">M</string>
+    <string name="body_range_year">Y</string>
+    <string name="body_chart_legend_muscle">Muscle (%1$s)</string>
+    <string name="body_chart_legend_fat">Fat (%1$s)</string>
+    <!-- Signed delta — sign and magnitude are separate placeholders so the sign can be coloured. -->
+    <string name="delta_sign_positive">+</string>
+    <string name="delta_sign_negative">−</string>
+    <!-- Delta, e.g. "+ 0.6": sign, magnitude. -->
+    <string name="delta_value">%1$s %2$s</string>
+    <!-- Delta with unit, e.g. "+ 0.4 kg": sign, magnitude, unit. -->
+    <string name="delta_value_with_unit">%1$s %2$s %3$s</string>
+    <string name="body_error_title">Couldn\'t load body data</string>
+    <string name="body_empty_title">No saved scans yet. Complete a scan to see your body composition.</string>
+    <string name="body_tab_coming_soon">Coming soon</string>
+    <string name="body_bis_sheet_title">Body Intelligence Score</string>
+    <string name="body_bis_sheet_subtitle">What is BIS?</string>
+    <string name="body_bis_sheet_body">BIS combines your muscle mass, body-fat percentage, and BMI into a single 0–100 score so you can track overall body composition at a glance. A higher score means a healthier muscle-to-fat balance for your build.</string>
+    <string name="unit_kg">kg</string>
+    <string name="unit_lb">lb</string>
     <string name="scan_history_title">Scan History</string>
     <string name="scan_history_top_change_prefix">Top change: </string>
     <string name="scan_history_top_change_dash">—</string>

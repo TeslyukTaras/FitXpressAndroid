@@ -24,4 +24,19 @@ object DateFormatConstants {
 
     const val SHORT_MONTH_DAY_YEAR = "MMM d, yyyy"
     const val HOUR_MINUTE_24 = "HH:mm"
+
+    /** Short day-of-week initials, e.g. "Mo", "Tu". */
+    const val DAY_NAME_SHORT = "EEEEE"
+
+    /** Day + short month numeric, e.g. "15 Dec". */
+    const val DATE_RANGE_DAY_MONTH = "d MMM"
+
+    /** Day + short month + year, e.g. "21 Dec 2026". */
+    const val DATE_RANGE_DAY_MONTH_YEAR = "d MMM yyyy"
+
+    /** Day/month numeric, e.g. "12/04". */
+    const val DAY_MONTH_NUMERIC = "d/M"
+
+    /** Day, MMM d (e.g. "Fri, Dec 19") for trend chart tooltips. */
+    const val WEEKDAY_MONTH_DAY = "EEE, MMM d"
 }

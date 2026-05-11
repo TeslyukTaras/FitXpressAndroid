@@ -76,6 +76,28 @@ internal object HomeOverviewDefaults {
         variant = variant,
     )
 
+    fun placeholderScanCard(context: Context): OverviewCardData =
+        scanCard(
+            context = context,
+            value = context.getString(R.string.stat_unknown),
+            valueLabel = null,
+            subtitle = context.getString(R.string.home_scan_no_data),
+        )
+
+    fun scanCard(
+        context: Context,
+        value: String,
+        valueLabel: String?,
+        subtitle: String,
+    ): OverviewCardData = OverviewCardData(
+        title = context.getString(R.string.home_card_scan),
+        iconRes = R.drawable.ic_body,
+        value = value,
+        valueLabel = valueLabel,
+        subtitle = subtitle,
+        variant = OverviewCardVariant.Primary,
+    )
+
     internal fun formatSteps(steps: Int): String = "%,d".format(steps.coerceAtLeast(0))
 
     internal fun formatSleepHours(hours: Float): String =

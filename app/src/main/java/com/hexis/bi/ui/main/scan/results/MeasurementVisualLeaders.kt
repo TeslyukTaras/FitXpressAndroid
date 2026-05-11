@@ -85,7 +85,7 @@ internal fun MeasurementLeaderOverlay(
         modifier = modifier
             .fillMaxSize()
             .pointerInteropFilter(onTouchEvent = { false })
-            .onGloballyPositioned { overlayLayout = it },
+            .onGloballyPositioned { overlayLayout = it }
     ) {
         Canvas(
             Modifier.fillMaxSize(),

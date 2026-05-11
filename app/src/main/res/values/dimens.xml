@@ -127,5 +127,11 @@
     <!-- Effects -->
     <dimen name="dash_width">5dp</dimen>
 
+    <!-- Body screen -->
+    <dimen name="body_chart_height">220dp</dimen>
+    <dimen name="body_chart_y_axis_width">24dp</dimen>
+    <dimen name="body_chart_tooltip_reserved">58dp</dimen>
+    <dimen name="body_chart_point_radius">5dp</dimen>
+    <dimen name="body_chart_line_stroke">1dp</dimen>
 
 </resources>

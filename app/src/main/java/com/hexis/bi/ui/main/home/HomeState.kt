@@ -1,7 +1,6 @@
 package com.hexis.bi.ui.main.home
 
 import androidx.annotation.DrawableRes
-import com.hexis.bi.R
 import com.hexis.bi.utils.constants.ActivityConstants
 import com.hexis.bi.utils.constants.SleepConstants
 
@@ -27,24 +26,14 @@ data class IntelligenceScoreData(
 internal const val OVERVIEW_SLEEP_INDEX = 0
 internal const val OVERVIEW_ACTIVITY_INDEX = 1
 internal const val OVERVIEW_RECOVERY_INDEX = 2
+internal const val OVERVIEW_SCAN_INDEX = 3
 
 internal fun buildOverviewCards(
     sleepCard: OverviewCardData,
     activityCard: OverviewCardData,
     recoveryCard: OverviewCardData,
-): List<OverviewCardData> = listOf(sleepCard, activityCard, recoveryCard) + defaultOverviewCardsTail
-
-/** Scan — still mock data until that feature is wired. */
-private val defaultOverviewCardsTail = listOf(
-    OverviewCardData(
-        title = "Scan",
-        iconRes = R.drawable.ic_body,
-        value = "0.6 cm",
-        valueLabel = "↓ waist",
-        subtitle = "Dec 15 • Key change",
-        variant = OverviewCardVariant.Primary,
-    ),
-)
+    scanCard: OverviewCardData,
+): List<OverviewCardData> = listOf(sleepCard, activityCard, recoveryCard, scanCard)
 
 private val defaultIntelligenceScores = listOf(
     IntelligenceScoreData(title = "VBI Score", value = "20", level = ScoreLevel.Low),
