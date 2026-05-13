@@ -1,4 +1,4 @@
-package com.hexis.bi.ui.components
+package com.hexis.bi.ui.dark
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -24,6 +25,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.VisualTransformation
 import com.hexis.bi.R
+import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.utils.constants.GlassConstants
+import com.hexis.bi.utils.glass
 
 @Composable
 fun AppSearchField(
@@ -35,22 +39,22 @@ fun AppSearchField(
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     val shape = MaterialTheme.shapes.small
-    val borderColor = if (isFocused) MaterialTheme.colorScheme.primary else null
+    val borderColor =
+        if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
 
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
         modifier = modifier
             .fillMaxWidth()
-            .then(
-                if (borderColor != null)
-                    Modifier.border(
-                        dimensionResource(R.dimen.border_thin),
-                        borderColor,
-                        shape,
-                    )
-                else Modifier,
-            ),
+            .glass(
+                shape = shape,
+                level = GlassConstants.LEVEL_DEFAULT,
+                fill = DarkTheme.extendedColors.surfaceTranslucent,
+                backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
+                rimWidth = dimensionResource(R.dimen.glass_rim_width),
+            )
+            .border(dimensionResource(R.dimen.border_line), borderColor, shape),
         interactionSource = interactionSource,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         singleLine = true,
@@ -70,13 +74,15 @@ fun AppSearchField(
                     Text(
                         text = placeholder,
                         style = MaterialTheme.typography.labelLarge,
-                        color = if (isFocused) MaterialTheme.colorScheme.primaryFixed else MaterialTheme.colorScheme.secondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 },
                 leadingIcon = {
                     Icon(
                         painter = painterResource(R.drawable.ic_search),
                         contentDescription = null,
+                        tint = if (isFocused || value.isNotEmpty()) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
                     )
                 },
@@ -85,6 +91,7 @@ fun AppSearchField(
                         Icon(
                             painter = painterResource(R.drawable.ic_cross),
                             contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onBackground,
                             modifier = Modifier
                                 .size(dimensionResource(R.dimen.icon_medium))
                                 .clickable { onValueChange("") },
@@ -93,14 +100,10 @@ fun AppSearchField(
                 } else null,
                 shape = shape,
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.tertiary,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.tertiary,
-                    focusedIndicatorColor = MaterialTheme.colorScheme.tertiary,
-                    unfocusedIndicatorColor = MaterialTheme.colorScheme.tertiary,
-                    focusedLeadingIconColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedLeadingIconColor = MaterialTheme.colorScheme.secondary,
-                    focusedTrailingIconColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedTrailingIconColor = MaterialTheme.colorScheme.secondary,
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
                 ),
                 contentPadding = PaddingValues(dimensionResource(R.dimen.spacer_m)),
             )
