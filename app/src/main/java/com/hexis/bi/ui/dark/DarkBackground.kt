@@ -6,94 +6,103 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import com.hexis.bi.ui.theme.dark.BodyGlassGreen
 import com.hexis.bi.ui.theme.dark.BodyGlassInk
 import com.hexis.bi.ui.theme.dark.DarkMeshBottom
 import com.hexis.bi.ui.theme.dark.DarkMeshTop
+import com.hexis.bi.utils.constants.DarkBackgroundConstants
 import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.sin
 
-private const val MeshGradientAngleDeg = 190.26f
-
-private const val MeshGradientLineLengthFactor = 1.2323f
-private const val CardFillGradientAngleDeg = 183.87f
-private const val CardFillStopStart = 0.0372f
-private const val CardFillStopEnd = 0.9901f
-
-private const val MainNavBarGradientAngleDeg = 146.44f
-private const val ScanFabGradientAngleDeg = 262.52f
-
-
 internal fun Modifier.darkScreenBackground(): Modifier = drawBehind {
-    val (meshStart, meshEnd) = gradientEndpoints(size, MeshGradientAngleDeg)
-    val line = Offset(meshEnd.x - meshStart.x, meshEnd.y - meshStart.y)
-    val extra = MeshGradientLineLengthFactor - 1f
-    val meshStartExtended = Offset(
-        meshStart.x - line.x * extra,
-        meshStart.y - line.y * extra,
-    )
+    drawScreenMesh()
+    drawTopScrim()
+    drawBottomScrim()
+}
 
+private fun DrawScope.drawScreenMesh() {
+    val (meshStart, meshEnd) = gradientEndpoints(size, DarkBackgroundConstants.MESH_GRADIENT_ANGLE_DEG)
+    val line = Offset(meshEnd.x - meshStart.x, meshEnd.y - meshStart.y)
+    val extra = DarkBackgroundConstants.MESH_GRADIENT_LINE_LENGTH_FACTOR - 1f
+    val startExtended = Offset(meshStart.x - line.x * extra, meshStart.y - line.y * extra)
     drawRect(
         brush = Brush.linearGradient(
             listOf(DarkMeshTop, DarkMeshBottom),
-            start = meshStartExtended,
+            start = startExtended,
             end = meshEnd,
         ),
     )
+}
 
-    val scrimH = size.height * 0.3f
-    if (scrimH > 0f) {
-        drawRect(
-            topLeft = Offset.Zero,
-            size = Size(size.width, scrimH),
-            brush = Brush.verticalGradient(
-                colors = listOf(Color.Black, Color.Transparent),
-                startY = 0f,
-                endY = scrimH,
+private fun DrawScope.drawTopScrim() {
+    val height = size.height * DarkBackgroundConstants.TOP_SCRIM_HEIGHT_FRACTION
+    if (height <= 0f) return
+    drawRect(
+        topLeft = Offset.Zero,
+        size = Size(size.width, height),
+        brush = Brush.verticalGradient(
+            0f to Color.Black,
+            DarkBackgroundConstants.TOP_SCRIM_HOLD_FRACTION to Color.Black,
+            1f to Color.Transparent,
+            startY = 0f,
+            endY = height,
+        ),
+    )
+}
+
+private fun DrawScope.drawBottomScrim() {
+    val height = size.height * DarkBackgroundConstants.BOTTOM_SCRIM_HEIGHT_FRACTION
+    if (height <= 0f) return
+    val top = size.height - height
+    drawRect(
+        topLeft = Offset(0f, top),
+        size = Size(size.width, height),
+        brush = Brush.verticalGradient(
+            colors = listOf(
+                DarkBackgroundConstants.BOTTOM_SCRIM_START,
+                DarkBackgroundConstants.BOTTOM_SCRIM_END,
             ),
-        )
-    }
+            startY = top,
+            endY = size.height,
+        ),
+    )
 }
 
 internal fun bodyGlassCardFillBrush(size: Size): Brush {
-    val (start, end) = gradientEndpoints(size, CardFillGradientAngleDeg)
+    val (start, end) = gradientEndpoints(size, DarkBackgroundConstants.CARD_FILL_GRADIENT_ANGLE_DEG)
     return Brush.linearGradient(
-        CardFillStopStart to BodyGlassGreen,
-        CardFillStopEnd to BodyGlassInk,
+        DarkBackgroundConstants.CARD_FILL_STOP_START to BodyGlassGreen,
+        DarkBackgroundConstants.CARD_FILL_STOP_END to BodyGlassInk,
         start = start,
         end = end,
     )
 }
 
-/** Main bottom nav track: `linear-gradient(146.44deg, …)` + glass 45. */
 internal fun darkMainNavBarFillBrush(size: Size): Brush {
-    val (start, end) = gradientEndpoints(size, MainNavBarGradientAngleDeg)
-    val c1 = Color(36 / 255f, 74 / 255f, 73 / 255f, 0.32f)
-    val c2 = Color(3 / 255f, 9 / 255f, 9 / 255f, 0.32f)
+    val (start, end) = gradientEndpoints(size, DarkBackgroundConstants.MAIN_NAV_BAR_GRADIENT_ANGLE_DEG)
     return Brush.linearGradient(
-        0f to c1,
-        0.3932f to c1,
-        1f to c2,
+        0f to DarkBackgroundConstants.MAIN_NAV_BAR_START_COLOR,
+        DarkBackgroundConstants.MAIN_NAV_BAR_HOLD_FRACTION to DarkBackgroundConstants.MAIN_NAV_BAR_START_COLOR,
+        1f to DarkBackgroundConstants.MAIN_NAV_BAR_END_COLOR,
         start = start,
         end = end,
     )
 }
 
-/** Center scan FAB: `linear-gradient(262.52deg, …)` + glass 80. */
 internal fun darkScanFabFillBrush(size: Size): Brush {
-    val (start, end) = gradientEndpoints(size, ScanFabGradientAngleDeg)
-    val c1 = Color(29 / 255f, 196 / 255f, 179 / 255f, 0.3f)
-    val c2 = Color(3 / 255f, 9 / 255f, 9 / 255f, 0.3f)
+    val (start, end) = gradientEndpoints(size, DarkBackgroundConstants.SCAN_FAB_GRADIENT_ANGLE_DEG)
     return Brush.linearGradient(
-        0f to c1,
-        0.0721f to c1,
-        1f to c2,
+        0f to DarkBackgroundConstants.SCAN_FAB_START_COLOR,
+        DarkBackgroundConstants.SCAN_FAB_HOLD_FRACTION to DarkBackgroundConstants.SCAN_FAB_START_COLOR,
+        1f to DarkBackgroundConstants.SCAN_FAB_END_COLOR,
         start = start,
         end = end,
     )
 }
 
+/** Converts a CSS gradient angle (0° = up, clockwise) to a line through the box center. */
 internal fun gradientEndpoints(size: Size, cssAngleDeg: Float): Pair<Offset, Offset> {
     val theta = Math.toRadians(cssAngleDeg.toDouble())
     val vx = sin(theta).toFloat()

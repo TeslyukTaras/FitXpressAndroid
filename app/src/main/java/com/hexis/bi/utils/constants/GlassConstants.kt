@@ -16,8 +16,8 @@ internal object GlassConstants {
     const val GLOW_RANGE_ALPHA = 0.055f
 
     /** Tight darkening just inside the NW rim (occlusion). Scales with [level]. */
-    const val INNER_NW_SHADOW_BASE_ALPHA = 0.102f
-    const val INNER_NW_SHADOW_RANGE_ALPHA = 0.324f
+    const val INNER_NW_SHADOW_BASE_ALPHA = 0.05f
+    const val INNER_NW_SHADOW_RANGE_ALPHA = 0.15f
     const val INNER_NW_SHADOW_RADIUS_FRAC = 0.36f
 
     /** Soft interior light opposite the rim (SE). Scales with [level]. */
@@ -26,8 +26,8 @@ internal object GlassConstants {
     const val INNER_SE_HIGHLIGHT_RADIUS_FRAC = 0.64f
 
     /** Very subtle dark “dead” zones away from the primary spec. */
-    const val DEAD_ZONE_BASE_ALPHA = 0.022f
-    const val DEAD_ZONE_RANGE_ALPHA = 0.074f
+    const val DEAD_ZONE_BASE_ALPHA = 0.010f
+    const val DEAD_ZONE_RANGE_ALPHA = 0.035f
 
     /** Radial size of top-right / bottom-left dead zones (× min side). */
     const val DEAD_ZONE_RADIUS_TR_FRAC = 0.54f
@@ -47,8 +47,8 @@ internal object GlassConstants {
     const val DEAD_ZONE_RADIUS_BL_COMPACT_FRAC = 0.98f
 
     /** Mild SE corner falloff for depth (does not replace SE highlight). */
-    const val SE_VIGNETTE_BASE_ALPHA = 0.014f
-    const val SE_VIGNETTE_RANGE_ALPHA = 0.05f
+    const val SE_VIGNETTE_BASE_ALPHA = 0.005f
+    const val SE_VIGNETTE_RANGE_ALPHA = 0.02f
 
     const val RIM_NW = 1.00f
     const val RIM_SE = 0.92f

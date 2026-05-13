@@ -1,8 +1,5 @@
 package com.hexis.bi.ui.main.body
 
-import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,21 +17,19 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.dark.DarkTabSelector
+import com.hexis.bi.ui.dark.LightStatusBarIcons
 import com.hexis.bi.ui.dark.darkScreenBackground
 import com.hexis.bi.ui.main.body.components.BisInfoBottomSheet
 import com.hexis.bi.ui.theme.dark.DarkTheme
@@ -49,7 +44,7 @@ fun BodyScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    LightStatusBarIcons(enabled = false)
+    LightStatusBarIcons()
 
     DarkTheme {
         BaseScreen(
@@ -134,29 +129,4 @@ fun BodyScreen(
 
         if (state.showBisInfo) BisInfoBottomSheet(onDismiss = viewModel::dismissBisInfo)
     }
-}
-
-
-@Composable
-private fun LightStatusBarIcons(enabled: Boolean) {
-    val view = LocalView.current
-    if (view.isInEditMode) return
-    DisposableEffect(view, enabled) {
-        val controller = view.context.findActivity()
-            ?.window
-            ?.let { WindowCompat.getInsetsController(it, view) }
-        val previous = controller?.isAppearanceLightStatusBars
-        controller?.isAppearanceLightStatusBars = enabled
-        onDispose {
-            if (controller != null && previous != null) {
-                controller.isAppearanceLightStatusBars = previous
-            }
-        }
-    }
-}
-
-private tailrec fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
 }

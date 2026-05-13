@@ -18,6 +18,12 @@ data class DarkExtendedColors(
     val cardBorder: Color,
     val tileSurface: Color,
     val textTertiary: Color,
+    val actionTeal: Color,
+    val actionRed: Color,
+    val screenMeshTop: Color,
+    val screenMeshBottom: Color,
+    val glassCardFillTop: Color,
+    val glassCardFillBottom: Color,
 )
 
 internal val DefaultDarkExtendedColors = DarkExtendedColors(
@@ -32,6 +38,12 @@ internal val DefaultDarkExtendedColors = DarkExtendedColors(
     cardBorder = Hairline,
     tileSurface = SurfaceMuted,
     textTertiary = TextTertiary,
+    actionTeal = ActionTeal,
+    actionRed = ActionRed,
+    screenMeshTop = DarkMeshTop,
+    screenMeshBottom = DarkMeshBottom,
+    glassCardFillTop = BodyGlassGreen,
+    glassCardFillBottom = BodyGlassInk,
 )
 
 internal val LocalDarkExtendedColors = staticCompositionLocalOf { DefaultDarkExtendedColors }
