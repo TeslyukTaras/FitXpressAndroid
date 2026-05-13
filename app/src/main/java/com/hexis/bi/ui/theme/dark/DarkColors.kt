@@ -35,6 +35,10 @@ internal val Negative = Color(0xFFE62020)
 internal val ActionTeal = Color(0xFF1DC4B3)
 internal val ActionRed = Color(0xFFF95656)
 
+internal val DarkSwitchActiveTrackTop = Color(0xA31DC4B3)
+internal val DarkSwitchActiveTrackBottom = Color(0xA30B2020)
+internal val DarkSwitchThumbShadow = Color(0x1F000000)
+
 internal val ChartBlue = Color(0xD4005AFF)
 internal val ChartTeal = Color(0xCC0DE6B0)
 internal val BodyCyan = Color(0xFF22D3EE)

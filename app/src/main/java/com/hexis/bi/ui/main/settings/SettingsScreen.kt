@@ -6,6 +6,7 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,16 +35,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
+import com.hexis.bi.ui.dark.BodyGlassCard
 import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.dark.bodyGlassCardFillBrush
 import com.hexis.bi.ui.dark.darkScreenBackground
 import com.hexis.bi.ui.main.settings.deleteaccount.AuthProvider
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountDialog
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountEvent
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountViewModel
 import com.hexis.bi.ui.theme.dark.DarkTheme
-import com.hexis.bi.utils.constants.GlassConstants
-import com.hexis.bi.utils.glass
 import org.koin.androidx.compose.koinViewModel
 
 private data class SettingsRow(
@@ -158,18 +157,9 @@ private fun SettingsGroupSection(group: SettingsGroup) {
         ),
     )
 
-    Column(
-        modifier = Modifier
-            .padding(horizontal = dimensionResource(R.dimen.padding_medium))
-            .fillMaxWidth()
-            .glass(
-                shape = MaterialTheme.shapes.medium,
-                level = GlassConstants.LEVEL_DEFAULT,
-                fillBrush = { bodyGlassCardFillBrush(it) },
-                backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
-                rimWidth = dimensionResource(R.dimen.glass_rim_width),
-            )
-            .padding(dimensionResource(R.dimen.spacer_xs)),
+    BodyGlassCard(
+        modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+        contentPadding = PaddingValues(dimensionResource(R.dimen.spacer_xs)),
     ) {
         group.items.forEach { row -> SettingsRowItem(row) }
     }

@@ -6,9 +6,7 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,7 +22,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -34,7 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -45,10 +42,17 @@ import com.hexis.bi.R
 import com.hexis.bi.domain.enums.ReminderDay
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
-import com.hexis.bi.ui.components.AppListPicker
-import com.hexis.bi.ui.components.AppScrollPicker
-import com.hexis.bi.ui.components.AppSwitch
-import com.hexis.bi.ui.components.PickerColumnData
+import com.hexis.bi.ui.dark.AppHorizontalGradientDivider
+import com.hexis.bi.ui.dark.AppListPicker
+import com.hexis.bi.ui.dark.AppScrollPicker
+import com.hexis.bi.ui.dark.PickerColumnData
+import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.dark.DarkSwitch
+import com.hexis.bi.ui.dark.LightStatusBarIcons
+import com.hexis.bi.ui.dark.darkScreenBackground
+import com.hexis.bi.ui.theme.dark.DarkTextMuted
+import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.theme.dark.TextPrimary
 import com.hexis.bi.utils.constants.TimeConstants
 import com.hexis.bi.utils.hour12ToHour24
 import com.hexis.bi.utils.hour24ToHour12
@@ -67,6 +71,9 @@ fun NotificationsSettingsScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
     val showAnyDialog = state.showDayPicker || state.showTimePicker
     val context = LocalContext.current
+
+    LightStatusBarIcons()
+
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
     ) { granted ->
@@ -87,150 +94,130 @@ fun NotificationsSettingsScreen(
                 }
             }
             viewModel.toggleNotifications(true)
-        } else {
-            viewModel.toggleNotifications(false)
-        }
+        } else viewModel.toggleNotifications(false)
     }
 
-    Box(modifier = modifier) {
-        BaseScreen(
-            isLoading = isLoading,
-            error = error,
-            onDismissError = viewModel::clearError,
-            modifier = Modifier
-                .fillMaxSize()
-                .then(
-                    if (showAnyDialog)
-                        Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
-                    else Modifier
-                ),
-            topBar = {
-                BaseTopBar(
-                    title = stringResource(R.string.notification_settings_title),
-                    onBack = onBack,
-                )
-            },
-        ) {
-            Column(
+    DarkTheme {
+        Box(modifier = modifier) {
+            BaseScreen(
+                isLoading = isLoading,
+                error = error,
+                onDismissError = viewModel::clearError,
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+                    .then(
+                        if (showAnyDialog)
+                            Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
+                        else Modifier
+                    )
+                    .darkScreenBackground(),
+                containerColor = Color.Transparent,
+                topBar = {
+                    BaseTopBar(
+                        title = stringResource(R.string.notification_settings_title),
+                        background = Color.Transparent,
+                        onBack = onBack,
+                    )
+                },
             ) {
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-                // General notifications card
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .padding(all = dimensionResource(R.dimen.spacer_m)),
-                    verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_m))
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
                 ) {
-                    SwitchRow(
-                        label = stringResource(R.string.notifications_toggle),
-                        checked = state.notificationsEnabled,
-                        onCheckedChange = ::onNotificationToggleRequest,
-                        enabled = state.settingsLoaded,
-                    )
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outline,
-                        thickness = dimensionResource(R.dimen.border_thin),
-                    )
-                    SwitchRow(
-                        label = stringResource(R.string.notifications_voice),
-                        checked = state.voiceEnabled,
-                        onCheckedChange = viewModel::toggleVoice,
-                        enabled = state.settingsLoaded,
-                    )
-                }
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+                    BodyGlassCard {
+                        SwitchRow(
+                            label = stringResource(R.string.notifications_toggle),
+                            checked = state.notificationsEnabled,
+                            onCheckedChange = ::onNotificationToggleRequest,
+                            enabled = state.settingsLoaded,
+                        )
 
-                // Remind to scan card
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .padding(all = dimensionResource(R.dimen.spacer_2xs)),
-                ) {
-                    // Header row with toggle
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(all = dimensionResource(R.dimen.spacer_2xs)),
-                        verticalAlignment = Alignment.Top,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(R.string.notifications_remind_to_scan),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onBackground,
-                            )
-                            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxs)))
-                            Text(
-                                text = stringResource(R.string.notifications_remind_to_scan_subtitle),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.secondary,
-                            )
-                        }
-                        AppSwitch(
-                            checked = state.remindToScanEnabled,
-                            onCheckedChange = viewModel::toggleRemindToScan,
+                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+                        AppHorizontalGradientDivider()
+                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+
+                        SwitchRow(
+                            label = stringResource(R.string.notifications_voice),
+                            checked = state.voiceEnabled,
+                            onCheckedChange = viewModel::toggleVoice,
                             enabled = state.settingsLoaded,
                         )
                     }
 
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outline,
-                        thickness = dimensionResource(R.dimen.border_thin),
-                        modifier = Modifier.padding(all = dimensionResource(R.dimen.spacer_2xs))
-                    )
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-                    // Day row
-                    PickerRow(
-                        label = stringResource(R.string.notifications_day),
-                        value = stringResource(state.reminderDay.labelRes()),
-                        enabled = state.remindToScanEnabled,
-                        onClick = viewModel::showDayPicker,
-                    )
+                    BodyGlassCard {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.Top,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.notifications_remind_to_scan),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                )
+                                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxs)))
+                                Text(
+                                    text = stringResource(R.string.notifications_remind_to_scan_subtitle),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            DarkSwitch(
+                                checked = state.remindToScanEnabled,
+                                onCheckedChange = viewModel::toggleRemindToScan,
+                                enabled = state.settingsLoaded,
+                            )
+                        }
 
-                    // Time row
-                    PickerRow(
-                        label = stringResource(R.string.notifications_time),
-                        value = formatHourOnly(state.reminderHour),
-                        enabled = state.remindToScanEnabled,
-                        onClick = viewModel::showTimePicker,
-                    )
+                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+                        AppHorizontalGradientDivider()
+                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+
+                        PickerRow(
+                            label = stringResource(R.string.notifications_day),
+                            value = stringResource(state.reminderDay.labelRes()),
+                            enabled = state.remindToScanEnabled,
+                            onClick = viewModel::showDayPicker,
+                        )
+
+                        PickerRow(
+                            label = stringResource(R.string.notifications_time),
+                            value = formatHourOnly(state.reminderHour),
+                            enabled = state.remindToScanEnabled,
+                            onClick = viewModel::showTimePicker,
+                        )
+                    }
                 }
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
             }
-        }
 
-        // Day picker dialog
-        if (state.showDayPicker) {
-            AppListPicker(
-                items = ReminderDay.entries,
-                selectedItem = state.reminderDay,
-                onItemSelected = viewModel::selectDay,
-                onDismiss = viewModel::hideDayPicker,
-                itemLabel = { stringResource(it.labelRes()) },
-                title = stringResource(R.string.notifications_day).trimEnd(':'),
-            )
-        }
+            if (state.showDayPicker) {
+                AppListPicker(
+                    items = ReminderDay.entries,
+                    selectedItem = state.reminderDay,
+                    onItemSelected = viewModel::selectDay,
+                    onDismiss = viewModel::hideDayPicker,
+                    itemLabel = { stringResource(it.labelRes()) },
+                    title = stringResource(R.string.notifications_day).trimEnd(':'),
+                )
+            }
 
-        // Time picker dialog
-        if (state.showTimePicker) {
-            val hourState = rememberAppHourPickerState(initialHour = state.reminderHour)
 
-            AppScrollPicker(
-                title = stringResource(R.string.notifications_select_time),
-                pickerColumns = hourState.toColumns(),
-                onDismiss = viewModel::hideTimePicker,
-                onConfirm = { viewModel.selectTime(hourState.selectedHour24) },
-            )
+            if (state.showTimePicker) {
+                val hourState = rememberAppHourPickerState(initialHour = state.reminderHour)
+
+                AppScrollPicker(
+                    title = stringResource(R.string.notifications_select_time),
+                    pickerColumns = hourState.toColumns(),
+                    onDismiss = viewModel::hideTimePicker,
+                    onConfirm = { viewModel.selectTime(hourState.selectedHour24) },
+                )
+            }
         }
     }
 }
@@ -249,12 +236,12 @@ private fun SwitchRow(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.bodyLarge,
             color = if (enabled) MaterialTheme.colorScheme.onBackground
-            else MaterialTheme.colorScheme.secondary,
+            else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f),
         )
-        AppSwitch(
+        DarkSwitch(
             checked = checked,
             onCheckedChange = onCheckedChange,
             enabled = enabled,
@@ -270,34 +257,30 @@ private fun PickerRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
             .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(all = dimensionResource(R.dimen.spacer_2xs)),
+            .padding(vertical = dimensionResource(R.dimen.spacer_xs)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val valueColor = if (enabled) TextPrimary else DarkTextMuted
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge,
-            color = if (enabled) MaterialTheme.colorScheme.onBackground
-            else MaterialTheme.colorScheme.secondary,
+            color = DarkTextMuted,
             modifier = Modifier.weight(1f),
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (enabled) MaterialTheme.colorScheme.secondary
-            else MaterialTheme.colorScheme.primaryFixed,
+            style = MaterialTheme.typography.bodyLarge,
+            color = valueColor,
         )
         Spacer(Modifier.width(dimensionResource(R.dimen.spacer_xs)))
         Icon(
             painter = painterResource(R.drawable.ic_arrow),
             contentDescription = null,
-            tint = if (enabled) MaterialTheme.colorScheme.onBackground
-            else MaterialTheme.colorScheme.primaryFixed,
+            tint = valueColor,
             modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
         )
     }
