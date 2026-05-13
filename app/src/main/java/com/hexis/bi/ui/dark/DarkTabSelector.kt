@@ -18,6 +18,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import com.hexis.bi.R
+import com.hexis.bi.ui.theme.GlassSelectionFill
+import com.hexis.bi.ui.theme.GlassTrackFill
 import com.hexis.bi.utils.constants.GlassConstants
 import com.hexis.bi.utils.glass
 
@@ -34,7 +36,9 @@ fun <T> DarkTabSelector(
             .glass(
                 CircleShape,
                 level = GlassConstants.LEVEL_RAISED,
-                fill = GlassConstants.GLASS_TRACK_FILL
+                fill = GlassTrackFill,
+                backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
+                rimWidth = dimensionResource(R.dimen.glass_rim_width),
             )
             .padding(dimensionResource(R.dimen.spacer_xxs)),
         verticalAlignment = Alignment.CenterVertically,
@@ -48,7 +52,9 @@ fun <T> DarkTabSelector(
                         if (isSelected) Modifier.glass(
                             CircleShape,
                             level = GlassConstants.LEVEL_SELECTED,
-                            fill = GlassConstants.GLASS_SELECTION_FILL,
+                            fill = GlassSelectionFill,
+                            backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
+                            rimWidth = dimensionResource(R.dimen.glass_rim_width),
                         )
                         else Modifier.clip(CircleShape)
                     )

@@ -27,7 +27,7 @@ import com.hexis.bi.ui.components.AppAvatar
 @Composable
 fun HomeHeader(
     userName: String,
-    avatarUrl: String?,
+    imageUrl: String?,
     hasUnreadNotifications: Boolean,
     onNotificationClick: () -> Unit,
     onSettingsClick: () -> Unit,
@@ -37,7 +37,7 @@ fun HomeHeader(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AppAvatar(imageUrl = avatarUrl)
+        AppAvatar(imageUrl = imageUrl)
 
         Spacer(Modifier.width(dimensionResource(R.dimen.spacer_m)))
 

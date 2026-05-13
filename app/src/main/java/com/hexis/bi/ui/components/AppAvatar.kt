@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.Dp
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
-import coil3.request.crossfade
 import com.hexis.bi.R
 
 @Composable
@@ -37,7 +36,6 @@ fun AppAvatar(
         if (!imageUrl.isNullOrBlank()) AsyncImage(
             model = ImageRequest.Builder(LocalPlatformContext.current)
                 .data(imageUrl)
-                .crossfade(true)
                 .build(),
             contentDescription = stringResource(R.string.cd_avatar),
             contentScale = ContentScale.Crop,
@@ -45,7 +43,6 @@ fun AppAvatar(
                 .size(size)
                 .clip(CircleShape),
             error = painterResource(R.drawable.ic_user),
-            placeholder = painterResource(R.drawable.ic_user),
         )
         else Icon(
             painter = painterResource(R.drawable.ic_user),

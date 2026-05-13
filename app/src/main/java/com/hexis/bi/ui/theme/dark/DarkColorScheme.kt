@@ -4,7 +4,7 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
 
 internal val DarkColorScheme: ColorScheme = darkColorScheme(
-    primary = Green500,
+    primary = ActionTeal,
     onPrimary = Black,
     primaryContainer = GreenSoft,
     onPrimaryContainer = Green400,
@@ -25,14 +25,14 @@ internal val DarkColorScheme: ColorScheme = darkColorScheme(
     surface = Surface,
     onSurface = TextPrimary,
     surfaceVariant = SurfaceMuted,
-    onSurfaceVariant = TextSecondary,
+    onSurfaceVariant = DarkTextMuted,
     surfaceContainerLowest = Ink,
     surfaceContainerLow = SurfaceMuted,
     surfaceContainer = Surface,
     surfaceContainerHigh = SurfaceElevated,
     surfaceContainerHighest = SurfaceElevated,
 
-    outline = Hairline,
+    outline = DarkBorderMuted,
     outlineVariant = HairlineStrong,
 
     error = Negative,

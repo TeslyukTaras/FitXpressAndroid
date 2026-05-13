@@ -9,14 +9,17 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
+import com.hexis.bi.ui.theme.DialogWindowBackground
 import com.hexis.bi.utils.millisToDobString
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -27,7 +30,7 @@ fun AppDatePicker(
     onSelect: (String) -> Unit,
 ) {
     val colors = DatePickerDefaults.colors(
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = DialogWindowBackground,
         titleContentColor = MaterialTheme.colorScheme.onBackground,
         headlineContentColor = MaterialTheme.colorScheme.onBackground,
         weekdayContentColor = MaterialTheme.colorScheme.onBackground,
@@ -36,14 +39,14 @@ fun AppDatePicker(
         yearContentColor = MaterialTheme.colorScheme.onBackground,
         disabledYearContentColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.38f),
         currentYearContentColor = MaterialTheme.colorScheme.primary,
-        selectedYearContentColor = MaterialTheme.colorScheme.background,
-        disabledSelectedYearContentColor = MaterialTheme.colorScheme.background.copy(alpha = 0.38f),
+        selectedYearContentColor = DialogWindowBackground,
+        disabledSelectedYearContentColor = DialogWindowBackground.copy(alpha = 0.38f),
         selectedYearContainerColor = MaterialTheme.colorScheme.primary,
         disabledSelectedYearContainerColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.12f),
         dayContentColor = MaterialTheme.colorScheme.onBackground,
         disabledDayContentColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.38f),
-        selectedDayContentColor = MaterialTheme.colorScheme.background,
-        disabledSelectedDayContentColor = MaterialTheme.colorScheme.background.copy(alpha = 0.38f),
+        selectedDayContentColor = DialogWindowBackground,
+        disabledSelectedDayContentColor = DialogWindowBackground.copy(alpha = 0.38f),
         selectedDayContainerColor = MaterialTheme.colorScheme.primary,
         disabledSelectedDayContainerColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.12f),
         todayContentColor = MaterialTheme.colorScheme.primary,
@@ -56,10 +59,12 @@ fun AppDatePicker(
 
     AppDialog(hasCloseButton = false) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            DatePicker(
-                state = state,
-                colors = colors,
-            )
+            CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
+                DatePicker(
+                    state = state,
+                    colors = colors,
+                )
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

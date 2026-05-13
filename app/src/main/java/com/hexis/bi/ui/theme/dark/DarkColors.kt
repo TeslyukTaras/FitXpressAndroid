@@ -2,14 +2,15 @@ package com.hexis.bi.ui.theme.dark
 
 import androidx.compose.ui.graphics.Color
 
-// Figma: `linear-gradient(190.26°, #163131 0%, #030909 123.23%)` — teal at top
-// fading toward black past the bottom. A black top-scrim (see darkScreenBackground)
-// is layered on top to give the status-bar area the pure-black look from the design.
 internal val DarkMeshTop = Color(0xFF163131)
 internal val DarkMeshBottom = Color(0xFF030909)
 
 internal val BodyGlassGreen = Color(0x38244A49)
 internal val BodyGlassInk = Color(0x38030909)
+
+internal val DarkTextMuted = Color(0xFFAEB4BB)
+internal val DarkBorderMuted = Color(0x66AEB4BB)
+internal val SurfaceTranslucent = Color(0x4D090909)
 
 internal val Ink = Color(0xFF030909)
 internal val Surface = Color(0xFF101513)

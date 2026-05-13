@@ -54,6 +54,8 @@ fun DarkMainNavBottomBar(
                     level = GlassConstants.LEVEL_DEFAULT,
                     fill = Color.Transparent,
                     fillBrush = { darkMainNavBarFillBrush(it) },
+                    backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
+                    rimWidth = dimensionResource(R.dimen.glass_rim_width),
                 )
                 .padding(dimensionResource(R.dimen.spacer_xs)),
             horizontalArrangement = Arrangement.SpaceAround,
@@ -88,6 +90,8 @@ private fun ScanFab(onClick: () -> Unit) {
                 level = GlassConstants.LEVEL_RAISED,
                 fill = Color.Transparent,
                 fillBrush = { darkScanFabFillBrush(it) },
+                backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
+                rimWidth = dimensionResource(R.dimen.glass_rim_width),
             )
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },

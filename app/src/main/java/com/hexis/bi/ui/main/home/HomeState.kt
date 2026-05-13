@@ -43,7 +43,7 @@ private val defaultIntelligenceScores = listOf(
 
 data class HomeState(
     val userName: String = "",
-    val avatarUrl: String? = null,
+    val imageUrl: String? = null,
     val weight: String? = null,
     val height: String? = null,
     val age: String? = null,

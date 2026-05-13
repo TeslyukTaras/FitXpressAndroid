@@ -131,6 +131,8 @@ internal fun BodyTrendChart(
                 MaterialTheme.shapes.medium,
                 level = GlassConstants.LEVEL_DEFAULT,
                 fillBrush = { bodyGlassCardFillBrush(it) },
+                backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
+                rimWidth = dimensionResource(R.dimen.glass_rim_width),
             )
             .padding(dimensionResource(R.dimen.spacer_m)),
     ) {

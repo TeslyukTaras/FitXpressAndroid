@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -40,10 +41,7 @@ import com.hexis.bi.ui.main.settings.deleteaccount.AuthProvider
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountDialog
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountEvent
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountViewModel
-import com.hexis.bi.ui.theme.dark.ActionRed
-import com.hexis.bi.ui.theme.dark.ActionTeal
 import com.hexis.bi.ui.theme.dark.DarkTheme
-import com.hexis.bi.ui.theme.dark.TextPrimary
 import com.hexis.bi.utils.constants.GlassConstants
 import com.hexis.bi.utils.glass
 import org.koin.androidx.compose.koinViewModel
@@ -52,8 +50,8 @@ private data class SettingsRow(
     @DrawableRes val iconRes: Int,
     @StringRes val labelRes: Int,
     val showChevron: Boolean = true,
-    val iconTint: Color = ActionTeal,
-    val textColor: Color = TextPrimary,
+    val iconTint: Color = Color.Unspecified,
+    val textColor: Color = Color.Unspecified,
     val onClick: () -> Unit = {},
 )
 
@@ -95,17 +93,17 @@ fun SettingsScreen(
         AuthProvider.UNKNOWN -> { -> }
     }
 
-    val groups = buildSettingsGroups(
-        onNavigateToEditProfile = onNavigateToEditProfile,
-        onNavigateToNotificationSettings = onNavigateToNotificationSettings,
-        onNavigateToHealthConnections = onNavigateToHealthConnections,
-        onNavigateToMySuit = onNavigateToMySuit,
-        onNavigateToScanPreferences = onNavigateToScanPreferences,
-        onShowDeleteDialog = viewModel::showDialog,
-        onLogout = onLogout,
-    )
-
     DarkTheme {
+        val groups = buildSettingsGroups(
+            onNavigateToEditProfile = onNavigateToEditProfile,
+            onNavigateToNotificationSettings = onNavigateToNotificationSettings,
+            onNavigateToHealthConnections = onNavigateToHealthConnections,
+            onNavigateToMySuit = onNavigateToMySuit,
+            onNavigateToScanPreferences = onNavigateToScanPreferences,
+            onShowDeleteDialog = viewModel::showDialog,
+            onLogout = onLogout,
+        )
+
         Box(modifier = modifier) {
             BaseScreen(
                 modifier = Modifier
@@ -151,7 +149,7 @@ private fun SettingsGroupSection(group: SettingsGroup) {
     Text(
         text = stringResource(group.titleRes),
         style = MaterialTheme.typography.titleSmall,
-        color = TextPrimary,
+        color = MaterialTheme.colorScheme.onBackground,
         modifier = Modifier.padding(
             start = dimensionResource(R.dimen.padding_medium),
             end = dimensionResource(R.dimen.padding_medium),
@@ -168,6 +166,8 @@ private fun SettingsGroupSection(group: SettingsGroup) {
                 shape = MaterialTheme.shapes.medium,
                 level = GlassConstants.LEVEL_DEFAULT,
                 fillBrush = { bodyGlassCardFillBrush(it) },
+                backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
+                rimWidth = dimensionResource(R.dimen.glass_rim_width),
             )
             .padding(dimensionResource(R.dimen.spacer_xs)),
     ) {
@@ -177,6 +177,8 @@ private fun SettingsGroupSection(group: SettingsGroup) {
 
 @Composable
 private fun SettingsRowItem(row: SettingsRow) {
+    val iconTint = row.iconTint.takeOrElse { MaterialTheme.colorScheme.primary }
+    val textColor = row.textColor.takeOrElse { MaterialTheme.colorScheme.onBackground }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -190,13 +192,13 @@ private fun SettingsRowItem(row: SettingsRow) {
         Icon(
             painter = painterResource(row.iconRes),
             contentDescription = null,
-            tint = row.iconTint,
+            tint = iconTint,
             modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
         )
         Text(
             text = stringResource(row.labelRes),
             style = MaterialTheme.typography.bodyLarge,
-            color = row.textColor,
+            color = textColor,
             modifier = Modifier
                 .weight(1f)
                 .padding(start = dimensionResource(R.dimen.spacer_m)),
@@ -204,12 +206,13 @@ private fun SettingsRowItem(row: SettingsRow) {
         if (row.showChevron) Icon(
             painter = painterResource(R.drawable.ic_arrow),
             contentDescription = null,
-            tint = row.textColor,
+            tint = textColor,
             modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
         )
     }
 }
 
+@Composable
 private fun buildSettingsGroups(
     onNavigateToEditProfile: () -> Unit,
     onNavigateToNotificationSettings: () -> Unit,
@@ -218,50 +221,54 @@ private fun buildSettingsGroups(
     onNavigateToScanPreferences: () -> Unit,
     onShowDeleteDialog: () -> Unit,
     onLogout: () -> Unit,
-): List<SettingsGroup> = listOf(
-    SettingsGroup(
-        titleRes = R.string.settings_group_account,
-        items = listOf(
-            SettingsRow(R.drawable.ic_user, R.string.settings_edit_profile, onClick = onNavigateToEditProfile),
-            SettingsRow(R.drawable.ic_bell, R.string.settings_notifications, onClick = onNavigateToNotificationSettings),
-            SettingsRow(R.drawable.ic_connect, R.string.settings_health_connections, onClick = onNavigateToHealthConnections),
-        ),
-    ),
-    SettingsGroup(
-        titleRes = R.string.settings_group_suit_scanning,
-        items = listOf(
-            SettingsRow(R.drawable.ic_body, R.string.settings_my_suit, onClick = onNavigateToMySuit),
-            SettingsRow(R.drawable.ic_scan, R.string.settings_scan_preferences, onClick = onNavigateToScanPreferences),
-        ),
-    ),
-    SettingsGroup(
-        titleRes = R.string.settings_group_support_about,
-        items = listOf(
-            SettingsRow(R.drawable.ic_info, R.string.settings_how_scanning_works),
-            SettingsRow(R.drawable.ic_help, R.string.settings_help),
-            SettingsRow(R.drawable.ic_lock, R.string.settings_terms_privacy),
-            SettingsRow(R.drawable.ic_warning, R.string.settings_report_problem),
-        ),
-    ),
-    SettingsGroup(
-        titleRes = R.string.settings_group_actions,
-        items = listOf(
-            SettingsRow(
-                iconRes = R.drawable.ic_trash,
-                labelRes = R.string.settings_delete_account,
-                showChevron = false,
-                iconTint = ActionRed,
-                textColor = ActionRed,
-                onClick = onShowDeleteDialog,
-            ),
-            SettingsRow(
-                iconRes = R.drawable.ic_log_out,
-                labelRes = R.string.settings_logout,
-                showChevron = false,
-                iconTint = ActionTeal,
-                textColor = ActionTeal,
-                onClick = onLogout,
+): List<SettingsGroup> {
+    val primary = MaterialTheme.colorScheme.primary
+    val destructive = DarkTheme.extendedColors.destructive
+    return listOf(
+        SettingsGroup(
+            titleRes = R.string.settings_group_account,
+            items = listOf(
+                SettingsRow(R.drawable.ic_user, R.string.settings_edit_profile, onClick = onNavigateToEditProfile),
+                SettingsRow(R.drawable.ic_bell, R.string.settings_notifications, onClick = onNavigateToNotificationSettings),
+                SettingsRow(R.drawable.ic_connect, R.string.settings_health_connections, onClick = onNavigateToHealthConnections),
             ),
         ),
-    ),
-)
+        SettingsGroup(
+            titleRes = R.string.settings_group_suit_scanning,
+            items = listOf(
+                SettingsRow(R.drawable.ic_body, R.string.settings_my_suit, onClick = onNavigateToMySuit),
+                SettingsRow(R.drawable.ic_scan, R.string.settings_scan_preferences, onClick = onNavigateToScanPreferences),
+            ),
+        ),
+        SettingsGroup(
+            titleRes = R.string.settings_group_support_about,
+            items = listOf(
+                SettingsRow(R.drawable.ic_info, R.string.settings_how_scanning_works),
+                SettingsRow(R.drawable.ic_help, R.string.settings_help),
+                SettingsRow(R.drawable.ic_lock, R.string.settings_terms_privacy),
+                SettingsRow(R.drawable.ic_warning, R.string.settings_report_problem),
+            ),
+        ),
+        SettingsGroup(
+            titleRes = R.string.settings_group_actions,
+            items = listOf(
+                SettingsRow(
+                    iconRes = R.drawable.ic_trash,
+                    labelRes = R.string.settings_delete_account,
+                    showChevron = false,
+                    iconTint = destructive,
+                    textColor = destructive,
+                    onClick = onShowDeleteDialog,
+                ),
+                SettingsRow(
+                    iconRes = R.drawable.ic_log_out,
+                    labelRes = R.string.settings_logout,
+                    showChevron = false,
+                    iconTint = primary,
+                    textColor = primary,
+                    onClick = onLogout,
+                ),
+            ),
+        ),
+    )
+}

@@ -59,10 +59,10 @@ class FirestoreUserRepository(
         collection.document(uid).update(fields).await()
     }
 
-    override suspend fun updateAvatarUrl(url: String): Result<Unit> = runCatching {
+    override suspend fun updateImageUrl(url: String): Result<Unit> = runCatching {
         val uid = firebaseAuth.currentUser?.uid
             ?: error(context.getString(R.string.error_session_expired))
-        collection.document(uid).update(UserFields.AVATAR_URL, url).await()
+        collection.document(uid).update(UserFields.IMAGE_URL, url).await()
     }
 
     override suspend fun deleteUser(): Result<Unit> = runCatching {
