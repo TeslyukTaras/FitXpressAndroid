@@ -2,17 +2,19 @@ package com.hexis.bi.data.notification
 
 import kotlinx.serialization.Serializable
 
+/**
+ * Persisted inbox row. Title/body are stored as **resolved strings**, never as `R.string`
+ * resource IDs — Android resource IDs are not stable across rebuilds, so persisting them
+ * causes a stale ID to resolve to an unrelated string on the next install/update.
+ *
+ * Trade-off: strings are resolved at write time, so the row stays in the locale the user
+ * had when it was created. A later language switch will not retranslate existing rows.
+ */
 @Serializable
 data class InboxItem(
     val id: String,
-    val titleRes: Int = 0,
-    val bodyRes: Int = 0,
-    val timeLabelRes: Int = 0,
+    val title: String = "",
+    val body: String = "",
     val isRead: Boolean = false,
     val createdAtEpochMillis: Long = 0L,
-    /** Optional pre-resolved format argument for the [bodyRes] template (e.g. a localized day name). */
-    val bodyFormatArg: String? = null,
-    /** Raw text used by remote messages (FCM). When set, takes precedence over [titleRes]/[bodyRes]. */
-    val titleText: String? = null,
-    val bodyText: String? = null,
 )

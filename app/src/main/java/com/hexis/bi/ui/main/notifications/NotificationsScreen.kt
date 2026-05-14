@@ -137,7 +137,7 @@ private fun NotificationListRow(
                 System.currentTimeMillis(),
                 DateUtils.MINUTE_IN_MILLIS,
             ).toString()
-        else stringResource(item.timeLabelRes)
+        else stringResource(R.string.notifications_time_just_now)
 
     Row(
         modifier = Modifier
@@ -148,12 +148,8 @@ private fun NotificationListRow(
             .padding(vertical = dimensionResource(R.dimen.spacer_m)),
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            val title = item.titleText ?: stringResource(item.titleRes)
-            val body = item.bodyText
-                ?: item.bodyFormatArg?.let { stringResource(item.bodyRes, it) }
-                ?: stringResource(item.bodyRes)
             Text(
-                text = title,
+                text = item.title,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
@@ -161,7 +157,7 @@ private fun NotificationListRow(
             )
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
             Text(
-                text = body,
+                text = item.body,
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (item.isRead) MaterialTheme.colorScheme.secondary
                 else MaterialTheme.colorScheme.onBackground,

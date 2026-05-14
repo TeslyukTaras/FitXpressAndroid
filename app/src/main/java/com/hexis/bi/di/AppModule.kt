@@ -73,7 +73,7 @@ val appModule = module {
     single { CredentialManager.create(androidContext()) }
     single { AppPreferencesDataStore(androidContext()) }
     single { UserPreferencesRepository(get()) }
-    single { NotificationInboxRepository(get()) }
+    single { NotificationInboxRepository(androidContext(), get()) }
     single {
         ScanReminderWorkRunner(
             androidApplication(),
