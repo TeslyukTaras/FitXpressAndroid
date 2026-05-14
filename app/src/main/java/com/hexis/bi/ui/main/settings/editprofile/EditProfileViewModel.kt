@@ -37,7 +37,11 @@ class EditProfileViewModel(
     private val _state = MutableStateFlow(EditProfileState())
     val state = _state.asStateFlow()
 
-    fun loadUser() = launch {
+    override fun onInitialize() {
+        loadUser()
+    }
+
+    private fun loadUser() = launch {
         userRepository.getUser().onSuccess { profile ->
             val dobString = profile.dateOfBirth?.formatDob().orEmpty()
             val gender = GenderOption.entries.firstOrNull { it.name == profile.gender }

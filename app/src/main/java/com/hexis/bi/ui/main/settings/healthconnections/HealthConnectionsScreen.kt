@@ -135,6 +135,7 @@ fun HealthConnectionsScreen(
         onDismissError = viewModel::clearError,
         message = message,
         onDismissMessage = viewModel::clearMessage,
+        viewModel = viewModel,
         topBar = {
             BaseTopBar(
                 title = stringResource(R.string.screen_health_connections),

@@ -38,19 +38,13 @@ class HealthConnectionsViewModel(
     private val terraConnector: TerraConnector,
     private val terraWidgetApi: TerraWidgetApi,
     private val healthConnectionsRepository: HealthConnectionsRepository,
-    terraCallbackHandler: TerraCallbackHandler,
+    private val terraCallbackHandler: TerraCallbackHandler,
     private val firebaseAuth: FirebaseAuth,
     private val terraApi: TerraApi,
     private val terraManagerHolder: TerraManagerHolder,
-) : BaseViewModel(application) {
+) : BaseViewModel(application, initialLoading = true) {
 
-    private val _state = MutableStateFlow(
-        HealthConnectionsState(
-            sdkProviders = buildSdkProviders(),
-            wearableProviders = buildWearableProviders().filterVisibleForDisplay(emptyList()),
-            otherProviders = buildOtherProviders().filterVisibleForDisplay(emptyList()),
-        ),
-    )
+    private val _state = MutableStateFlow(HealthConnectionsState())
     val state = _state.asStateFlow()
 
     private fun buildSdkProviders(): List<TerraProviderUi> = listOf(
@@ -157,7 +151,7 @@ class HealthConnectionsViewModel(
         }
     }
 
-    init {
+    override fun onInitialize() {
         _state.update {
             it.copy(
                 sdkProviders = buildSdkProviders(),
@@ -184,6 +178,8 @@ class HealthConnectionsViewModel(
         terraCallbackHandler.outcomes
             .onEach(::handleCallbackOutcome)
             .launchIn(viewModelScope)
+
+        setLoading(false)
     }
 
     fun onSdkProviderRowClick(provider: String, displayName: String, activity: Activity?) {

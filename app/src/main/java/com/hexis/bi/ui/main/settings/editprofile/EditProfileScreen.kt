@@ -119,7 +119,7 @@ fun EditProfileScreen(
                 onDismissError = viewModel::clearError,
                 message = message,
                 onDismissMessage = viewModel::clearMessage,
-                onInitialization = viewModel::loadUser,
+                viewModel = viewModel,
                 topBar = {
                     BaseTopBar(
                         title = stringResource(R.string.edit_profile_title),
