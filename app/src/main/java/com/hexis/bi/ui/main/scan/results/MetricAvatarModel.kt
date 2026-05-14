@@ -29,13 +29,8 @@ internal object MetricAvatarCamera {
      * ring tilts forward (chin side slightly lower). Matches [neckSlicePlaneNormal].
      */
     const val NECK_SLICE_FORWARD_TILT_DEG = 15f
-    /**
-     * After head geometry is clipped, shift the mesh along +Y in model space so the torso uses the
-     * freed vertical space; keeps overlay projection aligned with GL ([projectModelPointToViewPx]).
-     */
-    const val HEADLESS_BODY_FRAMING_OFFSET_Y = 0.12f
     /** Camera distance multiplier — lower = closer camera / larger figure in the preview. */
-    const val HEADLESS_PREVIEW_DISTANCE_SCALE = 0.82f
+    const val PREVIEW_DISTANCE_SCALE = 0.82f
 
     /** Reject [projectModelPointToViewPx] when NDC lands outside this padded box (numerical slack). */
     const val PROJECTION_NDC_VALID_MIN = -1.5f
@@ -66,12 +61,16 @@ internal fun computeMetricAvatarViewDistance(viewWidth: Int, viewHeight: Int): F
         1.0f / (tanHalfFov * aspect.coerceAtLeast(MetricAvatarCamera.MIN_ASPECT_FOR_FRAMING))
     return max(distForHeight, distForWidth) *
         MetricAvatarCamera.VIEW_DISTANCE_SAFETY_MARGIN *
-        MetricAvatarCamera.HEADLESS_PREVIEW_DISTANCE_SCALE
+        MetricAvatarCamera.PREVIEW_DISTANCE_SCALE
 }
 
 /**
  * Projects a point in model space to view pixel coordinates (top-left origin, Y down),
  * using the same MVP chain as [MetricAvatarRenderer].
+ *
+ * Assumes the default camera with no Visual-tab framing translate applied. Leader
+ * overlays must therefore not be combined with a non-null framing region, or the
+ * projected anchors will drift from the rendered mesh.
  */
 internal fun projectModelPointToViewPx(
     modelX: Float,
@@ -119,7 +118,6 @@ internal fun projectModelPointToViewPx(
     Matrix.setIdentityM(model, 0)
     Matrix.rotateM(model, 0, pitchDeg, 1f, 0f, 0f)
     Matrix.rotateM(model, 0, yawDeg, 0f, 1f, 0f)
-    Matrix.translateM(model, 0, 0f, MetricAvatarCamera.HEADLESS_BODY_FRAMING_OFFSET_Y, 0f)
 
     Matrix.multiplyMM(temp, 0, view, 0, model, 0)
     Matrix.multiplyMM(mvp, 0, projection, 0, temp, 0)
@@ -161,8 +159,8 @@ internal object MeasurementVisualAnchors {
         "shoulders" to ModelLeaderSegment(0.48f, 1.00f, 0.11f, 0.72f, 0.98f, 0.16f),
         /* Mid chest */
         "chest" to ModelLeaderSegment(0f, 0.67f, 0.17f, 0.38f, 0.76f, 0.22f),
-        /* Mid forearm — right arm (mirror of former left defaults) */
-        "forearm" to ModelLeaderSegment(0.70f, 0.46f, 0.11f, 1.05f, 0.36f, 0.18f),
+        /* Mid forearm — right arm, kept far enough lateral to avoid torso / love-handle hits. */
+        "forearm" to ModelLeaderSegment(0.86f, 0.16f, 0.11f, 1.12f, 0.08f, 0.18f),
         /* Upper arm — mid-biceps (above elbow crease; higher Y avoids sliding to elbow in scans) */
         "bicep" to ModelLeaderSegment(-0.58f, 0.63f, 0.11f, -0.88f, 0.56f, 0.18f),
         "upperWaist" to ModelLeaderSegment(0f, 0.38f, 0.15f, 0.38f, 0.38f, 0.20f),
@@ -643,10 +641,7 @@ internal data class MetricAvatarMeasurementGuide(
      * [BilateralCircumferenceKeys] only: packed polyline for the **opposite** limb (mirror lateral).
      */
     val crossSectionPolylinesOpposite: Map<String, FloatArray> = emptyMap(),
-    /**
-     * Head clip in model space: plane `nx*x + ny*y + nz*z + d = 0`; discard where `dot(p,n)+d > 0`
-     * (toward head). Matches the neck slice plane + anchor.
-     */
+    /** Neck slice plane in model space; used for guide math and parser detail protection. */
     val neckClipPlane: FloatArray,
 )
 
@@ -766,7 +761,10 @@ private fun slicePlaneNormalForOpposite(
     oppositeBandAnchor: FloatArray,
 ): FloatArray = when (key) {
     "bicep" -> limbAxis(lateralShoulderTowardLimb(anchors, leftSide = false), oppositeBandAnchor)
-    "forearm" -> limbAxis(lateralShoulderTowardLimb(anchors, leftSide = true), oppositeBandAnchor)
+    "forearm" -> {
+        val bi = anchors["bicep"]
+        if (bi != null) limbAxis(bi, oppositeBandAnchor) else floatArrayOf(0f, 1f, 0f)
+    }
     "thigh" -> {
         val hip = virtualHipMirrored(anchors)
         if (hip != null) limbAxis(hip, oppositeBandAnchor) else floatArrayOf(0f, 1f, 0f)
@@ -820,6 +818,7 @@ private fun virtualHipFor(anchors: Map<String, FloatArray>): FloatArray? {
  */
 private fun blendAnchorWithFallback(key: String, computed: FloatArray?): FloatArray {
     val ref = MeasurementVisualAnchors.fallbackAnchorPosition(key) ?: return computed ?: floatArrayOf(0f, 0f, 0f)
+    if (key == "forearm") return ref.copyOf()
     if (computed == null) return ref.copyOf()
     val yWeight: Float
     val xzWeight: Float

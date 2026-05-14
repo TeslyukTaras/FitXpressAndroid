@@ -3,6 +3,8 @@ package com.hexis.bi.data.scan
 import androidx.annotation.StringRes
 import com.hexis.bi.R
 import com.hexis.bi.data.scan.api.MeasurementResponse
+import com.hexis.bi.domain.body.BodyMeasurementKeys
+import com.hexis.bi.domain.body.BodyMeasurementRegion
 import com.hexis.bi.ui.main.scan.results.MeasurementChange
 import com.hexis.bi.ui.main.scan.results.MeasurementRow
 import com.hexis.bi.ui.main.scan.results.MeasurementValue
@@ -24,46 +26,45 @@ data class TopChangeVsPrevious(
 
 object MeasurementMapper {
 
-    /** Entries define which API fields map to which table rows, in display order. */
-    private data class MappingEntry(
-        val bodyPartRes: Int,
-        val apiKey: String,
-        /** true = decrease is good (e.g. waist), false = increase is good (e.g. chest) */
-        val decreaseIsPositive: Boolean = false,
-    )
-
-    private val entries = listOf(
-        MappingEntry(R.string.scan_measurement_neck, "neck"),
-        MappingEntry(R.string.scan_measurement_shoulders, "shoulders"),
-        MappingEntry(R.string.scan_measurement_chest, "chest"),
-        MappingEntry(R.string.scan_measurement_forearms, "forearm"),
-        MappingEntry(R.string.scan_measurement_biceps, "bicep"),
-        MappingEntry(R.string.scan_measurement_upper_waist, "upperWaist", decreaseIsPositive = true),
-        MappingEntry(R.string.scan_measurement_mid_waist, "waist", decreaseIsPositive = true),
-        MappingEntry(R.string.scan_measurement_lower_waist, "lowerWaist", decreaseIsPositive = true),
-        MappingEntry(R.string.scan_measurement_thigh, "thigh"),
-        MappingEntry(R.string.scan_measurement_calf, "calf"),
-    )
-
     fun map(
         current: MeasurementResponse,
         previous: ScanRecord?,
         beforePrevious: ScanRecord?,
-    ): List<MeasurementRow> {
-        val currentMap = extractMeasurements(current)
-        val previousMap = previous?.measurements
-        val beforePreviousMap = beforePrevious?.measurements
+    ): List<MeasurementRow> = buildRows(
+        currentMap = extractMeasurements(current),
+        previousMap = previous?.measurements,
+        beforePreviousMap = beforePrevious?.measurements,
+    )
 
-        return entries.mapNotNull { entry ->
-            val todayCm = currentMap[entry.apiKey] ?: return@mapNotNull null
-            val prevCm = previousMap?.get(entry.apiKey)
-            val beforePrevCm = beforePreviousMap?.get(entry.apiKey)
+    fun mapFromRecords(
+        current: ScanRecord,
+        previous: ScanRecord?,
+        beforePrevious: ScanRecord?,
+    ): List<MeasurementRow> = buildRows(
+        currentMap = current.measurements,
+        previousMap = previous?.measurements,
+        beforePreviousMap = beforePrevious?.measurements,
+    )
+
+    /**
+     * One [MeasurementRow] per [BodyMeasurementRegion.measurableRegions] entry that has a
+     * value, in the universal display order. Regions absent from [currentMap] are dropped.
+     */
+    private fun buildRows(
+        currentMap: Map<String, Float>,
+        previousMap: Map<String, Float>?,
+        beforePreviousMap: Map<String, Float>?,
+    ): List<MeasurementRow> =
+        BodyMeasurementRegion.measurableRegions.mapNotNull { region ->
+            val todayCm = BodyMeasurementKeys.valueFor(currentMap, region) ?: return@mapNotNull null
+            val prevCm = previousMap?.let { BodyMeasurementKeys.valueFor(it, region) }
+            val beforePrevCm = beforePreviousMap?.let { BodyMeasurementKeys.valueFor(it, region) }
 
             val todayValue = MeasurementValue(
                 cm = todayCm,
                 deltaCm = if (prevCm != null) todayCm - prevCm else 0f,
                 change = if (prevCm != null) {
-                    classifyChange(todayCm - prevCm, entry.decreaseIsPositive)
+                    classifyChange(todayCm - prevCm, region.decreaseIsPositive)
                 } else null,
             )
 
@@ -72,89 +73,75 @@ object MeasurementMapper {
                     cm = it,
                     deltaCm = if (beforePrevCm != null) it - beforePrevCm else 0f,
                     change = if (beforePrevCm != null) {
-                        classifyChange(it - beforePrevCm, entry.decreaseIsPositive)
+                        classifyChange(it - beforePrevCm, region.decreaseIsPositive)
                     } else null,
                 )
             }
 
             MeasurementRow(
-                bodyPartRes = entry.bodyPartRes,
-                visualAnchorKey = entry.apiKey,
+                bodyPartRes = bodyPartRes(region),
+                visualAnchorKey = visualAnchorKey(region),
                 today = todayValue,
                 previous = previousValue,
             )
         }
-    }
 
     /**
      * Circumference with the largest absolute delta vs [previous];
      * null if there is no prior scan, no overlapping keys, or all deltas are negligible.
      *
-     * All [entries] resolve to circumference keys, so [ScanFetchProjection.LIST_SUMMARY]
-     * (circumference subdoc only) is sufficient input here. If linear-param entries are
-     * ever added, this method requires [ScanFetchProjection.FULL].
+     * All [BodyMeasurementRegion.measurableRegions] resolve to circumference keys, so
+     * [ScanFetchProjection.LIST_SUMMARY] (circumference subdoc only) is sufficient input
+     * here. If linear-param regions are ever added, this method requires [ScanFetchProjection.FULL].
      */
     fun topChangeVsPreviousScan(current: ScanRecord, previous: ScanRecord?): TopChangeVsPrevious? {
         if (previous == null) return null
-        var bestEntry: MappingEntry? = null
+        var bestRegion: BodyMeasurementRegion? = null
         var bestAbs = 0f
         var bestDelta = 0f
-        for (entry in entries) {
-            val cur = current.measurements[entry.apiKey] ?: continue
-            val prev = previous.measurements[entry.apiKey] ?: continue
+        for (region in BodyMeasurementRegion.measurableRegions) {
+            val cur = BodyMeasurementKeys.valueFor(current.measurements, region) ?: continue
+            val prev = BodyMeasurementKeys.valueFor(previous.measurements, region) ?: continue
             val delta = cur - prev
             if (abs(delta) < CHANGE_EPSILON_CM) continue
             val a = abs(delta)
             if (a > bestAbs) {
                 bestAbs = a
-                bestEntry = entry
+                bestRegion = region
                 bestDelta = delta
             }
         }
-        val e = bestEntry ?: return null
+        val region = bestRegion ?: return null
         return TopChangeVsPrevious(
-            bodyPartRes = e.bodyPartRes,
+            bodyPartRes = bodyPartRes(region),
             deltaCm = bestDelta,
-            change = classifyChange(bestDelta, e.decreaseIsPositive),
+            change = classifyChange(bestDelta, region.decreaseIsPositive),
         )
     }
 
-    fun mapFromRecords(
-        current: ScanRecord,
-        previous: ScanRecord?,
-        beforePrevious: ScanRecord?,
-    ): List<MeasurementRow> {
-        val currentMap = current.measurements
-        val previousMap = previous?.measurements
-        val beforePreviousMap = beforePrevious?.measurements
-
-        return entries.mapNotNull { entry ->
-            val todayCm = currentMap[entry.apiKey] ?: return@mapNotNull null
-            val prevCm = previousMap?.get(entry.apiKey)
-            val beforePrevCm = beforePreviousMap?.get(entry.apiKey)
-
-            val todayValue = MeasurementValue(
-                cm = todayCm,
-                deltaCm = if (prevCm != null) todayCm - prevCm else 0f,
-                change = if (prevCm != null) classifyChange(todayCm - prevCm, entry.decreaseIsPositive) else null,
-            )
-
-            val previousValue = prevCm?.let {
-                MeasurementValue(
-                    cm = it,
-                    deltaCm = if (beforePrevCm != null) it - beforePrevCm else 0f,
-                    change = if (beforePrevCm != null) classifyChange(it - beforePrevCm, entry.decreaseIsPositive) else null,
-                )
-            }
-
-            MeasurementRow(
-                bodyPartRes = entry.bodyPartRes,
-                visualAnchorKey = entry.apiKey,
-                today = todayValue,
-                previous = previousValue,
-            )
-        }
+    /** Results-table row label for a region. Lives here because the copy is fixed per region. */
+    @StringRes
+    private fun bodyPartRes(region: BodyMeasurementRegion): Int = when (region) {
+        BodyMeasurementRegion.Neck -> R.string.scan_measurement_neck
+        BodyMeasurementRegion.Shoulders -> R.string.scan_measurement_shoulders
+        BodyMeasurementRegion.Chest -> R.string.scan_measurement_chest
+        BodyMeasurementRegion.Forearm -> R.string.scan_measurement_forearms
+        BodyMeasurementRegion.Bicep -> R.string.scan_measurement_biceps
+        BodyMeasurementRegion.UpperWaist -> R.string.scan_measurement_upper_waist
+        BodyMeasurementRegion.Waist -> R.string.scan_measurement_mid_waist
+        BodyMeasurementRegion.LowerWaist -> R.string.scan_measurement_lower_waist
+        BodyMeasurementRegion.HipsGlutes -> R.string.scan_measurement_hips_glutes
+        BodyMeasurementRegion.Thigh -> R.string.scan_measurement_thigh
+        BodyMeasurementRegion.Calf -> R.string.scan_measurement_calf
+        BodyMeasurementRegion.Ankle -> R.string.scan_measurement_ankles
+        BodyMeasurementRegion.FullBody -> error("FullBody is not a measurement row")
     }
+
+    /** Avatar-guide leader key for a region's row (can differ from the API value key). */
+    private fun visualAnchorKey(region: BodyMeasurementRegion): String =
+        BodyMeasurementKeys.visualAnchorKey(region)
+            ?: BodyMeasurementKeys.primaryValueKey(region)
+            ?: error("Measurement row requires a body-region key for $region")
 
     private fun extractMeasurements(response: MeasurementResponse): Map<String, Float> {
         val result = mutableMapOf<String, Float>()

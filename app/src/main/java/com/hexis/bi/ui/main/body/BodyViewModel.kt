@@ -6,6 +6,7 @@ import com.hexis.bi.data.scan.ScanFetchProjection
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanRecord
 import com.hexis.bi.data.user.UserRepository
+import com.hexis.bi.domain.body.BodyMeasurementRegion
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.constants.BodyConstants
 import com.hexis.bi.utils.constants.DateFormatConstants
@@ -24,6 +25,8 @@ import java.time.YearMonth
 import java.time.ZoneId
 import java.util.Date
 import java.util.Locale
+
+private const val BodyVisualScanOptionLimit = 5
 
 class BodyViewModel(
     application: Application,
@@ -57,6 +60,14 @@ class BodyViewModel(
     fun showBisInfo() = _state.update { it.copy(showBisInfo = true) }
     fun dismissBisInfo() = _state.update { it.copy(showBisInfo = false) }
 
+    fun selectBodyPart(region: BodyMeasurementRegion) {
+        _state.update { it.copy(visual = it.visual.copy(selectedBodyPart = region)) }
+    }
+
+    fun selectVisualScan(timestamp: Long) {
+        updateVisualScan(selectedTimestamp = timestamp)
+    }
+
     fun retry() = loadData()
 
     private fun loadData() {
@@ -81,14 +92,11 @@ class BodyViewModel(
 
             allScans = scans.sortedBy { it.timestamp }
 
-            val composition = if (allScans.isEmpty()) {
-                BodyComposition.empty()
-            } else {
-                buildComposition(
-                    latest = allScans.last(),
-                    previous = allScans.dropLast(1).lastOrNull(),
-                )
-            }
+            val latest = allScans.lastOrNull()
+            val previous = allScans.dropLast(1).lastOrNull()
+
+            val composition = if (latest == null) BodyComposition.empty()
+            else buildComposition(latest = latest, previous = previous)
 
             _state.update {
                 it.copy(
@@ -97,7 +105,41 @@ class BodyViewModel(
                     composition = composition,
                 )
             }
+            updateVisualScan(selectedTimestamp = _state.value.visual.latestScanTimestamp)
             rebuildChart()
+        }
+    }
+
+    private fun updateVisualScan(selectedTimestamp: Long?) {
+        val latest = allScans.lastOrNull()
+        val selected = selectedTimestamp
+            ?.let { timestamp -> allScans.lastOrNull { it.timestamp == timestamp } }
+            ?: latest
+        val selectedIndex = selected?.let { allScans.indexOf(it) } ?: -1
+        val previous = if (selectedIndex > 0) allScans[selectedIndex - 1] else null
+        val beforePrevious = if (selectedIndex > 1) allScans[selectedIndex - 2] else null
+        val options = allScans
+            .takeLast(BodyVisualScanOptionLimit)
+            .asReversed()
+            .map { VisualScanOption(timestamp = it.timestamp) }
+
+        _state.update {
+            it.copy(
+                visual = it.visual.copy(
+                    selectedBodyPart = it.visual.selectedBodyPart,
+                    hasData = latest != null,
+                    isLatestScanSelected = selected?.timestamp == latest?.timestamp,
+                    scanOptions = options,
+                    latestScanTimestamp = selected?.timestamp,
+                    previousScanTimestamp = previous?.timestamp,
+                    beforePreviousScanTimestamp = beforePrevious?.timestamp,
+                    latestModel3dUrl = selected?.model3dUrl?.takeUnless { url -> url.isBlank() },
+                    previousModel3dUrl = previous?.model3dUrl?.takeUnless { url -> url.isBlank() },
+                    latestMeasurements = selected?.measurements.orEmpty(),
+                    previousMeasurements = previous?.measurements.orEmpty(),
+                    beforePreviousMeasurements = beforePrevious?.measurements.orEmpty(),
+                ),
+            )
         }
     }
 

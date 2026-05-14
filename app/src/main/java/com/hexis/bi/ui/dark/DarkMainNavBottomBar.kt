@@ -39,6 +39,7 @@ fun DarkMainNavBottomBar(
     onBodyClick: () -> Unit,
     onScanClick: () -> Unit,
     modifier: Modifier = Modifier,
+    hazeAlpha: Float? = null,
 ) {
     Box(
         modifier = modifier
@@ -56,13 +57,15 @@ fun DarkMainNavBottomBar(
                     fillBrush = { darkMainNavBarFillBrush(it) },
                     backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
                     rimWidth = dimensionResource(R.dimen.glass_rim_width),
+                    backgroundAlpha = 1f,
+                    hazeAlpha = hazeAlpha,
                 )
                 .padding(dimensionResource(R.dimen.spacer_xs)),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             DarkNavTab(
-                iconRes = if (isHomeSelected) R.drawable.ic_home_filled else R.drawable.ic_home,
+                iconRes = R.drawable.ic_home_filled,
                 label = stringResource(R.string.home_nav_home),
                 selected = isHomeSelected,
                 onClick = onHomeClick,
@@ -71,7 +74,7 @@ fun DarkMainNavBottomBar(
             ScanFab(onClick = onScanClick)
 
             DarkNavTab(
-                iconRes = if (isBodySelected) R.drawable.ic_body_filled else R.drawable.ic_body,
+                iconRes = R.drawable.ic_body_filled,
                 label = stringResource(R.string.home_nav_body),
                 selected = isBodySelected,
                 onClick = onBodyClick,

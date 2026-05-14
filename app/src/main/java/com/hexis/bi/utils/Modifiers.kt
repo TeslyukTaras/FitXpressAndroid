@@ -94,11 +94,13 @@ fun Modifier.glass(
     backgroundBlur: Dp = Dp.Unspecified,
     rimWidth: Dp = Dp.Unspecified,
     lightingStrength: Float = 1f,
+    hazeAlpha: Float? = null,
 ): Modifier {
     val intensity = (level / 100f).coerceIn(0f, 1f)
     val isCircleShape = shape == CircleShape
     val glassLayerAlpha = (backgroundAlpha ?: intensity).coerceIn(0f, 1f)
     val lightingAlpha = lightingStrength.coerceIn(0f, 1f)
+    val hazeLayerAlpha = (hazeAlpha ?: intensity).coerceIn(0f, 1f)
 
     return this
         .clip(shape)
@@ -155,6 +157,12 @@ fun Modifier.glass(
             val blVignetteBrush = Brush.radialGradient(
                 colors = listOf(Color.Transparent, Color.Black.copy(alpha = blVignetteAlpha)),
                 center = Offset(0f, size.height), radius = minSide * 0.95f,
+            )
+            val hazeBrush = Brush.verticalGradient(
+                colors = listOf(
+                    Color(0xFF173735).copy(alpha = hazeLayerAlpha * 0.88f),
+                    Color(0xFF020808).copy(alpha = hazeLayerAlpha * 0.96f),
+                ),
             )
 
             val (deadTrCenter, deadBlCenter) = glassDeadZoneCenters(size, trueCircle)
@@ -248,6 +256,9 @@ fun Modifier.glass(
                     null
                 }
 
+                if (hazeLayerAlpha > 0f) {
+                    drawOutline(outline = outline, brush = hazeBrush)
+                }
                 when {
                     fillBrush != null -> drawOutline(outline = outline, brush = fillBrush(size))
                     fill.alpha > 0f -> drawRect(color = fill)

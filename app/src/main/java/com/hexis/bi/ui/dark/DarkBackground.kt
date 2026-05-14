@@ -1,5 +1,6 @@
 package com.hexis.bi.ui.dark
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -7,6 +8,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.hexis.bi.ui.theme.dark.BodyGlassGreen
 import com.hexis.bi.ui.theme.dark.BodyGlassInk
 import com.hexis.bi.ui.theme.dark.DarkMeshBottom
@@ -16,10 +20,19 @@ import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.sin
 
-internal fun Modifier.darkScreenBackground(): Modifier = drawBehind {
-    drawScreenMesh()
-    drawTopScrim()
-    drawBottomScrim()
+@Composable
+internal fun Modifier.darkScreenBackground(
+    scrimReferenceHeight: Dp? = null,
+): Modifier {
+    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+    val referenceHeight = scrimReferenceHeight ?: screenHeight
+
+    return drawBehind {
+        val referenceHeightPx = referenceHeight.toPx()
+        drawScreenMesh()
+        drawTopScrim(referenceHeightPx)
+        drawBottomScrim(referenceHeightPx)
+    }
 }
 
 private fun DrawScope.drawScreenMesh() {
@@ -36,8 +49,9 @@ private fun DrawScope.drawScreenMesh() {
     )
 }
 
-private fun DrawScope.drawTopScrim() {
-    val height = size.height * DarkBackgroundConstants.TOP_SCRIM_HEIGHT_FRACTION
+private fun DrawScope.drawTopScrim(referenceHeightPx: Float) {
+    val height = (referenceHeightPx * DarkBackgroundConstants.TOP_SCRIM_HEIGHT_FRACTION)
+        .coerceAtMost(size.height)
     if (height <= 0f) return
     drawRect(
         topLeft = Offset.Zero,
@@ -52,8 +66,9 @@ private fun DrawScope.drawTopScrim() {
     )
 }
 
-private fun DrawScope.drawBottomScrim() {
-    val height = size.height * DarkBackgroundConstants.BOTTOM_SCRIM_HEIGHT_FRACTION
+private fun DrawScope.drawBottomScrim(referenceHeightPx: Float) {
+    val height = (referenceHeightPx * DarkBackgroundConstants.BOTTOM_SCRIM_HEIGHT_FRACTION)
+        .coerceAtMost(size.height)
     if (height <= 0f) return
     val top = size.height - height
     drawRect(

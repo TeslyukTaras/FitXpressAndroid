@@ -106,19 +106,15 @@ class ScanReminderSchedulerImpl(
     /**
      * Inexact wake-up when SCHEDULE_EXACT_ALARM is not granted (user revoked or device policy).
      * Delivery time is not guaranteed; prefer "Alarms & reminders" for scan reminders in settings.
+     * Uses [AlarmManager.setAndAllowWhileIdle] so the reminder can still fire during Doze
+     * (unlike [AlarmManager.setWindow], which Doze defers for the whole maintenance window).
      */
-    @Suppress("DEPRECATION")
     private fun scheduleInexactWakeupAlarm(
         am: AlarmManager,
         whenMillis: Long,
         op: PendingIntent,
     ) {
-        try {
-            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, whenMillis, op)
-        } catch (e: SecurityException) {
-            am.set(AlarmManager.RTC_WAKEUP, whenMillis, op)
-            Timber.w(e, "ScanReminderScheduler: setAndAllowWhileIdle failed; used legacy set()")
-        }
+        am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, whenMillis, op)
     }
 
     private fun showPendingIntent(): PendingIntent {

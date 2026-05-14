@@ -2,6 +2,7 @@ package com.hexis.bi.ui.main.body
 
 import androidx.annotation.StringRes
 import com.hexis.bi.R
+import com.hexis.bi.domain.body.BodyMeasurementRegion
 import com.hexis.bi.utils.constants.BodyConstants
 
 enum class BodyTab {
@@ -38,6 +39,25 @@ enum class BodyTimeRange {
 }
 
 enum class BodyLoadState { Loading, Ready, Error }
+
+data class VisualScanOption(
+    val timestamp: Long,
+)
+
+data class VisualState(
+    val selectedBodyPart: BodyMeasurementRegion = BodyMeasurementRegion.FullBody,
+    val hasData: Boolean = false,
+    val isLatestScanSelected: Boolean = true,
+    val scanOptions: List<VisualScanOption> = emptyList(),
+    val latestScanTimestamp: Long? = null,
+    val previousScanTimestamp: Long? = null,
+    val beforePreviousScanTimestamp: Long? = null,
+    val latestModel3dUrl: String? = null,
+    val previousModel3dUrl: String? = null,
+    val latestMeasurements: Map<String, Float> = emptyMap(),
+    val previousMeasurements: Map<String, Float> = emptyMap(),
+    val beforePreviousMeasurements: Map<String, Float> = emptyMap(),
+)
 
 data class BodyComposition(
     val timestamp: Long,
@@ -102,4 +122,5 @@ data class BodyState(
     val composition: BodyComposition = BodyComposition.empty(),
     val chart: BodyChartData = BodyChartData(0L, 0L),
     val showBisInfo: Boolean = false,
+    val visual: VisualState = VisualState(),
 )

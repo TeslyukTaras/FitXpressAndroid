@@ -54,15 +54,12 @@ fun BodyScreen(
                 .darkScreenBackground(),
             containerColor = Color.Transparent,
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
-            ) {
+            Column(modifier = Modifier.fillMaxSize()) {
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -96,21 +93,40 @@ fun BodyScreen(
                     selectedTab = state.selectedTab,
                     onTabSelected = viewModel::selectTab,
                     tabLabel = { stringResource(it.labelRes) },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
                 )
 
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+                // Visual tab: the 3D model runs right up to the tabs, so no gap there.
+                if (state.selectedTab != BodyTab.Visual) {
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+                }
 
                 when (state.selectedTab) {
-                    BodyTab.Stats -> StatsContent(
-                        state = state,
-                        onMassUnitChange = viewModel::selectMassUnit,
-                        onTimeRangeChange = viewModel::selectTimeRange,
-                        onBisInfoClick = viewModel::showBisInfo,
-                        onRetry = viewModel::retry,
+                    BodyTab.Stats -> Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+                    ) {
+                        StatsContent(
+                            state = state,
+                            onMassUnitChange = viewModel::selectMassUnit,
+                            onTimeRangeChange = viewModel::selectTimeRange,
+                            onBisInfoClick = viewModel::showBisInfo,
+                            onRetry = viewModel::retry,
+                        )
+                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
+                    }
+
+                    BodyTab.Visual -> VisualContent(
+                        state = state.visual,
+                        onBodyPartSelected = viewModel::selectBodyPart,
+                        onScanSelected = viewModel::selectVisualScan,
+                        modifier = Modifier.weight(1f),
                     )
 
-                    BodyTab.Visual,
                     BodyTab.Posture,
                     BodyTab.Compare -> {
                         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
@@ -118,12 +134,12 @@ fun BodyScreen(
                             text = stringResource(R.string.body_tab_coming_soon),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
                         )
                     }
                 }
-
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
             }
         }
 

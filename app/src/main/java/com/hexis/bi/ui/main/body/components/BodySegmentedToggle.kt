@@ -59,7 +59,7 @@ internal fun BodySegmentedToggleChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    width: Dp = dimensionResource(R.dimen.icon_normalized),
+    width: Dp = dimensionResource(R.dimen.body_switch_button_width),
 ) {
     Box(
         modifier = modifier
