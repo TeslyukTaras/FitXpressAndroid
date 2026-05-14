@@ -40,9 +40,7 @@ fun <T> AppListPicker(
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(end = dimensionResource(R.dimen.icon_normalized)),
+                modifier = Modifier.fillMaxWidth()
             )
             items.forEach { item ->
                 val selected = item == selectedItem
