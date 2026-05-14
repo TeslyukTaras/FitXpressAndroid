@@ -5,6 +5,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import com.hexis.bi.ui.theme.dark.Black
+import com.hexis.bi.ui.theme.dark.White
 
 private val LightColorScheme = lightColorScheme(
     primary = Blue100,

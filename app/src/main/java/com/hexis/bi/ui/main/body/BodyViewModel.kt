@@ -46,7 +46,6 @@ class BodyViewModel(
 
     fun selectMassUnit(unit: BodyMassUnit) {
         _state.update { it.copy(massUnit = unit) }
-        // The trend chart plots in whatever unit the card's toggle selects, so re-derive it.
         rebuildChart()
     }
 
@@ -112,7 +111,6 @@ class BodyViewModel(
         _state.update { it.copy(chart = chart) }
     }
 
-    /** Chart from the first scan's day to today (30-day preview when there are no scans), with day-numeric X labels. */
     private fun buildMonthChart(
         scans: List<ScanRecord>,
         nowMillis: Long,
@@ -124,7 +122,6 @@ class BodyViewModel(
         val previewStartDay = today.minusDays(BodyConstants.MONTH_RANGE_DAYS - 1L)
         val rangeEnd = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
 
-        // Start-of-day so the noon-stamped points and labels stay inside [start, end].
         val effectiveStartDay = scans.minOfOrNull { it.timestamp }
             ?.let { LocalDate.ofInstant(Date(it).toInstant(), zone) }
             ?: previewStartDay
@@ -153,7 +150,6 @@ class BodyViewModel(
         )
     }
 
-    /** Same data as [buildMonthChart]; X labels are short month names (every Nth for long spans) anchored to the 1st. */
     private fun buildYearChart(
         scans: List<ScanRecord>,
         nowMillis: Long,
@@ -180,7 +176,6 @@ class BodyViewModel(
         val labels = (0L..totalMonths).mapNotNull { i ->
             val ym = firstMonth.plusMonths(i)
             val firstOfMonth = ym.atDay(1).atStartOfDay(zone).toInstant().toEpochMilli()
-            // The first month's 1st precedes the first scan, so pin its label to the chart's left edge.
             val ts = maxOf(effectiveStart, firstOfMonth)
             if (ts > rangeEnd) return@mapNotNull null
             val showLabel = totalMonths <= BodyConstants.YEAR_LABEL_ALL_BELOW_MONTHS ||
@@ -208,7 +203,6 @@ class BodyViewModel(
         val gridLines: List<Float>,
     )
 
-    /** Day-bucketed, gap-filled, baseline-subtracted points in [massUnit], plus the symmetric Y scale that fits them. */
     private fun buildSeries(
         scans: List<ScanRecord>,
         zone: ZoneId,
@@ -237,7 +231,6 @@ class BodyViewModel(
             }
     }
 
-    /** One point per calendar day, that day's fat/muscle averaged in the display unit; scans missing a value don't contribute. */
     private fun averagePoint(
         timestamp: Long,
         scans: List<ScanRecord>,
@@ -266,7 +259,6 @@ class BodyViewModel(
     private fun List<Float>.averageOrZero(): Float =
         if (isEmpty()) 0f else (sum() / size)
 
-    /** Inserts one linearly-interpolated point per missing calendar day between scans; never extrapolates past the data. */
     private fun fillGapsLinearly(
         points: List<BodyTrendPoint>,
         zone: ZoneId,
@@ -299,7 +291,6 @@ class BodyViewModel(
 
     private fun lerp(a: Float, b: Float, t: Float): Float = a + (b - a) * t
 
-    /** Re-projects each point's delta against the first point in the visible window. */
     private fun applyBaselineDeltas(points: List<BodyTrendPoint>): List<BodyTrendPoint> {
         val baseline = points.firstOrNull() ?: return points
         return points.map {
@@ -357,7 +348,6 @@ private fun ScanRecord.muscleMassPercentage(): Float? {
     return (lean / weight) * 100f
 }
 
-/** Fat mass in kg, falling back to `fatPercentage × weight` when the scan didn't include a mass field. */
 private fun ScanRecord.derivedFatKg(): Float? {
     fatBodyMassKg?.let { return it }
     val pct = fatPercentage ?: return null
@@ -365,7 +355,6 @@ private fun ScanRecord.derivedFatKg(): Float? {
     return weight * pct / 100f
 }
 
-/** Placeholder Body Intelligence Score (0–100) until the API exposes a real one; rewards lean mass, penalises BMI off ~22. */
 private fun ScanRecord.bisScore(): Float? {
     val musclePct = muscleMassPercentage() ?: return null
     val fatPct = fatPercentage ?: return null

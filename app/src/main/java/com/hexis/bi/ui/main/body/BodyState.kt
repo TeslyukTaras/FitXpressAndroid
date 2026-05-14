@@ -21,10 +21,7 @@ enum class BodyTab {
 }
 
 enum class BodyMassUnit {
-    /** Body fat / muscle mass shown as percentage of total weight. */
     Percent,
-
-    /** Body fat / muscle mass shown as estimated mass (kg or lb). */
     Mass;
 }
 
@@ -42,7 +39,6 @@ enum class BodyTimeRange {
 
 enum class BodyLoadState { Loading, Ready, Error }
 
-/** Snapshot of body composition values for one scan, with deltas vs the previous scan. */
 data class BodyComposition(
     val timestamp: Long,
     val weightKg: Float?,
@@ -61,7 +57,6 @@ data class BodyComposition(
     val deltaBisScore: Float?,
 ) {
     companion object {
-        /** Placeholder shown to users with no scans yet — every value tile renders as "—". */
         fun empty() = BodyComposition(
             timestamp = 0L,
             weightKg = null, bmi = null,
@@ -74,11 +69,6 @@ data class BodyComposition(
     }
 }
 
-/**
- * A point on the trend curve, positioned by [timestamp]. Deltas are change vs the first point in
- * view, in the chart's current display unit (pp or kg/lb); absolutes are kept for re-baselining.
- * [isInterpolated] points are gap-fill between two real scans — drawn, but not pointer-snap targets.
- */
 data class BodyTrendPoint(
     val timestamp: Long,
     val deltaFat: Float,
@@ -88,13 +78,11 @@ data class BodyTrendPoint(
     val isInterpolated: Boolean = false,
 )
 
-/** A label rendered along the chart's X-axis at a fixed time. */
 data class BodyChartAxisLabel(
     val timestamp: Long,
     val text: String,
 )
 
-/** A single range to draw. Empty [points] still renders the axes. Y-axis is symmetric [-yAxisBound, +yAxisBound] so 0 is centred. */
 data class BodyChartData(
     val rangeStartMillis: Long,
     val rangeEndMillis: Long,

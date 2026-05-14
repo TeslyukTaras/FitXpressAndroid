@@ -1,6 +1,8 @@
 package com.hexis.bi.ui.main.body.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
@@ -39,26 +41,32 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import com.hexis.bi.R
+import com.hexis.bi.ui.dark.bodyGlassCardFillBrush
 import com.hexis.bi.ui.main.body.BodyChartData
 import com.hexis.bi.ui.main.body.BodyMassUnit
 import com.hexis.bi.ui.main.body.BodyTimeRange
 import com.hexis.bi.ui.main.body.BodyTrendPoint
-import com.hexis.bi.ui.theme.Blue100
-import com.hexis.bi.ui.theme.Green
-import com.hexis.bi.ui.theme.GridLineLightGray
+import com.hexis.bi.ui.theme.dark.DarkTheme
 import com.hexis.bi.utils.constants.BodyConstants
 import com.hexis.bi.utils.constants.DateFormatConstants
+import com.hexis.bi.utils.constants.GlassConstants
+import com.hexis.bi.utils.glass
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.hypot
+import kotlin.math.max
 import kotlin.math.roundToInt
 
 @Composable
@@ -83,135 +91,287 @@ internal fun BodyTrendChart(
         BodyMassUnit.Mass -> stringResource(if (isMetric) R.string.unit_kg else R.string.unit_lb)
     }
 
-    // Pointer snaps only to real scan days, never to gap-fill points.
     val snapPoints =
         remember(chart) { chart.points.withIndex().filter { !it.value.isInterpolated } }
     var selectedSnap by remember(chart) { mutableIntStateOf(-1) }
     var chartAreaWidth by remember { mutableIntStateOf(0) }
     var tooltipWidth by remember { mutableIntStateOf(0) }
 
-    val muscleColor = Blue100
-    val fatColor = Green
-    val backgroundColor = MaterialTheme.colorScheme.background
+    val muscleColor = DarkTheme.extendedColors.chartArea
+    val fatColor = DarkTheme.extendedColors.chartLine
+    val pointBackgroundColor = MaterialTheme.colorScheme.surface
+    val gridLineColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
     val rangeSpan = (chart.rangeEndMillis - chart.rangeStartMillis).coerceAtLeast(1L)
 
     val selectedEntry = snapPoints.getOrNull(selectedSnap)?.value
     val showTooltip = selectedEntry != null && chartAreaWidth > 0
-    // Keep the tooltip permanently laid out and toggle it via alpha, so the header↔tooltip swap doesn't resize.
     val tooltipEntry = selectedEntry ?: snapPoints.firstOrNull()?.value
 
-    Column(modifier = modifier.fillMaxWidth()) {
-        // Header (title + M/Y switch); the tooltip overlays it while dragging.
-        Box(modifier = Modifier.fillMaxWidth()) {
-            if (tooltipEntry != null) {
-                Column(
-                    modifier = Modifier
-                        .alpha(if (showTooltip) 1f else 0f)
-                        .onSizeChanged { tooltipWidth = it.width }
-                        .offset {
-                            if (chartAreaWidth == 0) return@offset IntOffset.Zero
-                            val centerInChart =
-                                ((tooltipEntry.timestamp - chart.rangeStartMillis).toFloat() / rangeSpan) * chartAreaWidth
-                            val absoluteCenter = (yAxisWidth + chartGap).roundToPx() + centerInChart
-                            var targetX = absoluteCenter - (tooltipWidth / 2f)
-                            val maxX =
-                                (yAxisWidth + chartGap).roundToPx() + chartAreaWidth - tooltipWidth
-                            targetX = targetX.coerceIn(0f, maxX.toFloat().coerceAtLeast(0f))
-                            IntOffset(targetX.roundToInt(), 0)
-                        }
-                        .background(
-                            MaterialTheme.colorScheme.background,
-                            MaterialTheme.shapes.small,
-                        )
-                        .padding(
-                            horizontal = dimensionResource(R.dimen.spacer_s),
-                            vertical = dimensionResource(R.dimen.spacer_2xs),
-                        ),
-                ) {
-                    val tooltipDate = SimpleDateFormat(
-                        DateFormatConstants.WEEKDAY_MONTH_DAY,
-                        Locale.getDefault(),
-                    ).format(Date(tooltipEntry.timestamp))
-                    Text(
-                        text = tooltipDate,
-                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                    TooltipDeltaRow(
-                        delta = tooltipEntry.deltaMuscle,
-                        unit = unitLabel,
-                        color = muscleColor
-                    )
-                    TooltipDeltaRow(
-                        delta = tooltipEntry.deltaFat,
-                        unit = unitLabel,
-                        color = fatColor
-                    )
-                }
-            }
+    val density = LocalDensity.current
+    val spacerXs = dimensionResource(R.dimen.spacer_xs)
+    val tooltipOverlapUpPx = remember(spacerXs, density) { with(density) { spacerXs.roundToPx() } }
+    val tooltipOverlapUpDp =
+        remember(spacerXs, density) { with(density) { tooltipOverlapUpPx.toDp() } }
 
-            if (!showTooltip) Row(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.body_composition_title),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.weight(1f),
-                )
-                BodyRangeSelector(selected = timeRange, onSelected = onTimeRangeChange)
-            }
+    val configuration = LocalConfiguration.current
+    val layoutLocale =
+        if (configuration.locales.size() > 0) configuration.locales[0]
+        else {
+            @Suppress("DEPRECATION")
+            configuration.locale ?: Locale.ROOT
         }
+    val tooltipDateFormat = remember(layoutLocale.toLanguageTag()) {
+        SimpleDateFormat(DateFormatConstants.WEEKDAY_MONTH_DAY, layoutLocale)
+    }
 
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(chartHeight),
-        ) {
-            Box(
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .glass(
+                MaterialTheme.shapes.medium,
+                level = GlassConstants.LEVEL_DEFAULT,
+                fillBrush = { bodyGlassCardFillBrush(it) },
+            )
+            .padding(dimensionResource(R.dimen.spacer_m)),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Column(
                 modifier = Modifier
-                    .fillMaxHeight()
-                    .width(yAxisWidth),
+                    .fillMaxWidth()
+                    .alpha(if (showTooltip) 0f else 1f),
             ) {
-                chart.gridLines.forEach { value ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Text(
-                        text = formatGridValue(value),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.align { size, space, _ ->
-                            val fraction = mapValueToFraction(value, chart.yAxisBound)
-                            IntOffset(0, (space.height * fraction - size.height / 2).toInt())
-                        },
+                        text = stringResource(R.string.body_composition_title),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f),
+                    )
+                    BodyRangeSelector(
+                        selected = timeRange,
+                        onSelected = onTimeRangeChange,
+                        enabled = !showTooltip,
                     )
                 }
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
             }
 
-            Spacer(Modifier.width(chartGap))
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(chartHeight + tooltipOverlapUpDp),
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(chartHeight)
+                                .align(Alignment.BottomCenter),
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .width(yAxisWidth),
+                            ) {
+                                chart.gridLines.forEach { value ->
+                                    Text(
+                                        text = formatGridValue(value),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.secondary,
+                                        modifier = Modifier.align { size, space, _ ->
+                                            val fraction =
+                                                mapValueToFraction(value, chart.yAxisBound)
+                                            IntOffset(
+                                                0,
+                                                (space.height * fraction - size.height / 2).toInt()
+                                            )
+                                        },
+                                    )
+                                }
+                            }
 
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .onSizeChanged { chartAreaWidth = it.width }
-                    .pointerInput(chart) {
-                        if (snapPoints.isEmpty()) return@pointerInput
-                        awaitEachGesture {
-                            val down = awaitFirstDown(requireUnconsumed = false)
+                            Spacer(Modifier.width(chartGap))
 
-                            fun nearestSnapForX(x: Float): Int {
-                                if (snapPoints.isEmpty()) return -1
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .onSizeChanged { chartAreaWidth = it.width }
+                                    .drawBehind {
+                                        val dashEffect = PathEffect.dashPathEffect(
+                                            floatArrayOf(dashWidth.toPx(), dashWidth.toPx()), 0f,
+                                        )
+                                        chart.gridLines.forEach { value ->
+                                            val y = size.height * mapValueToFraction(
+                                                value,
+                                                chart.yAxisBound
+                                            )
+                                            drawLine(
+                                                color = gridLineColor,
+                                                start = Offset(0f, y),
+                                                end = Offset(size.width, y),
+                                                strokeWidth = stripeWidth.toPx(),
+                                                pathEffect = dashEffect,
+                                            )
+                                        }
+
+                                        if (chart.points.isEmpty()) return@drawBehind
+
+                                        drawTimeSeries(
+                                            points = chart.points,
+                                            rangeStart = chart.rangeStartMillis,
+                                            rangeSpan = rangeSpan,
+                                            yAxisBound = chart.yAxisBound,
+                                            color = fatColor,
+                                            strokeWidthPx = pointStrokeWidth.toPx(),
+                                            extractValue = { it.deltaFat },
+                                        )
+                                        drawTimeSeries(
+                                            points = chart.points,
+                                            rangeStart = chart.rangeStartMillis,
+                                            rangeSpan = rangeSpan,
+                                            yAxisBound = chart.yAxisBound,
+                                            color = muscleColor,
+                                            strokeWidthPx = pointStrokeWidth.toPx(),
+                                            extractValue = { it.deltaMuscle },
+                                        )
+
+                                        val entry = selectedEntry ?: return@drawBehind
+                                        val centerX =
+                                            ((entry.timestamp - chart.rangeStartMillis).toFloat() / rangeSpan) * size.width
+                                        drawLine(
+                                            color = Color.Gray.copy(alpha = 0.5f),
+                                            start = Offset(centerX, 0f),
+                                            end = Offset(centerX, size.height),
+                                            strokeWidth = stripeWidth.toPx(),
+                                            pathEffect = dashEffect,
+                                        )
+                                        val muscleY = size.height * mapValueToFraction(
+                                            entry.deltaMuscle,
+                                            chart.yAxisBound
+                                        )
+                                        val fatY =
+                                            size.height * mapValueToFraction(
+                                                entry.deltaFat,
+                                                chart.yAxisBound
+                                            )
+                                        drawCircle(
+                                            pointBackgroundColor,
+                                            pointRadius.toPx(),
+                                            Offset(centerX, muscleY)
+                                        )
+                                        drawCircle(
+                                            muscleColor,
+                                            pointRadius.toPx(),
+                                            Offset(centerX, muscleY),
+                                            style = Stroke(width = pointStrokeWidth.toPx()),
+                                        )
+                                        drawCircle(
+                                            pointBackgroundColor,
+                                            pointRadius.toPx(),
+                                            Offset(centerX, fatY)
+                                        )
+                                        drawCircle(
+                                            fatColor,
+                                            pointRadius.toPx(),
+                                            Offset(centerX, fatY),
+                                            style = Stroke(width = pointStrokeWidth.toPx()),
+                                        )
+                                    }
+                            ) {
+                                if (tooltipEntry != null) {
+                                    Column(
+                                        modifier = Modifier
+                                            .align(Alignment.TopStart)
+                                            .onSizeChanged { tooltipWidth = it.width }
+                                            .offset {
+                                                if (chartAreaWidth == 0) return@offset IntOffset.Zero
+                                                val centerInChart =
+                                                    ((tooltipEntry.timestamp - chart.rangeStartMillis).toFloat() /
+                                                            rangeSpan) *
+                                                            chartAreaWidth
+                                                val maxX = chartAreaWidth - tooltipWidth
+                                                val targetX =
+                                                    (centerInChart - tooltipWidth / 2f).coerceIn(
+                                                        0f,
+                                                        maxX.toFloat().coerceAtLeast(0f),
+                                                    )
+                                                IntOffset(targetX.roundToInt(), -tooltipOverlapUpPx)
+                                            }
+                                            .alpha(if (showTooltip) 1f else 0f)
+                                            .background(
+                                                MaterialTheme.colorScheme.surfaceContainerHigh,
+                                                MaterialTheme.shapes.small,
+                                            )
+                                            .border(
+                                                BorderStroke(
+                                                    dimensionResource(R.dimen.border_thin),
+                                                    DarkTheme.extendedColors.cardBorder,
+                                                ),
+                                                MaterialTheme.shapes.small,
+                                            )
+                                            .padding(
+                                                horizontal = dimensionResource(R.dimen.spacer_s),
+                                                vertical = dimensionResource(R.dimen.spacer_2xs),
+                                            ),
+                                    ) {
+                                        val tooltipDate =
+                                            tooltipDateFormat.format(Date(tooltipEntry.timestamp))
+                                        Text(
+                                            text = tooltipDate,
+                                            style = MaterialTheme.typography.bodySmall.copy(
+                                                fontWeight = FontWeight.Medium,
+                                            ),
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                        )
+                                        TooltipDeltaRow(
+                                            delta = tooltipEntry.deltaMuscle,
+                                            unit = unitLabel,
+                                            color = muscleColor,
+                                        )
+                                        TooltipDeltaRow(
+                                            delta = tooltipEntry.deltaFat,
+                                            unit = unitLabel,
+                                            color = fatColor,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    XAxisLabels(
+                        chart = chart,
+                        yAxisWidth = yAxisWidth,
+                        chartGap = chartGap,
+                        rangeSpan = rangeSpan,
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .pointerInput(chart, rangeSpan, yAxisWidth, chartGap, density) {
+                            if (snapPoints.isEmpty()) return@pointerInput
+                            fun plotStartAndWidth(): Pair<Float, Float> {
+                                val startPx = with(density) { (yAxisWidth + chartGap).toPx() }
+                                val plotW = (size.width - startPx).coerceAtLeast(1f)
+                                return startPx to plotW
+                            }
+
+                            fun nearestSnapForX(localXInPlot: Float, plotW: Float): Int {
                                 var best = 0
                                 var bestDist = Float.MAX_VALUE
                                 snapPoints.forEachIndexed { i, p ->
                                     val pxAtPoint =
-                                        ((p.value.timestamp - chart.rangeStartMillis).toFloat() / rangeSpan) * size.width
-                                    val d = abs(pxAtPoint - x)
+                                        ((p.value.timestamp - chart.rangeStartMillis).toFloat() / rangeSpan) * plotW
+                                    val d = abs(pxAtPoint - localXInPlot)
                                     if (d < bestDist) {
                                         bestDist = d
                                         best = i
@@ -219,132 +379,56 @@ internal fun BodyTrendChart(
                                 }
                                 return best
                             }
+                            awaitEachGesture {
+                                val (plotStartPx, plotW) = plotStartAndWidth()
+                                val down = awaitFirstDown(requireUnconsumed = false)
+                                val clampedX = (down.position.x - plotStartPx).coerceIn(0f, plotW)
+                                selectedSnap = nearestSnapForX(clampedX, plotW)
+                                down.consume()
 
-                            selectedSnap = nearestSnapForX(down.position.x)
-                            down.consume()
-
-                            while (true) {
-                                val event = awaitPointerEvent()
-                                val change = event.changes.firstOrNull() ?: break
-                                if (change.changedToUp()) {
-                                    selectedSnap = -1
-                                    break
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    val change = event.changes.firstOrNull() ?: break
+                                    if (change.changedToUp()) {
+                                        selectedSnap = -1
+                                        break
+                                    }
+                                    val (startPx, w) = plotStartAndWidth()
+                                    val lx = (change.position.x - startPx).coerceIn(0f, w)
+                                    selectedSnap = nearestSnapForX(lx, w)
+                                    change.consume()
                                 }
-                                selectedSnap = nearestSnapForX(change.position.x)
-                                change.consume()
                             }
-                        }
-                    }
-                    .drawBehind {
-                        val dashEffect = PathEffect.dashPathEffect(
-                            floatArrayOf(dashWidth.toPx(), dashWidth.toPx()), 0f,
-                        )
-                        chart.gridLines.forEach { value ->
-                            val y = size.height * mapValueToFraction(value, chart.yAxisBound)
-                            drawLine(
-                                color = GridLineLightGray,
-                                start = Offset(0f, y),
-                                end = Offset(size.width, y),
-                                strokeWidth = stripeWidth.toPx(),
-                                pathEffect = dashEffect,
-                            )
-                        }
-
-                        if (chart.points.isEmpty()) return@drawBehind
-
-                        drawTimeSeries(
-                            points = chart.points,
-                            rangeStart = chart.rangeStartMillis,
-                            rangeSpan = rangeSpan,
-                            yAxisBound = chart.yAxisBound,
-                            color = fatColor,
-                            strokeWidthPx = pointStrokeWidth.toPx(),
-                            extractValue = { it.deltaFat },
-                        )
-                        drawTimeSeries(
-                            points = chart.points,
-                            rangeStart = chart.rangeStartMillis,
-                            rangeSpan = rangeSpan,
-                            yAxisBound = chart.yAxisBound,
-                            color = muscleColor,
-                            strokeWidthPx = pointStrokeWidth.toPx(),
-                            extractValue = { it.deltaMuscle },
-                        )
-
-                        if (selectedEntry != null) {
-                            val centerX =
-                                ((selectedEntry.timestamp - chart.rangeStartMillis).toFloat() / rangeSpan) * size.width
-                            drawLine(
-                                color = Color.Gray.copy(alpha = 0.5f),
-                                start = Offset(centerX, 0f),
-                                end = Offset(centerX, size.height),
-                                strokeWidth = stripeWidth.toPx(),
-                                pathEffect = dashEffect,
-                            )
-                            val muscleY = size.height * mapValueToFraction(
-                                selectedEntry.deltaMuscle,
-                                chart.yAxisBound
-                            )
-                            val fatY = size.height * mapValueToFraction(
-                                selectedEntry.deltaFat,
-                                chart.yAxisBound
-                            )
-                            drawCircle(
-                                backgroundColor,
-                                pointRadius.toPx(),
-                                Offset(centerX, muscleY)
-                            )
-                            drawCircle(
-                                muscleColor,
-                                pointRadius.toPx(),
-                                Offset(centerX, muscleY),
-                                style = Stroke(width = pointStrokeWidth.toPx()),
-                            )
-                            drawCircle(backgroundColor, pointRadius.toPx(), Offset(centerX, fatY))
-                            drawCircle(
-                                fatColor,
-                                pointRadius.toPx(),
-                                Offset(centerX, fatY),
-                                style = Stroke(width = pointStrokeWidth.toPx()),
-                            )
-                        }
-                    },
-            )
-        }
-
-        XAxisLabels(
-            chart = chart,
-            yAxisWidth = yAxisWidth,
-            chartGap = chartGap,
-            rangeSpan = rangeSpan,
-        )
-
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-        // Legend sits below the chart and stays visible while dragging (unlike the header).
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_s)),
-            ) {
-                LegendDot(
-                    color = muscleColor,
-                    label = stringResource(R.string.body_chart_legend_muscle, unitLabel)
-                )
-                LegendDot(
-                    color = fatColor,
-                    label = stringResource(R.string.body_chart_legend_fat, unitLabel)
+                        },
                 )
             }
-            Spacer(Modifier.weight(1f))
-            Text(
-                text = chart.rangeLabel,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.secondary,
-            )
+
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_s)),
+                ) {
+                    LegendDot(
+                        color = muscleColor,
+                        label = stringResource(R.string.body_chart_legend_muscle, unitLabel)
+                    )
+                    LegendDot(
+                        color = fatColor,
+                        label = stringResource(R.string.body_chart_legend_fat, unitLabel)
+                    )
+                }
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text = chart.rangeLabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                )
+            }
         }
     }
 }
@@ -352,10 +436,12 @@ internal fun BodyTrendChart(
 @Composable
 private fun XAxisLabels(
     chart: BodyChartData,
-    yAxisWidth: androidx.compose.ui.unit.Dp,
-    chartGap: androidx.compose.ui.unit.Dp,
+    yAxisWidth: Dp,
+    chartGap: Dp,
     rangeSpan: Long,
 ) {
+    val textMeasurer = rememberTextMeasurer()
+    val labelStyle = MaterialTheme.typography.bodySmall
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -363,16 +449,21 @@ private fun XAxisLabels(
     ) {
         Spacer(Modifier.width(yAxisWidth + chartGap))
         BoxWithConstraints(modifier = Modifier.weight(1f)) {
-            val widthPx = with(LocalDensity.current) { maxWidth.roundToPx() }
+            val density = LocalDensity.current
+            val widthPx = with(density) { maxWidth.roundToPx() }
             chart.axisLabels.forEach { label ->
                 if (label.text.isEmpty()) return@forEach
-                val xPx =
+                val rawX =
                     ((label.timestamp - chart.rangeStartMillis).toFloat() / rangeSpan) * widthPx
+                val measuredWidth =
+                    textMeasurer.measure(AnnotatedString(label.text), style = labelStyle).size.width
+                val maxLeft = max(0, widthPx - measuredWidth)
+                val xLeft = rawX.roundToInt().coerceIn(0, maxLeft)
                 Text(
                     text = label.text,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = labelStyle,
                     color = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.offset { IntOffset(xPx.roundToInt(), 0) },
+                    modifier = Modifier.offset { IntOffset(xLeft, 0) },
                 )
             }
         }
@@ -417,7 +508,6 @@ private fun TooltipDeltaRow(delta: Float, unit: String, color: Color) {
     }
 }
 
-/** Maps a value in [-bound, +bound] to a vertical fraction (0 = top, 1 = bottom). 0 ⇒ 0.5. */
 private fun mapValueToFraction(value: Float, bound: Float): Float {
     val b = bound.coerceAtLeast(BodyConstants.CHART_MIN_HALF_RANGE)
     val clamped = value.coerceIn(-b, b)
@@ -431,7 +521,6 @@ private const val GRID_ZERO_LABEL = "0"
 
 private fun formatOneDecimal(value: Float): String = String.format(Locale.US, "%.1f", value)
 
-/** Time-proportional curve + soft fill; the line is a monotone cubic spline so it never bows past the data or chart band. */
 private fun DrawScope.drawTimeSeries(
     points: List<BodyTrendPoint>,
     rangeStart: Long,
@@ -467,17 +556,12 @@ private fun DrawScope.drawTimeSeries(
     drawPath(
         path = fillPath,
         brush = Brush.verticalGradient(
-            colors = listOf(color.copy(alpha = 0.25f), color.copy(alpha = 0.02f)),
+            colors = listOf(color.copy(alpha = 0.45f), color.copy(alpha = 0.04f)),
         ),
     )
-    drawPath(
-        path = linePath,
-        color = color,
-        style = Stroke(width = strokeWidthPx),
-    )
+    drawPath(path = linePath, color = color, style = Stroke(width = strokeWidthPx))
 }
 
-/** Monotone cubic Hermite spline (Fritsch–Carlson) through [points], as Bézier segments — stays between adjacent y-values. */
 private fun buildMonotoneCubicPath(points: List<Offset>): Path {
     val path = Path()
     if (points.isEmpty()) return path
@@ -530,5 +614,4 @@ private fun buildMonotoneCubicPath(points: List<Offset>): Path {
     return path
 }
 
-/** Fritsch–Carlson cap on |tangent / secant| that keeps each spline segment monotone. */
 private const val MONOTONE_TANGENT_LIMIT = 3f

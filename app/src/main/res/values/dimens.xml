@@ -110,6 +110,7 @@
 
     <!-- Borders -->
     <dimen name="border_thin">1dp</dimen>
+    <dimen name="border_line">0.5dp</dimen>
     <dimen name="border_thumb">3dp</dimen>
 
     <!-- Elevation -->
@@ -123,14 +124,15 @@
 
     <!-- Dividers -->
     <dimen name="divider_size">1dp</dimen>
+    <dimen name="gradient_divider_thickness">@dimen/divider_size</dimen>
 
     <!-- Effects -->
     <dimen name="dash_width">5dp</dimen>
 
     <!-- Body screen -->
     <dimen name="body_chart_height">220dp</dimen>
+    <dimen name="body_toggle_height">22dp</dimen>
     <dimen name="body_chart_y_axis_width">24dp</dimen>
-    <dimen name="body_chart_tooltip_reserved">58dp</dimen>
     <dimen name="body_chart_point_radius">5dp</dimen>
     <dimen name="body_chart_line_stroke">1dp</dimen>
 

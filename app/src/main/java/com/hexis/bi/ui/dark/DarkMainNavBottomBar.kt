@@ -1,0 +1,143 @@
+package com.hexis.bi.ui.dark
+
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import com.hexis.bi.R
+import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.utils.constants.GlassConstants
+import com.hexis.bi.utils.glass
+
+@Composable
+fun DarkMainNavBottomBar(
+    isHomeSelected: Boolean,
+    isBodySelected: Boolean,
+    onHomeClick: () -> Unit,
+    onBodyClick: () -> Unit,
+    onScanClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .glass(
+                    CircleShape,
+                    level = GlassConstants.LEVEL_DEFAULT,
+                    fill = Color.Transparent,
+                    fillBrush = { darkMainNavBarFillBrush(it) },
+                )
+                .padding(dimensionResource(R.dimen.spacer_xs)),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            DarkNavTab(
+                iconRes = if (isHomeSelected) R.drawable.ic_home_filled else R.drawable.ic_home,
+                label = stringResource(R.string.home_nav_home),
+                selected = isHomeSelected,
+                onClick = onHomeClick,
+            )
+
+            ScanFab(onClick = onScanClick)
+
+            DarkNavTab(
+                iconRes = if (isBodySelected) R.drawable.ic_body_filled else R.drawable.ic_body,
+                label = stringResource(R.string.home_nav_body),
+                selected = isBodySelected,
+                onClick = onBodyClick,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ScanFab(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(dimensionResource(R.dimen.size_bottom_nav_center))
+            .glass(
+                CircleShape,
+                level = GlassConstants.LEVEL_RAISED,
+                fill = Color.Transparent,
+                fillBrush = { darkScanFabFillBrush(it) },
+            )
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_scan),
+            contentDescription = stringResource(R.string.cd_scan_action),
+            tint = Color.White,
+            modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+        )
+    }
+}
+
+@Composable
+private fun DarkNavTab(
+    @DrawableRes iconRes: Int,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val color = if (selected) MaterialTheme.colorScheme.onSurface
+    else DarkTheme.extendedColors.textTertiary
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(dimensionResource(R.dimen.size_bottom_nav_center))
+            .clip(CircleShape)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
+            ),
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = label,
+                tint = color,
+                modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+            )
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxs)))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                color = color,
+            )
+        }
+    }
+}

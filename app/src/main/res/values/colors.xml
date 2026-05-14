@@ -7,6 +7,7 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="window_background_ink">#FF030909</color>
 
     <!-- Scan results: measurement leader pills + canvas leaders (Compose overlay on avatar preview). -->
     <color name="measurement_leader_pill_surface">#D9FFFFFF</color>

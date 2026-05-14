@@ -19,7 +19,6 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.Blue100
 
 @Composable
 internal fun BodyMetricTile(
@@ -39,17 +38,17 @@ internal fun BodyMetricTile(
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
             Row(
-                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_s)),
+                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_xs)),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = value,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = Blue100,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 if (delta != null) BodyDelta(delta = delta, decreaseIsPositive = decreaseIsPositive)
             }
@@ -70,7 +69,7 @@ internal fun BodyInfoIconButton(
         Icon(
             painter = painterResource(R.drawable.ic_info),
             contentDescription = contentDescription,
-            tint = MaterialTheme.colorScheme.primaryFixed,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
         )
     }
