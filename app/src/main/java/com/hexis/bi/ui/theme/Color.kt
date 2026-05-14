@@ -64,6 +64,21 @@ val BodyToggleSelectedChipFill = Color(0x33FFFFFF)
 val BodyToggleSelectedLabel = Color(0xFFF6F6F6)
 val BodyToggleUnselectedLabel = Color(0xFFE7E7E7)
 
+val DarkPrimaryButtonGradientTop = Color(0xA31DC4B3)
+val DarkPrimaryButtonGradientBottom = Color(0xA30B2020)
+val DarkPrimaryButtonDisabledFill = Color(0x66AEB4BB)
+
+val DialogBackdrop = Color(0x40424242)
+val DialogWindowBackground = Color(0xFF1A1A1A)
+
+val GlassTrackFill = Color(0x0D090909)
+val GlassSelectionFill = Color(0x4D090909)
+val GlassRimHighlight = Color(0xFFE6FFFC)
+
+val DarkSliderLabel = Color(0xFFF6F6F6)
+val DarkSliderActiveTrack = Color(0xFF1DC4B3)
+val DarkSliderInactiveTrack = Color(0x38797979)
+
 /** Transparent edge stop (`rgba(189, 190, 192, 0)`) for gradient dividers. */
 val GradientDividerEdge = Color(0x00BDBEC0)
 

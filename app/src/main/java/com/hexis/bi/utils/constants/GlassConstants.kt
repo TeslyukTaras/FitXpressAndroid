@@ -1,8 +1,5 @@
 package com.hexis.bi.utils.constants
 
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-
 internal object GlassConstants {
 
     const val LEVEL_DEFAULT = 45
@@ -15,23 +12,19 @@ internal object GlassConstants {
     const val GLOW_BASE_ALPHA = 0.018f
     const val GLOW_RANGE_ALPHA = 0.055f
 
-    /** Tight darkening just inside the NW rim (occlusion). Scales with [level]. */
-    const val INNER_NW_SHADOW_BASE_ALPHA = 0.05f
-    const val INNER_NW_SHADOW_RANGE_ALPHA = 0.15f
-    const val INNER_NW_SHADOW_RADIUS_FRAC = 0.36f
+    /** Tight darkening just inside the bottom-left rim (occlusion). Scales with [level]. */
+    const val INNER_BL_SHADOW_BASE_ALPHA = 0.07f
+    const val INNER_BL_SHADOW_RANGE_ALPHA = 0.18f
+    const val INNER_BL_SHADOW_RADIUS_FRAC = 0.52f
 
-    /** Soft interior light opposite the rim (SE). Scales with [level]. */
-    const val INNER_SE_HIGHLIGHT_BASE_ALPHA = 0.026f
-    const val INNER_SE_HIGHLIGHT_RANGE_ALPHA = 0.15f
-    const val INNER_SE_HIGHLIGHT_RADIUS_FRAC = 0.64f
+    /** Soft interior light from the top-right. Scales with [level]. */
+    const val INNER_TR_HIGHLIGHT_BASE_ALPHA = 0.014f
+    const val INNER_TR_HIGHLIGHT_RANGE_ALPHA = 0.065f
+    const val INNER_TR_HIGHLIGHT_RADIUS_FRAC = 0.72f
 
     /** Very subtle dark “dead” zones away from the primary spec. */
     const val DEAD_ZONE_BASE_ALPHA = 0.010f
     const val DEAD_ZONE_RANGE_ALPHA = 0.035f
-
-    /** Radial size of top-right / bottom-left dead zones (× min side). */
-    const val DEAD_ZONE_RADIUS_TR_FRAC = 0.54f
-    const val DEAD_ZONE_RADIUS_BL_FRAC = 0.50f
 
     /** Inset along corner ray on wide pills / rectangles (toward bbox TR / BL). */
     const val DEAD_ZONE_CENTER_INSET_FRAC = 0.93f
@@ -42,13 +35,9 @@ internal object GlassConstants {
     /** Use polar −45° / 135° dead-zone placement when min/max side ≥ this (circles & square-ish). */
     const val DEAD_ZONE_POLAR_ASPECT_THRESHOLD = 0.88f
 
-    /** Circles: radius ≥ min side so falloff crosses most of the disc (avoids tiny dot). */
-    const val DEAD_ZONE_RADIUS_TR_COMPACT_FRAC = 1.02f
-    const val DEAD_ZONE_RADIUS_BL_COMPACT_FRAC = 0.98f
-
-    /** Mild SE corner falloff for depth (does not replace SE highlight). */
-    const val SE_VIGNETTE_BASE_ALPHA = 0.005f
-    const val SE_VIGNETTE_RANGE_ALPHA = 0.02f
+    /** Mild bottom-left corner falloff for depth (does not replace BL shadow). */
+    const val BL_VIGNETTE_BASE_ALPHA = 0.008f
+    const val BL_VIGNETTE_RANGE_ALPHA = 0.028f
 
     const val RIM_NW = 1.00f
     const val RIM_SE = 0.92f
@@ -63,10 +52,5 @@ internal object GlassConstants {
     const val RIM_TRANSITION_FRACTION = 0.065f
     const val RIM_MIN_TRANSITION = 0.014f
 
-    val RIM_WIDTH = 0.5.dp
-
     const val RIM_SWEEP_NW_SHIFT = 0.05f
-
-    val GLASS_TRACK_FILL = Color(0x0D090909)
-    val GLASS_SELECTION_FILL = Color(0x4D090909)
 }

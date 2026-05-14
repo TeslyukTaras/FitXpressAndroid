@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import com.hexis.bi.R
 import com.hexis.bi.ui.theme.BodyToggleChipSelectedTextStyle
 import com.hexis.bi.ui.theme.BodyToggleChipUnselectedTextStyle
@@ -58,11 +59,12 @@ internal fun BodySegmentedToggleChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    width: Dp = dimensionResource(R.dimen.icon_normalized),
 ) {
     Box(
         modifier = modifier
             .height(dimensionResource(R.dimen.body_toggle_height))
-            .width(dimensionResource(R.dimen.icon_normalized))
+            .width(width)
             .clip(CircleShape)
             .then(if (isSelected) Modifier.background(BodyToggleSelectedChipFill) else Modifier)
             .clickable(

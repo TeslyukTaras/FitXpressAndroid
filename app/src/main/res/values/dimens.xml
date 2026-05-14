@@ -96,6 +96,7 @@
     <dimen name="promo_button_width">120dp</dimen>
     <dimen name="promo_button_height">32dp</dimen>
     <dimen name="slider_track_height">6dp</dimen>
+    <dimen name="dark_slider_track_height">4dp</dimen>
     <dimen name="switch_track_width">45dp</dimen>
     <dimen name="switch_track_height">24dp</dimen>
     <dimen name="switch_thumb_size">18dp</dimen>
@@ -121,6 +122,8 @@
 
     <!-- Effects -->
     <dimen name="blur_dialog_backdrop">2dp</dimen>
+    <dimen name="glass_background_blur">5dp</dimen>
+    <dimen name="glass_rim_width">0.5dp</dimen>
 
     <!-- Dividers -->
     <dimen name="divider_size">1dp</dimen>
@@ -132,6 +135,7 @@
     <!-- Body screen -->
     <dimen name="body_chart_height">220dp</dimen>
     <dimen name="body_toggle_height">22dp</dimen>
+    <dimen name="edit_profile_units_toggle_chip_width">68dp</dimen>
     <dimen name="body_chart_y_axis_width">24dp</dimen>
     <dimen name="body_chart_point_radius">5dp</dimen>
     <dimen name="body_chart_line_stroke">1dp</dimen>

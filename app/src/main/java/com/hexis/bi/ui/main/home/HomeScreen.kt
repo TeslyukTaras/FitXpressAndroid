@@ -79,7 +79,7 @@ fun HomeScreen(
         ) {
             HomeHeader(
                 userName = state.userName,
-                avatarUrl = state.avatarUrl,
+                imageUrl = state.imageUrl,
                 hasUnreadNotifications = state.hasUnreadNotifications,
                 onNotificationClick = onNotificationClick,
                 onSettingsClick = onSettingsClick,

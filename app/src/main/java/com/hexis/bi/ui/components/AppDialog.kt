@@ -19,6 +19,8 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
+import com.hexis.bi.ui.theme.DialogBackdrop
+import com.hexis.bi.ui.theme.DialogWindowBackground
 
 /**
  * Standard full-screen dialog overlay used across the app.
@@ -58,13 +60,13 @@ fun AppDialog(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.25f))
+            .background(DialogBackdrop)
             .imePadding(),
         contentAlignment = Alignment.Center,
     ) {
         Card(
             shape = MaterialTheme.shapes.medium,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
+            colors = CardDefaults.cardColors(containerColor = DialogWindowBackground),
             modifier = modifier
                 .fillMaxWidth()
                 .padding(horizontal = dimensionResource(R.dimen.padding_medium)),

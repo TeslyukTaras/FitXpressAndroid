@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.Application
 import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.hexis.bi.R
 import com.hexis.bi.data.auth.AuthRepository
 import com.hexis.bi.data.user.UserProfile
@@ -121,13 +122,7 @@ class SignUpViewModel(
     private suspend fun provisionUserIfNeeded() {
         val user = firebaseAuth.currentUser ?: return
         val result = userRepository.createUserIfAbsent(
-            UserProfile(
-                uid = user.uid,
-                firstName = user.displayName?.substringBefore(" ").orEmpty(),
-                lastName = user.displayName?.substringAfter(" ", "").orEmpty(),
-                email = user.email.orEmpty(),
-                avatarUrl = user.photoUrl?.toString(),
-            )
+            user.toProfile()
         )
         if (result.isFailure) {
             setError(result.exceptionOrNull()?.message)
@@ -148,3 +143,11 @@ class SignUpViewModel(
         else -> null
     }
 }
+
+private fun FirebaseUser.toProfile(): UserProfile = UserProfile(
+    uid = uid,
+    firstName = displayName?.substringBefore(" ").orEmpty(),
+    lastName = displayName?.substringAfter(" ", "").orEmpty(),
+    email = email.orEmpty(),
+    imageUrl = photoUrl?.toString(),
+)

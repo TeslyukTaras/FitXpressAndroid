@@ -7,7 +7,7 @@ internal object FirestoreSchema {
     const val HEALTH_CONNECTIONS_COLLECTION = "healthConnections"
 
     object UserFields {
-        const val AVATAR_URL = "avatarUrl"
+        const val IMAGE_URL = "imageUrl"
     }
 
     object UserSettingsFields {

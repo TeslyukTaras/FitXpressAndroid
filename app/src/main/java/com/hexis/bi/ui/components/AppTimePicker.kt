@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
+import com.hexis.bi.ui.theme.DialogWindowBackground
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,18 +29,18 @@ fun AppTimePicker(
 ) {
     val colors = TimePickerDefaults.colors(
         clockDialColor = MaterialTheme.colorScheme.tertiary,
-        clockDialSelectedContentColor = MaterialTheme.colorScheme.background,
+        clockDialSelectedContentColor = DialogWindowBackground,
         clockDialUnselectedContentColor = MaterialTheme.colorScheme.onBackground,
         selectorColor = MaterialTheme.colorScheme.primary,
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = DialogWindowBackground,
         timeSelectorSelectedContainerColor = MaterialTheme.colorScheme.primary,
         timeSelectorUnselectedContainerColor = MaterialTheme.colorScheme.tertiary,
-        timeSelectorSelectedContentColor = MaterialTheme.colorScheme.background,
+        timeSelectorSelectedContentColor = DialogWindowBackground,
         timeSelectorUnselectedContentColor = MaterialTheme.colorScheme.onBackground,
         periodSelectorBorderColor = MaterialTheme.colorScheme.outline,
         periodSelectorSelectedContainerColor = MaterialTheme.colorScheme.primary,
-        periodSelectorUnselectedContainerColor = MaterialTheme.colorScheme.background,
-        periodSelectorSelectedContentColor = MaterialTheme.colorScheme.background,
+        periodSelectorUnselectedContainerColor = DialogWindowBackground,
+        periodSelectorSelectedContentColor = DialogWindowBackground,
         periodSelectorUnselectedContentColor = MaterialTheme.colorScheme.onBackground,
     )
 

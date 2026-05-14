@@ -23,4 +23,11 @@ object ProfileConstants {
 
     // Firebase Storage directory for avatar images
     const val AVATAR_STORAGE_DIR = "avatars"
+    const val PROFILE_IMAGE_FILE_NAME = "profile.jpg"
+    const val PROFILE_IMAGE_CONTENT_TYPE = "image/jpeg"
+    const val PROFILE_IMAGE_MAX_DIMENSION_PX = 1024
+    const val PROFILE_IMAGE_JPEG_QUALITY = 88
+    const val PROFILE_IMAGE_MIN_JPEG_QUALITY = 60
+    const val PROFILE_IMAGE_QUALITY_STEP = 8
+    const val PROFILE_IMAGE_MAX_BYTES = 4 * 1024 * 1024
 }

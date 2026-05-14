@@ -92,7 +92,7 @@ class HomeViewModel(
                 _state.update { current ->
                     current.copy(
                         userName = "${profile.firstName} ${profile.lastName}".trim(),
-                        avatarUrl = profile.avatarUrl,
+                        imageUrl = profile.imageUrl,
                         weight = if (isMetric)
                             profile.weightKg?.let {
                                 appContext.getString(R.string.unit_weight_kg, it)

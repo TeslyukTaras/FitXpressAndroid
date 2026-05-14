@@ -83,7 +83,7 @@ class LoginViewModel(
                 firstName = user.displayName?.substringBefore(" ").orEmpty(),
                 lastName = user.displayName?.substringAfter(" ", "").orEmpty(),
                 email = user.email.orEmpty(),
-                avatarUrl = user.photoUrl?.toString(),
+                imageUrl = user.photoUrl?.toString(),
             )
         )
     }
