@@ -1,4 +1,4 @@
-package com.hexis.bi.ui.components
+package com.hexis.bi.ui.dark
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

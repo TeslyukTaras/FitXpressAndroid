@@ -51,7 +51,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.bodyGlassCardFillBrush
+import com.hexis.bi.ui.dark.BodyGlassCard
 import com.hexis.bi.ui.main.body.BodyChartData
 import com.hexis.bi.ui.main.body.BodyMassUnit
 import com.hexis.bi.ui.main.body.BodyTimeRange
@@ -59,8 +59,6 @@ import com.hexis.bi.ui.main.body.BodyTrendPoint
 import com.hexis.bi.ui.theme.dark.DarkTheme
 import com.hexis.bi.utils.constants.BodyConstants
 import com.hexis.bi.utils.constants.DateFormatConstants
-import com.hexis.bi.utils.constants.GlassConstants
-import com.hexis.bi.utils.glass
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -124,19 +122,7 @@ internal fun BodyTrendChart(
         SimpleDateFormat(DateFormatConstants.WEEKDAY_MONTH_DAY, layoutLocale)
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .glass(
-                MaterialTheme.shapes.medium,
-                level = GlassConstants.LEVEL_DEFAULT,
-                fillBrush = { bodyGlassCardFillBrush(it) },
-                backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
-                rimWidth = dimensionResource(R.dimen.glass_rim_width),
-            )
-            .padding(dimensionResource(R.dimen.spacer_m)),
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+    BodyGlassCard(modifier = modifier) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -433,7 +419,6 @@ internal fun BodyTrendChart(
             }
         }
     }
-}
 
 @Composable
 private fun XAxisLabels(

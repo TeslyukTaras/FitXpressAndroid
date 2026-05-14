@@ -1,4 +1,4 @@
-package com.hexis.bi.ui.components
+package com.hexis.bi.ui.dark
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -11,9 +11,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
+import com.hexis.bi.ui.components.AppDialog
 
 @Composable
 fun <T> AppListPicker(
@@ -47,14 +49,13 @@ fun <T> AppListPicker(
                 Text(
                     text = label,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (selected) MaterialTheme.colorScheme.background
-                    else MaterialTheme.colorScheme.secondary,
+                    color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(MaterialTheme.shapes.small)
+                        .clip(MaterialTheme.shapes.medium)
                         .background(
-                            if (selected) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.background
+                            if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            else Color.Transparent
                         )
                         .clickable { onItemSelected(item) }
                         .padding(

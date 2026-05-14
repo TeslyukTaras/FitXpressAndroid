@@ -1,12 +1,11 @@
 package com.hexis.bi.ui.main.body.components
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -16,13 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
-import com.hexis.bi.ui.components.AppHorizontalGradientDivider
-import com.hexis.bi.ui.components.AppVerticalGradientDivider
-import com.hexis.bi.ui.dark.bodyGlassCardFillBrush
+import com.hexis.bi.ui.dark.AppHorizontalGradientDivider
+import com.hexis.bi.ui.dark.AppVerticalGradientDivider
+import com.hexis.bi.ui.dark.BodyGlassCard
 import com.hexis.bi.ui.main.body.BodyComposition
 import com.hexis.bi.ui.main.body.BodyMassUnit
-import com.hexis.bi.utils.constants.GlassConstants
-import com.hexis.bi.utils.glass
 import com.hexis.bi.utils.kgToLb
 
 @Composable
@@ -34,17 +31,9 @@ internal fun BodyCompositionCard(
     onBisInfoClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .glass(
-                MaterialTheme.shapes.medium,
-                level = GlassConstants.LEVEL_DEFAULT,
-                fillBrush = { bodyGlassCardFillBrush(it) },
-                backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
-                rimWidth = dimensionResource(R.dimen.glass_rim_width),
-            )
-            .padding(dimensionResource(R.dimen.spacer_l)),
+    BodyGlassCard(
+        modifier = modifier,
+        contentPadding = PaddingValues(dimensionResource(R.dimen.spacer_l)),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

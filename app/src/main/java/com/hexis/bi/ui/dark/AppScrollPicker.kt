@@ -1,4 +1,4 @@
-package com.hexis.bi.ui.components
+package com.hexis.bi.ui.dark
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -23,6 +23,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
+import com.hexis.bi.ui.components.AppDialog
 import kotlin.math.absoluteValue
 
 data class PickerColumnData<T>(
@@ -49,6 +50,7 @@ fun AppScrollPicker(
             Text(
                 text = title.orEmpty(),
                 style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -67,7 +69,7 @@ fun AppScrollPicker(
                         .fillMaxWidth(0.8f)
                         .height(dimensionResource(R.dimen.picker_highlight_height))
                         .background(
-                            MaterialTheme.colorScheme.surfaceVariant,
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                             MaterialTheme.shapes.medium
                         )
                 )
@@ -87,7 +89,7 @@ fun AppScrollPicker(
                 }
             }
 
-            AppButton(
+            DarkPrimaryButton(
                 text = stringResource(R.string.action_save),
                 onClick = onConfirm,
                 modifier = Modifier.fillMaxWidth()
@@ -131,7 +133,7 @@ fun WheelColumn(
             Text(
                 text = items[page % items.size],
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
     }

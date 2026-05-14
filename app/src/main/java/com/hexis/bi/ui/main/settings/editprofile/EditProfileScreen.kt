@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -59,14 +60,12 @@ import com.hexis.bi.ui.dark.DarkOutlinedTextField
 import com.hexis.bi.ui.dark.DarkPrimaryButton
 import com.hexis.bi.ui.dark.DarkSlider
 import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.dark.bodyGlassCardFillBrush
+import com.hexis.bi.ui.dark.BodyGlassCard
 import com.hexis.bi.ui.dark.darkScreenBackground
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleChip
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleTrack
 import com.hexis.bi.ui.theme.DarkSliderLabel
 import com.hexis.bi.ui.theme.dark.DarkTheme
-import com.hexis.bi.utils.constants.GlassConstants
-import com.hexis.bi.utils.glass
 import com.hexis.bi.utils.parseDob
 import org.koin.androidx.compose.koinViewModel
 
@@ -375,17 +374,8 @@ private fun PersonalInfoSection(
             .padding(bottom = dimensionResource(R.dimen.spacer_m)),
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .glass(
-                shape = MaterialTheme.shapes.medium,
-                level = GlassConstants.LEVEL_DEFAULT,
-                fillBrush = { bodyGlassCardFillBrush(it) },
-                backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
-                rimWidth = dimensionResource(R.dimen.glass_rim_width),
-            )
-            .padding(dimensionResource(R.dimen.spacer_l)),
+    BodyGlassCard(
+        contentPadding = PaddingValues(dimensionResource(R.dimen.spacer_l)),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_l)),
     ) {
         UnitsToggle(
