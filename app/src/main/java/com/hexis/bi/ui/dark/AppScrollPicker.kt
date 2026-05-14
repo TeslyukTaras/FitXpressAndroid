@@ -24,6 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.AppDialog
+import com.hexis.bi.utils.constants.GlassConstants
 import kotlin.math.absoluteValue
 
 data class PickerColumnData<T>(
@@ -69,7 +70,7 @@ fun AppScrollPicker(
                         .fillMaxWidth(0.8f)
                         .height(dimensionResource(R.dimen.picker_highlight_height))
                         .background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            MaterialTheme.colorScheme.primary.copy(alpha = GlassConstants.SELECTION_HIGHLIGHT_ALPHA),
                             MaterialTheme.shapes.medium
                         )
                 )

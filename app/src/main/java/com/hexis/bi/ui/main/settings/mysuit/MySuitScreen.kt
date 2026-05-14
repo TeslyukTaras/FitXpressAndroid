@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -39,13 +40,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
-import com.hexis.bi.ui.components.AppButton
 import com.hexis.bi.ui.components.AppDialog
-import com.hexis.bi.ui.components.AppOutlinedButton
-import com.hexis.bi.ui.components.AppTextField
 import com.hexis.bi.ui.components.my_suit.ReconnectDialogContent
 import com.hexis.bi.ui.components.my_suit.SuitConnectedBanner
 import com.hexis.bi.ui.components.my_suit.SuitInfoRow
+import com.hexis.bi.ui.dark.DarkOutlinedButton
+import com.hexis.bi.ui.dark.DarkOutlinedTextField
+import com.hexis.bi.ui.dark.DarkPrimaryButton
+import com.hexis.bi.ui.dark.LightStatusBarIcons
+import com.hexis.bi.ui.dark.darkScreenBackground
+import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.theme.dark.Positive
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -59,49 +64,58 @@ fun MySuitScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
 
-    Box(modifier = modifier) {
-        BaseScreen(
-            modifier = Modifier.then(
-                if (state.showReconnectDialog) Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
-                else Modifier
-            ),
-            isLoading = isLoading,
-            error = error,
-            onDismissError = viewModel::clearError,
-            topBar = {
-                BaseTopBar(
-                    title = stringResource(R.string.my_suit_title),
-                    onBack = onBack,
-                )
-            },
-        ) {
-            var imageHeight by remember { mutableStateOf(Dp.Unspecified) }
+    LightStatusBarIcons()
 
-            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                if (imageHeight == Dp.Unspecified) {
-                    imageHeight = maxHeight * 0.55f
+    DarkTheme {
+        Box(modifier = modifier) {
+            BaseScreen(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(
+                        if (state.showReconnectDialog) Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
+                        else Modifier
+                    )
+                    .darkScreenBackground(),
+                containerColor = Color.Transparent,
+                isLoading = isLoading,
+                error = error,
+                onDismissError = viewModel::clearError,
+                topBar = {
+                    BaseTopBar(
+                        title = stringResource(R.string.my_suit_title),
+                        background = Color.Transparent,
+                        onBack = onBack,
+                    )
+                },
+            ) {
+                var imageHeight by remember { mutableStateOf(Dp.Unspecified) }
+
+                BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                    if (imageHeight == Dp.Unspecified) {
+                        imageHeight = maxHeight * 0.55f
+                    }
+
+                    if (state.isConnected) ConnectedContent(
+                        state = state,
+                        imageHeight = imageHeight,
+                        onReconnect = viewModel::showReconnectDialog,
+                    )
+                    else DisconnectedContent(
+                        suitIdInput = state.suitIdInput,
+                        imageHeight = imageHeight,
+                        onSuitIdChange = viewModel::updateSuitIdInput,
+                        onConnect = viewModel::connect,
+                        onBuyOne = onBuyOne,
+                    )
                 }
+            }
 
-                if (state.isConnected) ConnectedContent(
-                    state = state,
-                    imageHeight = imageHeight,
-                    onReconnect = viewModel::showReconnectDialog,
-                )
-                else DisconnectedContent(
-                    suitIdInput = state.suitIdInput,
-                    imageHeight = imageHeight,
-                    onSuitIdChange = viewModel::updateSuitIdInput,
-                    onConnect = viewModel::connect,
-                    onBuyOne = onBuyOne,
+            if (state.showReconnectDialog) AppDialog(onDismiss = viewModel::dismissReconnectDialog) {
+                ReconnectDialogContent(
+                    onDismiss = viewModel::dismissReconnectDialog,
+                    onConfirm = viewModel::reconnect,
                 )
             }
-        }
-
-        if (state.showReconnectDialog) AppDialog(onDismiss = viewModel::dismissReconnectDialog) {
-            ReconnectDialogContent(
-                onDismiss = viewModel::dismissReconnectDialog,
-                onConfirm = viewModel::reconnect,
-            )
         }
     }
 }
@@ -146,13 +160,14 @@ private fun ConnectedContent(
         SuitInfoRow(
             label = stringResource(R.string.my_suit_status),
             value = state.connectedStatus,
+            valueColor = Positive,
         )
 
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
         Spacer(Modifier.weight(1f))
 
         BottomButtonAction {
-            AppOutlinedButton(
+            DarkOutlinedButton(
                 text = stringResource(R.string.action_reconnect_suit),
                 onClick = onReconnect,
                 modifier = Modifier.fillMaxWidth(),
@@ -190,11 +205,11 @@ private fun DisconnectedContent(
         Text(
             text = stringResource(R.string.my_suit_connect_subtitle),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.secondary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
 
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
 
         Image(
             painter = painterResource(R.drawable.img_my_suit),
@@ -207,7 +222,7 @@ private fun DisconnectedContent(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
 
-        AppTextField(
+        DarkOutlinedTextField(
             value = suitIdInput,
             onValueChange = onSuitIdChange,
             label = stringResource(R.string.label_suit_id),
@@ -219,7 +234,7 @@ private fun DisconnectedContent(
         Text(
             text = stringResource(R.string.my_suit_id_hint),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.secondary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -227,7 +242,7 @@ private fun DisconnectedContent(
         Spacer(Modifier.weight(1f))
 
         BottomButtonAction(onBuyOne) {
-            AppButton(
+            DarkPrimaryButton(
                 text = stringResource(R.string.action_connect),
                 onClick = onConnect,
                 enabled = suitIdInput.isNotBlank(),
@@ -261,7 +276,7 @@ private fun BottomButtonAction(
     Text(
         text = noSuitText,
         style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Normal),
-        color = MaterialTheme.colorScheme.secondary,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         minLines = 1,
         modifier = Modifier
             .clip(MaterialTheme.shapes.medium)

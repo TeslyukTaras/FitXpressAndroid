@@ -27,6 +27,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.semantics.Role
 import com.hexis.bi.R
 import com.hexis.bi.ui.theme.dark.DarkBorderMuted
+import com.hexis.bi.utils.constants.DarkBackgroundConstants
 import com.hexis.bi.ui.theme.dark.DarkSwitchActiveTrackBottom
 import com.hexis.bi.ui.theme.dark.DarkSwitchActiveTrackTop
 import com.hexis.bi.ui.theme.dark.DarkSwitchThumbShadow
@@ -96,8 +97,8 @@ private fun DrawScope.drawTrack(progress: Float, borderWidthPx: Float) {
     val cornerRadius = CornerRadius(size.height / 2)
     val activeBrush = Brush.verticalGradient(
         colors = listOf(DarkSwitchActiveTrackTop, DarkSwitchActiveTrackBottom),
-        startY = -size.height * 0.5312f,
-        endY = size.height * 1.3021f,
+        startY = size.height * DarkBackgroundConstants.COMPONENT_VERTICAL_GRADIENT_START_FRACTION,
+        endY = size.height * DarkBackgroundConstants.COMPONENT_VERTICAL_GRADIENT_END_FRACTION,
     )
 
     drawRoundRect(

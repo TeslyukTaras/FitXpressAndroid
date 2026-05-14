@@ -1,5 +1,6 @@
 package com.hexis.bi.ui.dark
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -10,20 +11,24 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.DarkPrimaryButtonDisabledFill
-import com.hexis.bi.ui.theme.DarkPrimaryButtonGradientBottom
-import com.hexis.bi.ui.theme.DarkPrimaryButtonGradientTop
+import com.hexis.bi.ui.theme.dark.DarkBorderMuted
+import com.hexis.bi.ui.theme.dark.DarkSwitchActiveTrackBottom
+import com.hexis.bi.ui.theme.dark.DarkSwitchActiveTrackTop
 import com.hexis.bi.utils.constants.DarkBackgroundConstants
 import com.hexis.bi.utils.constants.GlassConstants
 import com.hexis.bi.utils.glass
 
 @Composable
-fun DarkPrimaryButton(
+fun DarkOutlinedButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -32,16 +37,28 @@ fun DarkPrimaryButton(
 ) {
     val isActive = enabled && !isLoading
     val shape = MaterialTheme.shapes.small
-    val fillBrush: ((Size) -> Brush)? = if (isActive) {
-        { size ->
-            Brush.verticalGradient(
-                colors = listOf(DarkPrimaryButtonGradientTop, DarkPrimaryButtonGradientBottom),
-                startY = size.height * DarkBackgroundConstants.COMPONENT_VERTICAL_GRADIENT_START_FRACTION,
-                endY = size.height * DarkBackgroundConstants.COMPONENT_VERTICAL_GRADIENT_END_FRACTION,
+    val borderPx = with(LocalDensity.current) { dimensionResource(R.dimen.border_thin).toPx() }
+
+    val decorationModifier = if (isActive) {
+        Modifier.drawBehind {
+            val brush = Brush.linearGradient(
+                colors = listOf(DarkSwitchActiveTrackTop, DarkSwitchActiveTrackBottom),
+                start = Offset(0f, size.height * DarkBackgroundConstants.COMPONENT_VERTICAL_GRADIENT_START_FRACTION),
+                end = Offset(0f, size.height * DarkBackgroundConstants.COMPONENT_VERTICAL_GRADIENT_END_FRACTION_WIDE),
             )
+            val outline = shape.createOutline(size, layoutDirection, this)
+            drawOutline(outline = outline, brush = brush, style = Stroke(width = borderPx))
         }
     } else {
-        null
+        Modifier
+            .glass(
+                shape = shape,
+                level = GlassConstants.LEVEL_RAISED,
+                backgroundAlpha = 1f,
+                backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
+                rimWidth = dimensionResource(R.dimen.glass_rim_width),
+            )
+            .border(dimensionResource(R.dimen.border_thin), DarkBorderMuted, shape)
     }
 
     Button(
@@ -62,16 +79,7 @@ fun DarkPrimaryButton(
         modifier = modifier
             .fillMaxWidth()
             .height(dimensionResource(R.dimen.height_button))
-            .glass(
-                shape = shape,
-                level = GlassConstants.LEVEL_RAISED,
-                fill = if (isActive) Color.Transparent else DarkPrimaryButtonDisabledFill,
-                fillBrush = fillBrush,
-                backgroundAlpha = 1f,
-                backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
-                rimWidth = dimensionResource(R.dimen.glass_rim_width),
-                lightingStrength = 0.65f,
-            ),
+            .then(decorationModifier),
     ) {
         if (isLoading) CircularProgressIndicator(
             color = MaterialTheme.colorScheme.onBackground,
