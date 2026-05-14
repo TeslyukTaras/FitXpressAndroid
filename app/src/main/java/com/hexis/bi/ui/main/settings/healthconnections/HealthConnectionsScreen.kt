@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,7 +23,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -36,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -48,8 +49,13 @@ import com.hexis.bi.data.healthconnections.HealthConnection
 import com.hexis.bi.data.terra.TerraConfig
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
-import com.hexis.bi.ui.components.AppSearchField
-import com.hexis.bi.ui.theme.Green
+import com.hexis.bi.ui.dark.AppHorizontalGradientDivider
+import com.hexis.bi.ui.dark.AppSearchField
+import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.dark.LightStatusBarIcons
+import com.hexis.bi.ui.dark.darkScreenBackground
+import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.theme.dark.Positive
 import com.hexis.bi.utils.constants.HealthConnectConstants
 import com.hexis.bi.utils.constants.TerraProviders
 import org.koin.androidx.compose.koinViewModel
@@ -116,8 +122,14 @@ fun HealthConnectionsScreen(
             filteredWearables.isEmpty() &&
             filteredOther.isEmpty()
 
+    LightStatusBarIcons()
+
+    DarkTheme {
     BaseScreen(
-        modifier = modifier,
+        modifier = modifier
+            .fillMaxSize()
+            .darkScreenBackground(),
+        containerColor = Color.Transparent,
         isLoading = isLoading,
         error = error,
         onDismissError = viewModel::clearError,
@@ -126,6 +138,7 @@ fun HealthConnectionsScreen(
         topBar = {
             BaseTopBar(
                 title = stringResource(R.string.screen_health_connections),
+                background = Color.Transparent,
                 onBack = onBack,
             )
         },
@@ -153,7 +166,7 @@ fun HealthConnectionsScreen(
                     if (searchQuery.isBlank()) Text(
                         text = stringResource(R.string.health_connections_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.secondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     var needsDividerBeforeNext = false
 
@@ -241,11 +254,12 @@ fun HealthConnectionsScreen(
             }
         }
     }
+    }
 }
 
 @Composable
 private fun HealthConnectionsSectionDivider() {
-    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+    AppHorizontalGradientDivider()
 }
 
 @Composable
@@ -254,7 +268,7 @@ private fun HealthConnectionsSearchEmptyState(query: String) {
         text = stringResource(R.string.health_connections_empty_search_message, query),
         modifier = Modifier.fillMaxWidth(),
         style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.secondary,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
@@ -267,56 +281,57 @@ private fun HealthConnectionRow(
     modifier: Modifier = Modifier,
     connectedLabel: String? = null,
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
-            .clickable(onClick = onClick)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(all = dimensionResource(R.dimen.spacer_m)),
-        verticalAlignment = Alignment.CenterVertically,
+    BodyGlassCard(
+        modifier = modifier.clickable(onClick = onClick),
+        contentPadding = PaddingValues(
+            horizontal = dimensionResource(R.dimen.spacer_l),
+            vertical = dimensionResource(R.dimen.spacer_m),
+        ),
     ) {
-        key(iconRes) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            key(iconRes) {
+                Icon(
+                    painter = painterResource(iconRes),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+                )
+            }
+            Spacer(Modifier.width(dimensionResource(R.dimen.spacer_m)))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Normal),
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val statusColor =
+                        if (connected) Positive else MaterialTheme.colorScheme.onSurfaceVariant
+                    Box(
+                        modifier = Modifier
+                            .size(dimensionResource(R.dimen.size_indicator))
+                            .clip(CircleShape)
+                            .background(statusColor),
+                    )
+                    Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacer_xxs)))
+                    Text(
+                        text = connectedLabel ?: if (connected) {
+                            stringResource(R.string.health_connection_status_connected)
+                        } else {
+                            stringResource(R.string.health_connection_status_not_connected)
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = statusColor,
+                    )
+                }
+            }
             Icon(
-                painter = painterResource(iconRes),
+                painter = painterResource(R.drawable.ic_arrow),
                 contentDescription = null,
-                tint = null,
+                tint = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
             )
         }
-        Spacer(Modifier.width(dimensionResource(R.dimen.spacer_m)))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Normal),
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                val statusColor = if (connected) Green else MaterialTheme.colorScheme.primaryFixed
-                Box(
-                    modifier = Modifier
-                        .size(dimensionResource(R.dimen.size_indicator))
-                        .clip(CircleShape)
-                        .background(statusColor),
-                )
-                Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacer_xxs)))
-                Text(
-                    text = connectedLabel ?: if (connected) {
-                        stringResource(R.string.health_connection_status_connected)
-                    } else {
-                        stringResource(R.string.health_connection_status_not_connected)
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = statusColor,
-                )
-            }
-        }
-        Icon(
-            painter = painterResource(R.drawable.ic_arrow),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
-        )
     }
 }
