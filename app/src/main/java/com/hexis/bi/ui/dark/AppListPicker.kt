@@ -16,6 +16,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.AppDialog
+import com.hexis.bi.utils.constants.GlassConstants
 
 @Composable
 fun <T> AppListPicker(
@@ -39,9 +40,7 @@ fun <T> AppListPicker(
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(end = dimensionResource(R.dimen.icon_normalized)),
+                modifier = Modifier.fillMaxWidth()
             )
             items.forEach { item ->
                 val selected = item == selectedItem
@@ -54,7 +53,7 @@ fun <T> AppListPicker(
                         .fillMaxWidth()
                         .clip(MaterialTheme.shapes.medium)
                         .background(
-                            if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            if (selected) MaterialTheme.colorScheme.primary.copy(alpha = GlassConstants.SELECTION_HIGHLIGHT_ALPHA)
                             else Color.Transparent
                         )
                         .clickable { onItemSelected(item) }

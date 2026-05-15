@@ -26,4 +26,14 @@ internal object DarkBackgroundConstants {
     const val SCAN_FAB_HOLD_FRACTION = 0.0721f
     val SCAN_FAB_START_COLOR: Color = Color(29 / 255f, 196 / 255f, 179 / 255f, 0.3f)
     val SCAN_FAB_END_COLOR: Color = Color(3 / 255f, 9 / 255f, 9 / 255f, 0.3f)
+
+    /**
+     * Vertical gradient Y fractions for component surfaces using the
+     * teal→ink palette (switch active track, primary button fill).
+     */
+    const val COMPONENT_VERTICAL_GRADIENT_START_FRACTION = -0.5312f
+    const val COMPONENT_VERTICAL_GRADIENT_END_FRACTION = 1.3021f
+
+    /** Wider end fraction used for the outlined-button stroke gradient. */
+    const val COMPONENT_VERTICAL_GRADIENT_END_FRACTION_WIDE = 1.7292f
 }

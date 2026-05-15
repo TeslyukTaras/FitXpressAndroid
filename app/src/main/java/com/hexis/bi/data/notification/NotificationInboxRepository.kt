@@ -1,5 +1,8 @@
 package com.hexis.bi.data.notification
 
+import android.content.Context
+import android.util.Log
+import androidx.annotation.StringRes
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -13,7 +16,14 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import java.util.UUID
 
+/**
+ * Inbox of in-app notification rows, persisted in DataStore.
+ *
+ * Strings are resolved against [context] at **write time** and stored as plain text — see
+ * [InboxItem] for why we don't persist `R.string` resource IDs.
+ */
 class NotificationInboxRepository(
+    private val context: Context,
     app: AppPreferencesDataStore,
 ) {
 
@@ -24,71 +34,36 @@ class NotificationInboxRepository(
 
     val items: Flow<List<InboxItem>> = store.data.map { prefs ->
         val raw = prefs[itemEntriesKey] ?: return@map emptyList()
-        decodeList(raw)
+        // Drop legacy rows written under the previous schema: their JSON had `titleRes` /
+        // `bodyRes` ints but no `title` / `body` strings, so they decode with blank fields.
+        decodeList(raw).filter { it.title.isNotBlank() }
     }
 
     val unreadCount: Flow<Int> = items.map { list -> list.count { !it.isRead } }
 
     suspend fun appendInbox(
-        titleRes: Int,
-        bodyRes: Int,
-        timeLabelRes: Int = R.string.notifications_time_just_now,
+        @StringRes titleRes: Int,
+        @StringRes bodyRes: Int,
         bodyFormatArg: String? = null,
     ) {
-        val now = System.currentTimeMillis()
-        store.updateNotNull { list ->
-            val new = InboxItem(
-                id = UUID.randomUUID().toString(),
-                titleRes = titleRes,
-                bodyRes = bodyRes,
-                timeLabelRes = timeLabelRes,
-                isRead = false,
-                createdAtEpochMillis = now,
-                bodyFormatArg = bodyFormatArg,
-            )
-            (listOf(new) + list).take(NotificationInboxList.MAX_PERSISTED_ITEMS)
-        }
+        val title = context.getString(titleRes)
+        val body = if (bodyFormatArg != null) context.getString(bodyRes, bodyFormatArg)
+        else context.getString(bodyRes)
+        appendResolved(title, body)
     }
 
     suspend fun appendRawInbox(title: String, body: String) {
-        val now = System.currentTimeMillis()
-        store.updateNotNull { list ->
-            val new = InboxItem(
-                id = UUID.randomUUID().toString(),
-                timeLabelRes = R.string.notifications_time_just_now,
-                isRead = false,
-                createdAtEpochMillis = now,
-                titleText = title,
-                bodyText = body,
-            )
-            (listOf(new) + list).take(NotificationInboxList.MAX_PERSISTED_ITEMS)
-        }
+        appendResolved(title, body)
     }
 
     suspend fun appendNextScheduledScanInboxDeduped(localizedDayName: String) {
-        val titleRes = R.string.notif_next_scheduled_scan_title
-        val bodyRes = R.string.notif_next_scheduled_scan_body
+        val title = context.getString(R.string.notif_next_scheduled_scan_title)
+        val body = context.getString(R.string.notif_next_scheduled_scan_body, localizedDayName)
         store.updateNotNull { list ->
-            if (list.any { it.titleRes == titleRes && it.bodyFormatArg == localizedDayName }) list
-            else appendToList(
-                list,
-                InboxItem(
-                    id = UUID.randomUUID().toString(),
-                    titleRes = titleRes,
-                    bodyRes = bodyRes,
-                    timeLabelRes = R.string.notifications_time_just_now,
-                    isRead = false,
-                    createdAtEpochMillis = System.currentTimeMillis(),
-                    bodyFormatArg = localizedDayName,
-                ),
-            )
+            if (list.any { it.title == title && it.body == body }) list
+            else appendToList(list, newItem(title, body))
         }
     }
-
-    private fun appendToList(
-        list: List<InboxItem>,
-        item: InboxItem,
-    ) = (listOf(item) + list).take(NotificationInboxList.MAX_PERSISTED_ITEMS)
 
     suspend fun markAllRead() {
         store.updateNotNull { list -> list.map { it.copy(isRead = true) } }
@@ -100,9 +75,29 @@ class NotificationInboxRepository(
         }
     }
 
+    private suspend fun appendResolved(title: String, body: String) {
+        store.updateNotNull { list -> appendToList(list, newItem(title, body)) }
+    }
+
+    private fun newItem(title: String, body: String) = InboxItem(
+        id = UUID.randomUUID().toString(),
+        title = title,
+        body = body,
+        isRead = false,
+        createdAtEpochMillis = System.currentTimeMillis(),
+    )
+
+    private fun appendToList(
+        list: List<InboxItem>,
+        item: InboxItem,
+    ) = (listOf(item) + list).take(NotificationInboxList.MAX_PERSISTED_ITEMS)
+
     private fun decodeList(raw: String): List<InboxItem> = runCatching {
         json.decodeFromString(ListSerializer(InboxItem.serializer()), raw)
-    }.getOrElse { emptyList() }
+    }.getOrElse { error ->
+        Log.w("NotificationInbox", "Failed to decode inbox payload", error)
+        emptyList()
+    }
 
     private fun encodeList(list: List<InboxItem>): String =
         json.encodeToString(ListSerializer(InboxItem.serializer()), list)

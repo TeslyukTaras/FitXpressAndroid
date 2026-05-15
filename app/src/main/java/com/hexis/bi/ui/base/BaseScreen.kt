@@ -18,7 +18,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.withStateAtLeast
 
 /**
  * Standard screen scaffold: loading overlay, persistent error snackbar, short info snackbar,
@@ -33,6 +35,7 @@ fun BaseScreen(
     onDismissError: () -> Unit = {},
     message: String? = null,
     onDismissMessage: () -> Unit = {},
+    viewModel: BaseViewModel? = null,
     onInitialization: (() -> Unit)? = null,
     topBar: @Composable () -> Unit = {},
     bottomBar: @Composable () -> Unit = {},
@@ -40,6 +43,13 @@ fun BaseScreen(
     content: @Composable BoxScope.() -> Unit,
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
+    if (viewModel != null) LaunchedEffect(viewModel) {
+        // Wait until the destination is RESUMED (nav transition complete) so heavy
+        // startup work doesn't compete with the slide/fade animation.
+        lifecycleOwner.lifecycle.withStateAtLeast(Lifecycle.State.RESUMED) {
+            viewModel.runOnceOnInitialize()
+        }
+    }
     if (onInitialization != null) LaunchedEffect(lifecycleOwner) {
         onInitialization()
     }

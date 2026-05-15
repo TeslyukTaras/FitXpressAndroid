@@ -6,6 +6,9 @@ internal object GlassConstants {
     const val LEVEL_RAISED = 80
     const val LEVEL_SELECTED = 100
 
+    /** Alpha applied to primary when used as a soft selection highlight (pickers, date selection). */
+    const val SELECTION_HIGHLIGHT_ALPHA = 0.15f
+
     const val RIM_BASE_ALPHA = 0.12f
     const val RIM_RANGE_ALPHA = 0.84f
 

@@ -22,6 +22,8 @@ abstract class BaseViewModel(
 
     protected val appContext: Context get() = getApplication()
 
+    private var hasInitialized = false
+
     private val _isLoading = MutableStateFlow(initialLoading)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -74,6 +76,18 @@ abstract class BaseViewModel(
 
     protected fun emitEvent(event: UiEvent) {
         viewModelScope.launch { _events.send(event) }
+    }
+
+    /**
+     * Heavy startup work belongs here, not in `init {}`. Runs once, on the first composition
+     * of the host screen, so it can't block the navigation transition.
+     */
+    protected open fun onInitialize() {}
+
+    internal fun runOnceOnInitialize() {
+        if (hasInitialized) return
+        hasInitialized = true
+        onInitialize()
     }
 
     /** Launches a coroutine with automatic loading state and error handling. */
