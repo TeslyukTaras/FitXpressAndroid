@@ -3,6 +3,7 @@ package com.hexis.bi.ui.theme.dark
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import com.hexis.bi.ui.theme.AccentBlue
 
 /** Tokens not on [androidx.compose.material3.ColorScheme]; read via [DarkTheme.extendedColors]. */
 @Immutable
@@ -24,6 +25,7 @@ data class DarkExtendedColors(
     val glassCardFillBottom: Color,
     val surfaceTranslucent: Color,
     val destructive: Color,
+    val accentBlue: Color,
 )
 
 internal val DefaultDarkExtendedColors = DarkExtendedColors(
@@ -44,6 +46,7 @@ internal val DefaultDarkExtendedColors = DarkExtendedColors(
     glassCardFillBottom = BodyGlassInk,
     surfaceTranslucent = SurfaceTranslucent,
     destructive = ActionRed,
+    accentBlue = AccentBlue,
 )
 
 internal val LocalDarkExtendedColors = staticCompositionLocalOf { DefaultDarkExtendedColors }

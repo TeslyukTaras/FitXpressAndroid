@@ -208,6 +208,7 @@ fun MainScreen(
                             onHomeClick = onHomeClick,
                             onBodyClick = onBodyClick,
                             onScanClick = onScanClick,
+                            hazeAlpha = 1f,
                         )
                     }
                 } else {

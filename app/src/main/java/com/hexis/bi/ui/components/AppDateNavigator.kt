@@ -30,7 +30,7 @@ fun AppDateNavigator(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(dimensionResource(R.dimen.date_navigator_height)),
+            .height(dimensionResource(R.dimen.icon_normalized)),
         contentAlignment = Alignment.Center,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

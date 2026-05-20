@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.core.os.ConfigurationCompat
 import com.hexis.bi.R
 import com.hexis.bi.ui.dark.BodyGlassCard
 import com.hexis.bi.ui.main.body.BodyChartData
@@ -112,12 +113,7 @@ internal fun BodyTrendChart(
         remember(spacerXs, density) { with(density) { tooltipOverlapUpPx.toDp() } }
 
     val configuration = LocalConfiguration.current
-    val layoutLocale =
-        if (configuration.locales.size() > 0) configuration.locales[0]
-        else {
-            @Suppress("DEPRECATION")
-            configuration.locale ?: Locale.ROOT
-        }
+    val layoutLocale = ConfigurationCompat.getLocales(configuration)[0] ?: Locale.ROOT
     val tooltipDateFormat = remember(layoutLocale.toLanguageTag()) {
         SimpleDateFormat(DateFormatConstants.WEEKDAY_MONTH_DAY, layoutLocale)
     }

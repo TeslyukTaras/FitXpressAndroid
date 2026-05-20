@@ -63,6 +63,7 @@ val BodyToggleTrackBorder = Color(0x29F6F6F6)
 val BodyToggleSelectedChipFill = Color(0x33FFFFFF)
 val BodyToggleSelectedLabel = Color(0xFFF6F6F6)
 val BodyToggleUnselectedLabel = Color(0xFFE7E7E7)
+val AccentBlue = Color(0xFF5C93ED)
 
 val DarkPrimaryButtonGradientTop = Color(0xA31DC4B3)
 val DarkPrimaryButtonGradientBottom = Color(0xA30B2020)

@@ -37,6 +37,12 @@ fun Date.formatShortMonthDay(): String =
 
 fun Long.millisToShortMonthDay(): String = Date(this).formatShortMonthDay()
 
+fun shortMonthDayFormatter(locale: Locale = Locale.getDefault()): SimpleDateFormat =
+    SimpleDateFormat(DateFormatConstants.SHORT_MONTH_DAY, locale)
+
+fun shortMonthDayYearFormatter(locale: Locale = Locale.getDefault()): SimpleDateFormat =
+    SimpleDateFormat(DateFormatConstants.SHORT_MONTH_DAY_YEAR, locale)
+
 /** Full "April 14" label used on day-based detail screens. Locale-aware. */
 fun LocalDate.formatFullMonthDay(): String =
     format(DateTimeFormatter.ofPattern(DateFormatConstants.FULL_MONTH_DAY, Locale.getDefault()))
