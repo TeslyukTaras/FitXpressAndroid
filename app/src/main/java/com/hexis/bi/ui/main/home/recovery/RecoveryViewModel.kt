@@ -96,6 +96,8 @@ class RecoveryViewModel(
                             dayErrorMessage = null,
                             score = snapshot?.score ?: 0,
                             metrics = buildMetrics(snapshot),
+                            rmssdMs = snapshot?.hrvMs ?: 0,
+                            sdnnMs = snapshot?.sdnnMs ?: 0,
                         )
                     }
                 },
@@ -181,14 +183,17 @@ class RecoveryViewModel(
             ?.let(appContext::getString)
             ?: unknown
         val heartBpm = snapshot?.restingHeartRateBpm?.coerceAtLeast(0) ?: 0
-        val heartValue = appContext.getString(R.string.recovery_metric_heart_bpm, heartBpm)
         val stressValue = snapshot?.stressLevel?.let { appContext.getString(stressLabelFor(it)) } ?: unknown
         val loadValue = snapshot?.activityLoad?.let { appContext.getString(loadLabelFor(it)) } ?: unknown
         return listOf(
             RecoveryMetric(R.string.recovery_metric_sleep, sleepValue),
-            RecoveryMetric(R.string.recovery_metric_heart, heartValue),
             RecoveryMetric(R.string.recovery_metric_stress, stressValue),
             RecoveryMetric(R.string.recovery_metric_activity_load, loadValue),
+            RecoveryMetric(
+                R.string.recovery_metric_resting_hr,
+                value = heartBpm.toString(),
+                unit = appContext.getString(R.string.unit_bpm),
+            ),
         )
     }
 

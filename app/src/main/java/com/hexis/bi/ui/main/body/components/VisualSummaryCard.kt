@@ -25,7 +25,7 @@ import com.hexis.bi.ui.dark.AppHorizontalGradientDivider
 import com.hexis.bi.ui.dark.AppVerticalGradientDivider
 import com.hexis.bi.ui.dark.BodyGlassCard
 import com.hexis.bi.ui.main.body.VisualState
-import com.hexis.bi.ui.theme.BodyVisualMeasurementValueStyle
+import com.hexis.bi.ui.theme.MeasurementValueStyle
 import com.hexis.bi.ui.theme.dark.DarkTheme
 import com.hexis.bi.utils.constants.BodyVisualConstants
 import com.hexis.bi.utils.constants.BodyVisualConstants.CM_VALUE_FORMAT
@@ -281,13 +281,13 @@ private fun MeasurementValueBlock(
     Column(modifier = modifier) {
         if (valueNumber == null) Text(
             text = missing,
-            style = BodyVisualMeasurementValueStyle,
+            style = MeasurementValueStyle,
             color = MaterialTheme.colorScheme.onBackground,
         )
         else {
             Text(
                 text = buildAnnotatedString {
-                    withStyle(BodyVisualMeasurementValueStyle.toSpanStyle()) {
+                    withStyle(MeasurementValueStyle.toSpanStyle()) {
                         append(valueNumber)
                     }
                     append(" ")

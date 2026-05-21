@@ -32,7 +32,7 @@ fun AppTimePicker(
         clockDialSelectedContentColor = DialogWindowBackground,
         clockDialUnselectedContentColor = MaterialTheme.colorScheme.onBackground,
         selectorColor = MaterialTheme.colorScheme.primary,
-        containerColor = DialogWindowBackground,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         timeSelectorSelectedContainerColor = MaterialTheme.colorScheme.primary,
         timeSelectorUnselectedContainerColor = MaterialTheme.colorScheme.tertiary,
         timeSelectorSelectedContentColor = DialogWindowBackground,

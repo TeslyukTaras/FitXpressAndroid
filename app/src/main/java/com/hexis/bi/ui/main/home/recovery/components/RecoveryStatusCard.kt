@@ -1,26 +1,29 @@
 package com.hexis.bi.ui.main.home.recovery.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import com.hexis.bi.R
+import com.hexis.bi.ui.dark.AppVerticalGradientDivider
+import com.hexis.bi.ui.dark.BodyGlassCard
 import com.hexis.bi.ui.main.home.recovery.RecoveryMetric
 import com.hexis.bi.ui.main.home.recovery.RecoveryStatus
 
@@ -31,12 +34,13 @@ fun RecoveryStatusCard(
     metrics: List<RecoveryMetric>,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
-            .background(MaterialTheme.colorScheme.background)
-            .padding(dimensionResource(R.dimen.spacer_m)),
+    BodyGlassCard(
+        modifier = modifier, contentPadding = PaddingValues(
+            top = dimensionResource(R.dimen.spacer_m),
+            bottom = dimensionResource(R.dimen.spacer_l),
+            start = dimensionResource(R.dimen.spacer_m),
+            end = dimensionResource(R.dimen.spacer_m)
+        )
     ) {
         // Header
         Row(
@@ -45,18 +49,18 @@ fun RecoveryStatusCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = stringResource(R.string.recovery_status_title),
+                text = stringResource(R.string.recovery_state_title),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
                 text = stringResource(status.labelRes),
                 style = MaterialTheme.typography.labelMedium,
-                color = status.color,
+                color = Color.White,
             )
         }
 
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
 
         // Circle + Metrics
         Row(
@@ -71,17 +75,16 @@ fun RecoveryStatusCard(
             )
 
             Spacer(Modifier.width(dimensionResource(R.dimen.spacer_l)))
-            
-            VerticalDivider(
-                modifier = Modifier.fillMaxHeight(),
-                color = MaterialTheme.colorScheme.secondaryFixed,
-            )
+
+            AppVerticalGradientDivider()
 
             Spacer(Modifier.width(dimensionResource(R.dimen.spacer_l)))
 
             Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_m)),
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+                verticalArrangement = Arrangement.SpaceBetween
             ) {
                 metrics.forEach { metric ->
                     MetricRow(metric = metric)
@@ -100,13 +103,20 @@ private fun MetricRow(metric: RecoveryMetric) {
     ) {
         Text(
             text = stringResource(metric.labelRes),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.secondary,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        val onBackground = MaterialTheme.colorScheme.onBackground
+        val unitColor = MaterialTheme.colorScheme.onSurfaceVariant
         Text(
-            text = metric.value,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onBackground,
+            text = buildAnnotatedString {
+                withStyle(SpanStyle(color = onBackground)) { append(metric.value) }
+                metric.unit?.let { unit ->
+                    append(" ")
+                    withStyle(SpanStyle(color = unitColor)) { append(unit) }
+                }
+            },
+            style = MaterialTheme.typography.bodyMedium,
         )
     }
 }

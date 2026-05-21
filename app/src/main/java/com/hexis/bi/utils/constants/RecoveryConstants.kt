@@ -1,8 +1,8 @@
 package com.hexis.bi.utils.constants
 
 internal object RecoveryConstants {
-    const val ARC_START_ANGLE = 150f
-    const val ARC_TOTAL_SWEEP = 240f
+    const val ARC_START_ANGLE = 145f
+    const val ARC_TOTAL_SWEEP = 250f
     const val MAX_SCORE = 100f
     val GRID_LINES = listOf(0f, 50f, 75f, 100f)
 

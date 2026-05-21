@@ -80,6 +80,7 @@ class TerraDerivedRecoveryRepository(
         val sleepScore = if (hasSleep)
             computeSleepScore(sleep.durationMinutes, sleep.efficiencyPercent) else 0
         val hrv = sleep?.hrvMs ?: 0
+        val sdnn = sleep?.sdnnMs ?: 0
         val rhr = sleep?.restingHeartRateBpm ?: 0
         val calories = activity?.activeCalories ?: 0
 
@@ -117,6 +118,7 @@ class TerraDerivedRecoveryRepository(
             score = recoveryScore,
             sleepScore = sleepScore,
             hrvMs = hrv,
+            sdnnMs = sdnn,
             restingHeartRateBpm = rhr,
             activeCalories = calories,
             stressLevel = if (hasHrv) stressFor(hrv) else null,

@@ -10,7 +10,10 @@ data class RecoverySnapshot(
     val date: LocalDate,
     val score: Int,
     val sleepScore: Int,
+    /** Average HRV as RMSSD, in milliseconds. Drives the recovery score and stress level. */
     val hrvMs: Int,
+    /** Average HRV as SDNN, in milliseconds. Shown in HRV Details for context. */
+    val sdnnMs: Int,
     val restingHeartRateBpm: Int,
     val activeCalories: Int,
     /** Null when HRV is missing — derived solely from HRV. */

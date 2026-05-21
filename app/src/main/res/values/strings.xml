@@ -510,12 +510,16 @@
 
     <!-- Recovery screen -->
     <string name="recovery_screen_title">Recovery</string>
+    <string name="recovery_tab_day">Day</string>
+    <string name="recovery_tab_summary">Summary</string>
     <string name="recovery_status_title">Recovery status</string>
+    <string name="recovery_state_title">Recovery State</string>
     <string name="recovery_status_ready">Ready</string>
     <string name="recovery_status_recovering">Recovering</string>
     <string name="recovery_status_low">Low</string>
     <string name="recovery_metric_sleep">Sleep</string>
     <string name="recovery_metric_heart">Heart</string>
+    <string name="recovery_metric_resting_hr">Resting Heart Rate</string>
     <string name="recovery_metric_stress">Stress</string>
     <string name="recovery_metric_activity_load">Activity load</string>
     <string name="recovery_metric_heart_bpm">%1$d bpm</string>
@@ -531,15 +535,32 @@
     <string name="recovery_trend_up_description">Recovery improved compared with last week.</string>
     <string name="recovery_trend_down_description">Recovery decreased compared with last week.</string>
     <string name="recovery_trend_flat_description">Recovery stayed stable this week.</string>
-    <string name="recovery_info_title">Recovery and body progress</string>
+    <string name="recovery_info_title">Recovery and Adaptation</string>
     <string name="recovery_info_body">Recovery reflects how ready your body is based on recent signals.</string>
     <string name="recovery_last_7_days">Last 7 days</string>
     <string name="recovery_avg_score">Avg score</string>
     <string name="recovery_avg_score_value">%1$d/100</string>
     <string name="recovery_trend_label">Trend:</string>
-    <string name="recovery_info_sheet_title">Recovery and body progress</string>
-    <string name="recovery_info_sheet_heading">How recovery works</string>
-    <string name="recovery_info_sheet_body">Recovery reflects how ready your body is based on recent signals such as sleep quality, heart rate, stress levels, and activity load.\n\nA higher recovery score means your body is well-rested and ready for activity. A lower score suggests your body may need more rest or lighter activity.</string>
+
+    <!-- HRV Details card -->
+    <string name="recovery_hrv_title">HRV Details</string>
+    <string name="recovery_hrv_full">Heart Rate Variability</string>
+    <string name="recovery_hrv_rmssd">RMSSD</string>
+    <string name="recovery_hrv_rmssd_caption">Recovery response</string>
+    <string name="recovery_hrv_sdnn">SDNN</string>
+    <string name="recovery_hrv_sdnn_caption">Overall variability</string>
+
+    <!-- Recovery and Adaptation info sheet -->
+    <string name="recovery_info_sheet_title">Recovery and Adaptation</string>
+    <string name="recovery_info_sheet_intro">Recovery reflects how prepared your body is to restore, adapt, and perform based on recent signals.</string>
+    <string name="recovery_info_sheet_heading_1">1. Recovery Score</string>
+    <string name="recovery_info_sheet_body_1">Shows your overall readiness for the selected day.</string>
+    <string name="recovery_info_sheet_heading_2">2. Key Recovery Signals</string>
+    <string name="recovery_info_sheet_body_2">Sleep, stress, activity load, and resting heart rate help explain your recovery state.</string>
+    <string name="recovery_info_sheet_heading_3">3. HRV Details</string>
+    <string name="recovery_info_sheet_body_3">RMSSD and SDNN show how your nervous system is responding to recovery, stress, and activity.</string>
+    <string name="recovery_info_sheet_heading_4">4. Body Connection</string>
+    <string name="recovery_info_sheet_body_4">Consistent recovery may support better sleep, stronger activity readiness, and improved body progress over time.</string>
 
     <!-- Activity screen -->
     <string name="activity_screen_title">Activity</string>

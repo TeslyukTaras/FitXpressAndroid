@@ -1,5 +1,6 @@
 package com.hexis.bi.ui.dark
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -19,6 +20,7 @@ fun BodyGlassCard(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(dimensionResource(R.dimen.spacer_m)),
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
+    onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -31,6 +33,7 @@ fun BodyGlassCard(
                 backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
                 rimWidth = dimensionResource(R.dimen.glass_rim_width),
             )
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(contentPadding),
         verticalArrangement = verticalArrangement,
         content = content,

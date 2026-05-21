@@ -30,7 +30,7 @@ fun AppDatePicker(
     onSelect: (String) -> Unit,
 ) {
     val colors = DatePickerDefaults.colors(
-        containerColor = DialogWindowBackground,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         titleContentColor = MaterialTheme.colorScheme.onBackground,
         headlineContentColor = MaterialTheme.colorScheme.onBackground,
         weekdayContentColor = MaterialTheme.colorScheme.onBackground,
