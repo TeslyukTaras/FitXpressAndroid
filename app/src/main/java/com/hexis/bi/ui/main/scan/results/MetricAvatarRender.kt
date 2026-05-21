@@ -172,6 +172,9 @@ internal fun MetricAvatarPreview(
     }
     var loadState by remember { mutableStateOf(MetricAvatarLoadState.Loading) }
     var reloadKey by remember { mutableIntStateOf(0) }
+    val latestRenderFailure by rememberUpdatedState {
+        loadState = MetricAvatarLoadState.Error
+    }
 
     LaunchedEffect(renderHost, showSkinAreas) { renderHost.setShowSkinAreas(showSkinAreas) }
     LaunchedEffect(renderHost, drawBackground) { renderHost.setDrawBackground(drawBackground) }
@@ -179,8 +182,12 @@ internal fun MetricAvatarPreview(
     LaunchedEffect(renderHost, framingRegion) { renderHost.setFramingRegion(framingRegion) }
 
     DisposableEffect(renderHost) {
+        renderHost.setRenderFailureListener { latestRenderFailure() }
         renderHost.onResumeHost()
-        onDispose { renderHost.onPauseHost() }
+        onDispose {
+            renderHost.setRenderFailureListener(null)
+            renderHost.onPauseHost()
+        }
     }
 
     LaunchedEffect(renderHost, leaderSegments, loadState, compareRotationLink) {
@@ -366,6 +373,7 @@ private interface MetricAvatarRenderHost {
     fun setLeaderSegments(segments: List<ModelLeaderSegment>?)
     fun setBaseOrientation(yawDeg: Float, pitchDeg: Float)
     fun setFramingRegion(region: BodyMeasurementRegion?)
+    fun setRenderFailureListener(listener: (() -> Unit)?)
 }
 
 private class MetricAvatarTextureView(
@@ -382,9 +390,11 @@ private class MetricAvatarTextureView(
     private var eglContext: EGLContext? = null
     private var eglSurface: EGLSurface? = null
     private var boundCompareLink: CompareRotationLink? = null
+    private var renderFailureListener: (() -> Unit)? = null
     private var animationFrameScheduled = false
     private val pendingEvents = mutableListOf<() -> Unit>()
     private val compareRenderNotify: () -> Unit = { requestRenderOnThread() }
+    private val mainHandler = Handler(Looper.getMainLooper())
     private val eglConfigProfiles = listOf(
         EglConfigProfile(
             name = "rgba8888-depth16-msaa4",
@@ -472,7 +482,10 @@ private class MetricAvatarTextureView(
         renderThread = thread
         renderHandler = handler
         handler.post {
-            if (!initEgl(surface)) return@post
+            if (!initEgl(surface)) {
+                handleRenderThreadInitFailure(thread)
+                return@post
+            }
             avatarRenderer.onSurfaceCreated()
             avatarRenderer.onSurfaceChanged(width, height)
             synchronized(pendingEvents) {
@@ -497,6 +510,14 @@ private class MetricAvatarTextureView(
         thread?.join(RENDER_THREAD_JOIN_TIMEOUT_MS)
     }
 
+    private fun handleRenderThreadInitFailure(thread: HandlerThread) {
+        releaseEgl()
+        renderHandler = null
+        renderThread = null
+        thread.quitSafely()
+        notifyRenderFailure()
+    }
+
     private fun queueRenderEvent(block: () -> Unit) {
         val handler = renderHandler
         if (handler == null) {
@@ -515,7 +536,11 @@ private class MetricAvatarTextureView(
         val display = eglDisplay ?: return
         val surface = eglSurface ?: return
         avatarRenderer.onDrawFrame()
-        EGL14.eglSwapBuffers(display, surface)
+        if (!EGL14.eglSwapBuffers(display, surface)) {
+            Timber.w("Metric avatar EGL swap failed: error=%s", eglErrorString())
+            notifyRenderFailure()
+            return
+        }
         scheduleAnimationFrameIfNeeded()
     }
 
@@ -694,6 +719,15 @@ private class MetricAvatarTextureView(
             avatarRenderer.setFramingRegion(region)
             drawFrame()
         }
+    }
+
+    override fun setRenderFailureListener(listener: (() -> Unit)?) {
+        renderFailureListener = listener
+    }
+
+    private fun notifyRenderFailure() {
+        val listener = renderFailureListener ?: return
+        mainHandler.post { listener() }
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -1120,6 +1154,8 @@ private object ObjParser {
     private const val TRIANGLE_KEY_BITS = 21
     private const val TRIANGLE_KEY_MASK = (1L shl TRIANGLE_KEY_BITS) - 1L
     private const val TRIANGLE_KEY_MAX_INDEX = (1 shl TRIANGLE_KEY_BITS) - 1
+    private const val GRID_KEY_BITS = 21
+    private const val GRID_KEY_MASK = (1L shl GRID_KEY_BITS) - 1L
     private const val LONG_HASH_SET_MAX_LOAD_PERCENT = 70
 
     private const val OBJ_URL_CONNECT_TIMEOUT_MS = 10_000
@@ -1324,7 +1360,7 @@ private object ObjParser {
     ): ClusterResult {
         val clusters = ArrayList<Cluster>()
         val remap = IntArray(vertices.size) { -1 }
-        val grid = HashMap<String, MutableList<Int>>()
+        val grid = HashMap<Long, MutableList<Int>>()
         val radiusSq = VERTEX_MERGE_RADIUS * VERTEX_MERGE_RADIUS
 
         vertices.forEachIndexed { vertexIndex, vertex ->
@@ -1392,7 +1428,7 @@ private object ObjParser {
         clusterIndex: Int,
         vertex: FloatArray,
         clusters: MutableList<Cluster>,
-        grid: MutableMap<String, MutableList<Int>>,
+        grid: MutableMap<Long, MutableList<Int>>,
     ) {
         val cluster = clusters[clusterIndex]
         val oldKey = gridKey(cluster.cx, cluster.cy, cluster.cz)
@@ -1503,7 +1539,21 @@ private object ObjParser {
     private fun cellOf(value: Float): Int =
         kotlin.math.floor((value / VERTEX_MERGE_RADIUS).toDouble()).toInt()
 
-    private fun gridKey(x: Int, y: Int, z: Int): String = "$x:$y:$z"
+    private fun gridKey(x: Int, y: Int, z: Int): Long {
+        val packedX = packGridCell(x)
+        val packedY = packGridCell(y)
+        val packedZ = packGridCell(z)
+        return (packedX shl (GRID_KEY_BITS * 2)) or
+            (packedY shl GRID_KEY_BITS) or
+            packedZ
+    }
+
+    private fun packGridCell(value: Int): Long {
+        val longValue = value.toLong()
+        val packed = (longValue shl 1) xor (longValue shr (Long.SIZE_BITS - 1))
+        check(packed in 0..GRID_KEY_MASK) { "OBJ grid cell is outside packable range" }
+        return packed
+    }
 
     private fun triangleKey(a: Int, b: Int, c: Int): Long {
         check(a <= TRIANGLE_KEY_MAX_INDEX && b <= TRIANGLE_KEY_MAX_INDEX && c <= TRIANGLE_KEY_MAX_INDEX) {

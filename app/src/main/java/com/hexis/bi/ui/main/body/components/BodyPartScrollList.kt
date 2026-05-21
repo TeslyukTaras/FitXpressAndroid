@@ -65,7 +65,10 @@ internal fun BodyPartScrollList(
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 if (source != NestedScrollSource.UserInput) return Offset.Zero
-                return Offset(x = 0f, y = available.y * BodyPartSelectorPreConsumedScrollRatio)
+                return Offset(
+                    x = 0f,
+                    y = available.y * BodyVisualConstants.BODY_PART_SELECTOR_PRE_CONSUMED_SCROLL_RATIO,
+                )
             }
 
             override fun onPostScroll(
@@ -78,7 +81,10 @@ internal fun BodyPartScrollList(
             }
 
             override suspend fun onPreFling(available: Velocity): Velocity =
-                Velocity(x = 0f, y = available.y * BodyPartSelectorPreConsumedScrollRatio)
+                Velocity(
+                    x = 0f,
+                    y = available.y * BodyVisualConstants.BODY_PART_SELECTOR_PRE_CONSUMED_SCROLL_RATIO,
+                )
 
             override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity =
                 available
@@ -184,7 +190,10 @@ internal fun BodyPartScrollList(
                         viewportHeightPx = viewportHeightPx,
                         maxScrollPx = maxScrollPx,
                     )
-                    if (abs(currentScrollPx - targetScrollPx) > BodyPartSelectorSnapEpsilonPx) {
+                    if (
+                        abs(currentScrollPx - targetScrollPx) >
+                        BodyVisualConstants.BODY_PART_SELECTOR_SNAP_EPSILON_PX
+                    ) {
                         animateToBodyPart(index)
                     }
                 }
@@ -264,7 +273,7 @@ private fun bodyPartSelectorFocalY(
     // Clamp the edge zone to half the scroll range so the top and bottom zones never
     // overlap. If they did, the `when` below would switch branches abruptly, making
     // focalY discontinuous and preventing some items from landing correctly.
-    val edgeUnlockPx = (itemHeightPx * BodyPartSelectorEdgeUnlockItems)
+    val edgeUnlockPx = (itemHeightPx * BodyVisualConstants.BODY_PART_SELECTOR_EDGE_UNLOCK_ITEMS)
         .coerceAtMost(maxScrollPx / 2f)
     if (edgeUnlockPx <= 0f) return viewportCenter
     val topProgress = (scrollPx / edgeUnlockPx).coerceIn(0f, 1f)
@@ -349,7 +358,9 @@ private fun BodyPartScrollItem(
                 color = if (isSelected) {
                     MaterialTheme.colorScheme.onBackground
                 } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = BodyPartSelectorInactiveAlpha)
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                        alpha = BodyVisualConstants.BODY_PART_SELECTOR_INACTIVE_ALPHA,
+                    )
                 },
             )
         }
@@ -364,7 +375,7 @@ private fun BodyPartSelectorScale(
 ) {
     val activeColor = MaterialTheme.colorScheme.onBackground
     val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant
-        .copy(alpha = BodyPartSelectorInactiveAlpha)
+        .copy(alpha = BodyVisualConstants.BODY_PART_SELECTOR_INACTIVE_ALPHA)
     val tickFull = dimensionResource(R.dimen.body_part_selector_tick_full)
     val tickInner = dimensionResource(R.dimen.body_part_selector_tick_inner)
     val tickSpacingDp = dimensionResource(R.dimen.body_part_selector_tick_spacing)
@@ -385,7 +396,7 @@ private fun BodyPartSelectorScale(
 
         if (!drawTrailingTicks) return@Canvas
 
-        repeat(BodyPartSelectorInnerTickCount) { index ->
+        repeat(BodyVisualConstants.BODY_PART_SELECTOR_INNER_TICK_COUNT) { index ->
             val y = centerY + tickSpacing * (index + 1)
             drawLine(
                 color = inactiveColor,
@@ -396,10 +407,3 @@ private fun BodyPartSelectorScale(
         }
     }
 }
-
-private const val BodyPartSelectorInactiveAlpha = 0.4f
-private const val BodyPartSelectorInnerTickCount = 4
-private const val BodyPartSelectorScrollSpeed = 0.34f
-private const val BodyPartSelectorPreConsumedScrollRatio = 1f - BodyPartSelectorScrollSpeed
-private const val BodyPartSelectorEdgeUnlockItems = 2.5f
-private const val BodyPartSelectorSnapEpsilonPx = 1f

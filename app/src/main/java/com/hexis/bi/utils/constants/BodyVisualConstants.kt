@@ -27,6 +27,14 @@ internal object BodyVisualConstants {
     /** Model edge darkening — black opacity at the very bottom edge (ramps to 0). */
     const val MODEL_DARKEN_BOTTOM_OPACITY = 0.40f
 
+    const val BODY_PART_SELECTOR_INACTIVE_ALPHA = 0.4f
+    const val BODY_PART_SELECTOR_INNER_TICK_COUNT = 4
+    const val BODY_PART_SELECTOR_SCROLL_SPEED = 0.34f
+    const val BODY_PART_SELECTOR_PRE_CONSUMED_SCROLL_RATIO =
+        1f - BODY_PART_SELECTOR_SCROLL_SPEED
+    const val BODY_PART_SELECTOR_EDGE_UNLOCK_ITEMS = 2.5f
+    const val BODY_PART_SELECTOR_SNAP_EPSILON_PX = 1f
+
     val FULL_BODY_MEASUREMENT_ROWS = listOf(
         BodyVisualMeasurementDisplayRow(BodyMeasurementRegion.Neck, R.string.body_part_neck),
         BodyVisualMeasurementDisplayRow(
