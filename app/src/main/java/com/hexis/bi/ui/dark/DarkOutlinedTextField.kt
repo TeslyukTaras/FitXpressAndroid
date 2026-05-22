@@ -69,8 +69,13 @@ fun DarkOutlinedTextField(
                     fill = DarkTheme.extendedColors.surfaceTranslucent,
                     backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
                     rimWidth = dimensionResource(R.dimen.glass_rim_width),
+                    backgroundAlpha = GlassConstants.TEXT_FIELD_BACKGROUND_ALPHA,
                 )
-                .border(dimensionResource(R.dimen.border_line), borderColor, shape),
+                .border(
+                    dimensionResource(R.dimen.border_line),
+                    borderColor.copy(alpha = GlassConstants.TEXT_FIELD_BORDER_ALPHA),
+                    shape,
+                ),
             readOnly = readOnly,
             visualTransformation = visualTransformation,
             interactionSource = interactionSource,

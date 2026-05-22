@@ -108,16 +108,15 @@ fun Modifier.glass(
             val outline = shape.createOutline(size, layoutDirection, this)
             val strokeWidthPx = if (rimWidth.value.isFinite()) rimWidth.toPx() * 2f else 0f
             val rimStroke = Stroke(width = strokeWidthPx)
-            val backgroundBlurPx = if (backgroundBlur.value.isFinite()) backgroundBlur.toPx() else 0f
+            val backgroundBlurPx =
+                if (backgroundBlur.value.isFinite()) backgroundBlur.toPx() else 0f
             val shouldUseGlassLayer = glassLayerAlpha < 1f || backgroundBlurPx > 0f
             val glassLayerPaint = Paint().apply {
                 alpha = (glassLayerAlpha * 255).roundToInt()
-                if (backgroundBlurPx > 0f) {
-                    maskFilter = BlurMaskFilter(
-                        backgroundBlurPx,
-                        BlurMaskFilter.Blur.NORMAL,
-                    )
-                }
+                if (backgroundBlurPx > 0f) maskFilter = BlurMaskFilter(
+                    backgroundBlurPx,
+                    BlurMaskFilter.Blur.NORMAL,
+                )
             }
 
             val minSide = min(size.width, size.height).coerceAtLeast(1f)
@@ -191,16 +190,11 @@ fun Modifier.glass(
             val fNE = sweepFrac(size.width - sx, -sy)
             val fSE = sweepFrac(size.width - sx, size.height - sy)
             val fSW = sweepFrac(-sx, size.height - sy)
-            val g = if (pillShape) {
-                GlassConstants.RIM_TRANSITION_FRACTION * 3.25f
-            } else {
-                GlassConstants.RIM_TRANSITION_FRACTION
-            }
-            val minT = if (pillShape) {
-                GlassConstants.RIM_MIN_TRANSITION * 3.5f
-            } else {
-                GlassConstants.RIM_MIN_TRANSITION
-            }
+            val g = GlassConstants.RIM_TRANSITION_FRACTION *
+                    if (pillShape) GlassConstants.PILL_RIM_TRANSITION_MULTIPLIER else 1f
+
+            val minT = GlassConstants.RIM_MIN_TRANSITION *
+                    if (pillShape) GlassConstants.PILL_RIM_MIN_TRANSITION_MULTIPLIER else 1f
 
             fun trans(edgeSpan: Float) =
                 (g * edgeSpan).coerceAtLeast(minT).coerceAtMost(edgeSpan * 0.49f)
@@ -244,21 +238,18 @@ fun Modifier.glass(
             )
 
             onDrawWithContent {
-                val glassLayerCheckpoint = if (shouldUseGlassLayer) {
-                    drawContext.canvas.nativeCanvas.saveLayer(
+                val glassLayerCheckpoint =
+                    if (shouldUseGlassLayer) drawContext.canvas.nativeCanvas.saveLayer(
                         0f,
                         0f,
                         size.width,
                         size.height,
                         glassLayerPaint,
                     )
-                } else {
-                    null
-                }
+                    else null
 
-                if (hazeLayerAlpha > 0f) {
+                if (hazeLayerAlpha > 0f)
                     drawOutline(outline = outline, brush = hazeBrush)
-                }
                 when {
                     fillBrush != null -> drawOutline(outline = outline, brush = fillBrush(size))
                     fill.alpha > 0f -> drawRect(color = fill)
@@ -290,35 +281,29 @@ fun Modifier.glass(
                 val sX = (size.width - strokeWidthPx) / size.width
                 val sY = (size.height - strokeWidthPx) / size.height
 
-                if (trueCircle) {
-                    drawCircle(
-                        brush = circleRimBrush,
-                        radius = minSide * 0.5f - strokeWidthPx * 0.5f,
-                        center = Offset(cx, cy),
-                        style = rimStroke,
-                    )
-                } else {
-                    scale(sX, sY, pivot = Offset(cx, cy)) {
-                        drawOutline(
-                            outline = outline,
-                            brush = if (polarGlass) roundRimBrush else rectRimBrush,
-                            style = rimStroke
-                        )
-                    }
-                }
-
-                if (trueCircle) {
-                    drawCircle(
-                        color = tint.copy(alpha = rimAlpha * 0.16f),
-                        radius = minSide * 0.5f - strokeWidthPx * 1.6f,
-                        center = Offset(cx, cy),
-                        style = Stroke(width = strokeWidthPx * 0.45f),
+                if (trueCircle) drawCircle(
+                    brush = circleRimBrush,
+                    radius = minSide * 0.5f - strokeWidthPx * 0.5f,
+                    center = Offset(cx, cy),
+                    style = rimStroke,
+                )
+                else scale(sX, sY, pivot = Offset(cx, cy)) {
+                    drawOutline(
+                        outline = outline,
+                        brush = if (polarGlass) roundRimBrush else rectRimBrush,
+                        style = rimStroke
                     )
                 }
 
-                if (glassLayerCheckpoint != null) {
+                if (trueCircle) drawCircle(
+                    color = tint.copy(alpha = rimAlpha * 0.16f),
+                    radius = minSide * 0.5f - strokeWidthPx * 1.6f,
+                    center = Offset(cx, cy),
+                    style = Stroke(width = strokeWidthPx * 0.45f),
+                )
+
+                if (glassLayerCheckpoint != null)
                     drawContext.canvas.nativeCanvas.restoreToCount(glassLayerCheckpoint)
-                }
 
                 drawContent()
             }
