@@ -1,10 +1,17 @@
 package com.hexis.bi.utils.constants
 
 internal object RecoveryConstants {
-    const val ARC_START_ANGLE = 150f
-    const val ARC_TOTAL_SWEEP = 240f
+    const val ARC_START_ANGLE = 145f
+    const val ARC_TOTAL_SWEEP = 250f
+    const val GAUGE_GRADIENT_START_STOP = 150f / 360f
+    const val GAUGE_GRADIENT_MID_STOP = 270f / 360f
+    const val GAUGE_GRADIENT_END_STOP = 30f / 360f
     const val MAX_SCORE = 100f
-    val GRID_LINES = listOf(0f, 50f, 75f, 100f)
+    val GRID_LINES = listOf(0f, 25f, 50f, 75f, 100f)
+    val SUMMARY_GRID_LINES = listOf(0f, 50f, 75f, 100f)
+    const val SUMMARY_SCALE_LOW_MAX = 50f
+    const val SUMMARY_SCALE_MID_MAX = 75f
+    const val SUMMARY_SCALE_BAND_FRACTION = 1f / 3f
 
     // Recovery — Lifestyle Mode (HEX v4 §5.6): 0.50 HRV + 0.30 RHR + 0.20 Sleep.
     // Activity load is tracked for context only; it does not affect the score in lifestyle mode.
@@ -30,12 +37,4 @@ internal object RecoveryConstants {
     // Score → RecoveryStatus thresholds.
     const val STATUS_READY_MIN = 70
     const val STATUS_RECOVERING_MIN = 40
-
-    // Example: If 50 should be at 75% of the height (from the top) and 100 should be at 0% (the top).
-    fun mapScoreToFraction(score: Float) = when {
-        score >= 50f -> 0.75f - ((score - 50f) / 50f) * 0.75f
-        else -> 1f - (score / 50f) * 0.25f
-    }
 }
-
-

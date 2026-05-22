@@ -162,8 +162,7 @@ val Typography = Typography(
     ),
 )
 
-// Body Visual summary card — large measurement value (e.g. "42.0 cm").
-internal val BodyVisualMeasurementValueStyle = TextStyle(
+internal val MeasurementValueStyle = TextStyle(
     fontFamily = Urbanist,
     fontWeight = FontWeight.Medium,
     fontSize = 24.sp,
@@ -171,7 +170,7 @@ internal val BodyVisualMeasurementValueStyle = TextStyle(
     letterSpacing = 0.sp,
 )
 
-internal val BodyToggleChipSelectedTextStyle = TextStyle(
+internal val TitleHighlightTextStyle = TextStyle(
     fontFamily = Urbanist,
     fontWeight = FontWeight.Medium,
     fontSize = 13.sp,
@@ -180,7 +179,7 @@ internal val BodyToggleChipSelectedTextStyle = TextStyle(
     fontFeatureSettings = "lnum,pnum",
 )
 
-internal val BodyToggleChipUnselectedTextStyle = TextStyle(
+internal val TitleDimTextStyle = TextStyle(
     fontFamily = Urbanist,
     fontWeight = FontWeight.Normal,
     fontSize = 13.sp,

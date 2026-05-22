@@ -1,30 +1,27 @@
 package com.hexis.bi.ui.main.home.recovery.components
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
+import com.hexis.bi.ui.dark.BodyGlassCard
 import com.hexis.bi.ui.main.home.recovery.RecoveryTrend
-import com.hexis.bi.ui.theme.Blue200
-import com.hexis.bi.ui.theme.Blue300
-import com.hexis.bi.ui.theme.Lime200
-import com.hexis.bi.utils.gradientBackground
+import com.hexis.bi.ui.theme.AccentBlue
+import com.hexis.bi.ui.theme.MeasurementValueStyle
+import com.hexis.bi.ui.theme.TitleDimTextStyle
+import com.hexis.bi.ui.theme.dark.DarkTheme
 
 @Composable
 fun RecoveryScoreCards(
@@ -32,81 +29,69 @@ fun RecoveryScoreCards(
     trend: RecoveryTrend,
     modifier: Modifier = Modifier,
 ) {
-
     Row(
         modifier = modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Max),
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_m)),
+        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_s)),
     ) {
-        // Avg score card
-        Card(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-                .gradientBackground(
-                    brush = Brush.verticalGradient(listOf(Blue300, Blue200)),
-                    shape = MaterialTheme.shapes.medium
-                ),
-            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-            shape = MaterialTheme.shapes.medium,
-            elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(R.dimen.elevation_none)),
-        ) {
-            Column(
-                modifier = Modifier.padding(dimensionResource(R.dimen.spacer_m)),
-            ) {
-                Text(
-                    text = stringResource(R.string.recovery_avg_score),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                )
-                Spacer(Modifier.weight(1f))
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
-                Text(
-                    text = stringResource(R.string.recovery_avg_score_value, avgScore),
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = Lime200,
-                )
-            }
-        }
-
-        // Trend card
-        Card(
+        // Average recovery score
+        BodyGlassCard(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight(),
-            shape = MaterialTheme.shapes.medium,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
-            elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(R.dimen.elevation_none)),
+            highlighted = true
         ) {
-            Column(
-                modifier = Modifier.padding(dimensionResource(R.dimen.spacer_m)),
+            Text(
+                text = stringResource(R.string.recovery_avg_score),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+            Text(
+                text = stringResource(R.string.recovery_avg_score_value, avgScore),
+                style = MeasurementValueStyle,
+                color = AccentBlue,
+            )
+        }
+
+        // Trend
+        BodyGlassCard(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text(
-                        text = stringResource(R.string.recovery_trend_label),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                    Text(
-                        text = stringResource(trend.labelRes),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = trend.color,
-                    )
-                }
-
-                Spacer(Modifier.weight(1f))
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
-
                 Text(
-                    text = stringResource(trend.descriptionRes),
+                    text = stringResource(R.string.recovery_trend_label),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Text(
+                    text = stringResource(trend.labelRes),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.secondary,
+                    color = trendColor(trend),
                 )
             }
+            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+            Text(
+                text = stringResource(trend.descriptionRes),
+                style = TitleDimTextStyle,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
+}
+
+@Composable
+private fun trendColor(trend: RecoveryTrend): Color = when (trend) {
+    RecoveryTrend.Improving -> DarkTheme.extendedColors.gaugeHigh
+    RecoveryTrend.Decreasing -> DarkTheme.extendedColors.gaugeLow
+    RecoveryTrend.Stable -> AccentBlue
 }

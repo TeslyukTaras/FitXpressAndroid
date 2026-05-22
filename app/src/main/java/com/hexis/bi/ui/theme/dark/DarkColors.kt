@@ -32,6 +32,12 @@ internal val GreenSoft = Color(0xFF1C2A23)
 internal val Positive = Color(0xFF1DC473)
 internal val Negative = Color(0xFFE62020)
 
+// Recovery gauge gradient (Figma): red (low) → yellow (recovering) → green (ready), 0.74 alpha.
+internal val GaugeLow = Color(0xBDD0462E)
+internal val GaugeMid = Color(0xBDECF162)
+internal val GaugeHigh = Color(0xBD1EE183)
+internal val GaugeTrack = Color(0xFF222B28)
+
 internal val ActionTeal = Color(0xFF1DC4B3)
 internal val ActionRed = Color(0xFFF95656)
 

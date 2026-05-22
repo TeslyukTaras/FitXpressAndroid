@@ -20,6 +20,9 @@ data class SleepSession(
     val durationMinutes: Int,
     val efficiencyPercent: Float,
     val restingHeartRateBpm: Int,
+    /** Average HRV as RMSSD, in milliseconds. */
     val hrvMs: Int,
+    /** Average HRV as SDNN, in milliseconds. */
+    val sdnnMs: Int,
     val stages: List<SleepStageInterval>,
 )

@@ -1,12 +1,11 @@
 package com.hexis.bi.ui.main.home.recovery.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,13 +13,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
 import com.hexis.bi.ui.main.home.recovery.RecoveryStatus
-import com.hexis.bi.ui.theme.Bg
+import com.hexis.bi.ui.theme.dark.DarkTheme
 import com.hexis.bi.utils.constants.RecoveryConstants
 
 @Composable
@@ -34,7 +34,12 @@ fun RecoveryCircularProgress(
     val strokeWidth = dimensionResource(R.dimen.recovery_arc_stroke_width)
     val fraction = (score / RecoveryConstants.MAX_SCORE).coerceIn(0f, 1f)
     val filledSweep = RecoveryConstants.ARC_TOTAL_SWEEP * fraction
-    val statusColor = status.color
+
+    val ext = DarkTheme.extendedColors
+    val gaugeLow = ext.gaugeLow
+    val gaugeMid = ext.gaugeMid
+    val gaugeHigh = ext.gaugeHigh
+    val trackColor = ext.gaugeTrack
 
     Box(
         modifier = modifier.size(width = arcWidth, height = arcHeight),
@@ -46,10 +51,11 @@ fun RecoveryCircularProgress(
             val arcDiameter = size.width - sw
             val arcRect = Size(arcDiameter, arcDiameter)
             val topLeft = Offset(padding, padding)
+            val center = Offset(padding + arcDiameter / 2f, padding + arcDiameter / 2f)
 
-            // Gray track
+            // Gray track spanning the full sweep.
             drawArc(
-                color = Bg,
+                color = trackColor,
                 startAngle = RecoveryConstants.ARC_START_ANGLE,
                 sweepAngle = RecoveryConstants.ARC_TOTAL_SWEEP,
                 useCenter = false,
@@ -58,34 +64,45 @@ fun RecoveryCircularProgress(
                 style = Stroke(width = sw, cap = StrokeCap.Round),
             )
 
-            // Colored progress
-            if (filledSweep > 0f) drawArc(
-                color = statusColor,
-                startAngle = RecoveryConstants.ARC_START_ANGLE,
-                sweepAngle = filledSweep,
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcRect,
-                style = Stroke(width = sw, cap = StrokeCap.Round),
-            )
+            // Red → yellow → green gradient mapped to the arc's angular positions, so the leading
+            // color reflects the score band. Stops are keyed to absolute angles (fraction = angle/360):
+            // 150° start = red, 270° = yellow, 30° end = green; the unfilled top gap holds the wrap.
+            if (filledSweep > 0f) {
+                val brush = Brush.sweepGradient(
+                    RecoveryConstants.GAUGE_GRADIENT_END_STOP to gaugeHigh,
+                    RecoveryConstants.GAUGE_GRADIENT_START_STOP to gaugeLow,
+                    RecoveryConstants.GAUGE_GRADIENT_MID_STOP to gaugeMid,
+                    1f to gaugeHigh,
+                    center = center,
+                )
+                drawArc(
+                    brush = brush,
+                    startAngle = RecoveryConstants.ARC_START_ANGLE,
+                    sweepAngle = filledSweep,
+                    useCenter = false,
+                    topLeft = topLeft,
+                    size = arcRect,
+                    style = Stroke(width = sw, cap = StrokeCap.Round),
+                )
+            }
         }
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.offset(y = dimensionResource(R.dimen.recovery_arc_text_offset)),
+            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_2xs)),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .offset(y = -dimensionResource(R.dimen.spacer_l)),
         ) {
             Text(
                 text = stringResource(R.string.format_percentage, score),
                 style = MaterialTheme.typography.headlineLarge,
-                color = statusColor,
+                color = MaterialTheme.colorScheme.onBackground,
             )
-
-            Spacer(Modifier.width(dimensionResource(R.dimen.spacer_2xs)))
-
             Text(
                 text = stringResource(status.labelRes),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

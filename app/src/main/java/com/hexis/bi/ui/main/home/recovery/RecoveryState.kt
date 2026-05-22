@@ -9,7 +9,10 @@ import com.hexis.bi.ui.theme.Red100
 import com.hexis.bi.ui.theme.Yellow
 import com.hexis.bi.utils.constants.RecoveryConstants
 
-enum class RecoveryTab { Day, Summary }
+enum class RecoveryTab(@StringRes val labelRes: Int) {
+    Day(R.string.recovery_tab_day),
+    Summary(R.string.recovery_tab_summary),
+}
 
 enum class RecoveryLoadState { Loading, Ready, Error }
 
@@ -43,12 +46,16 @@ enum class RecoveryTrend(
 data class RecoveryMetric(
     @StringRes val labelRes: Int,
     val value: String,
+    /** Optional unit rendered after [value] in a muted color (e.g. "bpm"). */
+    val unit: String? = null,
 )
 
 data class DailyRecoveryEntry(
     val dayLabel: String,
     val score: Int,
     val isHighlighted: Boolean = false,
+    /** Fuller label shown in the press tooltip (e.g. "Dec 24"); falls back to [dayLabel]. */
+    val tooltipLabel: String = "",
 )
 
 data class RecoveryState(
@@ -66,6 +73,8 @@ data class RecoveryState(
     val dateLabel: String = "",
     val score: Int = 0,
     val metrics: List<RecoveryMetric> = emptyList(),
+    val rmssdMs: Int = 0,
+    val sdnnMs: Int = 0,
     val canGoNextDay: Boolean = false,
 
     // Summary tab

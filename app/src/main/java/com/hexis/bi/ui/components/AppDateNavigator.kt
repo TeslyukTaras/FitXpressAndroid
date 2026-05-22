@@ -18,6 +18,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
+import com.hexis.bi.ui.theme.AccentBlue
 
 @Composable
 fun AppDateNavigator(
@@ -38,7 +39,7 @@ fun AppDateNavigator(
                 Icon(
                     painter = painterResource(R.drawable.ic_arrow),
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onBackground,
+                    tint = AccentBlue,
                     modifier = Modifier
                         .size(dimensionResource(R.dimen.icon_small))
                         .graphicsLayer(rotationY = 180f),
@@ -49,7 +50,7 @@ fun AppDateNavigator(
                 text = label,
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = AccentBlue,
             )
             IconButton(
                 onClick = onNext,
@@ -59,7 +60,7 @@ fun AppDateNavigator(
                     painter = painterResource(R.drawable.ic_arrow),
                     contentDescription = null,
                     tint = if (canGoNext)
-                        MaterialTheme.colorScheme.onBackground
+                        AccentBlue
                     else
                         MaterialTheme.colorScheme.outlineVariant,
                     modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),

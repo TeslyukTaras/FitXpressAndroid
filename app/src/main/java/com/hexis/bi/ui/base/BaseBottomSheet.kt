@@ -58,7 +58,7 @@ fun BaseBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         shape = RoundedCornerShape(topStart = cornerRadius, topEnd = cornerRadius),
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         dragHandle = { BottomSheetDragHandle() },
     ) {
         Column(

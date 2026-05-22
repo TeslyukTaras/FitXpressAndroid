@@ -63,7 +63,7 @@ fun ActivityScrollableStepsBarChart(
     barWidth: Dp,
     barGap: Dp,
     modifier: Modifier = Modifier,
-    yAxisWidth: Dp = dimensionResource(R.dimen.recovery_y_axis_width),
+    yAxisWidth: Dp = dimensionResource(R.dimen.spacer_2xl),
     yLabelFormatter: ((Float) -> String)? = null,
     isLastHighlighted: Boolean = false,
     scrollAlignIndex: Int = entries.lastIndex,

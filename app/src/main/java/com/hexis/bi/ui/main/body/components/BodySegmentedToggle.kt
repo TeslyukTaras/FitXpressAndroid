@@ -22,12 +22,12 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.BodyToggleChipSelectedTextStyle
-import com.hexis.bi.ui.theme.BodyToggleChipUnselectedTextStyle
 import com.hexis.bi.ui.theme.BodyToggleSelectedChipFill
 import com.hexis.bi.ui.theme.BodyToggleSelectedLabel
 import com.hexis.bi.ui.theme.BodyToggleTrackBorder
 import com.hexis.bi.ui.theme.BodyToggleUnselectedLabel
+import com.hexis.bi.ui.theme.TitleDimTextStyle
+import com.hexis.bi.ui.theme.TitleHighlightTextStyle
 
 @Composable
 internal fun BodySegmentedToggleTrack(
@@ -77,7 +77,7 @@ internal fun BodySegmentedToggleChip(
     ) {
         Text(
             text = label,
-            style = if (isSelected) BodyToggleChipSelectedTextStyle else BodyToggleChipUnselectedTextStyle,
+            style = if (isSelected) TitleHighlightTextStyle else TitleDimTextStyle,
             color = if (isSelected) BodyToggleSelectedLabel else BodyToggleUnselectedLabel,
             textAlign = TextAlign.Center,
             maxLines = 1,

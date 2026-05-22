@@ -26,6 +26,10 @@ data class DarkExtendedColors(
     val surfaceTranslucent: Color,
     val destructive: Color,
     val accentBlue: Color,
+    val gaugeLow: Color,
+    val gaugeMid: Color,
+    val gaugeHigh: Color,
+    val gaugeTrack: Color,
 )
 
 internal val DefaultDarkExtendedColors = DarkExtendedColors(
@@ -47,6 +51,10 @@ internal val DefaultDarkExtendedColors = DarkExtendedColors(
     surfaceTranslucent = SurfaceTranslucent,
     destructive = ActionRed,
     accentBlue = AccentBlue,
+    gaugeLow = GaugeLow,
+    gaugeMid = GaugeMid,
+    gaugeHigh = GaugeHigh,
+    gaugeTrack = GaugeTrack,
 )
 
 internal val LocalDarkExtendedColors = staticCompositionLocalOf { DefaultDarkExtendedColors }

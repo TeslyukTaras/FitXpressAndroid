@@ -40,6 +40,7 @@ private object TerraSleepJsonKeys {
         const val RESTING_HR_BPM = "resting_hr_bpm"
         const val AVG_HR_BPM = "avg_hr_bpm"
         const val AVG_HRV_RMSSD = "avg_hrv_rmssd"
+        const val AVG_HRV_SDNN = "avg_hrv_sdnn"
     }
 
     object Stages {
@@ -101,6 +102,7 @@ internal object TerraSleepJsonMapper {
             ?: heartRate?.int(TerraSleepJsonKeys.HeartRate.AVG_HR_BPM)
             ?: 0
         val hrvMs = heartRate?.float(TerraSleepJsonKeys.HeartRate.AVG_HRV_RMSSD)?.toInt() ?: 0
+        val sdnnMs = heartRate?.float(TerraSleepJsonKeys.HeartRate.AVG_HRV_SDNN)?.toInt() ?: 0
 
         return SleepSession(
             bedtime = bedtime,
@@ -109,6 +111,7 @@ internal object TerraSleepJsonMapper {
             efficiencyPercent = efficiency,
             restingHeartRateBpm = restingHr,
             hrvMs = hrvMs,
+            sdnnMs = sdnnMs,
             stages = parseStages(obj),
         )
     }

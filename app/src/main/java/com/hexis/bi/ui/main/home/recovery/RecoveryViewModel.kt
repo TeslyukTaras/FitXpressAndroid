@@ -13,11 +13,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.time.temporal.TemporalAdjusters
 import kotlin.math.abs
 
 class RecoveryViewModel(
@@ -30,10 +29,11 @@ class RecoveryViewModel(
 
     private var dayOffset = 0
     private var weekOffset = 0
+    private var dayLoadJob: Job? = null
+    private var summaryLoadJob: Job? = null
 
     init {
-        loadDayData(0)
-        loadWeekData(0)
+        loadInitialData()
     }
 
     fun selectTab(tab: RecoveryTab) {
@@ -76,6 +76,58 @@ class RecoveryViewModel(
 
     fun retrySummaryLoad() = loadWeekData(weekOffset)
 
+    private fun loadInitialData() {
+        val today = LocalDate.now()
+        val window = summaryWindow(0)
+        _state.update {
+            it.copy(
+                dayLoadState = RecoveryLoadState.Loading,
+                dayErrorMessage = null,
+                dateLabel = today.format(DAY_FMT),
+                canGoNextDay = false,
+                summaryLoadState = RecoveryLoadState.Loading,
+                summaryErrorMessage = null,
+                weekLabel = window.label,
+                canGoNextWeek = false,
+            )
+        }
+
+        dayLoadJob?.cancel()
+        summaryLoadJob?.cancel()
+        dayLoadJob = viewModelScope.launch {
+            recoveryRepository.getSnapshotsForRange(window.previousStart, window.end).fold(
+                onSuccess = { snapshots ->
+                    val byDate = snapshots.associateBy { it.date }
+                    val todaySnapshot = byDate[today]
+                    _state.update {
+                        it.copy(
+                            dayLoadState = RecoveryLoadState.Ready,
+                            dayErrorMessage = null,
+                            score = todaySnapshot?.score ?: 0,
+                            metrics = buildMetrics(todaySnapshot),
+                            rmssdMs = todaySnapshot?.hrvMs ?: 0,
+                            sdnnMs = todaySnapshot?.sdnnMs ?: 0,
+                        ).withSummarySnapshots(
+                            snapshots = snapshots,
+                            window = window,
+                            today = today,
+                        )
+                    }
+                },
+                onFailure = { err ->
+                    _state.update {
+                        it.copy(
+                            dayLoadState = RecoveryLoadState.Error,
+                            dayErrorMessage = err.message,
+                            summaryLoadState = RecoveryLoadState.Error,
+                            summaryErrorMessage = err.message,
+                        )
+                    }
+                },
+            )
+        }
+    }
+
     private fun loadDayData(offset: Int) {
         val day = LocalDate.now().plusDays(offset.toLong())
         val dateLabel = day.format(DAY_FMT)
@@ -87,7 +139,8 @@ class RecoveryViewModel(
                 canGoNextDay = offset < 0,
             )
         }
-        viewModelScope.launch {
+        dayLoadJob?.cancel()
+        dayLoadJob = viewModelScope.launch {
             recoveryRepository.getSnapshotForDate(day).fold(
                 onSuccess = { snapshot ->
                     _state.update {
@@ -96,6 +149,8 @@ class RecoveryViewModel(
                             dayErrorMessage = null,
                             score = snapshot?.score ?: 0,
                             metrics = buildMetrics(snapshot),
+                            rmssdMs = snapshot?.hrvMs ?: 0,
+                            sdnnMs = snapshot?.sdnnMs ?: 0,
                         )
                     }
                 },
@@ -112,53 +167,27 @@ class RecoveryViewModel(
     }
 
     private fun loadWeekData(offset: Int) {
-        val monday = LocalDate.now()
-            .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-            .plusWeeks(offset.toLong())
-        val sunday = monday.plusDays(6)
-        val previousMonday = monday.minusWeeks(1)
-        val previousSunday = sunday.minusWeeks(1)
-        val label = "${monday.format(WEEK_FMT)} - ${sunday.format(WEEK_FMT)}"
+        val today = LocalDate.now()
+        val window = summaryWindow(offset)
 
         _state.update {
             it.copy(
                 summaryLoadState = RecoveryLoadState.Loading,
                 summaryErrorMessage = null,
-                weekLabel = label,
+                weekLabel = window.label,
                 canGoNextWeek = offset < 0,
             )
         }
 
-        viewModelScope.launch {
-            recoveryRepository.getSnapshotsForRange(previousMonday, sunday).fold(
+        summaryLoadJob?.cancel()
+        summaryLoadJob = viewModelScope.launch {
+            recoveryRepository.getSnapshotsForRange(window.previousStart, window.end).fold(
                 onSuccess = { snapshots ->
-                    val byDate = snapshots.associateBy { it.date }
-                    val today = LocalDate.now()
-                    val entries = (0..6).map { i ->
-                        val day = monday.plusDays(i.toLong())
-                        val score = if (day.isAfter(today)) 0 else byDate[day]?.score ?: 0
-                        DailyRecoveryEntry(
-                            dayLabel = day.format(WEEK_FMT),
-                            score = score,
-                            isHighlighted = day == today,
-                        )
-                    }
-                    val avg = entries.filter { it.score > 0 }
-                        .let { nonEmpty -> if (nonEmpty.isEmpty()) 0 else nonEmpty.sumOf { it.score } / nonEmpty.size }
-
-                    val previousAvg = byDate.entries
-                        .filter { (d, _) -> !d.isBefore(previousMonday) && !d.isAfter(previousSunday) }
-                        .map { it.value.score }
-                        .filter { it > 0 }
-                        .let { if (it.isEmpty()) 0 else it.sum() / it.size }
-
                     _state.update {
-                        it.copy(
-                            summaryLoadState = RecoveryLoadState.Ready,
-                            summaryErrorMessage = null,
-                            weeklyEntries = entries,
-                            avgScore = avg,
-                            trend = trendFor(avg, previousAvg),
+                        it.withSummarySnapshots(
+                            snapshots = snapshots,
+                            window = window,
+                            today = today,
                         )
                     }
                 },
@@ -174,6 +203,54 @@ class RecoveryViewModel(
         }
     }
 
+    private fun RecoveryState.withSummarySnapshots(
+        snapshots: List<RecoverySnapshot>,
+        window: SummaryWindow,
+        today: LocalDate,
+    ): RecoveryState {
+        val byDate = snapshots.associateBy { it.date }
+        val entries = (0..6).map { i ->
+            val day = window.start.plusDays(i.toLong())
+            DailyRecoveryEntry(
+                dayLabel = day.dayOfMonth.toString(),
+                score = byDate[day]?.score ?: 0,
+                isHighlighted = day == today,
+                tooltipLabel = day.format(WEEK_FMT),
+            )
+        }
+        val avg = entries.filter { it.score > 0 }
+            .let { nonEmpty -> if (nonEmpty.isEmpty()) 0 else nonEmpty.sumOf { it.score } / nonEmpty.size }
+
+        val previousAvg = byDate.entries
+            .filter { (d, _) -> !d.isBefore(window.previousStart) && !d.isAfter(window.previousEnd) }
+            .map { it.value.score }
+            .filter { it > 0 }
+            .let { if (it.isEmpty()) 0 else it.sum() / it.size }
+
+        return copy(
+            summaryLoadState = RecoveryLoadState.Ready,
+            summaryErrorMessage = null,
+            weeklyEntries = entries,
+            avgScore = avg,
+            trend = trendFor(avg, previousAvg),
+        )
+    }
+
+    private fun summaryWindow(offset: Int): SummaryWindow {
+        val today = LocalDate.now()
+        val end = today.plusDays(offset.toLong() * SUMMARY_WINDOW_DAYS)
+        val start = end.minusDays(SUMMARY_WINDOW_DAYS - 1)
+        val previousStart = start.minusDays(SUMMARY_WINDOW_DAYS)
+        val previousEnd = start.minusDays(1)
+        return SummaryWindow(
+            start = start,
+            end = end,
+            previousStart = previousStart,
+            previousEnd = previousEnd,
+            label = "${start.format(WEEK_FMT)} - ${end.format(WEEK_FMT)}",
+        )
+    }
+
     private fun buildMetrics(snapshot: RecoverySnapshot?): List<RecoveryMetric> {
         val unknown = appContext.getString(R.string.stat_unknown)
         val sleepValue = snapshot?.sleepScore?.takeIf { it > 0 }
@@ -181,14 +258,17 @@ class RecoveryViewModel(
             ?.let(appContext::getString)
             ?: unknown
         val heartBpm = snapshot?.restingHeartRateBpm?.coerceAtLeast(0) ?: 0
-        val heartValue = appContext.getString(R.string.recovery_metric_heart_bpm, heartBpm)
         val stressValue = snapshot?.stressLevel?.let { appContext.getString(stressLabelFor(it)) } ?: unknown
         val loadValue = snapshot?.activityLoad?.let { appContext.getString(loadLabelFor(it)) } ?: unknown
         return listOf(
             RecoveryMetric(R.string.recovery_metric_sleep, sleepValue),
-            RecoveryMetric(R.string.recovery_metric_heart, heartValue),
             RecoveryMetric(R.string.recovery_metric_stress, stressValue),
             RecoveryMetric(R.string.recovery_metric_activity_load, loadValue),
+            RecoveryMetric(
+                R.string.recovery_metric_resting_hr,
+                value = heartBpm.toString(),
+                unit = appContext.getString(R.string.unit_bpm),
+            ),
         )
     }
 
@@ -223,6 +303,15 @@ class RecoveryViewModel(
     private companion object {
         private val DAY_FMT: DateTimeFormatter = DateTimeFormatter.ofPattern("MMMM d")
         private val WEEK_FMT: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d")
+        private const val SUMMARY_WINDOW_DAYS = 7L
         private const val TREND_FLAT_THRESHOLD = 3
     }
+
+    private data class SummaryWindow(
+        val start: LocalDate,
+        val end: LocalDate,
+        val previousStart: LocalDate,
+        val previousEnd: LocalDate,
+        val label: String,
+    )
 }

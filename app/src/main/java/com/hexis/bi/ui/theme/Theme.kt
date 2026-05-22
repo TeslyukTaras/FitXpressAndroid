@@ -33,6 +33,7 @@ private val LightColorScheme = lightColorScheme(
     onSurface = Black,
     surfaceVariant = Bg,
     onSurfaceVariant = SubtitleBlue,
+    surfaceContainerHighest = White,
 
     outline = Gray500,
     outlineVariant = Gray600,
@@ -71,6 +72,7 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = Black,
     surfaceVariant = Bg,
     onSurfaceVariant = SubtitleBlue,
+    surfaceContainerHighest = White,
 
     outline = Gray500,
     outlineVariant = Gray600,

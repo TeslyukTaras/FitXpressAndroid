@@ -69,7 +69,7 @@ fun ActivityStepsBarChart(
     title: String,
     barGap: Dp,
     modifier: Modifier = Modifier,
-    yAxisWidth: Dp = dimensionResource(R.dimen.recovery_y_axis_width),
+    yAxisWidth: Dp = dimensionResource(R.dimen.spacer_2xl),
     xLabelStartPadding: Dp = 0.dp,
     isLastHighlighted: Boolean = false,
     yLabelFormatter: ((Float) -> String)? = null,
