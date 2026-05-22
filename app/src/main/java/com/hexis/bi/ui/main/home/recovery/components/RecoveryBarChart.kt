@@ -50,14 +50,25 @@ import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.utils.constants.RecoveryConstants
 import kotlin.math.roundToInt
 
-private val SummaryChartGridLines = listOf(0f, 50f, 75f, 100f)
-
 private fun summaryChartFractionFromTop(score: Float): Float {
     val value = score.coerceIn(0f, RecoveryConstants.MAX_SCORE)
     return when {
-        value >= 75f -> ((RecoveryConstants.MAX_SCORE - value) / 25f) / 3f
-        value >= 50f -> (1f / 3f) + ((75f - value) / 25f) / 3f
-        else -> (2f / 3f) + ((50f - value) / 50f) / 3f
+        value >= RecoveryConstants.SUMMARY_SCALE_MID_MAX ->
+            ((RecoveryConstants.MAX_SCORE - value) /
+                    (RecoveryConstants.MAX_SCORE - RecoveryConstants.SUMMARY_SCALE_MID_MAX)) *
+                    RecoveryConstants.SUMMARY_SCALE_BAND_FRACTION
+
+        value >= RecoveryConstants.SUMMARY_SCALE_LOW_MAX ->
+            RecoveryConstants.SUMMARY_SCALE_BAND_FRACTION +
+                    ((RecoveryConstants.SUMMARY_SCALE_MID_MAX - value) /
+                            (RecoveryConstants.SUMMARY_SCALE_MID_MAX - RecoveryConstants.SUMMARY_SCALE_LOW_MAX)) *
+                    RecoveryConstants.SUMMARY_SCALE_BAND_FRACTION
+
+        else ->
+            RecoveryConstants.SUMMARY_SCALE_BAND_FRACTION * 2f +
+                    ((RecoveryConstants.SUMMARY_SCALE_LOW_MAX - value) /
+                            RecoveryConstants.SUMMARY_SCALE_LOW_MAX) *
+                    RecoveryConstants.SUMMARY_SCALE_BAND_FRACTION
     }
 }
 
@@ -170,7 +181,7 @@ fun RecoveryBarChart(
                             .fillMaxHeight()
                             .onSizeChanged { yAxisWidthPx = it.width },
                     ) {
-                        SummaryChartGridLines.forEach { value ->
+                        RecoveryConstants.SUMMARY_GRID_LINES.forEach { value ->
                             val fractionFromTop = summaryChartFractionFromTop(value)
                             Text(
                                 text = value.toInt().toString(),
@@ -240,7 +251,7 @@ fun RecoveryBarChart(
                                     end = Offset(size.width, size.height),
                                     strokeWidth = stripeWidth.toPx(),
                                 )
-                                SummaryChartGridLines.filter { it > 0f }.forEach { value ->
+                                RecoveryConstants.SUMMARY_GRID_LINES.filter { it > 0f }.forEach { value ->
                                     val y = size.height * summaryChartFractionFromTop(value)
                                     drawLine(
                                         color = gridColor,

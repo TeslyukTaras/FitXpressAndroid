@@ -5,7 +5,6 @@
     <!-- Content descriptions -->
     <string name="cd_back">Back</string>
     <string name="cd_close">Close</string>
-    <string name="semicolon">;</string>
     <string name="colon">:</string>
     <string name="space">" "</string>
     <string name="slash">/</string>
@@ -43,13 +42,11 @@
     <string name="have_account">Already have an account? </string>
     <string name="cd_toggle_password">Toggle password visibility</string>
     <string name="cd_google_signin">Sign in with Google</string>
-    <string name="cd_apple_signin">Sign in with Apple</string>
 
     <!-- Notifications screen -->
     <string name="screen_notifications">Notifications</string>
     <string name="notification_settings_title">Notification settings</string>
     <string name="notifications_mark_all_read">Mark all as read</string>
-    <string name="notifications_time_2m_ago">2m ago</string>
     <string name="notifications_time_just_now">Just now</string>
     <string name="notif_next_scheduled_scan_title">Next scheduled scan</string>
     <string name="notif_next_scheduled_scan_body">Your next scan is on %1$s</string>
@@ -144,7 +141,6 @@
     <string name="delete_account_dialog_action_delete">Delete</string>
 
     <!-- Home screen -->
-    <string name="action_logout">Log Out</string>
     <string name="home_welcome">Welcome Back!</string>
     <string name="home_stat_weight">Weight</string>
     <string name="home_stat_height">Height</string>
@@ -155,8 +151,6 @@
     <string name="home_overview_title">Overview</string>
     <string name="home_intelligence_scores_title">Intelligence Scores</string>
     <string name="home_card_sleep">Sleep</string>
-    <string name="home_card_sleep_score">Sleep Score</string>
-    <string name="home_card_activity">Activity</string>
     <string name="home_card_activity_score">Activity Score</string>
     <string name="home_card_recovery">Recovery</string>
     <string name="home_recovery_score_value">%1$d/100</string>
@@ -170,22 +164,12 @@
     <string name="home_scan_change_label">%1$s %2$s</string>
     <string name="home_scan_arrow_down">↓</string>
     <string name="home_scan_arrow_up">↑</string>
-    <string name="home_score_vbi">VBI Score</string>
-    <string name="home_score_vli">VLI Score</string>
-    <string name="home_score_poa">POA Score</string>
-    <string name="home_sleep_value">%1$s h</string>
     <string name="home_sleep_goal">Goal: %1$s h</string>
-    <string name="home_activity_value">%1$s steps</string>
     <string name="home_activity_value_label">steps</string>
     <string name="home_activity_goal">Goal: %1$s</string>
     <string name="home_nav_home">Home</string>
     <string name="home_nav_body">Body</string>
-    <string name="body_scan_history_subtitle">Recent body scans history</string>
     <string name="body_scan_history_empty">No saved scans yet. Complete a scan to see history.</string>
-    <string name="body_scan_history_measurements">Measurements: %1$d</string>
-    <string name="body_scan_history_model_ready">3D model available</string>
-    <string name="body_scan_history_model_missing">3D model not available</string>
-    <string name="body_scan_history_unknown_date">Unknown date</string>
     <string name="body_screen_title">My body results</string>
     <string name="body_tab_stats">Stats</string>
     <string name="body_tab_visual">Visual</string>
@@ -210,7 +194,6 @@
     <!-- Delta with unit, e.g. "+ 0.4 kg": sign, magnitude, unit. -->
     <string name="delta_value_with_unit">%1$s %2$s %3$s</string>
     <string name="body_error_title">Couldn\'t load body data</string>
-    <string name="body_empty_title">No saved scans yet. Complete a scan to see your body composition.</string>
     <string name="body_tab_coming_soon">Coming soon</string>
     <!-- Visual tab -->
     <string name="body_visual_latest_scan">Latest scan</string>
@@ -246,8 +229,6 @@
     <string name="body_visual_no_data">No scans yet. Complete a scan to see your measurements here.</string>
     <string name="body_visual_value_missing">—</string>
     <string name="body_visual_part_bullet">—</string>
-    <string name="body_visual_date_separator">|</string>
-    <string name="body_visual_value_cm">%1$s cm</string>
     <string name="body_visual_unit_cm">cm</string>
     <string name="body_visual_delta_increase">+%1$s cm ↑</string>
     <string name="body_visual_delta_decrease">−%1$s cm ↓</string>
@@ -301,10 +282,7 @@
     <string name="sleep_insight_good">Solid sleep score — your body got the recovery it needed last night.</string>
     <string name="sleep_insight_fair">Decent rest. Slightly longer or more consistent sleep would boost recovery.</string>
     <string name="sleep_insight_poor">Short or fragmented sleep detected. Prioritize a longer, steadier night to support recovery.</string>
-    <string name="sleep_empty_title">No sleep data yet</string>
-    <string name="sleep_empty_subtitle">Sync a wearable via Terra to see last night\'s sleep.</string>
     <string name="sleep_error_title">Couldn\'t load sleep data</string>
-    <string name="recovery_error_title">Couldn\'t load recovery data</string>
     <string name="action_retry">Retry</string>
     <string name="sleep_settings_title">Sleep settings</string>
     <string name="sleep_settings_goal">Sleep goal</string>
@@ -315,7 +293,6 @@
     <string name="sleep_weekly_stages_title">Sleep stages</string>
     <string name="sleep_summary_trend_note">Arrows show change vs previous week.</string>
     <string name="sleep_duration_hours_only">%1$dh</string>
-    <string name="sleep_summary_placeholder">Summary coming soon</string>
     <string name="sleep_recovery_sheet_heading_1">1. Lorem ipsum dolor</string>
     <string name="sleep_recovery_sheet_body_1">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\nDuis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident.</string>
     <string name="sleep_recovery_sheet_heading_2">2. Lorem ipsum</string>
@@ -342,7 +319,6 @@
     <!-- Validation errors -->
     <string name="error_email_required">Email is required</string>
     <string name="error_email_invalid">Enter a valid email address</string>
-    <string name="error_email_required_for_reset">Enter your email address first</string>
     <string name="error_password_required">Password is required</string>
     <string name="error_first_name_required">First name is required</string>
     <string name="error_last_name_required">Last name is required</string>
@@ -376,7 +352,6 @@
     <string name="error_auth_operation_not_allowed">This sign-in method is not enabled</string>
 
     <!-- Success messages -->
-    <string name="msg_password_reset_sent">Password reset link sent to %1$s</string>
 
     <!-- App info screen -->
     <string name="app_info_page_indicator">%1$d/%2$d</string>
@@ -384,14 +359,9 @@
     <string name="app_info_page1_title">Track body changes, not just weight</string>
     <string name="screen_health_connections">Health connections</string>
     <string name="health_connections_subtitle">Sync sleep, recovery, and activity for insights.</string>
-    <string name="health_connection_apple">Apple Health</string>
-    <string name="health_connection_google">Google Health</string>
-    <string name="health_connection_health_connect">Health Connect</string>
-    <string name="health_connection_oura">Oura</string>
     <string name="health_connection_dummy">Terra Dummy</string>
     <string name="health_connection_status_connected">Connected</string>
     <string name="health_connection_status_not_connected">Not connected</string>
-    <string name="health_connection_wearable">Connect wearable</string>
     <string name="health_connections_empty_search_message">No results found for &quot;%1$s&quot;</string>
     <string name="search_placeholder">Search</string>
 
@@ -480,7 +450,6 @@
     <string name="msg_health_connect_connected">Health Connect connected</string>
     <string name="msg_health_connect_disconnected">Health Connect disconnected from Terra</string>
     <string name="msg_health_connect_nothing_to_disconnect">Nothing to disconnect</string>
-    <string name="health_connection_disconnect_google">Disconnect Google Health</string>
     <string name="msg_wearable_connected">%1$s connected</string>
     <string name="msg_wearable_disconnected">%1$s disconnected from Terra</string>
 
@@ -496,8 +465,6 @@
     <string name="onboarding_personal_info_subtitle">This helps personalize your results\nand progress tracking.</string>
     <string name="onboarding_suit_connect_title">Connect your scanning suit</string>
     <string name="onboarding_suit_connect_subtitle">If you already have a suit, connect it now.\nYou can also do this later in Settings.</string>
-    <string name="onboarding_suit_connected_title">Suit connected</string>
-    <string name="onboarding_suit_connected_subtitle">Your scanning suit is successfully linked to your profile.</string>
     <string name="onboarding_suit_id_hint">You can find the ID on your suit tag or packaging</string>
     <string name="onboarding_no_suit">No scanning suit yet?</string>
     <string name="onboarding_buy_one">Buy one</string>
@@ -512,17 +479,14 @@
     <string name="recovery_screen_title">Recovery</string>
     <string name="recovery_tab_day">Day</string>
     <string name="recovery_tab_summary">Summary</string>
-    <string name="recovery_status_title">Recovery status</string>
     <string name="recovery_state_title">Recovery State</string>
     <string name="recovery_status_ready">Ready</string>
     <string name="recovery_status_recovering">Recovering</string>
     <string name="recovery_status_low">Low</string>
     <string name="recovery_metric_sleep">Sleep</string>
-    <string name="recovery_metric_heart">Heart</string>
     <string name="recovery_metric_resting_hr">Resting Heart Rate</string>
     <string name="recovery_metric_stress">Stress</string>
     <string name="recovery_metric_activity_load">Activity load</string>
-    <string name="recovery_metric_heart_bpm">%1$d bpm</string>
     <string name="recovery_stress_low">Low</string>
     <string name="recovery_stress_medium">Medium</string>
     <string name="recovery_stress_high">High</string>
@@ -617,7 +581,6 @@
     <string name="activity_trend_none_year">Not enough data to compare with last year yet.</string>
     <string name="activity_trend_percent_signed">%1$+d%%</string>
     <string name="activity_trend_none_symbol">—</string>
-    <string name="activity_date_range_format">%1$s - %2$s</string>
     <string name="activity_axis_thousands_short">%1$dk</string>
 
     <!-- Activity settings dialog -->
@@ -628,13 +591,11 @@
 
     <!-- Scan screen -->
     <string name="scan_title">Scan</string>
-    <string name="how_to_scan_title">How to scan?</string>
     <string name="scan_results_title">Results</string>
     <string name="scan_suit_not_detected_title">Suit is not detected</string>
     <string name="scan_suit_not_detected_body">You’re not wearing the suit right now. Put it on to continue, or switch to Regular Scan.</string>
     <string name="action_connect_suit">Connect suit</string>
     <string name="action_buy_suit">Buy suit</string>
-    <string name="action_start_scan">Start scan</string>
     <string name="scan_voice_guidance_auto">Voice guidance plays automatically during scans</string>
     <string name="scan_step_label">Step</string>
     <string name="scan_step_1_a">Place your phone at a 90° angle.</string>
@@ -645,7 +606,6 @@
     <string name="scan_step_3_b">Hold still while your body scan is being captured.</string>
     <string name="scan_progress_submitting">Submitting your photos…</string>
     <string name="scan_progress_processing">Processing your scan…</string>
-    <string name="cd_flip_camera">Flip camera</string>
     <string name="cd_scan_warning">Warning</string>
     <string name="scan_results_tab_visual">Visual</string>
     <string name="scan_results_tab_posture">Posture</string>
@@ -661,9 +621,6 @@
     <string name="scan_results_preview_unavailable">3D preview unavailable</string>
     <string name="scan_results_avatar_loading">Loading 3D preview…</string>
     <string name="scan_results_compare_no_previous">No previous scan to compare</string>
-    <string name="scan_results_posture_empty">No posture measurements available</string>
-    <string name="scan_results_posture_section_front">Front</string>
-    <string name="scan_results_posture_section_side">Side</string>
     <string name="scan_results_compare_previous">Previous</string>
     <string name="scan_results_compare_current">Current</string>
     <string name="unit_cm">cm</string>
@@ -689,12 +646,6 @@
     <string name="scan_measurement_thigh">Thigh</string>
     <string name="scan_measurement_calf">Calf</string>
     <string name="scan_measurement_ankles">Ankles</string>
-    <string name="scan_measurement_label_shoulders">Shoulders\n505</string>
-    <string name="scan_measurement_label_chest">Chest\n505</string>
-    <string name="scan_measurement_label_muscles">Muscles\n505</string>
-    <string name="scan_measurement_label_hips">Hips\n505</string>
-    <string name="scan_measurement_label_thigh">Thigh\n505</string>
-    <string name="scan_measurement_label_calf">Calf\n505</string>
 
     <!-- Scan error messages -->
     <string name="scan_error_profile_load">Failed to load profile: %1$s</string>

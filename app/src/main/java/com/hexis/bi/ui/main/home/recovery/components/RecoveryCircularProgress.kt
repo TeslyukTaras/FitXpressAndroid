@@ -69,9 +69,9 @@ fun RecoveryCircularProgress(
             // 150° start = red, 270° = yellow, 30° end = green; the unfilled top gap holds the wrap.
             if (filledSweep > 0f) {
                 val brush = Brush.sweepGradient(
-                    GAUGE_END_STOP to gaugeHigh,
-                    GAUGE_START_STOP to gaugeLow,
-                    GAUGE_MID_STOP to gaugeMid,
+                    RecoveryConstants.GAUGE_GRADIENT_END_STOP to gaugeHigh,
+                    RecoveryConstants.GAUGE_GRADIENT_START_STOP to gaugeLow,
+                    RecoveryConstants.GAUGE_GRADIENT_MID_STOP to gaugeMid,
                     1f to gaugeHigh,
                     center = center,
                 )
@@ -107,9 +107,3 @@ fun RecoveryCircularProgress(
         }
     }
 }
-
-// Arc spans 150° → 390°. As sweep-gradient fractions (angle / 360): start 150° = 0.4167,
-// mid 270° = 0.75, end 30° (= 390°) = 0.0833.
-private const val GAUGE_START_STOP = 150f / 360f
-private const val GAUGE_MID_STOP = 270f / 360f
-private const val GAUGE_END_STOP = 30f / 360f

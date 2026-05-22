@@ -70,7 +70,6 @@
     <dimen name="scanner_line_stroke_width">3dp</dimen>
     <dimen name="scan_results_preview_height">600dp</dimen>
     <dimen name="scan_history_thumb_width">60dp</dimen>
-    <dimen name="scan_history_thumb_icon_padding">10dp</dimen>
 
     <!-- Measurement leader overlay (3D preview pills + leader strokes). -->
     <dimen name="measurement_leader_stroke_width">1.25dp</dimen>
@@ -95,8 +94,6 @@
     <dimen name="body_visual_bottom_spacer">86dp</dimen>
     <dimen name="body_visual_model_blur_top_radius">2dp</dimen>
     <dimen name="body_visual_model_blur_bottom_radius">2.5dp</dimen>
-    <dimen name="body_visual_measurement_slider_blur_bottom_band">125dp</dimen>
-    <dimen name="body_visual_measurement_slider_blur_bottom_radius">4dp</dimen>
     <!-- Body Visual tab — body-part selector ruler -->
     <dimen name="body_part_selector_scale_width">32dp</dimen>
     <dimen name="body_part_selector_label_gap">16dp</dimen>
@@ -139,7 +136,6 @@
 
     <!-- Dividers -->
     <dimen name="divider_size">1dp</dimen>
-    <dimen name="gradient_divider_thickness">@dimen/divider_size</dimen>
 
     <!-- Effects -->
     <dimen name="dash_width">5dp</dimen>
