@@ -1,20 +1,22 @@
 package com.hexis.bi.ui.main.home.recovery.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,259 +30,342 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import com.hexis.bi.R
+import com.hexis.bi.ui.dark.BodyGlassCard
 import com.hexis.bi.ui.main.home.recovery.DailyRecoveryEntry
-import com.hexis.bi.ui.theme.Blue300
-import com.hexis.bi.ui.theme.GridLineGray
-import com.hexis.bi.ui.theme.LightBlue
-import com.hexis.bi.ui.theme.LightGradientBlue
+import com.hexis.bi.ui.theme.ChartTooltipFill
+import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.utils.constants.RecoveryConstants
 import kotlin.math.roundToInt
+
+private val SummaryChartGridLines = listOf(0f, 50f, 75f, 100f)
+
+private fun summaryChartFractionFromTop(score: Float): Float {
+    val value = score.coerceIn(0f, RecoveryConstants.MAX_SCORE)
+    return when {
+        value >= 75f -> ((RecoveryConstants.MAX_SCORE - value) / 25f) / 3f
+        value >= 50f -> (1f / 3f) + ((75f - value) / 25f) / 3f
+        else -> (2f / 3f) + ((50f - value) / 50f) / 3f
+    }
+}
 
 @Composable
 fun RecoveryBarChart(
     entries: List<DailyRecoveryEntry>,
     modifier: Modifier = Modifier,
 ) {
-    val yAxisWidth = dimensionResource(R.dimen.recovery_y_axis_width)
-    val chartGap = dimensionResource(R.dimen.spacer_xs)
-    val barGap = dimensionResource(R.dimen.recovery_bar_horizontal_padding)
+    val density = LocalDensity.current
+    val chartGap = dimensionResource(R.dimen.spacer_xxs)
+    val barGap = dimensionResource(R.dimen.spacer_s)
+    val barHorizontalInset = dimensionResource(R.dimen.spacer_l)
     val dashWidth = dimensionResource(R.dimen.dash_width)
     val stripeWidth = dimensionResource(R.dimen.sleep_bar_stripe_width)
     val pointerVerticalPadding = dimensionResource(R.dimen.activity_chart_pointer_vertical_padding)
-    val pointerColor = MaterialTheme.colorScheme.secondary
-    val density = LocalDensity.current
+    val gridColor = MaterialTheme.colorScheme.outline
+    val pointerColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val axisColor = MaterialTheme.colorScheme.outlineVariant
 
     var selectedIndex by remember { mutableIntStateOf(-1) }
+    var yAxisWidthPx by remember { mutableIntStateOf(0) }
     var barsAreaWidth by remember { mutableIntStateOf(0) }
+    var chartTopPx by remember { mutableIntStateOf(0) }
+    var chartHeightPx by remember { mutableIntStateOf(0) }
     var tooltipWidth by remember { mutableIntStateOf(0) }
+    var tooltipHeight by remember { mutableIntStateOf(0) }
     val selectedEntry = entries.getOrNull(selectedIndex)
     val showTooltip = selectedEntry != null && barsAreaWidth > 0
     val tooltipEntry = selectedEntry ?: entries.firstOrNull()
+    val yAxisWidth = with(density) { yAxisWidthPx.toDp() }
 
-    Column(
-        modifier = modifier.fillMaxWidth(),
+    fun barCenterX(index: Int, areaWidthPx: Float, gapPx: Float): Float {
+        val barWidthPx = (areaWidthPx - gapPx * (entries.size - 1)) / entries.size.toFloat()
+        return index * (barWidthPx + gapPx) + barWidthPx / 2f
+    }
+
+    BodyGlassCard(
+        modifier = modifier,
+        contentPadding = PaddingValues(
+            start = dimensionResource(R.dimen.spacer_m),
+            top = dimensionResource(R.dimen.spacer_l),
+            end = dimensionResource(R.dimen.spacer_m),
+            bottom = dimensionResource(R.dimen.spacer_xl),
+        ),
     ) {
-        // Header / tooltip overlay
-        Box(modifier = Modifier.fillMaxWidth()) {
-            if (tooltipEntry != null) {
-                Column(
-                    modifier = Modifier
-                        .alpha(if (showTooltip) 1f else 0f)
-                        .onSizeChanged { tooltipWidth = it.width }
-                        .offset {
-                            if (barsAreaWidth == 0) return@offset IntOffset.Zero
-
-                            val safeIndex = selectedIndex.coerceAtLeast(0)
-                            val gapPx = barGap.roundToPx().toFloat()
-                            val barWidthPx =
-                                (barsAreaWidth - gapPx * (entries.size - 1)) / entries.size.toFloat()
-                            val centerOfBarX =
-                                safeIndex * (barWidthPx + gapPx) + (barWidthPx / 2f)
-                            val absoluteCenterX =
-                                (yAxisWidth + chartGap).roundToPx() + centerOfBarX
-
-                            var targetX = absoluteCenterX - (tooltipWidth / 2f)
-                            val maxScroll =
-                                (yAxisWidth + chartGap).roundToPx() + barsAreaWidth - tooltipWidth
-                            targetX = targetX.coerceIn(0f, maxScroll.toFloat())
-
-                            IntOffset(targetX.roundToInt(), 0)
-                        }
-                        .background(
-                            MaterialTheme.colorScheme.background,
-                            MaterialTheme.shapes.small,
-                        )
-                        .padding(
-                            vertical = dimensionResource(R.dimen.spacer_2xs),
-                            horizontal = dimensionResource(R.dimen.spacer_s),
-                        ),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = tooltipEntry.dayLabel,
-                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                        color = MaterialTheme.colorScheme.onBackground,
-                        textAlign = TextAlign.Center,
-                    )
-                    Text(
-                        text = stringResource(
-                            R.string.recovery_avg_score_value,
-                            tooltipEntry.score
-                        ),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Blue300,
-                    )
-                }
-            }
-
-            if (!showTooltip) Row(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(top = dimensionResource(R.dimen.spacer_xxs))
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.recovery_screen_title),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Text(
-                    text = stringResource(R.string.recovery_last_7_days),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.secondary,
-                )
-            }
-        }
-
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
-
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(dimensionResource(R.dimen.recovery_bar_chart_height)),
+                .drawBehind {
+                    if (showTooltip && selectedIndex in entries.indices && chartHeightPx > 0) {
+                        val centerX = yAxisWidthPx.toFloat() +
+                                chartGap.toPx() +
+                                barHorizontalInset.toPx() +
+                                barCenterX(selectedIndex, barsAreaWidth.toFloat(), barGap.toPx())
+                        val startY = tooltipHeight.toFloat()
+                        val endY = chartTopPx + chartHeightPx - pointerVerticalPadding.toPx()
+                        if (startY < endY) {
+                            val dashEffect = PathEffect.dashPathEffect(
+                                floatArrayOf(dashWidth.toPx(), dashWidth.toPx()), 0f,
+                            )
+                            drawLine(
+                                color = pointerColor,
+                                start = Offset(centerX, startY),
+                                end = Offset(centerX, endY),
+                                strokeWidth = stripeWidth.toPx(),
+                                pathEffect = dashEffect,
+                            )
+                        }
+                    }
+                },
         ) {
-            // Y-axis
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(yAxisWidth),
-            ) {
-                RecoveryConstants.GRID_LINES.forEach { value ->
-                    val fraction = RecoveryConstants.mapScoreToFraction(value)
-                    Text(
-                        text = value.toInt().toString(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.align { size, space, _ ->
-                            IntOffset(0, (space.height * fraction - size.height / 2).toInt())
-                        },
-                    )
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .fillMaxWidth()
+                            .alpha(if (showTooltip) 0f else 1f),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.recovery_screen_title),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                        Text(
+                            text = stringResource(R.string.recovery_last_7_days),
+                            style = TitleDimTextStyle,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-            }
 
-            Spacer(Modifier.width(chartGap))
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxl)))
 
-            // Bars + grid lines
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .onSizeChanged { barsAreaWidth = it.width }
-                    .pointerInput(entries.size) {
-                        if (entries.isEmpty()) return@pointerInput
-                        awaitEachGesture {
-                            val down = awaitFirstDown(requireUnconsumed = false)
-                            val gapPx = barGap.toPx()
-                            val barWidthPx =
-                                (size.width - gapPx * (entries.size - 1)) / entries.size.toFloat()
-                            val slotWidthPx = barWidthPx + gapPx
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(dimensionResource(R.dimen.recovery_bar_chart_height))
+                        .onGloballyPositioned {
+                            chartTopPx = it.positionInParent().y.roundToInt()
+                        }
+                        .onSizeChanged {
+                            chartHeightPx = it.height
+                        },
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .onSizeChanged { yAxisWidthPx = it.width },
+                    ) {
+                        SummaryChartGridLines.forEach { value ->
+                            val fractionFromTop = summaryChartFractionFromTop(value)
+                            Text(
+                                text = value.toInt().toString(),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.align { size, space, _ ->
+                                    IntOffset(
+                                        0,
+                                        (space.height * fractionFromTop - size.height / 2).toInt()
+                                    )
+                                },
+                            )
+                        }
+                    }
 
-                            fun indexForX(x: Float): Int =
-                                (x / slotWidthPx).toInt().coerceIn(0, entries.size - 1)
+                    Spacer(Modifier.width(chartGap))
 
-                            selectedIndex = indexForX(down.position.x)
-                            down.consume()
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .pointerInput(entries.size) {
+                                if (entries.isEmpty()) return@pointerInput
+                                awaitEachGesture {
+                                    val down = awaitFirstDown(requireUnconsumed = false)
+                                    val gapPx = barGap.toPx()
+                                    val insetPx = barHorizontalInset.toPx()
+                                    val barWidthPx =
+                                        (barsAreaWidth - gapPx * (entries.size - 1)) / entries.size.toFloat()
+                                    val slotWidthPx = barWidthPx + gapPx
 
-                            while (true) {
-                                val event = awaitPointerEvent()
-                                val change = event.changes.firstOrNull() ?: break
-                                if (change.changedToUp()) {
-                                    selectedIndex = -1
-                                    break
+                                    fun indexForX(x: Float): Int {
+                                        val localX =
+                                            (x - insetPx).coerceIn(0f, barsAreaWidth.toFloat())
+                                        return (localX / slotWidthPx).toInt()
+                                            .coerceIn(0, entries.size - 1)
+                                    }
+
+                                    selectedIndex = indexForX(down.position.x)
+                                    down.consume()
+
+                                    while (true) {
+                                        val event = awaitPointerEvent()
+                                        val change = event.changes.firstOrNull() ?: break
+                                        if (change.changedToUp()) {
+                                            selectedIndex = -1
+                                            break
+                                        }
+                                        selectedIndex = indexForX(change.position.x)
+                                        change.consume()
+                                    }
                                 }
-                                selectedIndex = indexForX(change.position.x)
-                                change.consume()
+                            }
+                            .drawBehind {
+                                val dashEffect = PathEffect.dashPathEffect(
+                                    floatArrayOf(dashWidth.toPx(), dashWidth.toPx()), 0f,
+                                )
+                                drawLine(
+                                    color = axisColor,
+                                    start = Offset(0f, 0f),
+                                    end = Offset(0f, size.height),
+                                    strokeWidth = stripeWidth.toPx(),
+                                )
+                                drawLine(
+                                    color = axisColor,
+                                    start = Offset(0f, size.height),
+                                    end = Offset(size.width, size.height),
+                                    strokeWidth = stripeWidth.toPx(),
+                                )
+                                SummaryChartGridLines.filter { it > 0f }.forEach { value ->
+                                    val y = size.height * summaryChartFractionFromTop(value)
+                                    drawLine(
+                                        color = gridColor,
+                                        start = Offset(0f, y),
+                                        end = Offset(size.width, y),
+                                        strokeWidth = stripeWidth.toPx(),
+                                        pathEffect = dashEffect,
+                                    )
+                                }
+                            },
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = barHorizontalInset)
+                                .onSizeChanged { barsAreaWidth = it.width },
+                            horizontalArrangement = Arrangement.spacedBy(barGap),
+                        ) {
+                            entries.forEach { entry ->
+                                DayBar(
+                                    entry = entry,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight(),
+                                )
                             }
                         }
                     }
-                    .drawBehind {
-                        val dashEffect = PathEffect.dashPathEffect(
-                            floatArrayOf(dashWidth.toPx(), dashWidth.toPx()), 0f,
-                        )
-                        RecoveryConstants.GRID_LINES.forEach { value ->
-                            val y = size.height * RecoveryConstants.mapScoreToFraction(value)
-                            drawLine(
-                                color = GridLineGray,
-                                start = Offset(0f, y),
-                                end = Offset(size.width, y),
-                                strokeWidth = stripeWidth.toPx(),
-                                pathEffect = dashEffect,
-                            )
-                        }
-                        if (selectedIndex in entries.indices && entries.isNotEmpty()) {
-                            val gapPx = barGap.toPx()
-                            val barWidthPx =
-                                (size.width - gapPx * (entries.size - 1)) / entries.size.toFloat()
-                            val centerX = selectedIndex * (barWidthPx + gapPx) + (barWidthPx / 2f)
-                            val verticalPaddingPx = pointerVerticalPadding.toPx()
-                            drawLine(
-                                color = pointerColor,
-                                start = Offset(centerX, verticalPaddingPx),
-                                end = Offset(centerX, size.height - verticalPaddingPx),
-                                strokeWidth = stripeWidth.toPx(),
-                                pathEffect = dashEffect,
-                            )
-                        }
-                    },
-            ) {
-                if (entries.isNotEmpty() && barsAreaWidth > 0) {
-                    val gapPx = with(density) { barGap.toPx() }
-                    val barWidthPx =
-                        (barsAreaWidth - gapPx * (entries.size - 1)) / entries.size.toFloat()
-                    val barWidthDp = with(density) { barWidthPx.toDp() }
+                }
+            }
 
-                    entries.forEachIndexed { index, entry ->
-                        val offsetX = index * (barWidthPx + gapPx)
-                        DayBar(
-                            entry = entry,
-                            isSelected = index == selectedIndex,
-                            modifier = Modifier
-                                .offset { IntOffset(offsetX.roundToInt(), 0) }
-                                .width(barWidthDp),
+            if (tooltipEntry != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .alpha(if (showTooltip) 1f else 0f),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .onSizeChanged {
+                                tooltipWidth = it.width
+                                tooltipHeight = it.height
+                            }
+                            .offset {
+                                if (barsAreaWidth == 0) return@offset IntOffset.Zero
+                                val safeIndex = selectedIndex.coerceAtLeast(0)
+                                val absoluteCenterX = (yAxisWidth + chartGap).roundToPx() +
+                                        barHorizontalInset.roundToPx() +
+                                        barCenterX(
+                                            safeIndex,
+                                            barsAreaWidth.toFloat(),
+                                            barGap.toPx()
+                                        )
+                                val targetX = (absoluteCenterX - tooltipWidth / 2f).coerceIn(
+                                    0f,
+                                    ((yAxisWidth + chartGap).roundToPx() + barsAreaWidth - tooltipWidth)
+                                        .toFloat(),
+                                )
+                                IntOffset(targetX.roundToInt(), 0)
+                            }
+                            .clip(MaterialTheme.shapes.small)
+                            .background(ChartTooltipFill)
+                            .border(
+                                width = dimensionResource(R.dimen.border_line),
+                                color = MaterialTheme.colorScheme.outline,
+                                shape = MaterialTheme.shapes.small,
+                            )
+                            .padding(
+                                vertical = dimensionResource(R.dimen.spacer_2xs),
+                                horizontal = dimensionResource(R.dimen.spacer_s),
+                            ),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            text = tooltipEntry.tooltipLabel.ifEmpty { tooltipEntry.dayLabel },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            textAlign = TextAlign.Center,
                         )
+                        Row {
+                            Text(
+                                text = tooltipEntry.score.toString(),
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = Color.White,
+                                modifier = Modifier.alignByBaseline(),
+                            )
+                            Spacer(Modifier.width(dimensionResource(R.dimen.spacer_3xs)))
+                            Text(
+                                text = stringResource(R.string.recovery_score_unit),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.alignByBaseline(),
+                            )
+                        }
                     }
                 }
             }
         }
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    top = dimensionResource(R.dimen.spacer_xxs),
-                    bottom = dimensionResource(R.dimen.spacer_xxs),
-                    start = dimensionResource(R.dimen.spacer_xs),
-                ),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            val first = entries.firstOrNull()?.dayLabel.orEmpty()
-            val last = entries.lastOrNull()?.dayLabel.orEmpty()
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
+
+        // X-axis day labels, aligned under each bar (today highlighted).
+        Row(modifier = Modifier.fillMaxWidth()) {
             Spacer(Modifier.width(yAxisWidth))
-            Text(
-                text = first,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.secondary,
-            )
-            Spacer(Modifier.weight(1f))
-            Text(
-                text = last,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.secondary,
-            )
+            Spacer(Modifier.width(chartGap))
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = barHorizontalInset),
+                horizontalArrangement = Arrangement.spacedBy(barGap),
+            ) {
+                entries.forEach { entry ->
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = entry.dayLabel,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (entry.isHighlighted) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -288,34 +373,23 @@ fun RecoveryBarChart(
 @Composable
 private fun DayBar(
     entry: DailyRecoveryEntry,
-    isSelected: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val minBarHeight = dimensionResource(R.dimen.chart_bar_min_height)
-    val highlight = entry.isHighlighted || isSelected
-    val barBrush = if (highlight)
-        Brush.verticalGradient(listOf(LightGradientBlue, Blue300))
-    else Brush.verticalGradient(listOf(LightBlue, LightBlue))
-
-    val barShape = RoundedCornerShape(
-        topStart = dimensionResource(R.dimen.recovery_bar_corner),
-        topEnd = dimensionResource(R.dimen.recovery_bar_corner),
-    )
 
     Box(
-        modifier = modifier.fillMaxHeight(),
+        modifier = modifier,
         contentAlignment = Alignment.BottomCenter,
     ) {
-        val fraction =
-            (1f - RecoveryConstants.mapScoreToFraction(entry.score.toFloat())).coerceIn(0f, 1f)
+        val fraction = 1f - summaryChartFractionFromTop(entry.score.toFloat())
         val fillModifier = if (fraction > 0f) Modifier.fillMaxHeight(fraction)
         else Modifier.height(minBarHeight)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .then(fillModifier)
-                .clip(barShape)
-                .background(barBrush),
+                .clip(MaterialTheme.shapes.extraSmall)
+                .background(MaterialTheme.colorScheme.primary),
         )
     }
 }

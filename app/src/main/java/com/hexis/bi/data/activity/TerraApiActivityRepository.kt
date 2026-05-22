@@ -46,14 +46,16 @@ class TerraApiActivityRepository(
             fetchJson = ::fetchJsonForUser,
             parse = { rows -> rows.mapNotNull(TerraActivityJsonMapper::summaryOrNull) },
             merge = ::mergeGapFillByDate,
-        ).onSuccess { rangeCache.put(key, it) }
+        ).map { summaries ->
+            summaries.filter { summary -> !summary.date.isBefore(start) && !summary.date.isAfter(end) }
+        }.onSuccess { rangeCache.put(key, it) }
     }
 
     private suspend fun fetchJsonForUser(
         terraUserId: String,
         start: LocalDate,
         end: LocalDate,
-    ): Result<List<JsonElement>> = TerraRangeJsonFetcher.fetchJsonRows(start, end) { rs, re ->
+    ): Result<List<JsonElement>> = TerraRangeJsonFetcher.fetchJsonRows(start, end.plusDays(1)) { rs, re ->
         api.getDaily(terraUserId = terraUserId, startDate = rs, endDate = re)
     }
 

@@ -531,16 +531,17 @@
     <string name="recovery_load_heavy">Heavy</string>
     <string name="recovery_trend_up">Improving</string>
     <string name="recovery_trend_down">Decreasing</string>
-    <string name="recovery_trend_flat">Stable</string>
-    <string name="recovery_trend_up_description">Recovery improved compared with last week.</string>
-    <string name="recovery_trend_down_description">Recovery decreased compared with last week.</string>
-    <string name="recovery_trend_flat_description">Recovery stayed stable this week.</string>
+    <string name="recovery_trend_flat">Stability</string>
+    <string name="recovery_trend_up_description">Your recovery improved this week.</string>
+    <string name="recovery_trend_down_description">Your recovery decreased this week.</string>
+    <string name="recovery_trend_flat_description">Your recovery remained stable this week.</string>
     <string name="recovery_info_title">Recovery and Adaptation</string>
     <string name="recovery_info_body">Recovery reflects how ready your body is based on recent signals.</string>
-    <string name="recovery_last_7_days">Last 7 days</string>
-    <string name="recovery_avg_score">Avg score</string>
+    <string name="recovery_last_7_days">Last 7 Days</string>
+    <string name="recovery_avg_score">Average Recovery Score</string>
     <string name="recovery_avg_score_value">%1$d/100</string>
-    <string name="recovery_trend_label">Trend:</string>
+    <string name="recovery_score_unit">/100</string>
+    <string name="recovery_trend_label">Recovery:</string>
 
     <!-- HRV Details card -->
     <string name="recovery_hrv_title">HRV Details</string>

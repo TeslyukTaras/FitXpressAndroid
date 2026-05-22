@@ -2,7 +2,6 @@ package com.hexis.bi.ui.main.home.recovery
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -18,15 +17,15 @@ fun RecoverySummaryContent(
     state: RecoveryState,
     onPreviousWeek: () -> Unit,
     onNextWeek: () -> Unit,
-    onRetry: () -> Unit = {},
 ) {
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
     AppDateNavigator(
-        modifier = Modifier.padding(vertical = dimensionResource(R.dimen.spacer_xxs)),
         label = state.weekLabel,
         onPrevious = onPreviousWeek,
         onNext = onNextWeek,
         canGoNext = state.canGoNextWeek,
     )
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxs)))
 
     when (state.summaryLoadState) {
         RecoveryLoadState.Loading -> RecoveryLoadPlaceholder {
@@ -43,7 +42,7 @@ fun RecoverySummaryContent(
 private fun RecoverySummaryReady(state: RecoveryState) {
     RecoveryBarChart(entries = state.weeklyEntries)
 
-    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
     RecoveryScoreCards(
         avgScore = state.avgScore,

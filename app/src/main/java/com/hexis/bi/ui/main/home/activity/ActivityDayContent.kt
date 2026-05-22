@@ -134,7 +134,7 @@ private fun ActivityDayReady(
             .padding(top = dimensionResource(R.dimen.spacer_xxs)),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Spacer(Modifier.width(dimensionResource(R.dimen.recovery_y_axis_width) + dimensionResource(R.dimen.spacer_xs)))
+        Spacer(Modifier.width(dimensionResource(R.dimen.spacer_2xl) + dimensionResource(R.dimen.spacer_xs)))
         Text(
             text = stringResource(R.string.activity_time_start),
             style = MaterialTheme.typography.bodySmall,

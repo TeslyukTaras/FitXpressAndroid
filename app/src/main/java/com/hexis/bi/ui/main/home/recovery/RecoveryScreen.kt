@@ -94,7 +94,6 @@ fun RecoveryScreen(
                                 state = state,
                                 onPreviousWeek = viewModel::previousWeek,
                                 onNextWeek = viewModel::nextWeek,
-                                onRetry = viewModel::retrySummaryLoad,
                             )
                         }
                     }

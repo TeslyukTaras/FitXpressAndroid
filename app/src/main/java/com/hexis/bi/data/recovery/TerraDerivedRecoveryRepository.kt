@@ -9,13 +9,7 @@ import com.hexis.bi.utils.constants.RecoveryConstants
 import com.hexis.bi.utils.constants.SleepConstants
 import com.hexis.bi.utils.constants.TerraCacheConstants
 import java.time.LocalDate
-import java.time.temporal.ChronoUnit
 import kotlin.math.roundToInt
-
-private object RecoveryRepositoryConstants {
-    const val DAY_LOOKBACK_DAYS = 1L
-    const val DAY_LOOKAHEAD_DAYS = 1L
-}
 
 /**
  * Recovery isn't its own Terra endpoint — we derive it from sleep + activity data
@@ -29,22 +23,55 @@ class TerraDerivedRecoveryRepository(
     private val rangeCache = TtlCache<Pair<LocalDate, LocalDate>, List<RecoverySnapshot>>(
         ttlMs = TerraCacheConstants.RANGE_CACHE_TTL_MS,
     )
+    private val dayCache = TtlCache<LocalDate, CachedRecoverySnapshot>(
+        ttlMs = TerraCacheConstants.RANGE_CACHE_TTL_MS,
+    )
 
     override suspend fun getSnapshotForDate(date: LocalDate): Result<RecoverySnapshot?> =
-        getSnapshotsForRange(
-            date.minusDays(RecoveryRepositoryConstants.DAY_LOOKBACK_DAYS),
-            date.plusDays(RecoveryRepositoryConstants.DAY_LOOKAHEAD_DAYS),
-        ).map { rows ->
-            rows.minByOrNull { kotlin.math.abs(ChronoUnit.DAYS.between(it.date, date)) }
-        }
+        dayCache.get(date)?.let { Result.success(it.snapshot) }
+            ?: getSnapshotsForRange(date, date).map { rows -> rows.firstOrNull { it.date == date } }
 
     override suspend fun getSnapshotsForRange(
         start: LocalDate,
         end: LocalDate,
     ): Result<List<RecoverySnapshot>> {
+        require(!start.isAfter(end)) { "start after end" }
+
         val key = start to end
         rangeCache.get(key)?.let { return Result.success(it) }
 
+        val days = daysInclusive(start, end)
+        val cachedByDate = LinkedHashMap<LocalDate, CachedRecoverySnapshot>()
+        val missingDays = ArrayList<LocalDate>()
+        for (day in days) {
+            val cached = dayCache.get(day)
+            if (cached != null) cachedByDate[day] = cached
+            else missingDays += day
+        }
+
+        if (missingDays.isNotEmpty()) {
+            for ((missingStart, missingEnd) in contiguousRanges(missingDays)) {
+                val fetched = fetchSnapshotsForRange(missingStart, missingEnd)
+                    .getOrElse { return Result.failure(it) }
+                    .associateBy { it.date }
+
+                for (day in daysInclusive(missingStart, missingEnd)) {
+                    val cached = CachedRecoverySnapshot(fetched[day])
+                    dayCache.put(day, cached)
+                    cachedByDate[day] = cached
+                }
+            }
+        }
+
+        val snapshots = days.mapNotNull { cachedByDate[it]?.snapshot }
+        rangeCache.put(key, snapshots)
+        return Result.success(snapshots)
+    }
+
+    private suspend fun fetchSnapshotsForRange(
+        start: LocalDate,
+        end: LocalDate,
+    ): Result<List<RecoverySnapshot>> {
         val sleepRange = sleepRepository.getSessionsForRange(start.minusDays(1), end)
             .getOrElse { return Result.failure(it) }
         val activityRange = activityRepository.getSummariesForRange(start, end)
@@ -55,16 +82,12 @@ class TerraDerivedRecoveryRepository(
             .mapValues { (_, sessions) -> sessions.maxByOrNull { it.durationMinutes }!! }
         val activityByDate: Map<LocalDate, ActivitySummary> = activityRange.associateBy { it.date }
 
-        val days =
-            generateSequence(start) { d -> if (d.isBefore(end)) d.plusDays(1) else null }.toList()
-        val snapshots = days.mapNotNull { day ->
+        return Result.success(daysInclusive(start, end).mapNotNull { day ->
             val sleep = sleepByWakeDay[day]
             val activity = activityByDate[day]
             if (sleep == null && activity == null) return@mapNotNull null
             buildSnapshot(day, sleep, activity)
-        }
-        rangeCache.put(key, snapshots)
-        return Result.success(snapshots)
+        })
     }
 
     private fun buildSnapshot(
@@ -166,4 +189,28 @@ class TerraDerivedRecoveryRepository(
         calories >= RecoveryConstants.ACTIVITY_LOAD_HEAVY_MIN -> ActivityLoadLevel.Heavy
         else -> ActivityLoadLevel.Moderate
     }
+
+    private fun daysInclusive(start: LocalDate, end: LocalDate): List<LocalDate> =
+        generateSequence(start) { d -> if (d.isBefore(end)) d.plusDays(1) else null }.toList()
+
+    private fun contiguousRanges(days: List<LocalDate>): List<Pair<LocalDate, LocalDate>> {
+        if (days.isEmpty()) return emptyList()
+
+        val ranges = ArrayList<Pair<LocalDate, LocalDate>>()
+        var rangeStart = days.first()
+        var previous = rangeStart
+        for (day in days.drop(1)) {
+            if (day == previous.plusDays(1)) {
+                previous = day
+            } else {
+                ranges += rangeStart to previous
+                rangeStart = day
+                previous = day
+            }
+        }
+        ranges += rangeStart to previous
+        return ranges
+    }
+
+    private data class CachedRecoverySnapshot(val snapshot: RecoverySnapshot?)
 }

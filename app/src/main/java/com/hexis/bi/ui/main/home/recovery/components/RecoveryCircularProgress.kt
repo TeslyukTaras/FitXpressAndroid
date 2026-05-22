@@ -92,7 +92,7 @@ fun RecoveryCircularProgress(
             verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_2xs)),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .offset(y = -dimensionResource(R.dimen.recovery_arc_text_offset)),
+                .offset(y = -dimensionResource(R.dimen.spacer_l)),
         ) {
             Text(
                 text = stringResource(R.string.format_percentage, score),

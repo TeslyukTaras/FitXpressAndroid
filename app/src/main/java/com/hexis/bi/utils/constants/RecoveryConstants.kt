@@ -4,7 +4,7 @@ internal object RecoveryConstants {
     const val ARC_START_ANGLE = 145f
     const val ARC_TOTAL_SWEEP = 250f
     const val MAX_SCORE = 100f
-    val GRID_LINES = listOf(0f, 50f, 75f, 100f)
+    val GRID_LINES = listOf(0f, 25f, 50f, 75f, 100f)
 
     // Recovery — Lifestyle Mode (HEX v4 §5.6): 0.50 HRV + 0.30 RHR + 0.20 Sleep.
     // Activity load is tracked for context only; it does not affect the score in lifestyle mode.
@@ -30,12 +30,6 @@ internal object RecoveryConstants {
     // Score → RecoveryStatus thresholds.
     const val STATUS_READY_MIN = 70
     const val STATUS_RECOVERING_MIN = 40
-
-    // Example: If 50 should be at 75% of the height (from the top) and 100 should be at 0% (the top).
-    fun mapScoreToFraction(score: Float) = when {
-        score >= 50f -> 0.75f - ((score - 50f) / 50f) * 0.75f
-        else -> 1f - (score / 50f) * 0.25f
-    }
 }
 
 

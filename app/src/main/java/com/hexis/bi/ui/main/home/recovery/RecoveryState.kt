@@ -54,6 +54,8 @@ data class DailyRecoveryEntry(
     val dayLabel: String,
     val score: Int,
     val isHighlighted: Boolean = false,
+    /** Fuller label shown in the press tooltip (e.g. "Dec 24"); falls back to [dayLabel]. */
+    val tooltipLabel: String = "",
 )
 
 data class RecoveryState(

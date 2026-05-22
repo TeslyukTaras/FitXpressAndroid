@@ -49,11 +49,7 @@
     <dimen name="recovery_arc_width">130dp</dimen>
     <dimen name="recovery_arc_height">108dp</dimen>
     <dimen name="recovery_arc_stroke_width">8dp</dimen>
-    <dimen name="recovery_arc_text_offset">14dp</dimen>
-    <dimen name="recovery_bar_chart_height">164dp</dimen>
-    <dimen name="recovery_bar_horizontal_padding">10dp</dimen>
-    <dimen name="recovery_y_axis_width">24dp</dimen>
-    <dimen name="recovery_bar_corner">6dp</dimen>
+    <dimen name="recovery_bar_chart_height">200dp</dimen>
 
     <!-- Activity -->
     <dimen name="activity_arc_size">130dp</dimen>

@@ -76,6 +76,9 @@ val GlassTrackFill = Color(0x0D090909)
 val GlassSelectionFill = Color(0x4D090909)
 val GlassRimHighlight = Color(0xFFE6FFFC)
 
+// Translucent white fill for chart press tooltips.
+val ChartTooltipFill = Color(0x33FFFFFF)
+
 val DarkSliderLabel = Color(0xFFF6F6F6)
 val DarkSliderActiveTrack = Color(0xFF1DC4B3)
 val DarkSliderInactiveTrack = Color(0x38797979)

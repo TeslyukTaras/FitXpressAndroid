@@ -48,7 +48,12 @@ class TerraApiSleepRepository(
             fetchJson = ::fetchJsonForUser,
             parse = { rows -> rows.mapNotNull(TerraSleepJsonMapper::sessionOrNull) },
             merge = ::mergeGapFillByWakeDay,
-        ).onSuccess { rangeCache.put(key, it) }
+        ).map { sessions ->
+            sessions.filter { session ->
+                val wakeDay = session.wakeTime.toLocalDate()
+                !wakeDay.isBefore(start) && !wakeDay.isAfter(end)
+            }
+        }.onSuccess { rangeCache.put(key, it) }
     }
 
     private suspend fun fetchJsonForUser(
@@ -56,8 +61,9 @@ class TerraApiSleepRepository(
         start: LocalDate,
         end: LocalDate,
     ): Result<List<JsonElement>> {
+        val apiEnd = end.plusDays(1)
         Timber.d("Terra /sleep request user_id=%s range=[%s..%s]", redactSensitiveId(terraUserId), start, end)
-        return TerraRangeJsonFetcher.fetchJsonRows(start, end) { rs, re ->
+        return TerraRangeJsonFetcher.fetchJsonRows(start, apiEnd) { rs, re ->
             api.getSleep(terraUserId = terraUserId, startDate = rs, endDate = re)
         }.also { result ->
             result.exceptionOrNull()?.let { e ->
