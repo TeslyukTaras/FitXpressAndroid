@@ -33,8 +33,7 @@ private val LightColorScheme = lightColorScheme(
     onSurface = Black,
     surfaceVariant = Bg,
     onSurfaceVariant = SubtitleBlue,
-    // Dialogs/sheets/popups stay dark even over the light app.
-    surfaceContainerHighest = DialogWindowBackground,
+    surfaceContainerHighest = White,
 
     outline = Gray500,
     outlineVariant = Gray600,
@@ -73,8 +72,7 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = Black,
     surfaceVariant = Bg,
     onSurfaceVariant = SubtitleBlue,
-    // Dialogs/sheets/popups stay dark even over the light app.
-    surfaceContainerHighest = DialogWindowBackground,
+    surfaceContainerHighest = White,
 
     outline = Gray500,
     outlineVariant = Gray600,
