@@ -90,15 +90,23 @@ private fun ScanRecord.shoulderToWaistRatio(): Float? {
     return shoulders / waist
 }
 
-private fun bodyFatScore(bodyFatPercent: Float): Float = when {
-    bodyFatPercent < 9f -> 10f
-    bodyFatPercent <= 11f -> interpolateScore(bodyFatPercent, 11f, 9f, 9f, 10f)
-    bodyFatPercent <= 15f -> interpolateScore(bodyFatPercent, 15f, 12f, 8f, 9f)
-    bodyFatPercent <= 19f -> interpolateScore(bodyFatPercent, 19f, 16f, 6f, 7f)
-    bodyFatPercent <= 24f -> interpolateScore(bodyFatPercent, 24f, 20f, 4f, 5f)
-    bodyFatPercent <= 35f -> interpolateScore(bodyFatPercent, 35f, 25f, 2f, 3f)
-    else -> 1f
-}
+/**
+ * Body-fat % → score, as a continuous monotonically-decreasing piecewise-linear
+ * curve. Anchors share endpoints, so the score never jumps at a band edge; it is
+ * flat at 10 below the first anchor and at 1 above the last.
+ */
+private val BODY_FAT_SCORE_ANCHORS = listOf(
+    9f to 10f,
+    11f to 9f,
+    15f to 8f,
+    19f to 6f,
+    24f to 4f,
+    35f to 2f,
+    45f to 1f,
+)
+
+private fun bodyFatScore(bodyFatPercent: Float): Float =
+    interpolateAnchors(bodyFatPercent, BODY_FAT_SCORE_ANCHORS)
 
 private fun leanMassScore(leanMassPercent: Float): Float =
     interpolateScore(
@@ -126,6 +134,22 @@ private fun proportionScore(shoulderToWaistRatio: Float): Float =
         lowScore = 4f,
         highScore = 10f,
     )
+
+/** Linear interpolation through ascending (input, score) anchors; flat beyond either end. */
+private fun interpolateAnchors(value: Float, anchors: List<Pair<Float, Float>>): Float {
+    val (firstInput, firstScore) = anchors.first()
+    if (value <= firstInput) return firstScore
+    val (lastInput, lastScore) = anchors.last()
+    if (value >= lastInput) return lastScore
+    for (i in 0 until anchors.lastIndex) {
+        val (lowInput, lowScore) = anchors[i]
+        val (highInput, highScore) = anchors[i + 1]
+        if (value <= highInput) {
+            return interpolateScore(value, lowInput, highInput, lowScore, highScore)
+        }
+    }
+    return lastScore
+}
 
 private fun interpolateScore(
     value: Float,

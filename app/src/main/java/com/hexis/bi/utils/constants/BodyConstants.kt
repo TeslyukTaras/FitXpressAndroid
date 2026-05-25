@@ -43,6 +43,9 @@ internal object BodyConstants {
     /** Six calendar months on either side of today for the Year viewport. */
     const val YEAR_HALF_MONTHS = 6L
 
+    /** Recommended days between scans; drives the "Next Scan" countdown. */
+    const val SCAN_CADENCE_DAYS = 7L
+
     /** Leading portion of the forecast rendered as short-term predicted drift. */
     const val PREDICTED_DRIFT_FRACTION = 0.25f
 

@@ -85,16 +85,16 @@ internal fun BodyTrendChart(
     onTimeRangeChange: (BodyTimeRange) -> Unit,
     modifier: Modifier = Modifier,
     onOpenClick: (() -> Unit)? = null,
+    showSegmentLegend: Boolean = false,
 ) {
     val chartGap = dimensionResource(R.dimen.spacer_xs)
     val chartHeight = dimensionResource(R.dimen.body_chart_height)
-    val dashWidth = dimensionResource(R.dimen.dash_width)
+    val dashWidth = dimensionResource(R.dimen.body_chart_dash_width)
     val stripeWidth = dimensionResource(R.dimen.sleep_bar_stripe_width)
     val pointRadius = dimensionResource(R.dimen.body_chart_point_radius)
     val pointStrokeWidth = dimensionResource(R.dimen.body_chart_line_stroke)
     val gridStrokeWidth = dimensionResource(R.dimen.border_line)
     val gridDashWidth = dimensionResource(R.dimen.body_chart_grid_dash)
-    val showSegmentLegend = onOpenClick == null
 
     val snapPoints =
         remember(chart) { chart.points.withIndex().filter { !it.value.isInterpolated } }
@@ -857,14 +857,9 @@ private fun DrawScope.drawTimeSeries(
             strokePhase = phase
             strokePath = Path().apply { moveTo(coords[index].x, coords[index].y) }
         }
-        val dx = coords[index + 1].x - coords[index].x
-        strokePath.apply {
-            cubicTo(
-                coords[index].x + dx / 3f, coords[index].y + tangents[index] * dx / 3f,
-                coords[index + 1].x - dx / 3f, coords[index + 1].y - tangents[index + 1] * dx / 3f,
-                coords[index + 1].x, coords[index + 1].y,
-            )
-        }
+        strokePath.cubicSegmentTo(
+            coords[index], coords[index + 1], tangents[index], tangents[index + 1],
+        )
     }
     drawStroke(strokePath, strokePhase)
 }
@@ -927,19 +922,22 @@ private fun monotoneTangents(points: List<Offset>): FloatArray {
     return tangent
 }
 
+/** Appends one monotone-cubic segment from the path's current point (start) to end. */
+private fun Path.cubicSegmentTo(start: Offset, end: Offset, startTangent: Float, endTangent: Float) {
+    val dx = end.x - start.x
+    cubicTo(
+        start.x + dx / 3f, start.y + startTangent * dx / 3f,
+        end.x - dx / 3f, end.y - endTangent * dx / 3f,
+        end.x, end.y,
+    )
+}
+
 private fun buildCubicPath(points: List<Offset>, tangents: FloatArray): Path {
     val path = Path()
     if (points.isEmpty()) return path
     path.moveTo(points[0].x, points[0].y)
     for (i in 0 until points.size - 1) {
-        val p0 = points[i]
-        val p1 = points[i + 1]
-        val dx = p1.x - p0.x
-        path.cubicTo(
-            p0.x + dx / 3f, p0.y + tangents[i] * dx / 3f,
-            p1.x - dx / 3f, p1.y - tangents[i + 1] * dx / 3f,
-            p1.x, p1.y,
-        )
+        path.cubicSegmentTo(points[i], points[i + 1], tangents[i], tangents[i + 1])
     }
     return path
 }

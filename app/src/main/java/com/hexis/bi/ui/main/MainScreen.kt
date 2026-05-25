@@ -54,6 +54,7 @@ import com.hexis.bi.ui.navigation.Route
 import com.hexis.bi.ui.navigation.popBackStackOnce
 import com.hexis.bi.ui.theme.dark.DarkTheme
 import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
 @Composable
@@ -136,7 +137,13 @@ fun MainScreen(
                 )
             }
             composable(Route.Main.PHYSIQUE_BALANCE) {
-                PhysiqueBalanceScreen(onBack = { navController.popBackStackOnce() })
+                // Reuse the Body screen's ViewModel so the loaded scans and the
+                // selected time range carry over instead of refetching.
+                val bodyEntry = remember(it) { navController.getBackStackEntry(Route.Main.BODY) }
+                PhysiqueBalanceScreen(
+                    onBack = { navController.popBackStackOnce() },
+                    viewModel = koinViewModel(viewModelStoreOwner = bodyEntry),
+                )
             }
             composable(Route.Main.NOTIFICATIONS) {
                 NotificationsScreen(onBack = { navController.popBackStackOnce() })

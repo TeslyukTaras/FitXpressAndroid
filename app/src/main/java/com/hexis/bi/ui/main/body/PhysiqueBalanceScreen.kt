@@ -40,13 +40,13 @@ import com.hexis.bi.ui.dark.darkScreenBackground
 import com.hexis.bi.ui.main.body.components.BisInfoBottomSheet
 import com.hexis.bi.ui.main.body.components.BodyTrendChart
 import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.utils.constants.BodyConstants
 import org.koin.androidx.compose.koinViewModel
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.Date
 import java.util.Locale
-import kotlin.math.roundToInt
 
 @Composable
 fun PhysiqueBalanceScreen(
@@ -117,6 +117,7 @@ fun PhysiqueBalanceScreen(
                             chart = state.chart,
                             timeRange = state.timeRange,
                             onTimeRangeChange = viewModel::selectTimeRange,
+                            showSegmentLegend = true,
                         )
 
                         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
@@ -287,7 +288,7 @@ private fun formatNextScanDays(timestamp: Long): String {
     if (timestamp <= 0L) return stringResource(R.string.stat_unknown)
     val zone = ZoneId.systemDefault()
     val scanDate = LocalDate.ofInstant(Date(timestamp).toInstant(), zone)
-    val nextScanDate = scanDate.plusDays(7)
+    val nextScanDate = scanDate.plusDays(BodyConstants.SCAN_CADENCE_DAYS)
     val days = ChronoUnit.DAYS.between(LocalDate.now(zone), nextScanDate)
         .coerceAtLeast(0)
         .toInt()
@@ -299,5 +300,5 @@ private fun formatEstimate(composition: BodyComposition): String {
     val estimate = composition.bisScore?.let { score ->
         (score + (composition.deltaBisScore ?: 0f)).coerceIn(1f, 10f)
     } ?: return stringResource(R.string.stat_unknown)
-    return String.format(Locale.US, "%.1f", (estimate * 10f).roundToInt() / 10f)
+    return String.format(Locale.US, "%.1f", estimate)
 }

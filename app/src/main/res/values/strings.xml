@@ -193,7 +193,7 @@
     <string name="body_chart_legend_predicted_drift">Predicted\nDrift</string>
     <string name="body_chart_legend_future_estimate">Future\nEstimate</string>
     <string name="body_physique_drift">Physique Drift</string>
-    <string name="body_physique_drift_period">this week</string>
+    <string name="body_physique_drift_period">since last scan</string>
     <string name="body_next_scan">Next Scan</string>
     <string name="body_next_scan_days_suffix">days</string>
     <string name="body_next_scan_estimate">Next Scan\nEstimate</string>
