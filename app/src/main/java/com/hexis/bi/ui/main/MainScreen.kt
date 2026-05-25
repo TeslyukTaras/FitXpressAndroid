@@ -35,6 +35,7 @@ import com.hexis.bi.ui.components.AppOutlinedButton
 import com.hexis.bi.ui.components.MainNavBottomBar
 import com.hexis.bi.ui.dark.DarkMainNavBottomBar
 import com.hexis.bi.ui.main.body.BodyScreen
+import com.hexis.bi.ui.main.body.PhysiqueBalanceScreen
 import com.hexis.bi.ui.main.home.HomeScreen
 import com.hexis.bi.ui.main.home.activity.ActivityScreen
 import com.hexis.bi.ui.main.home.recovery.RecoveryScreen
@@ -129,7 +130,13 @@ fun MainScreen(
             composable(Route.Main.BODY) {
                 BodyScreen(
                     onHistoryClick = { navController.navigate(Route.Main.SCAN_HISTORY) },
+                    onPhysiqueBalanceClick = {
+                        navController.navigate(Route.Main.PHYSIQUE_BALANCE)
+                    },
                 )
+            }
+            composable(Route.Main.PHYSIQUE_BALANCE) {
+                PhysiqueBalanceScreen(onBack = { navController.popBackStackOnce() })
             }
             composable(Route.Main.NOTIFICATIONS) {
                 NotificationsScreen(onBack = { navController.popBackStackOnce() })

@@ -11,6 +11,7 @@ internal object Route {
     object Main {
         const val HOME = "main/home"
         const val BODY = "main/body"
+        const val PHYSIQUE_BALANCE = "main/body/physique_balance"
         const val NOTIFICATIONS = "main/notifications"
         const val SETTINGS = "main/settings"
         const val EDIT_PROFILE = "main/edit_profile"

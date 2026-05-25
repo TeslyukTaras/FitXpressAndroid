@@ -6,46 +6,66 @@ import kotlin.math.max
 
 internal object BodyConstants {
 
-    /** How many recent scans to load for the trend chart. Covers ~3 months at one scan/day. */
+    /** Recent scans retained for trend history. */
     const val TREND_HISTORY_LIMIT = 90L
 
-    /** Fraction of the (symmetric) half-range at which the outermost grid label sits. */
-    const val TOP_GRID_FRACTION = 0.8f
+    /** Outer grid labels sit on the chart bounds. */
+    const val TOP_GRID_FRACTION = 1f
 
-    /** Labelled grid lines as fractions of the half-range — outermost = ±[TOP_GRID_FRACTION]. */
-    val GRID_LINE_FRACTIONS = listOf(-TOP_GRID_FRACTION, -0.4f, 0f, 0.4f, TOP_GRID_FRACTION)
+    /** Grid positions within each half-range. */
+    val GRID_LINE_FRACTIONS = listOf(-TOP_GRID_FRACTION, -0.5f, 0f, 0.5f, TOP_GRID_FRACTION)
 
-    /** Smallest top/bottom grid label the Y-axis will ever show. Keeps a flat history readable. */
+    /** Smallest outer Y-axis label. */
     const val MIN_Y_TOP_LABEL = 1.0f
 
-    /** Guard so the chart's value→pixel mapping never divides by zero. */
+    /** Minimum nonzero Y span. */
     const val CHART_MIN_HALF_RANGE = 0.0001f
 
-    /** Top label = maxAbs rounded up to a whole number (≥ [MIN_Y_TOP_LABEL]); half-range = that / [TOP_GRID_FRACTION] for headroom. */
+    /** Expands a half-range to fit the largest delta. */
     fun niceYHalfRange(maxAbsValue: Float): Float {
         val topLabel = max(MIN_Y_TOP_LABEL, ceil(abs(maxAbsValue)))
         return topLabel / TOP_GRID_FRACTION
     }
 
-    /** The labelled grid values for a given half-range. */
+    /** Grid labels for a half-range. */
     fun gridLinesFor(halfRange: Float): List<Float> = GRID_LINE_FRACTIONS.map { it * halfRange }
 
-    /** Y-axis scale used before any data has loaded (a flat ±[MIN_Y_TOP_LABEL] window). */
+    /** Empty-data Y scale. */
     val DEFAULT_Y_HALF_RANGE = niceYHalfRange(0f)
     val DEFAULT_GRID_LINES = gridLinesFor(DEFAULT_Y_HALF_RANGE)
 
-    /** Calendar window for the Month range — 30 days back from today, inclusive. */
-    const val MONTH_RANGE_DAYS = 30L
+    /** Three days on either side of today for the Week viewport. */
+    const val WEEK_HALF_DAYS = 3L
 
-    /** Calendar window for the Year range — 12 months back from this month, inclusive. */
-    const val YEAR_RANGE_MONTHS = 12L
+    /** Fifteen days on either side of today for the Month viewport. */
+    const val MONTH_HALF_DAYS = 15L
 
-    /** Number of evenly-spaced labels on the Month X-axis (e.g. 5 labels across 30 days). */
+    /** Six calendar months on either side of today for the Year viewport. */
+    const val YEAR_HALF_MONTHS = 6L
+
+    /** Leading portion of the forecast rendered as short-term predicted drift. */
+    const val PREDICTED_DRIFT_FRACTION = 0.25f
+
+    const val CHART_MONOTONE_TANGENT_LIMIT = 3f
+    const val CHART_FILL_OPACITY = 0.26f
+    const val CHART_FILL_START_ALPHA = 0.83f
+    const val CHART_FILL_END_ALPHA = 0.0001f
+    const val CHART_FILL_START_STOP = 0.0374f
+    const val CHART_FILL_END_STOP = 0.796f
+
+    const val PHYSIQUE_SCORE_MIN = 1f
+    const val PHYSIQUE_SCORE_MAX = 10f
+    const val PHYSIQUE_WEIGHT_BODY_FAT = 0.5f
+    const val PHYSIQUE_WEIGHT_LEAN_MASS = 0.25f
+    const val PHYSIQUE_WEIGHT_WAIST_SHAPE = 0.15f
+    const val PHYSIQUE_WEIGHT_PROPORTION = 0.1f
+
+    /** Month X-axis label count. */
     const val MONTH_LABEL_COUNT = 5
 
-    /** Show every Nth month label on the Year X-axis to avoid crowding (e.g. every 2 months). */
+    /** Year X-axis label cadence. */
     const val YEAR_LABEL_STEP = 2
 
-    /** When the Year span is this many months or fewer, label every month instead of every Nth. */
+    /** Label every month at or below this year-span threshold. */
     const val YEAR_LABEL_ALL_BELOW_MONTHS = 6
 }

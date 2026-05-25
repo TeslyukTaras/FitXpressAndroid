@@ -138,15 +138,16 @@
     <dimen name="divider_size">1dp</dimen>
 
     <!-- Effects -->
-    <dimen name="dash_width">5dp</dimen>
+    <dimen name="dash_width">6dp</dimen>
 
     <!-- Body screen -->
     <dimen name="body_chart_height">220dp</dimen>
+    <dimen name="body_chart_legend_line_width">20dp</dimen>
     <dimen name="body_toggle_height">22dp</dimen>
     <dimen name="edit_profile_units_toggle_chip_width">68dp</dimen>
-    <dimen name="body_chart_y_axis_width">24dp</dimen>
     <dimen name="body_chart_point_radius">5dp</dimen>
     <dimen name="body_chart_line_stroke">1dp</dimen>
-    <dimen name="body_switch_button_width">50dp</dimen>
+    <dimen name="body_chart_grid_dash">1.5dp</dimen>
+    <dimen name="body_switch_button_width">40dp</dimen>
 
 </resources>

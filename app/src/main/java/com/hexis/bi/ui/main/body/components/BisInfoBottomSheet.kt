@@ -1,8 +1,11 @@
 package com.hexis.bi.ui.main.body.components
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -23,20 +26,33 @@ internal fun BisInfoBottomSheet(
     BaseBottomSheet(
         title = stringResource(R.string.body_bis_sheet_title),
         onDismiss = onDismiss,
-        modifier = Modifier.fillMaxHeight(0.55f),
+        modifier = Modifier.fillMaxHeight(0.76f),
     ) {
-        Text(
-            text = stringResource(R.string.body_bis_sheet_subtitle),
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
-        Text(
-            text = stringResource(R.string.body_bis_sheet_body),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-        Spacer(Modifier.weight(1f))
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+        ) {
+            Text(
+                text = stringResource(R.string.body_bis_sheet_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            PhysiqueInfoSection(
+                heading = R.string.body_bis_sheet_heading_drift,
+                body = R.string.body_bis_sheet_body_drift,
+            )
+            PhysiqueInfoSection(
+                heading = R.string.body_bis_sheet_heading_next_scan,
+                body = R.string.body_bis_sheet_body_next_scan,
+            )
+            PhysiqueInfoSection(
+                heading = R.string.body_bis_sheet_heading_next_scan_estimate,
+                body = R.string.body_bis_sheet_body_next_scan_estimate,
+            )
+        }
+
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
         TextButton(
             onClick = onDismiss,
@@ -49,4 +65,23 @@ internal fun BisInfoBottomSheet(
             )
         }
     }
+}
+
+@Composable
+private fun PhysiqueInfoSection(
+    heading: Int,
+    body: Int,
+) {
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+    Text(
+        text = stringResource(heading),
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onBackground,
+    )
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
+    Text(
+        text = stringResource(body),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }

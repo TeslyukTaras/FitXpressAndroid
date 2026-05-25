@@ -63,7 +63,7 @@ fun <T> DarkTabSelector(
                         indication = null,
                         onClick = { onTabSelected(tab) },
                     )
-                    .padding(vertical = dimensionResource(R.dimen.spacer_2xs)),
+                    .padding(vertical = dimensionResource(R.dimen.spacer_xs)),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(

@@ -39,6 +39,7 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun BodyScreen(
     onHistoryClick: () -> Unit,
+    onPhysiqueBalanceClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: BodyViewModel = koinViewModel(),
 ) {
@@ -114,7 +115,7 @@ fun BodyScreen(
                             state = state,
                             onMassUnitChange = viewModel::selectMassUnit,
                             onTimeRangeChange = viewModel::selectTimeRange,
-                            onBisInfoClick = viewModel::showBisInfo,
+                            onPhysiqueBalanceClick = onPhysiqueBalanceClick,
                             onRetry = viewModel::retry,
                         )
                         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))

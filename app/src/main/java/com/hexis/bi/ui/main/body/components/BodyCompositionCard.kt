@@ -1,7 +1,6 @@
 package com.hexis.bi.ui.main.body.components
 
 import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,13 +27,9 @@ internal fun BodyCompositionCard(
     massUnit: BodyMassUnit,
     isMetric: Boolean,
     onMassUnitChange: (BodyMassUnit) -> Unit,
-    onBisInfoClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    BodyGlassCard(
-        modifier = modifier,
-        contentPadding = PaddingValues(dimensionResource(R.dimen.spacer_l)),
-    ) {
+    BodyGlassCard(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -95,9 +90,9 @@ internal fun BodyCompositionCard(
             )
         }
 
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
         AppHorizontalGradientDivider()
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
 
         Row(
             modifier = Modifier
@@ -117,7 +112,6 @@ internal fun BodyCompositionCard(
                 value = formatBis(composition.bisScore),
                 delta = composition.deltaBisScore,
                 modifier = Modifier.weight(1f),
-                trailingIcon = { BodyInfoIconButton(onClick = onBisInfoClick) },
             )
         }
     }
@@ -136,7 +130,7 @@ private fun BodyMassUnitToggle(
             isSelected = selected == BodyMassUnit.Percent,
             onClick = { onSelected(BodyMassUnit.Percent) },
         )
-        Spacer(Modifier.width(dimensionResource(R.dimen.spacer_s)))
+        Spacer(Modifier.width(dimensionResource(R.dimen.spacer_xxs)))
         BodySegmentedToggleChip(
             label = massLabel,
             isSelected = selected == BodyMassUnit.Mass,
