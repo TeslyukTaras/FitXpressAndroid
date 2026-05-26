@@ -2,9 +2,11 @@ package com.hexis.bi.ui.main.body
 
 import android.app.Application
 import androidx.lifecycle.viewModelScope
+import com.hexis.bi.data.preferences.UserPreferencesRepository
 import com.hexis.bi.data.scan.ScanFetchProjection
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanRecord
+import com.hexis.bi.data.scan.ThreeDLookRepository
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.body.BodyMeasurementRegion
 import com.hexis.bi.domain.body.comparablePhysiqueScoreDelta
@@ -33,20 +35,23 @@ import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.max
 
-private const val BodyVisualScanOptionLimit = 5
-
 class BodyViewModel(
     application: Application,
     private val scanHistoryRepository: ScanHistoryRepository,
     private val userRepository: UserRepository,
+    private val threeDLookRepository: ThreeDLookRepository,
+    private val preferencesRepository: UserPreferencesRepository,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(BodyState())
     val state: StateFlow<BodyState> = _state.asStateFlow()
 
     private var allScans: List<ScanRecord> = emptyList()
+    private val loadingVisualColorPairs = mutableSetOf<Pair<String, String>>()
+    private var requestedVisualColorPair: Pair<String, String>? = null
 
     init {
+        observeVisualMode()
         loadData()
     }
 
@@ -70,11 +75,39 @@ class BodyViewModel(
         _state.update { it.copy(visual = it.visual.copy(selectedBodyPart = region)) }
     }
 
+    fun selectVisualMode(mode: BodyVisualMode) {
+        applyVisualMode(mode)
+        viewModelScope.launch {
+            preferencesRepository.setBodyVisualMode(mode.name)
+        }
+    }
+
     fun selectVisualScan(timestamp: Long) {
         updateVisualScan(selectedTimestamp = timestamp)
     }
 
     fun retry() = loadData()
+
+    private fun observeVisualMode() {
+        viewModelScope.launch {
+            preferencesRepository.bodyVisualMode.collect { storedMode ->
+                val mode = BodyVisualMode.entries.firstOrNull { it.name == storedMode }
+                    ?: BodyVisualMode.Base
+                applyVisualMode(mode)
+            }
+        }
+    }
+
+    private fun applyVisualMode(mode: BodyVisualMode) {
+        if (_state.value.visual.mode != mode) {
+            _state.update { it.copy(visual = it.visual.copy(mode = mode)) }
+        }
+        if (mode == BodyVisualMode.Color &&
+            _state.value.visual.colorModel !is BodyVisualColorModel.Ready
+        ) {
+            loadVisualColorMesh()
+        }
+    }
 
     private fun loadData() {
         _state.update { it.copy(loadState = BodyLoadState.Loading) }
@@ -130,7 +163,7 @@ class BodyViewModel(
         val previous = if (selectedIndex > 0) allScans[selectedIndex - 1] else null
         val beforePrevious = if (selectedIndex > 1) allScans[selectedIndex - 2] else null
         val options = allScans
-            .takeLast(BodyVisualScanOptionLimit)
+            .takeLast(BodyConstants.VISUAL_SCAN_OPTION_LIMIT)
             .asReversed()
             .map { VisualScanOption(timestamp = it.timestamp) }
 
@@ -145,12 +178,65 @@ class BodyViewModel(
                     previousScanTimestamp = previous?.timestamp,
                     beforePreviousScanTimestamp = beforePrevious?.timestamp,
                     latestModel3dUrl = selected?.model3dUrl?.takeUnless { url -> url.isBlank() },
+                    colorModel = BodyVisualColorModel.Idle,
                     previousModel3dUrl = previous?.model3dUrl?.takeUnless { url -> url.isBlank() },
                     latestMeasurements = selected?.measurements.orEmpty(),
                     previousMeasurements = previous?.measurements.orEmpty(),
                     beforePreviousMeasurements = beforePrevious?.measurements.orEmpty(),
                 ),
             )
+        }
+        if (_state.value.visual.mode == BodyVisualMode.Color) loadVisualColorMesh()
+    }
+
+    private fun loadVisualColorMesh() {
+        val selectedTimestamp = _state.value.visual.latestScanTimestamp
+        val selectedIndex = allScans.indexOfLast { it.timestamp == selectedTimestamp }
+        val selected = allScans.getOrNull(selectedIndex)
+        val previous = allScans.getOrNull(selectedIndex - 1)
+        val beforeId = previous?.measurementId?.takeUnless { it.isBlank() }
+        val afterId = selected?.measurementId?.takeUnless { it.isBlank() }
+        val pair = if (beforeId == null || afterId == null) null else beforeId to afterId
+
+        requestedVisualColorPair = pair
+        if (pair == null) {
+            _state.update {
+                it.copy(
+                    visual = it.visual.copy(
+                        colorModel = BodyVisualColorModel.Unavailable,
+                    )
+                )
+            }
+            return
+        }
+
+        _state.update {
+            it.copy(visual = it.visual.copy(colorModel = BodyVisualColorModel.Loading))
+        }
+        if (!loadingVisualColorPairs.add(pair)) return
+
+        viewModelScope.launch {
+            threeDLookRepository.loadColorAnalysisMeshUrl(
+                beforeMeasurementId = pair.first,
+                afterMeasurementId = pair.second,
+            ).onSuccess { meshUrl ->
+                if (requestedVisualColorPair == pair) {
+                    _state.update {
+                        it.copy(
+                            visual = it.visual.copy(
+                                colorModel = BodyVisualColorModel.Ready(meshUrl),
+                            )
+                        )
+                    }
+                }
+            }.onFailure {
+                if (requestedVisualColorPair == pair) {
+                    _state.update {
+                        it.copy(visual = it.visual.copy(colorModel = BodyVisualColorModel.Error))
+                    }
+                }
+            }
+            loadingVisualColorPairs.remove(pair)
         }
     }
 

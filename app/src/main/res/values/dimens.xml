@@ -117,6 +117,7 @@
 
     <!-- Corner radii -->
     <dimen name="corner_sheet">24dp</dimen>
+    <dimen name="drag_sheet">22dp</dimen>
 
     <!-- Borders -->
     <dimen name="border_thin">1dp</dimen>

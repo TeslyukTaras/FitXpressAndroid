@@ -24,6 +24,7 @@ import com.hexis.bi.domain.body.BodyMeasurementRegion
 import com.hexis.bi.ui.dark.AppHorizontalGradientDivider
 import com.hexis.bi.ui.dark.AppVerticalGradientDivider
 import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.main.body.BodyVisualMode
 import com.hexis.bi.ui.main.body.VisualState
 import com.hexis.bi.ui.theme.MeasurementValueStyle
 import com.hexis.bi.ui.theme.dark.DarkTheme
@@ -39,6 +40,7 @@ internal fun VisualSummaryCard(
     state: VisualState,
     selectedScanLabel: String,
     shortDateFormatter: SimpleDateFormat,
+    onModeSelected: (BodyVisualMode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val part = state.selectedBodyPart
@@ -66,14 +68,14 @@ internal fun VisualSummaryCard(
             BodySegmentedToggleTrack {
                 BodySegmentedToggleChip(
                     label = stringResource(R.string.body_visual_mode_base),
-                    isSelected = true,
-                    onClick = {},
+                    isSelected = state.mode == BodyVisualMode.Base,
+                    onClick = { onModeSelected(BodyVisualMode.Base) },
                 )
                 Spacer(Modifier.width(dimensionResource(R.dimen.spacer_xxs)))
                 BodySegmentedToggleChip(
                     label = stringResource(R.string.body_visual_mode_color),
-                    isSelected = false,
-                    onClick = {},
+                    isSelected = state.mode == BodyVisualMode.Color,
+                    onClick = { onModeSelected(BodyVisualMode.Color) },
                 )
             }
         }

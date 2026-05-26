@@ -61,4 +61,7 @@ internal val ChartSelectionLine = Color.Gray.copy(alpha = 0.5f)
 internal val BodyCyan = Color(0xFF22D3EE)
 
 internal val White = Color(0xFFFFFFFF)
+internal val Scrim = Color(0x40424242)
 internal val Black = Color(0xFF000000)
+
+internal val DarkOverlayBorder = Color(0x66FFFFFF)

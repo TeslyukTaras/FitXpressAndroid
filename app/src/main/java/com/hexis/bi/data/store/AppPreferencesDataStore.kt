@@ -26,6 +26,7 @@ object AppPreferencesKeys {
         val lastScanNudgeIsoWeek = stringPreferencesKey("last_scan_nudge_iso_week")
         val lastScanMissedIsoWeek = stringPreferencesKey("last_scan_missed_iso_week")
         val askedNotifPermissionUids = stringSetPreferencesKey("asked_notif_permission_uids")
+        val bodyVisualMode = stringPreferencesKey("body_visual_mode")
     }
 
     object NotificationInbox {

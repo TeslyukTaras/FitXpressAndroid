@@ -36,6 +36,7 @@ data class MeasurementRow(
 data class ResultsState(
     val selectedTab: ResultsTab = ResultsTab.Visual,
     val colorAnalysisEnabled: Boolean = false,
+    val colorAnalysis: ColorAnalysisUiState = ColorAnalysisUiState.Idle,
     val isMetric: Boolean = true,
     val measurements: List<MeasurementRow> = emptyList(),
     val model3dUrl: String? = null,
@@ -45,3 +46,11 @@ data class ResultsState(
     val previousDate: String? = null,
     val showSkinAreas: Boolean = false,
 )
+
+sealed interface ColorAnalysisUiState {
+    data object Idle : ColorAnalysisUiState
+    data object Loading : ColorAnalysisUiState
+    data object Unavailable : ColorAnalysisUiState
+    data class Ready(val coloredModelUrl: String) : ColorAnalysisUiState
+    data object Error : ColorAnalysisUiState
+}

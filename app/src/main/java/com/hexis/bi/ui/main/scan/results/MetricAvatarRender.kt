@@ -16,6 +16,7 @@ import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.TextureView
 import android.view.View
+import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -27,8 +28,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -61,6 +62,8 @@ import androidx.core.content.ContextCompat
 import com.hexis.bi.R
 import com.hexis.bi.domain.body.BodyMeasurementKeys
 import com.hexis.bi.domain.body.BodyMeasurementRegion
+import com.hexis.bi.ui.main.scan.results.MetricAvatarFrameSolver.buildFrames
+import com.hexis.bi.ui.main.scan.results.MetricAvatarFrameSolver.manualBounds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -140,6 +143,7 @@ internal const val MetricAvatarSideProfileYawDegrees = 90f
 @Composable
 internal fun MetricAvatarPreview(
     modelUrl: String,
+    useModelVertexColors: Boolean = false,
     onInteractionChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     showSkinAreas: Boolean = false,
@@ -161,6 +165,7 @@ internal fun MetricAvatarPreview(
     onAvatarReady: (() -> Unit)? = null,
     /** Visual tab: model-space auto-framing region. Null keeps the default camera/orientation behavior. */
     framingRegion: BodyMeasurementRegion? = null,
+    @StringRes loadingMessageRes: Int = R.string.scan_results_avatar_loading,
 ) {
     val context = LocalContext.current
     val latestOnInteraction by rememberUpdatedState(onInteractionChanged)
@@ -178,7 +183,11 @@ internal fun MetricAvatarPreview(
 
     LaunchedEffect(renderHost, showSkinAreas) { renderHost.setShowSkinAreas(showSkinAreas) }
     LaunchedEffect(renderHost, drawBackground) { renderHost.setDrawBackground(drawBackground) }
-    LaunchedEffect(renderHost, touchRotationEnabled) { renderHost.setTouchRotationEnabled(touchRotationEnabled) }
+    LaunchedEffect(renderHost, touchRotationEnabled) {
+        renderHost.setTouchRotationEnabled(
+            touchRotationEnabled
+        )
+    }
     LaunchedEffect(renderHost, framingRegion) { renderHost.setFramingRegion(framingRegion) }
 
     DisposableEffect(renderHost) {
@@ -208,7 +217,7 @@ internal fun MetricAvatarPreview(
         onDispose { renderHost.setCompareRotationLink(null) }
     }
 
-    LaunchedEffect(loadState, modelUrl, reloadKey) {
+    LaunchedEffect(loadState, modelUrl, useModelVertexColors, reloadKey) {
         if (loadState == MetricAvatarLoadState.Ready) {
             latestOnAvatarReady?.invoke()
         }
@@ -217,12 +226,14 @@ internal fun MetricAvatarPreview(
     val latestYawAtLoad by rememberUpdatedState(initialYawDegrees)
     val latestPitchAtLoad by rememberUpdatedState(initialPitchDegrees)
 
-    /** OBJ fetch/parse only when URL or compare mode changes — not when base yaw/pitch change (Visual ↔ Posture). */
-    LaunchedEffect(modelUrl, reloadKey, compareRotationLink) {
+    /** OBJ fetch/parse only when model/color mode or compare mode changes, not on view rotation changes. */
+    LaunchedEffect(modelUrl, useModelVertexColors, reloadKey, compareRotationLink) {
         compareRotationLink?.let { renderHost.setCompareRotationLink(it) }
         loadState = MetricAvatarLoadState.Loading
         try {
-            val mesh = withContext(Dispatchers.IO) { ObjParser.parse(modelUrl) }
+            val mesh = withContext(Dispatchers.IO) {
+                ObjParser.parse(modelUrl, includeVertexColors = useModelVertexColors)
+            }
             if (compareRotationLink != null) {
                 renderHost.applyLoadedMeshForCompare(mesh)
             } else {
@@ -233,12 +244,23 @@ internal fun MetricAvatarPreview(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Timber.w(e, "Metric avatar OBJ load failed url=%s", modelUrl)
+            Timber.w(
+                e,
+                "Metric avatar OBJ load failed model=%s useColors=%s",
+                modelUrl,
+                useModelVertexColors
+            )
             loadState = MetricAvatarLoadState.Error
         }
     }
 
-    LaunchedEffect(initialYawDegrees, initialPitchDegrees, loadState, compareRotationLink, framingRegion) {
+    LaunchedEffect(
+        initialYawDegrees,
+        initialPitchDegrees,
+        loadState,
+        compareRotationLink,
+        framingRegion
+    ) {
         if (loadState != MetricAvatarLoadState.Ready || compareRotationLink != null) return@LaunchedEffect
         if (framingRegion != null) return@LaunchedEffect
         renderHost.setBaseOrientation(initialYawDegrees, initialPitchDegrees)
@@ -263,23 +285,10 @@ internal fun MetricAvatarPreview(
         )
         when (loadState) {
             MetricAvatarLoadState.Loading -> {
-                Box(
+                MetricAvatarLoading(
+                    messageRes = loadingMessageRes,
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
-                    ) {
-                        CircularProgressIndicator()
-                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
-                        Text(
-                            text = stringResource(R.string.scan_results_avatar_loading),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
+                )
             }
 
             MetricAvatarLoadState.Error -> {
@@ -293,6 +302,30 @@ internal fun MetricAvatarPreview(
 
             MetricAvatarLoadState.Ready -> { /* GL surface visible */
             }
+        }
+    }
+}
+
+@Composable
+internal fun MetricAvatarLoading(
+    @StringRes messageRes: Int,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
+        ) {
+            CircularProgressIndicator()
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
+            Text(
+                text = stringResource(messageRes),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -581,13 +614,16 @@ private class MetricAvatarTextureView(
         profile: EglConfigProfile,
     ): Boolean {
         val config = chooseEglConfig(display, profile) ?: return false
-        val contextAttribs = intArrayOf(EGL14.EGL_CONTEXT_CLIENT_VERSION, EGL_CONTEXT_CLIENT_VERSION, EGL14.EGL_NONE)
-        val context = EGL14.eglCreateContext(display, config, EGL14.EGL_NO_CONTEXT, contextAttribs, 0)
+        val contextAttribs =
+            intArrayOf(EGL14.EGL_CONTEXT_CLIENT_VERSION, EGL_CONTEXT_CLIENT_VERSION, EGL14.EGL_NONE)
+        val context =
+            EGL14.eglCreateContext(display, config, EGL14.EGL_NO_CONTEXT, contextAttribs, 0)
         if (context == EGL14.EGL_NO_CONTEXT) {
             return false
         }
         val surfaceAttribs = intArrayOf(EGL14.EGL_NONE)
-        val surface = EGL14.eglCreateWindowSurface(display, config, surfaceTexture, surfaceAttribs, 0)
+        val surface =
+            EGL14.eglCreateWindowSurface(display, config, surfaceTexture, surfaceAttribs, 0)
         if (surface == EGL14.EGL_NO_SURFACE) {
             EGL14.eglDestroyContext(display, context)
             return false
@@ -607,7 +643,17 @@ private class MetricAvatarTextureView(
         val configs = arrayOfNulls<EGLConfig>(1)
         val numConfigs = IntArray(1)
         val configAttribs = buildEglConfigAttribs(profile)
-        if (!EGL14.eglChooseConfig(display, configAttribs, 0, configs, 0, configs.size, numConfigs, 0)) {
+        if (!EGL14.eglChooseConfig(
+                display,
+                configAttribs,
+                0,
+                configs,
+                0,
+                configs.size,
+                numConfigs,
+                0
+            )
+        ) {
             return null
         }
         return configs.firstOrNull()
@@ -643,9 +689,20 @@ private class MetricAvatarTextureView(
         val display = eglDisplay ?: return
         val surface = eglSurface
         val context = eglContext
-        EGL14.eglMakeCurrent(display, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_CONTEXT)
-        if (surface != null && surface != EGL14.EGL_NO_SURFACE) EGL14.eglDestroySurface(display, surface)
-        if (context != null && context != EGL14.EGL_NO_CONTEXT) EGL14.eglDestroyContext(display, context)
+        EGL14.eglMakeCurrent(
+            display,
+            EGL14.EGL_NO_SURFACE,
+            EGL14.EGL_NO_SURFACE,
+            EGL14.EGL_NO_CONTEXT
+        )
+        if (surface != null && surface != EGL14.EGL_NO_SURFACE) EGL14.eglDestroySurface(
+            display,
+            surface
+        )
+        if (context != null && context != EGL14.EGL_NO_CONTEXT) EGL14.eglDestroyContext(
+            display,
+            context
+        )
         EGL14.eglTerminate(display)
         eglDisplay = null
         eglContext = null
@@ -747,7 +804,10 @@ private class MetricAvatarTextureView(
                 val dy = event.y - lastY
                 val link = boundCompareLink
                 if (link != null) {
-                    link.applyRotationDelta(dx * TOUCH_YAW_SENSITIVITY, dy * TOUCH_PITCH_SENSITIVITY)
+                    link.applyRotationDelta(
+                        dx * TOUCH_YAW_SENSITIVITY,
+                        dy * TOUCH_PITCH_SENSITIVITY
+                    )
                 } else {
                     queueRenderEvent {
                         avatarRenderer.rotateBy(
@@ -795,6 +855,7 @@ internal data class ObjMesh(
     val bounds: ModelBounds,
     /** Anchors + mesh cross-sections from OBJ (see [buildMeasurementGuide]). */
     val measurementGuide: MetricAvatarMeasurementGuide,
+    val colorBuffer: FloatBuffer? = null,
 )
 
 private data class AvatarFrame(
@@ -890,6 +951,7 @@ private object MetricAvatarFrameSolver {
     private const val MIN_DISTANCE_SCALE = 0.28f
     private const val MAX_DISTANCE_SCALE = 1.12f
     private const val FULL_BODY_DISTANCE_SCALE = 1.56f
+
     /** Horizontal offset (at `distanceScale` 1) that keeps the part clear of the part list. */
     private const val RIGHT_WINDOW_CENTER_X = 0.46f
     private const val FULL_BODY_RIGHT_EDGE_X = 1.42f
@@ -1041,9 +1103,25 @@ private object MetricAvatarFrameSolver {
         val bounds = when (region) {
             BodyMeasurementRegion.FullBody -> null
             BodyMeasurementRegion.LowerWaist -> lowerWaistCameraBounds(guide)
-            BodyMeasurementRegion.HipsGlutes -> manualBounds(-0.46f, 0.46f, -0.08f, 0.24f, -0.18f, 0.18f)
-            BodyMeasurementRegion.Ankle -> manualBounds(-0.36f, 0.36f, -1.30f, -0.82f, -0.16f, 0.16f)
+            BodyMeasurementRegion.HipsGlutes -> manualBounds(
+                -0.46f,
+                0.46f,
+                -0.08f,
+                0.24f,
+                -0.18f,
+                0.18f
+            )
+
+            BodyMeasurementRegion.Ankle -> manualBounds(
+                -0.36f,
+                0.36f,
+                -1.30f,
+                -0.82f,
+                -0.16f,
+                0.16f
+            )
                 .extendedDown(0.45f)
+
             BodyMeasurementRegion.Forearm -> boundsFor(guide, region)?.extendedDown(0.32f)
             BodyMeasurementRegion.Calf -> boundsFor(guide, region)?.extendedDown(0.50f)
             else -> boundsFor(guide, region)
@@ -1164,6 +1242,10 @@ private object ObjParser {
     /** Minimum whitespace-separated tokens for a valid `v x y z` vertex line. */
     private const val OBJ_VERTEX_LINE_MIN_TOKENS = 4
 
+    private const val OBJ_VERTEX_COLOR_LINE_MIN_TOKENS = 7
+
+    private const val DEFAULT_VERTEX_GREY = 0.4f
+
     /**
      * Body regions where vertices are not merged aggressively.
      * Head uses the neck clip plane from [MetricAvatarMeasurementGuide.neckClipPlane].
@@ -1205,8 +1287,10 @@ private object ObjParser {
         return dx * dx + dy * dy + dz * dz
     }
 
-    fun parse(url: String): ObjMesh {
+    fun parse(url: String, includeVertexColors: Boolean = false): ObjMesh {
         val vertices = ArrayList<FloatArray>()
+        val colors = if (includeVertexColors) ArrayList<FloatArray>() else null
+        var hasColors = false
         val faces = ArrayList<IntArray>()
         val connection = URL(url).openConnection().apply {
             connectTimeout = OBJ_URL_CONNECT_TIMEOUT_MS
@@ -1216,7 +1300,9 @@ private object ObjParser {
         BufferedReader(InputStreamReader(connection.getInputStream())).use { reader ->
             reader.lineSequence().forEach { line ->
                 when {
-                    line.startsWith("v ") -> parseVertex(line, vertices)
+                    line.startsWith("v ") -> if (parseVertex(line, vertices, colors)) hasColors =
+                        true
+
                     line.startsWith("f ") -> parseFaceIndices(line, vertices.size)?.let {
                         faces.add(
                             it
@@ -1235,12 +1321,20 @@ private object ObjParser {
 
         val measurementGuide = buildMeasurementGuide(vertices, usedVertices, faces)
 
-        val clusterResult = clusterCloseVertices(vertices, usedVertices, measurementGuide.neckClipPlane)
+        val clusterResult =
+            clusterCloseVertices(vertices, usedVertices, measurementGuide.neckClipPlane)
+        val clusterColors =
+            colors?.takeIf { hasColors }?.let { buildClusterColors(it, clusterResult) }
 
         val triangleFloatEstimate = estimateTriangleFloatCount(faces)
         val wireFloatEstimate = estimateWireFloatCount(faces)
         val triangles = FloatAccumulator(triangleFloatEstimate)
         val wireLines = FloatAccumulator(wireFloatEstimate)
+        val triangleColors = if (clusterColors != null) {
+            FloatAccumulator(triangleFloatEstimate / FLOATS_PER_VERTEX * POSITION_FLOATS_PER_VERTEX)
+        } else {
+            null
+        }
         val emittedTriangles = LongHashSet(faces.size)
         val emittedWireEdges = LongHashSet(faces.size * 3)
 
@@ -1252,6 +1346,8 @@ private object ObjParser {
                 triangles,
                 emittedWireEdges,
                 wireLines,
+                clusterColors,
+                triangleColors,
             )
         }
         if (triangles.isEmpty()) throw IllegalArgumentException("OBJ contains no supported triangles")
@@ -1266,12 +1362,17 @@ private object ObjParser {
             wireVertexCount = wireLines.size / POSITION_FLOATS_PER_VERTEX,
             bounds = modelBounds,
             measurementGuide = measurementGuide,
+            colorBuffer = triangleColors?.toDirectFloatBuffer(),
         )
     }
 
-    private fun parseVertex(line: String, vertices: MutableList<FloatArray>) {
+    private fun parseVertex(
+        line: String,
+        vertices: MutableList<FloatArray>,
+        colors: MutableList<FloatArray>?,
+    ): Boolean {
         val parts = line.trim().split(Regex("\\s+"))
-        if (parts.size < OBJ_VERTEX_LINE_MIN_TOKENS) return
+        if (parts.size < OBJ_VERTEX_LINE_MIN_TOKENS) return false
         vertices.add(
             floatArrayOf(
                 parts[1].toFloatOrNull() ?: 0f,
@@ -1279,6 +1380,40 @@ private object ObjParser {
                 parts[3].toFloatOrNull() ?: 0f,
             )
         )
+        if (colors == null) return false
+        return if (parts.size >= OBJ_VERTEX_COLOR_LINE_MIN_TOKENS) {
+            colors.add(
+                floatArrayOf(
+                    parts[4].toFloatOrNull() ?: DEFAULT_VERTEX_GREY,
+                    parts[5].toFloatOrNull() ?: DEFAULT_VERTEX_GREY,
+                    parts[6].toFloatOrNull() ?: DEFAULT_VERTEX_GREY,
+                )
+            )
+            true
+        } else {
+            colors.add(floatArrayOf(DEFAULT_VERTEX_GREY, DEFAULT_VERTEX_GREY, DEFAULT_VERTEX_GREY))
+            false
+        }
+    }
+
+    private fun buildClusterColors(
+        colors: List<FloatArray>,
+        clusterResult: ClusterResult,
+    ): FloatArray {
+        val out = FloatArray(clusterResult.vertices.size * POSITION_FLOATS_PER_VERTEX)
+        val assigned = BooleanArray(clusterResult.vertices.size)
+        for (originalIndex in colors.indices) {
+            val clusterIndex = clusterResult.remap.getOrElse(originalIndex) { -1 }
+            if (clusterIndex in 0 until clusterResult.vertices.size && !assigned[clusterIndex]) {
+                val color = colors[originalIndex]
+                val base = clusterIndex * POSITION_FLOATS_PER_VERTEX
+                out[base] = color[0]
+                out[base + 1] = color[1]
+                out[base + 2] = color[2]
+                assigned[clusterIndex] = true
+            }
+        }
+        return out
     }
 
     private fun parseFaceIndices(line: String, vertexCount: Int): IntArray? {
@@ -1303,6 +1438,8 @@ private object ObjParser {
         triangles: FloatAccumulator,
         emittedWireEdges: LongHashSet,
         wireLines: FloatAccumulator,
+        clusterColors: FloatArray?,
+        triangleColors: FloatAccumulator?,
     ) {
         val remap = clusterResult.remap
         val clusteredVertices = clusterResult.vertices
@@ -1333,6 +1470,12 @@ private object ObjParser {
             appendVertex(triangles, v0, 1f, 0f, 0f, mx, my, mz)
             appendVertex(triangles, v1, 0f, 1f, 0f, mx, my, mz)
             appendVertex(triangles, v2, 0f, 0f, 1f, mx, my, mz)
+
+            if (triangleColors != null && clusterColors != null) {
+                appendVertexColor(triangleColors, clusterColors, c0)
+                appendVertexColor(triangleColors, clusterColors, c1)
+                appendVertexColor(triangleColors, clusterColors, c2)
+            }
 
             if (mz > 0f) appendWireEdge(wireLines, emittedWireEdges, c0, c1, v0, v1)
             if (mx > 0f) appendWireEdge(wireLines, emittedWireEdges, c1, c2, v1, v2)
@@ -1417,7 +1560,7 @@ private object ObjParser {
         val x = vertex[0]
         val y = vertex[1]
         val towardHead = vertex[0] * neckClipPlane[0] + vertex[1] * neckClipPlane[1] +
-            vertex[2] * neckClipPlane[2] + neckClipPlane[3] > 1e-5f
+                vertex[2] * neckClipPlane[2] + neckClipPlane[3] > 1e-5f
         val hands = kotlin.math.abs(x) >= PROTECTED_REGION_HANDS_ABS_X &&
                 y >= PROTECTED_REGION_HANDS_MIN_Y && y <= PROTECTED_REGION_HANDS_MAX_Y
         val feet = y <= PROTECTED_REGION_FEET_MAX_Y
@@ -1470,6 +1613,15 @@ private object ObjParser {
 
     private fun appendPosition(into: FloatAccumulator, v: FloatArray) {
         into.add(v[0]); into.add(v[1]); into.add(v[2])
+    }
+
+    private fun appendVertexColor(
+        into: FloatAccumulator,
+        clusterColors: FloatArray,
+        clusterIndex: Int
+    ) {
+        val base = clusterIndex * POSITION_FLOATS_PER_VERTEX
+        into.add(clusterColors[base]); into.add(clusterColors[base + 1]); into.add(clusterColors[base + 2])
     }
 
     private fun estimateTriangleFloatCount(faces: List<IntArray>): Int {
@@ -1544,8 +1696,8 @@ private object ObjParser {
         val packedY = packGridCell(y)
         val packedZ = packGridCell(z)
         return (packedX shl (GRID_KEY_BITS * 2)) or
-            (packedY shl GRID_KEY_BITS) or
-            packedZ
+                (packedY shl GRID_KEY_BITS) or
+                packedZ
     }
 
     private fun packGridCell(value: Int): Long {
@@ -1563,8 +1715,8 @@ private object ObjParser {
         val z = maxOf(a, b, c)
         val y = a + b + c - x - z
         return (x.toLong() shl (TRIANGLE_KEY_BITS * 2)) or
-            (y.toLong() shl TRIANGLE_KEY_BITS) or
-            (z.toLong() and TRIANGLE_KEY_MASK)
+                (y.toLong() shl TRIANGLE_KEY_BITS) or
+                (z.toLong() and TRIANGLE_KEY_MASK)
     }
 
     private fun edgeKey(a: Int, b: Int): Long {
@@ -1626,6 +1778,7 @@ private object ObjParser {
                         size += 1
                         return true
                     }
+
                     key -> return false
                     else -> index = (index + 1) and (keys.size - 1)
                 }
@@ -1646,7 +1799,8 @@ private object ObjParser {
             private const val EMPTY = Long.MIN_VALUE
 
             private fun capacityFor(expectedSize: Int): Int {
-                val needed = ((expectedSize.coerceAtLeast(1) * 100) / LONG_HASH_SET_MAX_LOAD_PERCENT) + 1
+                val needed =
+                    ((expectedSize.coerceAtLeast(1) * 100) / LONG_HASH_SET_MAX_LOAD_PERCENT) + 1
                 var capacity = 16
                 while (capacity < needed) {
                     capacity *= 2
@@ -1676,12 +1830,14 @@ private class MetricAvatarRenderer {
     private var aPosition = 0
     private var aBary = 0
     private var aEdgeMask = 0
+    private var aColor = 0
     private var uMvp = 0
     private var uSkinColor = 0
     private var uSuitColor = 0
     private var uShowSkin = 0
     private var uModelView = 0
     private var uMeshColor = 0
+    private var uUseVertexColor = 0
     private var showSkinAreas = false
 
     private var leaderProgram = 0
@@ -1719,6 +1875,7 @@ private class MetricAvatarRenderer {
     private var pitch = INITIAL_PITCH_DEG
     private var viewDistance = MetricAvatarCamera.INITIAL_VIEW_DISTANCE
     private var framingRegion: BodyMeasurementRegion? = null
+
     /** User drag-rotation applied on top of the active frame's yaw; reset when the part changes. */
     private var framingYawOffsetDeg = 0f
     private var frameCache: Map<BodyMeasurementRegion, AvatarFrame> = emptyMap()
@@ -2024,7 +2181,9 @@ private class MetricAvatarRenderer {
         aPosition = GLES20.glGetAttribLocation(program, "aPosition")
         aBary = GLES20.glGetAttribLocation(program, "aBary")
         aEdgeMask = GLES20.glGetAttribLocation(program, "aEdgeMask")
+        aColor = GLES20.glGetAttribLocation(program, "aColor")
         uMvp = GLES20.glGetUniformLocation(program, "uMvp")
+        uUseVertexColor = GLES20.glGetUniformLocation(program, "uUseVertexColor")
         uSkinColor = GLES20.glGetUniformLocation(program, "uSkinColor")
         uSuitColor = GLES20.glGetUniformLocation(program, "uSuitColor")
         uShowSkin = GLES20.glGetUniformLocation(program, "uShowSkin")
@@ -2155,7 +2314,9 @@ private class MetricAvatarRenderer {
     }
 
     private fun drawAvatarBody(m: ObjMesh) {
-        bindAvatarVertexAttributes(m.vertexBuffer)
+        val colored = m.colorBuffer != null
+        if (uUseVertexColor >= 0) GLES20.glUniform1f(uUseVertexColor, if (colored) 1f else 0f)
+        bindAvatarVertexAttributes(m.vertexBuffer, m.colorBuffer)
         GLES20.glEnable(GLES20.GL_POLYGON_OFFSET_FILL)
         GLES20.glPolygonOffset(BODY_FILL_DEPTH_OFFSET_FACTOR, BODY_FILL_DEPTH_OFFSET_UNITS)
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, m.vertexCount)
@@ -2163,7 +2324,7 @@ private class MetricAvatarRenderer {
         unbindAvatarVertexAttributes()
     }
 
-    private fun bindAvatarVertexAttributes(buf: FloatBuffer) {
+    private fun bindAvatarVertexAttributes(buf: FloatBuffer, colorBuf: FloatBuffer?) {
         buf.position(0)
         GLES20.glVertexAttribPointer(
             aPosition, FLOATS_PER_ATTRIB, GLES20.GL_FLOAT, false, VERTEX_STRIDE_BYTES, buf,
@@ -2185,12 +2346,26 @@ private class MetricAvatarRenderer {
             )
             GLES20.glEnableVertexAttribArray(aEdgeMask)
         }
+
+        if (aColor >= 0 && colorBuf != null) {
+            colorBuf.position(0)
+            GLES20.glVertexAttribPointer(
+                aColor,
+                FLOATS_PER_ATTRIB,
+                GLES20.GL_FLOAT,
+                false,
+                0,
+                colorBuf
+            )
+            GLES20.glEnableVertexAttribArray(aColor)
+        }
     }
 
     private fun unbindAvatarVertexAttributes() {
         GLES20.glDisableVertexAttribArray(aPosition)
         if (aBary >= 0) GLES20.glDisableVertexAttribArray(aBary)
         if (aEdgeMask >= 0) GLES20.glDisableVertexAttribArray(aEdgeMask)
+        if (aColor >= 0) GLES20.glDisableVertexAttribArray(aColor)
     }
 
     private fun drawRepairWireOverlay(m: ObjMesh) {
@@ -2358,10 +2533,12 @@ private class MetricAvatarRenderer {
 
         const val VERTEX_SHADER = """
             attribute vec3 aPosition; attribute vec3 aBary; attribute vec3 aEdgeMask;
-            uniform mat4 uMvp; varying float vModelY; varying vec3 vModelPos; 
-            varying vec3 vBary; varying vec3 vEdgeMask;
+            attribute vec3 aColor;
+            uniform mat4 uMvp; varying float vModelY; varying vec3 vModelPos;
+            varying vec3 vBary; varying vec3 vEdgeMask; varying vec3 vColor;
             void main() {
                 vModelY = aPosition.y; vModelPos = aPosition; vBary = aBary; vEdgeMask = aEdgeMask;
+                vColor = aColor;
                 gl_Position = uMvp * vec4(aPosition, 1.0);
             }
         """
@@ -2374,14 +2551,20 @@ private class MetricAvatarRenderer {
             precision mediump float;
             #endif
             varying float vModelY; varying vec3 vModelPos; varying vec3 vBary; varying vec3 vEdgeMask;
-            uniform vec4 uSkinColor; uniform vec4 uSuitColor; uniform vec4 uMeshColor; 
-            uniform float uShowSkin; uniform mat4 uModelView;
+            varying vec3 vColor;
+            uniform vec4 uSkinColor; uniform vec4 uSuitColor; uniform vec4 uMeshColor;
+            uniform float uShowSkin; uniform mat4 uModelView; uniform float uUseVertexColor;
 
             const float WIRE_WIDTH = 0.7;
             const float WIRE_INTENSITY = 0.46;
+            const float ANALYSIS_WIRE_INTENSITY_BOOST = 0.08;
             const float STITCH_START = 0.91;
             const float STITCH_END = 0.985;
             const float STITCH_INTENSITY = 0.28;
+            const float ANALYSIS_ACCENT_STRENGTH = 0.92;
+            const float ANALYSIS_LUMA_RECOVERY = 0.65;
+            const float ANALYSIS_TEAL_HIGHLIGHT = 0.06;
+            const float ANALYSIS_COLOR_CONTRAST = 1.16;
 
             float skinMaskForModelPosition(vec3 modelPos) {
                 float hands = step(0.36, abs(modelPos.x)) * step(-1.05, modelPos.y) * step(modelPos.y, 0.05);
@@ -2417,8 +2600,26 @@ private class MetricAvatarRenderer {
                 return min(vec3(1.0), uMeshColor.rgb * (1.10 + spec * 1.20));
             }
 
-            vec3 applyMeshWire(vec3 baseColor, vec3 wireColor, float edgeCoverage) {
-                return mix(baseColor, wireColor, edgeCoverage * WIRE_INTENSITY);
+            vec3 colorAnalysisWire(vec3 tealWire, vec3 analysisColor) {
+                vec3 contrastedColor = clamp(
+                    (analysisColor - vec3(0.5)) * ANALYSIS_COLOR_CONTRAST + vec3(0.5),
+                    vec3(0.0),
+                    vec3(1.0)
+                );
+                vec3 accentedWire = mix(tealWire, contrastedColor, ANALYSIS_ACCENT_STRENGTH);
+                float tealLuma = dot(tealWire, vec3(0.2126, 0.7152, 0.0722));
+                float accentLuma = dot(accentedWire, vec3(0.2126, 0.7152, 0.0722));
+                float lift = max(tealLuma - accentLuma, 0.0) * ANALYSIS_LUMA_RECOVERY;
+                vec3 brightenedAccent = min(
+                    vec3(1.0),
+                    accentedWire + vec3(lift) + tealWire * ANALYSIS_TEAL_HIGHLIGHT
+                );
+                return mix(tealWire, brightenedAccent, uUseVertexColor);
+            }
+
+            vec3 applyMeshWire(vec3 baseColor, vec3 wireColor, float edgeCoverage, float analysisEnabled) {
+                float intensity = WIRE_INTENSITY + ANALYSIS_WIRE_INTENSITY_BOOST * analysisEnabled;
+                return mix(baseColor, wireColor, edgeCoverage * intensity);
             }
 
             vec3 applyJunctionStitch(vec3 baseColor, vec3 wireColor, vec3 bary) {
@@ -2452,7 +2653,9 @@ private class MetricAvatarRenderer {
                 vec3 body = bodyBaseColor(falloff);
                 float edge = meshEdgeCoverage(vBary, vEdgeMask);
                 vec3 wireCol = flatWireColor(nView, lightDir);
-                vec3 finalBodyCol = applyMeshWire(body, wireCol, edge);
+                // Analysis changes affect only the teal wire mesh, never the body fill.
+                wireCol = colorAnalysisWire(wireCol, vColor);
+                vec3 finalBodyCol = applyMeshWire(body, wireCol, edge, uUseVertexColor);
                 finalBodyCol = applyJunctionStitch(finalBodyCol, wireCol, vBary);
 
                 // Not used for now:

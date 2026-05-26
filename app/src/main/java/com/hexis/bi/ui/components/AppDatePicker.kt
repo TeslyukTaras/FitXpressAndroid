@@ -19,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.DialogWindowBackground
 import com.hexis.bi.utils.millisToDobString
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,14 +38,14 @@ fun AppDatePicker(
         yearContentColor = MaterialTheme.colorScheme.onBackground,
         disabledYearContentColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.38f),
         currentYearContentColor = MaterialTheme.colorScheme.primary,
-        selectedYearContentColor = DialogWindowBackground,
-        disabledSelectedYearContentColor = DialogWindowBackground.copy(alpha = 0.38f),
+        selectedYearContentColor = MaterialTheme.colorScheme.onPrimary,
+        disabledSelectedYearContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.38f),
         selectedYearContainerColor = MaterialTheme.colorScheme.primary,
         disabledSelectedYearContainerColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.12f),
         dayContentColor = MaterialTheme.colorScheme.onBackground,
         disabledDayContentColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.38f),
-        selectedDayContentColor = DialogWindowBackground,
-        disabledSelectedDayContentColor = DialogWindowBackground.copy(alpha = 0.38f),
+        selectedDayContentColor = MaterialTheme.colorScheme.onPrimary,
+        disabledSelectedDayContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.38f),
         selectedDayContainerColor = MaterialTheme.colorScheme.primary,
         disabledSelectedDayContainerColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.12f),
         todayContentColor = MaterialTheme.colorScheme.primary,

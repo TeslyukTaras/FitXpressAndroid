@@ -2,6 +2,7 @@ package com.hexis.bi.ui.main.body.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -11,14 +12,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.zIndex
 import com.hexis.bi.R
 import com.hexis.bi.domain.body.BodyMeasurementRegion
+import com.hexis.bi.ui.main.body.BodyVisualColorModel
+import com.hexis.bi.ui.main.body.BodyVisualMode
 import com.hexis.bi.ui.main.body.VisualState
+import com.hexis.bi.ui.main.scan.results.MetricAvatarLoading
 import com.hexis.bi.ui.main.scan.results.MetricAvatarPreview
 import java.text.SimpleDateFormat
 
@@ -76,7 +82,9 @@ private fun BodyModelPreview(
     state: VisualState,
     modifier: Modifier = Modifier,
 ) {
-    val modelUrl = state.latestModel3dUrl
+    val coloredModel = state.colorModel as? BodyVisualColorModel.Ready
+    val showBaseModel = state.mode == BodyVisualMode.Base
+    val showColorModel = state.mode == BodyVisualMode.Color && coloredModel != null
 
     Box(
         modifier = modifier
@@ -84,18 +92,74 @@ private fun BodyModelPreview(
             .modelBlur(blurEnabled = state.selectedBodyPart != BodyMeasurementRegion.FullBody),
         contentAlignment = Alignment.Center,
     ) {
-        if (modelUrl.isNullOrBlank()) ModelPlaceholder(modifier = Modifier.fillMaxSize())
-        else MetricAvatarPreview(
-            modelUrl = modelUrl,
-            onInteractionChanged = {},
-            modifier = Modifier.fillMaxSize(),
-            showSkinAreas = false,
-            drawBackground = false,
-            touchRotationEnabled = true,
-            useGradientBackground = false,
-            framingRegion = state.selectedBodyPart,
+        ModelPreview(
+            modelUrl = state.latestModel3dUrl,
+            selectedBodyPart = state.selectedBodyPart,
+            visible = showBaseModel,
         )
+        coloredModel?.let { model ->
+            ModelPreview(
+                modelUrl = model.coloredModelUrl,
+                useModelVertexColors = true,
+                selectedBodyPart = state.selectedBodyPart,
+                loadingMessageRes = R.string.body_visual_color_loading,
+                visible = showColorModel,
+            )
+        }
+        if (state.mode == BodyVisualMode.Color && coloredModel == null) {
+            when (state.colorModel) {
+                BodyVisualColorModel.Idle,
+                BodyVisualColorModel.Loading -> MetricAvatarLoading(
+                    messageRes = R.string.body_visual_color_loading,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                BodyVisualColorModel.Unavailable -> ColorStatusLabel(
+                    messageRes = R.string.body_visual_color_unavailable,
+                )
+                BodyVisualColorModel.Error -> ColorStatusLabel(
+                    messageRes = R.string.body_visual_color_error,
+                )
+                is BodyVisualColorModel.Ready -> Unit
+            }
+        }
     }
+}
+
+@Composable
+private fun BoxScope.ModelPreview(
+    modelUrl: String?,
+    selectedBodyPart: BodyMeasurementRegion,
+    useModelVertexColors: Boolean = false,
+    loadingMessageRes: Int = R.string.scan_results_avatar_loading,
+    visible: Boolean = true,
+) {
+    val modifier = Modifier
+        .fillMaxSize()
+        .zIndex(if (visible) 1f else 0f)
+        .alpha(if (visible) 1f else 0f)
+    if (modelUrl.isNullOrBlank()) ModelPlaceholder(modifier = modifier)
+    else MetricAvatarPreview(
+        modelUrl = modelUrl,
+        useModelVertexColors = useModelVertexColors,
+        onInteractionChanged = {},
+        modifier = modifier,
+        showSkinAreas = false,
+        drawBackground = false,
+        touchRotationEnabled = visible,
+        useGradientBackground = false,
+        framingRegion = selectedBodyPart,
+        loadingMessageRes = loadingMessageRes,
+    )
+}
+
+@Composable
+private fun ColorStatusLabel(messageRes: Int) {
+    Text(
+        text = stringResource(messageRes),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
+    )
 }
 
 @Composable

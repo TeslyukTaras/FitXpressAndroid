@@ -46,8 +46,23 @@ data class VisualScanOption(
     val timestamp: Long,
 )
 
+enum class BodyVisualMode {
+    Base,
+    Color,
+}
+
+sealed interface BodyVisualColorModel {
+    data object Idle : BodyVisualColorModel
+    data object Loading : BodyVisualColorModel
+    data class Ready(val coloredModelUrl: String) : BodyVisualColorModel
+    data object Unavailable : BodyVisualColorModel
+    data object Error : BodyVisualColorModel
+}
+
 data class VisualState(
     val selectedBodyPart: BodyMeasurementRegion = BodyMeasurementRegion.FullBody,
+    val mode: BodyVisualMode = BodyVisualMode.Base,
+    val colorModel: BodyVisualColorModel = BodyVisualColorModel.Idle,
     val hasData: Boolean = false,
     val isLatestScanSelected: Boolean = true,
     val scanOptions: List<VisualScanOption> = emptyList(),

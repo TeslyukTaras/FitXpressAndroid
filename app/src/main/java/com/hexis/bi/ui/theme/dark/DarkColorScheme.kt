@@ -43,5 +43,5 @@ internal val DarkColorScheme: ColorScheme = darkColorScheme(
     inverseOnSurface = Ink,
     inversePrimary = GreenDeep,
 
-    scrim = Black,
+    scrim = Scrim,
 )

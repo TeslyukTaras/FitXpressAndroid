@@ -9,6 +9,8 @@ internal object BodyConstants {
     /** Recent scans retained for trend history. */
     const val TREND_HISTORY_LIMIT = 90L
 
+    const val VISUAL_SCAN_OPTION_LIMIT = 10
+
     /** Outer grid labels sit on the chart bounds. */
     const val TOP_GRID_FRACTION = 1f
 

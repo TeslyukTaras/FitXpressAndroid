@@ -143,12 +143,24 @@ object MeasurementMapper {
             ?: BodyMeasurementKeys.primaryValueKey(region)
             ?: error("Measurement row requires a body-region key for $region")
 
-    private fun extractMeasurements(response: MeasurementResponse): Map<String, Float> {
-        val result = mutableMapOf<String, Float>()
-        response.circumferenceParams?.let { result += jsonObjectToFloatMap(it) }
-        response.frontLinearParams?.let { result += jsonObjectToFloatMap(it) }
-        response.sideLinearParams?.let { result += jsonObjectToFloatMap(it) }
-        return result
+    private fun extractMeasurements(response: MeasurementResponse): Map<String, Float> =
+        mergeMeasurementParams(
+            circumference = response.circumferenceParams?.let(::jsonObjectToFloatMap).orEmpty(),
+            frontLinear = response.frontLinearParams?.let(::jsonObjectToFloatMap).orEmpty(),
+            sideLinear = response.sideLinearParams?.let(::jsonObjectToFloatMap).orEmpty(),
+        )
+
+    /** Merges API measurement blocks with circumference, front, then side precedence. */
+    fun mergeMeasurementParams(
+        circumference: Map<String, Float>,
+        frontLinear: Map<String, Float>,
+        sideLinear: Map<String, Float>,
+    ): Map<String, Float> {
+        val merged = LinkedHashMap<String, Float>()
+        merged.putAll(circumference)
+        frontLinear.forEach { (key, value) -> merged.putIfAbsent(key, value) }
+        sideLinear.forEach { (key, value) -> merged.putIfAbsent(key, value) }
+        return merged
     }
 
     private fun jsonObjectToFloatMap(obj: JsonObject): Map<String, Float> =

@@ -91,6 +91,51 @@ class ThreeDLookApi(
             }
         }
 
+    suspend fun createBodyProgress(
+        beforeMeasurementId: String,
+        afterMeasurementId: String,
+    ): Result<String> = withContext(Dispatchers.IO) {
+        runCatching {
+            val payload = json.encodeToString(
+                BodyProgressRequest.serializer(),
+                BodyProgressRequest(beforeMeasurementId, afterMeasurementId),
+            )
+            val request = Request.Builder()
+                .url("$BASE_URL$PATH_BODY_PROGRESS")
+                .addHeader(HEADER_AUTHORIZATION, "$AUTH_SCHEME ${BuildConfig.THREEDLOOK_API_TOKEN}")
+                .post(payload.toRequestBody(MEDIA_TYPE_JSON.toMediaType()))
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                val responseBody = response.body.string()
+                Timber.d("createBodyProgress: %d body=%s", response.code, responseBody)
+                if (!response.isSuccessful) {
+                    error("Create body progress failed (${response.code}): $responseBody")
+                }
+                json.decodeFromString<BodyProgress3dResponse>(responseBody).id
+            }
+        }
+    }
+
+    suspend fun getBodyProgress(id: String): Result<BodyProgress3dResponse> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val request = Request.Builder()
+                    .url("$BASE_URL$PATH_BODY_PROGRESS$id/")
+                    .addHeader(HEADER_AUTHORIZATION, "$AUTH_SCHEME ${BuildConfig.THREEDLOOK_API_TOKEN}")
+                    .get()
+                    .build()
+
+                client.newCall(request).execute().use { response ->
+                    val responseBody = response.body.string()
+                    if (!response.isSuccessful) {
+                        error("Get body progress failed (${response.code}): $responseBody")
+                    }
+                    json.decodeFromString<BodyProgress3dResponse>(responseBody)
+                }
+            }
+        }
+
     private fun readPhoto(uri: Uri): ByteArray =
         context.contentResolver.openInputStream(uri)
             ?.use { it.readBytes() }
@@ -99,11 +144,13 @@ class ThreeDLookApi(
     companion object {
         private const val BASE_URL = "https://backend.fitxpress.3dlook.me/api/1.0/"
         private const val PATH_MEASUREMENTS = "measurements/"
+        private const val PATH_BODY_PROGRESS = "body_progress/"
 
         private const val HEADER_AUTHORIZATION = "Authorization"
         private const val AUTH_SCHEME = "Token"
 
         private const val MEDIA_TYPE_JPEG = "image/jpeg"
+        private const val MEDIA_TYPE_JSON = "application/json"
 
         private const val FIELD_FRONT_PHOTO = "front_photo"
         private const val FIELD_SIDE_PHOTO = "side_photo"

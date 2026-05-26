@@ -5,11 +5,15 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.SetOptions
 import com.hexis.bi.data.scan.api.MeasurementResponse
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.COLLECTION_SCANS
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.COLLECTION_USERS
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_AGE
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_BMI
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_BODY_PROGRESS_BEFORE_MEASUREMENT_ID
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_BODY_PROGRESS_ID
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_BODY_PROGRESS_MODEL_URL
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_BMR
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_COMPLETED_AT
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_CREATED_AT
@@ -66,6 +70,8 @@ enum class ScanFetchProjection {
 
 data class ScanRecord(
     val id: String = "",
+    /** 3DLOOK measurement UUID (the API `id`), distinct from the Firestore document id. */
+    val measurementId: String? = null,
     val timestamp: Long = 0L,
     val model3dUrl: String? = null,
     /** Low-res PNG of the 3D preview (base64), for history thumbnails; optional on older scans. */
@@ -80,6 +86,11 @@ data class ScanRecord(
     val fatPercentage: Float? = null,
     val leanBodyMassKg: Float? = null,
     val fatBodyMassKg: Float? = null,
+)
+
+data class BodyProgressCache(
+    val id: String,
+    val modelUrl: String?,
 )
 
 class ScanHistoryRepository(
@@ -163,6 +174,40 @@ class ScanHistoryRepository(
     ): Result<List<ScanRecord>> =
         fetchRecentScans(limit = limit, projection = projection)
 
+    suspend fun getBodyProgressCache(
+        beforeMeasurementId: String,
+        afterMeasurementId: String,
+    ): Result<BodyProgressCache?> = runCatching {
+        val doc = scanDocumentByMeasurementId(afterMeasurementId) ?: return@runCatching null
+        if (doc.getString(FIELD_BODY_PROGRESS_BEFORE_MEASUREMENT_ID) != beforeMeasurementId) {
+            return@runCatching null
+        }
+        val id = doc.getString(FIELD_BODY_PROGRESS_ID)?.takeUnless { it.isBlank() }
+            ?: return@runCatching null
+        BodyProgressCache(
+            id = id,
+            modelUrl = doc.getString(FIELD_BODY_PROGRESS_MODEL_URL)?.takeUnless { it.isBlank() },
+        )
+    }
+
+    suspend fun saveBodyProgressCache(
+        beforeMeasurementId: String,
+        afterMeasurementId: String,
+        progressId: String,
+        modelUrl: String? = null,
+    ): Result<Unit> = runCatching {
+        val doc = scanDocumentByMeasurementId(afterMeasurementId)
+            ?: error("Saved scan not found for measurement $afterMeasurementId")
+        val fields = mutableMapOf<String, Any>(
+            FIELD_BODY_PROGRESS_BEFORE_MEASUREMENT_ID to beforeMeasurementId,
+            FIELD_BODY_PROGRESS_ID to progressId,
+        )
+        modelUrl?.takeUnless { it.isBlank() }?.let {
+            fields[FIELD_BODY_PROGRESS_MODEL_URL] = it
+        }
+        doc.reference.set(fields, SetOptions.merge()).await()
+    }
+
     /**
      * Loads one scan by document id with full measurement subdocs (for Results fast path).
      */
@@ -235,6 +280,15 @@ class ScanHistoryRepository(
         }
     }
 
+    private suspend fun scanDocumentByMeasurementId(measurementId: String): DocumentSnapshot? =
+        scansCollection()
+            .whereEqualTo(FIELD_ID, measurementId)
+            .limit(1)
+            .get()
+            .await()
+            .documents
+            .firstOrNull()
+
     /** Circumference + front/side linear maps merged into [measurements]; each subdoc read once. */
     private suspend fun buildFullScanRecord(doc: DocumentSnapshot): ScanRecord = coroutineScope {
         val circumferenceDeferred = async { loadSubNumericParams(doc, SUB_CIRCUMFERENCE_PARAMS) }
@@ -245,13 +299,15 @@ class ScanHistoryRepository(
         val frontLinearParams = frontDeferred.await()
         val sideLinearParams = sideDeferred.await()
 
-        val measurements = LinkedHashMap<String, Float>()
-        circumference.forEach { (k, v) -> measurements[k] = v }
-        frontLinearParams.forEach { (k, v) -> measurements.putIfAbsent(k, v) }
-        sideLinearParams.forEach { (k, v) -> measurements.putIfAbsent(k, v) }
+        val measurements = MeasurementMapper.mergeMeasurementParams(
+            circumference = circumference,
+            frontLinear = frontLinearParams,
+            sideLinear = sideLinearParams,
+        )
 
         ScanRecord(
             id = doc.id,
+            measurementId = doc.getString(FIELD_ID),
             timestamp = doc.savedAtMillis(),
             model3dUrl = doc.getString(FIELD_MODEL_3D_URL),
             modelPreviewPngBase64 = doc.getString(FIELD_MODEL_PREVIEW_PNG_BASE64),

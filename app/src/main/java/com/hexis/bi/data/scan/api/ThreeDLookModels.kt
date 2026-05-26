@@ -43,3 +43,16 @@ data class MeasurementError(
 data class CreateMeasurementResponse(
     val id: String,
 )
+
+@Serializable
+data class BodyProgressRequest(
+    @SerialName("measurement_before_id") val measurementBeforeId: String,
+    @SerialName("measurement_after_id") val measurementAfterId: String,
+)
+
+@Serializable
+data class BodyProgress3dResponse(
+    val id: String,
+    val status: String,
+    val model: String? = null,
+)

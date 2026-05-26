@@ -92,4 +92,14 @@ class UserPreferencesRepository(
             prefs[k.askedNotifPermissionUids] = prefs[k.askedNotifPermissionUids].orEmpty() + uid
         }
     }
+
+    val bodyVisualMode: Flow<String?> = store.data.map { prefs ->
+        prefs[k.bodyVisualMode]
+    }
+
+    suspend fun setBodyVisualMode(mode: String) {
+        store.edit { prefs ->
+            prefs[k.bodyVisualMode] = mode
+        }
+    }
 }

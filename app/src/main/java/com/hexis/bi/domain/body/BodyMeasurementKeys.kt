@@ -9,34 +9,32 @@ object BodyMeasurementKeys {
     const val Shoulders = "shoulders"
     const val Chest = "chest"
     const val Forearm = "forearm"
-    const val Wrist = "wrist"
     const val Bicep = "bicep"
-    const val UpperArm = "upperArm"
-    const val UpperWaist = "upperWaist"
     const val AlternativeWaistGirth = "alternativeWaistGirth"
     const val Waist = "waist"
-    const val LowerWaist = "lowerWaist"
     const val Abdomen = "abdomen"
-    const val HipsGlutes = "hipsGlutes"
     const val LowHips = "lowHips"
     const val HighHips = "highHips"
     const val Thigh = "thigh"
-    const val ThighWidest = "thighWidest"
     const val Calf = "calf"
     const val Ankle = "ankle"
+
+    // Visual guide anchors, not API measurement fields.
+    const val UpperWaist = "upperWaist"
+    const val LowerWaist = "lowerWaist"
 
     fun valueKeys(region: BodyMeasurementRegion): List<String> = when (region) {
         BodyMeasurementRegion.FullBody -> emptyList()
         BodyMeasurementRegion.Neck -> listOf(Neck)
         BodyMeasurementRegion.Shoulders -> listOf(Shoulders)
         BodyMeasurementRegion.Chest -> listOf(Chest)
-        BodyMeasurementRegion.Forearm -> listOf(Forearm, Wrist)
-        BodyMeasurementRegion.Bicep -> listOf(UpperArm, Bicep)
-        BodyMeasurementRegion.UpperWaist -> listOf(AlternativeWaistGirth, UpperWaist)
+        BodyMeasurementRegion.Forearm -> listOf(Forearm)
+        BodyMeasurementRegion.Bicep -> listOf(Bicep)
+        BodyMeasurementRegion.UpperWaist -> listOf(AlternativeWaistGirth)
         BodyMeasurementRegion.Waist -> listOf(Waist)
-        BodyMeasurementRegion.LowerWaist -> listOf(Abdomen, LowerWaist)
-        BodyMeasurementRegion.HipsGlutes -> listOf(LowHips, HipsGlutes, HighHips)
-        BodyMeasurementRegion.Thigh -> listOf(Thigh, ThighWidest)
+        BodyMeasurementRegion.LowerWaist -> listOf(Abdomen)
+        BodyMeasurementRegion.HipsGlutes -> listOf(LowHips, HighHips)
+        BodyMeasurementRegion.Thigh -> listOf(Thigh)
         BodyMeasurementRegion.Calf -> listOf(Calf)
         BodyMeasurementRegion.Ankle -> listOf(Ankle)
     }
