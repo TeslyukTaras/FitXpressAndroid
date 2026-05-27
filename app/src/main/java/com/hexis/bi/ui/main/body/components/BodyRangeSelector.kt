@@ -19,13 +19,14 @@ internal fun BodyRangeSelector(
     BodySegmentedToggleTrack(modifier = modifier) {
         BodyTimeRange.entries.forEachIndexed { index, range ->
             if (index > 0) {
-                Spacer(Modifier.width(dimensionResource(R.dimen.spacer_s)))
+                Spacer(Modifier.width(dimensionResource(R.dimen.spacer_xxs)))
             }
             BodySegmentedToggleChip(
                 label = stringResource(range.labelRes),
                 isSelected = range == selected,
                 onClick = { onSelected(range) },
                 enabled = enabled,
+                width = dimensionResource(R.dimen.icon_large)
             )
         }
     }

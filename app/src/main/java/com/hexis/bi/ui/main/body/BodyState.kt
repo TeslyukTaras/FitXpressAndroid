@@ -27,12 +27,14 @@ enum class BodyMassUnit {
 }
 
 enum class BodyTimeRange {
+    Week,
     Month,
     Year;
 
     @get:StringRes
     val labelRes: Int
         get() = when (this) {
+            Week -> R.string.body_range_week
             Month -> R.string.body_range_month
             Year -> R.string.body_range_year
         }
@@ -96,7 +98,14 @@ data class BodyTrendPoint(
     val absoluteFat: Float,
     val absoluteMuscle: Float,
     val isInterpolated: Boolean = false,
+    val phase: BodyTrendPhase = BodyTrendPhase.ConfirmedScan,
 )
+
+enum class BodyTrendPhase {
+    ConfirmedScan,
+    PredictedDrift,
+    FutureEstimate,
+}
 
 data class BodyChartAxisLabel(
     val timestamp: Long,
@@ -118,7 +127,7 @@ data class BodyState(
     val loadState: BodyLoadState = BodyLoadState.Loading,
     val isMetric: Boolean = true,
     val massUnit: BodyMassUnit = BodyMassUnit.Percent,
-    val timeRange: BodyTimeRange = BodyTimeRange.Month,
+    val timeRange: BodyTimeRange = BodyTimeRange.Week,
     val composition: BodyComposition = BodyComposition.empty(),
     val chart: BodyChartData = BodyChartData(0L, 0L),
     val showBisInfo: Boolean = false,

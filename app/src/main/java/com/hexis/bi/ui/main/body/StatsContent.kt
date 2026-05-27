@@ -25,7 +25,7 @@ internal fun StatsContent(
     state: BodyState,
     onMassUnitChange: (BodyMassUnit) -> Unit,
     onTimeRangeChange: (BodyTimeRange) -> Unit,
-    onBisInfoClick: () -> Unit,
+    onPhysiqueBalanceClick: () -> Unit,
     onRetry: () -> Unit,
 ) {
     when (state.loadState) {
@@ -57,7 +57,6 @@ internal fun StatsContent(
                     massUnit = state.massUnit,
                     isMetric = state.isMetric,
                     onMassUnitChange = onMassUnitChange,
-                    onBisInfoClick = onBisInfoClick,
                 )
 
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
@@ -66,8 +65,7 @@ internal fun StatsContent(
                     chart = state.chart,
                     timeRange = state.timeRange,
                     onTimeRangeChange = onTimeRangeChange,
-                    massUnit = state.massUnit,
-                    isMetric = state.isMetric,
+                    onOpenClick = onPhysiqueBalanceClick,
                 )
             }
         }
