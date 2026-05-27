@@ -16,10 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -49,13 +46,13 @@ import java.util.Locale
 @Composable
 internal fun VisualContent(
     state: VisualState,
+    cardHeightPx: Int,
     onBodyPartSelected: (BodyMeasurementRegion) -> Unit,
     onModeSelected: (BodyVisualMode) -> Unit,
     onScanSelected: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val horizontalPadding = dimensionResource(R.dimen.padding_medium)
-    // 56 (FAB) + 16 (bar top pad) + 16 (gap above the bar).
     val navClearance =
         dimensionResource(R.dimen.size_bottom_nav_center) +
                 dimensionResource(R.dimen.spacer_l) +
@@ -84,8 +81,7 @@ internal fun VisualContent(
     ) {
         val isFullBody = state.selectedBodyPart == BodyMeasurementRegion.FullBody
         val density = LocalDensity.current
-        var compactCardHeightPx by remember { mutableIntStateOf(0) }
-        val cardHeight = with(density) { compactCardHeightPx.toDp() }
+        val cardHeight = with(density) { cardHeightPx.toDp() }
         val cardTop = maxHeight - navClearance - cardHeight
         val visualAreaHeight = cardTop.coerceAtLeast(0.dp)
         val selectedScanLabel = stringResource(
@@ -98,7 +94,6 @@ internal fun VisualContent(
                 if (isFullBody) baseModifier else baseModifier.height(cardHeight)
             }
 
-        // External edge shadow heights — mirror the shader's in-model darken bands.
         val topShadowHeight =
             visualAreaHeight * BodyVisualConstants.MODEL_DARKEN_TOP_BAND_FRACTION
         val bottomShadowHeight =
@@ -120,8 +115,6 @@ internal fun VisualContent(
                     .fillMaxWidth()
                     .height(visualAreaHeight),
             )
-            // Bottom edge shadow — in the scroll, drawn down over the card but glued to
-            // the model's bottom edge, so it scrolls with the model.
             ModelEdgeShadow(
                 height = bottomShadowHeight,
                 colors = listOf(
@@ -139,30 +132,6 @@ internal fun VisualContent(
             Spacer(Modifier.height(dimensionResource(R.dimen.body_visual_bottom_spacer)))
         }
 
-        // Measure-only pass: the tallest non-full-body card is the two-line
-        // "Biceps - Upper Arm" header, so measuring it pins a stable compact height
-        // that fits every part. drawWithContent {} keeps layout/measurement while
-        // skipping the (off-screen, invisible) glass blur draw.
-        VisualSummaryCard(
-            state = state.copy(selectedBodyPart = BodyMeasurementRegion.Bicep),
-            selectedScanLabel = selectedScanLabel,
-            shortDateFormatter = shortDateFormatter,
-            onModeSelected = onModeSelected,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = horizontalPadding)
-                .onSizeChanged { size ->
-                    if (size.height > 0 && size.height != compactCardHeightPx) {
-                        compactCardHeightPx = size.height
-                    }
-                }
-                .drawWithContent { }
-                .offset(y = maxHeight),
-        )
-
-        // Top edge shadow — a fixed overlay above the model. The model runs up to the tabs,
-        // so there is no in-scroll space above it (the scroll would clip it); it is drawn
-        // over the tab area instead.
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -181,12 +150,36 @@ internal fun VisualContent(
     }
 }
 
-/**
- * The model's bottom edge shadow. It reports zero layout height so it claims no column
- * slot, and draws its gradient down over the card while still scrolling glued to the model.
- */
 @Composable
-private fun ModelEdgeShadow(
+internal fun CompactSummaryCardHeight(
+    state: VisualState,
+    onMeasured: (Int) -> Unit,
+) {
+    val configuration = LocalConfiguration.current
+    val locale = ConfigurationCompat.getLocales(configuration)[0] ?: Locale.ROOT
+    val shortDateFormatter = remember(locale) { shortMonthDayFormatter(locale) }
+    Box(
+        modifier = Modifier.layout { measurable, constraints ->
+            val placeable = measurable.measure(constraints)
+            layout(0, 0) { placeable.place(0, 0) }
+        },
+    ) {
+        VisualSummaryCard(
+            state = state.copy(selectedBodyPart = BodyMeasurementRegion.Bicep),
+            selectedScanLabel = stringResource(R.string.body_visual_latest_scan),
+            shortDateFormatter = shortDateFormatter,
+            onModeSelected = {},
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = dimensionResource(R.dimen.padding_medium))
+                .onSizeChanged { if (it.height > 0) onMeasured(it.height) }
+                .drawWithContent { },
+        )
+    }
+}
+
+@Composable
+internal fun ModelEdgeShadow(
     height: Dp,
     colors: List<Color>,
 ) {

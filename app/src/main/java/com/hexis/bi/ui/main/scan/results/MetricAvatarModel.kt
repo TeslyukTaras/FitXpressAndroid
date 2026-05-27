@@ -32,6 +32,20 @@ internal object MetricAvatarCamera {
     /** Camera distance multiplier — lower = closer camera / larger figure in the preview. */
     const val PREVIEW_DISTANCE_SCALE = 0.82f
 
+    /** User pinch-zoom bounds, as a multiplier on the figure's on-screen size (1 = default framing). */
+    const val MIN_USER_ZOOM = 1f
+    const val MAX_USER_ZOOM = 3f
+
+    /** Pre-computed tan(FOV/2), used to convert a screen-pixel pan into world units. */
+    val HALF_FOV_TAN: Float = Math.tan(Math.toRadians(FOV_DEG.toDouble() / 2.0)).toFloat()
+
+    /**
+     * Fraction of the visible half-window subtracted from the figure half-extent when clamping pan.
+     * 1 = the figure edge stops exactly at the screen edge; lower lets you pan a bit further so the
+     * extremes (head / feet) sit comfortably in view rather than flush against the edge.
+     */
+    const val PAN_EDGE_KEEP_FRACTION = 0.5f
+
     /** Reject [projectModelPointToViewPx] when NDC lands outside this padded box (numerical slack). */
     const val PROJECTION_NDC_VALID_MIN = -1.5f
     const val PROJECTION_NDC_VALID_MAX = 1.5f

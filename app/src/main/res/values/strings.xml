@@ -237,6 +237,11 @@
     <string name="body_visual_unit_cm">cm</string>
     <string name="body_visual_delta_increase">+%1$s cm ↑</string>
     <string name="body_visual_delta_decrease">−%1$s cm ↓</string>
+    <!-- Compare tab -->
+    <string name="body_compare_subtitle_latest">Body Evolution – comparing latest scans</string>
+    <string name="body_compare_subtitle">Body Evolution – comparing selected scans</string>
+    <string name="body_compare_left_scan">Left Scan</string>
+    <string name="body_compare_right_scan">Right Scan</string>
     <string name="body_bis_sheet_title">How Physique Balance works</string>
     <string name="body_bis_sheet_body">Physique Balance shows how your body is changing between scans.\nIt combines your scan results with activity, sleep, recovery, and weight trends to estimate your physique direction over time.</string>
     <string name="body_bis_sheet_heading_drift">1. Physique Drift</string>

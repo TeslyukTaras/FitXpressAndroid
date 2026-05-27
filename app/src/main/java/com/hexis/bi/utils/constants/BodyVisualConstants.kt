@@ -6,25 +6,22 @@ import com.hexis.bi.domain.body.BodyMeasurementRegion
 
 internal object BodyVisualConstants {
 
-    /** One-decimal pattern for centimetre measurement values. */
     const val CM_VALUE_FORMAT = "%.1f"
 
-    /** Model blur — top band height as a fraction of the model height. */
+    const val COMPARE_MODEL_DISTANCE_SCALE = 1.45f
+
+    const val COMPARE_MODEL_BLUR_TOP_BAND_FRACTION = 0.25f
+
     const val MODEL_BLUR_TOP_BAND_FRACTION = 0.4f
 
-    /** Model blur — bottom band height as a fraction of the model height. */
     const val MODEL_BLUR_BOTTOM_BAND_FRACTION = 0.15f
 
-    /** Model edge darkening — top band height as a fraction of the model height. */
     const val MODEL_DARKEN_TOP_BAND_FRACTION = 0.15f
 
-    /** Model edge darkening — black opacity at the very top edge (ramps to 0). */
     const val MODEL_DARKEN_TOP_OPACITY = 0.2f
 
-    /** Model edge darkening — bottom band height as a fraction of the model height. */
     const val MODEL_DARKEN_BOTTOM_BAND_FRACTION = 0.30f
 
-    /** Model edge darkening — black opacity at the very bottom edge (ramps to 0). */
     const val MODEL_DARKEN_BOTTOM_OPACITY = 0.40f
 
     const val BODY_PART_SELECTOR_INACTIVE_ALPHA = 0.4f
@@ -74,7 +71,6 @@ internal object BodyVisualConstants {
         ),
     )
 
-    /** Visual-tab label for a region; the scroll selector lists [BodyMeasurementRegion.entries]. */
     @StringRes
     fun visualLabelRes(region: BodyMeasurementRegion): Int = when (region) {
         BodyMeasurementRegion.FullBody -> R.string.body_part_full_body
@@ -92,7 +88,6 @@ internal object BodyVisualConstants {
         BodyMeasurementRegion.Ankle -> R.string.body_part_ankles
     }
 
-    /** Visual measurement-card header label. Keeps selector/table labels independent. */
     @StringRes
     fun visualHeaderLabelRes(region: BodyMeasurementRegion): Int = when (region) {
         BodyMeasurementRegion.Bicep -> R.string.body_part_biceps_upper_arm_single_line

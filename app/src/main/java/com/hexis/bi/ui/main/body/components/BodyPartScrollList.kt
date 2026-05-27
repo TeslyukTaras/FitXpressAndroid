@@ -270,9 +270,7 @@ private fun bodyPartSelectorFocalY(
     viewportCenter: Float,
     viewportEnd: Float,
 ): Float {
-    // Clamp the edge zone to half the scroll range so the top and bottom zones never
-    // overlap. If they did, the `when` below would switch branches abruptly, making
-    // focalY discontinuous and preventing some items from landing correctly.
+    // Overlapping edge zones make focalY discontinuous.
     val edgeUnlockPx = (itemHeightPx * BodyVisualConstants.BODY_PART_SELECTOR_EDGE_UNLOCK_ITEMS)
         .coerceAtMost(maxScrollPx / 2f)
     if (edgeUnlockPx <= 0f) return viewportCenter

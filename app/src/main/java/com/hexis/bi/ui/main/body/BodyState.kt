@@ -76,6 +76,22 @@ data class VisualState(
     val beforePreviousMeasurements: Map<String, Float> = emptyMap(),
 )
 
+data class CompareState(
+    val hasData: Boolean = false,
+    val mode: BodyVisualMode = BodyVisualMode.Base,
+    val scanOptions: List<VisualScanOption> = emptyList(),
+    val leftScanTimestamp: Long? = null,
+    val rightScanTimestamp: Long? = null,
+    val leftModel3dUrl: String? = null,
+    val rightModel3dUrl: String? = null,
+    val leftMeasurements: Map<String, Float> = emptyMap(),
+    val leftPreviousMeasurements: Map<String, Float> = emptyMap(),
+    val rightMeasurements: Map<String, Float> = emptyMap(),
+    val rightPreviousMeasurements: Map<String, Float> = emptyMap(),
+    val leftColorModel: BodyVisualColorModel = BodyVisualColorModel.Idle,
+    val rightColorModel: BodyVisualColorModel = BodyVisualColorModel.Idle,
+)
+
 data class BodyComposition(
     val timestamp: Long,
     val weightKg: Float?,
@@ -147,4 +163,6 @@ data class BodyState(
     val chart: BodyChartData = BodyChartData(0L, 0L),
     val showBisInfo: Boolean = false,
     val visual: VisualState = VisualState(),
+    val compare: CompareState = CompareState(),
+    val modelCardHeightPx: Int = 0,
 )

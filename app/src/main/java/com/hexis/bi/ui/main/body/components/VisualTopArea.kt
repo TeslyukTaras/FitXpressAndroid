@@ -39,8 +39,6 @@ internal fun VisualTopArea(
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
-        // The 3D model runs up to the tabs as the backdrop; the scan-date label and the
-        // part list are drawn after it so they stay on top.
         BodyModelPreview(
             state = state,
             modifier = Modifier

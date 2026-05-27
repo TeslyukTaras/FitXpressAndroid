@@ -196,7 +196,6 @@ private fun PhysiqueMetricCard(
         highlighted = highlighted
     ) {
         if (compact) {
-            // Compact cards keep label and value on one row.
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -274,7 +273,6 @@ private fun PhysiqueMetricCard(
     }
 }
 
-// Summary drift is the blended score change.
 private fun physiqueDrift(state: BodyState): Float? = state.composition.deltaBisScore
 
 @Composable
