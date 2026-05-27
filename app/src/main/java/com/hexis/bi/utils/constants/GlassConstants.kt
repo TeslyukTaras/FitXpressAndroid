@@ -8,6 +8,8 @@ internal object GlassConstants {
 
     /** Alpha applied to primary when used as a soft selection highlight (pickers, date selection). */
     const val SELECTION_HIGHLIGHT_ALPHA = 0.15f
+    const val TEXT_FIELD_BACKGROUND_ALPHA = 0.75f
+    const val TEXT_FIELD_BORDER_ALPHA = 0.25f
 
     const val RIM_BASE_ALPHA = 0.12f
     const val RIM_RANGE_ALPHA = 0.84f
@@ -54,6 +56,8 @@ internal object GlassConstants {
     /** Smaller = sharper, brighter NW rim band. */
     const val RIM_TRANSITION_FRACTION = 0.065f
     const val RIM_MIN_TRANSITION = 0.014f
+    const val PILL_RIM_TRANSITION_MULTIPLIER = 3.25f
+    const val PILL_RIM_MIN_TRANSITION_MULTIPLIER = 3.5f
 
     const val RIM_SWEEP_NW_SHIFT = 0.05f
 }
