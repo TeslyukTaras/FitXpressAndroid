@@ -48,15 +48,29 @@ class BodyViewModel(
 
     private var allScans: List<ScanRecord> = emptyList()
     private val loadingVisualColorPairs = mutableSetOf<Pair<String, String>>()
+    private val loadingCompareColorPairs = mutableSetOf<Pair<String, String>>()
     private var requestedVisualColorPair: Pair<String, String>? = null
+    private var requestedLeftColorPair: Pair<String, String>? = null
+    private var requestedRightColorPair: Pair<String, String>? = null
 
     init {
-        observeVisualMode()
+        observeColorMode()
         loadData()
     }
 
     fun selectTab(tab: BodyTab) {
         _state.update { it.copy(selectedTab = tab) }
+
+        if (_state.value.visual.mode != BodyVisualMode.Color) return
+        when (tab) {
+            BodyTab.Visual -> {
+                if (_state.value.visual.colorModel !is BodyVisualColorModel.Ready) {
+                    loadVisualColorMesh()
+                }
+            }
+            BodyTab.Compare -> loadCompareColorMeshesIfNeeded()
+            else -> Unit
+        }
     }
 
     fun selectMassUnit(unit: BodyMassUnit) {
@@ -75,8 +89,14 @@ class BodyViewModel(
         _state.update { it.copy(visual = it.visual.copy(selectedBodyPart = region)) }
     }
 
-    fun selectVisualMode(mode: BodyVisualMode) {
-        applyVisualMode(mode)
+    fun setModelCardHeight(px: Int) {
+        if (_state.value.modelCardHeightPx != px) {
+            _state.update { it.copy(modelCardHeightPx = px) }
+        }
+    }
+
+    fun selectMode(mode: BodyVisualMode) {
+        applyColorMode(mode)
         viewModelScope.launch {
             preferencesRepository.setBodyVisualMode(mode.name)
         }
@@ -86,26 +106,42 @@ class BodyViewModel(
         updateVisualScan(selectedTimestamp = timestamp)
     }
 
+    fun selectCompareLeftScan(timestamp: Long) {
+        updateCompareScans(leftTimestamp = timestamp)
+    }
+
+    fun selectCompareRightScan(timestamp: Long) {
+        updateCompareScans(rightTimestamp = timestamp)
+    }
+
     fun retry() = loadData()
 
-    private fun observeVisualMode() {
+    private fun observeColorMode() {
         viewModelScope.launch {
             preferencesRepository.bodyVisualMode.collect { storedMode ->
                 val mode = BodyVisualMode.entries.firstOrNull { it.name == storedMode }
                     ?: BodyVisualMode.Base
-                applyVisualMode(mode)
+                applyColorMode(mode)
             }
         }
     }
 
-    private fun applyVisualMode(mode: BodyVisualMode) {
-        if (_state.value.visual.mode != mode) {
-            _state.update { it.copy(visual = it.visual.copy(mode = mode)) }
+    private fun applyColorMode(mode: BodyVisualMode) {
+        _state.update {
+            it.copy(
+                visual = it.visual.copy(mode = mode),
+                compare = it.compare.copy(mode = mode),
+            )
         }
-        if (mode == BodyVisualMode.Color &&
-            _state.value.visual.colorModel !is BodyVisualColorModel.Ready
-        ) {
-            loadVisualColorMesh()
+        if (mode != BodyVisualMode.Color) return
+        when (_state.value.selectedTab) {
+            BodyTab.Visual -> {
+                if (_state.value.visual.colorModel !is BodyVisualColorModel.Ready) {
+                    loadVisualColorMesh()
+                }
+            }
+            BodyTab.Compare -> loadCompareColorMeshesIfNeeded()
+            else -> Unit
         }
     }
 
@@ -150,6 +186,10 @@ class BodyViewModel(
                 )
             }
             updateVisualScan(selectedTimestamp = _state.value.visual.latestScanTimestamp)
+            updateCompareScans(
+                leftTimestamp = _state.value.compare.leftScanTimestamp ?: latest?.timestamp,
+                rightTimestamp = _state.value.compare.rightScanTimestamp ?: previous?.timestamp,
+            )
             rebuildChart()
         }
     }
@@ -186,7 +226,11 @@ class BodyViewModel(
                 ),
             )
         }
-        if (_state.value.visual.mode == BodyVisualMode.Color) loadVisualColorMesh()
+        if (_state.value.visual.mode == BodyVisualMode.Color &&
+            _state.value.selectedTab == BodyTab.Visual
+        ) {
+            loadVisualColorMesh()
+        }
     }
 
     private fun loadVisualColorMesh() {
@@ -237,6 +281,123 @@ class BodyViewModel(
                 }
             }
             loadingVisualColorPairs.remove(pair)
+        }
+    }
+
+    private fun updateCompareScans(
+        leftTimestamp: Long? = _state.value.compare.leftScanTimestamp,
+        rightTimestamp: Long? = _state.value.compare.rightScanTimestamp,
+    ) {
+        val latest = allScans.lastOrNull()
+        val previous = allScans.dropLast(1).lastOrNull()
+        val (left, leftPrevious) = scanAndPrevious(leftTimestamp ?: latest?.timestamp)
+        val (right, rightPrevious) = scanAndPrevious(rightTimestamp ?: previous?.timestamp)
+        val options = allScans
+            .takeLast(BodyConstants.VISUAL_SCAN_OPTION_LIMIT)
+            .asReversed()
+            .map { VisualScanOption(timestamp = it.timestamp) }
+
+        // Prevent a previous request from populating Color after the selection changes.
+        requestedLeftColorPair = null
+        requestedRightColorPair = null
+        _state.update {
+            it.copy(
+                compare = it.compare.copy(
+                    hasData = latest != null,
+                    scanOptions = options,
+                    leftScanTimestamp = left?.timestamp ?: latest?.timestamp,
+                    rightScanTimestamp = right?.timestamp ?: previous?.timestamp,
+                    leftModel3dUrl = left?.model3dUrl?.takeUnless { url -> url.isBlank() },
+                    rightModel3dUrl = right?.model3dUrl?.takeUnless { url -> url.isBlank() },
+                    leftMeasurements = left?.measurements.orEmpty(),
+                    leftPreviousMeasurements = leftPrevious?.measurements.orEmpty(),
+                    rightMeasurements = right?.measurements.orEmpty(),
+                    rightPreviousMeasurements = rightPrevious?.measurements.orEmpty(),
+                    leftColorModel = BodyVisualColorModel.Idle,
+                    rightColorModel = BodyVisualColorModel.Idle,
+                ),
+            )
+        }
+        if (_state.value.compare.mode == BodyVisualMode.Color &&
+            _state.value.selectedTab == BodyTab.Compare
+        ) {
+            loadCompareColorMeshesIfNeeded()
+        }
+    }
+
+    private fun scanAndPrevious(timestamp: Long?): Pair<ScanRecord?, ScanRecord?> {
+        if (timestamp == null) return null to null
+        val index = allScans.indexOfLast { it.timestamp == timestamp }
+        if (index < 0) return null to null
+        return allScans.getOrNull(index) to allScans.getOrNull(index - 1)
+    }
+
+    private fun loadCompareColorMeshesIfNeeded() {
+        when (_state.value.compare.leftColorModel) {
+            BodyVisualColorModel.Idle, BodyVisualColorModel.Error ->
+                loadCompareColorMesh(isLeft = true)
+            else -> Unit
+        }
+        when (_state.value.compare.rightColorModel) {
+            BodyVisualColorModel.Idle, BodyVisualColorModel.Error ->
+                loadCompareColorMesh(isLeft = false)
+            else -> Unit
+        }
+    }
+
+    private fun loadCompareColorMesh(isLeft: Boolean) {
+        val compare = _state.value.compare
+        val timestamp = if (isLeft) compare.leftScanTimestamp else compare.rightScanTimestamp
+        val (selected, previous) = scanAndPrevious(timestamp)
+        val beforeId = previous?.measurementId?.takeUnless { it.isBlank() }
+        val afterId = selected?.measurementId?.takeUnless { it.isBlank() }
+        val pair = if (beforeId == null || afterId == null) null else beforeId to afterId
+
+        if (isLeft) requestedLeftColorPair = pair else requestedRightColorPair = pair
+        if (pair == null) {
+            updateCompareColorModel(isLeft, BodyVisualColorModel.Unavailable)
+            return
+        }
+
+        updateCompareColorModel(isLeft, BodyVisualColorModel.Loading)
+        if (!loadingCompareColorPairs.add(pair)) return
+
+        viewModelScope.launch {
+            threeDLookRepository.loadColorAnalysisMeshUrl(
+                beforeMeasurementId = pair.first,
+                afterMeasurementId = pair.second,
+            ).onSuccess { meshUrl ->
+                applyCompareColorResult(pair, BodyVisualColorModel.Ready(meshUrl))
+            }.onFailure {
+                applyCompareColorResult(pair, BodyVisualColorModel.Error)
+            }
+            loadingCompareColorPairs.remove(pair)
+        }
+    }
+
+    private fun applyCompareColorResult(
+        pair: Pair<String, String>,
+        model: BodyVisualColorModel,
+    ) {
+        val leftMatches = requestedLeftColorPair == pair
+        val rightMatches = requestedRightColorPair == pair
+        if (!leftMatches && !rightMatches) return
+        _state.update {
+            it.copy(
+                compare = it.compare.copy(
+                    leftColorModel = if (leftMatches) model else it.compare.leftColorModel,
+                    rightColorModel = if (rightMatches) model else it.compare.rightColorModel,
+                ),
+            )
+        }
+    }
+
+    private fun updateCompareColorModel(isLeft: Boolean, model: BodyVisualColorModel) {
+        _state.update {
+            it.copy(
+                compare = if (isLeft) it.compare.copy(leftColorModel = model)
+                else it.compare.copy(rightColorModel = model),
+            )
         }
     }
 

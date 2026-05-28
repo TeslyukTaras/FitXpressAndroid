@@ -13,9 +13,11 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
 import android.os.SystemClock
+import android.util.LruCache
 import android.view.MotionEvent
 import android.view.TextureView
 import android.view.View
+import android.view.ViewConfiguration
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -28,6 +30,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -56,6 +59,7 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -69,14 +73,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.BufferedReader
-import java.io.InputStreamReader
+import java.io.File
 import java.net.URL
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
+import java.security.MessageDigest
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.math.abs
 import kotlin.math.cos
+import kotlin.math.hypot
+import kotlin.math.pow
 import kotlin.math.sin
 
 /**
@@ -102,13 +109,21 @@ private const val INITIAL_PITCH_DEG = -12f
 private const val MIN_PITCH_DEG = -55f
 private const val MAX_PITCH_DEG = 35f
 
-/** Shared yaw/pitch for Compare tab so both models rotate together. */
 internal class CompareRotationLink {
     @Volatile
     var yaw: Float = 0f
 
     @Volatile
     var pitch: Float = INITIAL_PITCH_DEG
+
+    @Volatile
+    var zoom: Float = MetricAvatarCamera.MIN_USER_ZOOM
+
+    @Volatile
+    var panX: Float = 0f
+
+    @Volatile
+    var panY: Float = 0f
 
     private val invalidateCallbacks = CopyOnWriteArrayList<() -> Unit>()
 
@@ -118,6 +133,32 @@ internal class CompareRotationLink {
 
     fun removeInvalidateCallback(callback: () -> Unit) {
         invalidateCallbacks.remove(callback)
+    }
+
+    fun applyZoomFactor(factor: Float) {
+        synchronized(this) {
+            zoom = (zoom * factor).coerceIn(
+                MetricAvatarCamera.MIN_USER_ZOOM,
+                MetricAvatarCamera.MAX_USER_ZOOM,
+            )
+        }
+        invalidateCallbacks.forEach { it() }
+    }
+
+    fun applyPanDelta(dxWorld: Float, dyWorld: Float, maxX: Float, maxY: Float) {
+        synchronized(this) {
+            panX = (panX + dxWorld).coerceIn(-maxX, maxX)
+            panY = (panY + dyWorld).coerceIn(-maxY, maxY)
+        }
+        invalidateCallbacks.forEach { it() }
+    }
+
+    fun clampPan(maxX: Float, maxY: Float) {
+        synchronized(this) {
+            panX = panX.coerceIn(-maxX, maxX)
+            panY = panY.coerceIn(-maxY, maxY)
+        }
+        invalidateCallbacks.forEach { it() }
     }
 
     fun applyRotationDelta(dyaw: Float, dpitch: Float) {
@@ -149,11 +190,13 @@ internal fun MetricAvatarPreview(
     showSkinAreas: Boolean = false,
     drawBackground: Boolean = true,
     touchRotationEnabled: Boolean = true,
+    zoomPanEnabled: Boolean = false,
+    baseDistanceScale: Float = 1f,
+    meshGlow: Float = 0f,
     /** When false, the parent already drew [metricAvatarPreviewGradientBackground]. */
     useGradientBackground: Boolean = true,
     initialYawDegrees: Float = 0f,
     initialPitchDegrees: Float = INITIAL_PITCH_DEG,
-    /** When set (Compare tab), both previews share yaw/pitch via this link. */
     compareRotationLink: CompareRotationLink? = null,
     /** Invoked on the main thread when yaw/pitch or viewport size change (Visual overlay). Ignored when [compareRotationLink] is non-null. */
     onVisualTransformChanged: ((yawDeg: Float, pitchDeg: Float, viewWidthPx: Int, viewHeightPx: Int) -> Unit)? = null,
@@ -176,6 +219,8 @@ internal fun MetricAvatarPreview(
         MetricAvatarTextureView(context) { latestOnInteraction(it) }
     }
     var loadState by remember { mutableStateOf(MetricAvatarLoadState.Loading) }
+    // Wait for a rendered frame to avoid a white flash on model switches.
+    var firstFrameReady by remember { mutableStateOf(false) }
     var reloadKey by remember { mutableIntStateOf(0) }
     val latestRenderFailure by rememberUpdatedState {
         loadState = MetricAvatarLoadState.Error
@@ -188,13 +233,22 @@ internal fun MetricAvatarPreview(
             touchRotationEnabled
         )
     }
+    LaunchedEffect(renderHost, zoomPanEnabled) { renderHost.setZoomPanEnabled(zoomPanEnabled) }
+    LaunchedEffect(renderHost, baseDistanceScale) {
+        renderHost.setBaseDistanceScale(
+            baseDistanceScale
+        )
+    }
+    LaunchedEffect(renderHost, meshGlow) { renderHost.setMeshGlow(meshGlow) }
     LaunchedEffect(renderHost, framingRegion) { renderHost.setFramingRegion(framingRegion) }
 
     DisposableEffect(renderHost) {
         renderHost.setRenderFailureListener { latestRenderFailure() }
+        renderHost.setOnFirstFrameRendered { firstFrameReady = true }
         renderHost.onResumeHost()
         onDispose {
             renderHost.setRenderFailureListener(null)
+            renderHost.setOnFirstFrameRendered(null)
             renderHost.onPauseHost()
         }
     }
@@ -226,13 +280,14 @@ internal fun MetricAvatarPreview(
     val latestYawAtLoad by rememberUpdatedState(initialYawDegrees)
     val latestPitchAtLoad by rememberUpdatedState(initialPitchDegrees)
 
-    /** OBJ fetch/parse only when model/color mode or compare mode changes, not on view rotation changes. */
     LaunchedEffect(modelUrl, useModelVertexColors, reloadKey, compareRotationLink) {
         compareRotationLink?.let { renderHost.setCompareRotationLink(it) }
         loadState = MetricAvatarLoadState.Loading
+        firstFrameReady = false
         try {
+            val cacheDir = context.cacheDir
             val mesh = withContext(Dispatchers.IO) {
-                ObjParser.parse(modelUrl, includeVertexColors = useModelVertexColors)
+                ObjParser.parse(modelUrl, cacheDir, includeVertexColors = useModelVertexColors)
             }
             if (compareRotationLink != null) {
                 renderHost.applyLoadedMeshForCompare(mesh)
@@ -277,21 +332,14 @@ internal fun MetricAvatarPreview(
                 .fillMaxSize()
                 .clip(RectangleShape)
                 .graphicsLayer {
-                    alpha = if (loadState == MetricAvatarLoadState.Ready) 1f else 0f
+                    alpha = if (firstFrameReady) 1f else 0f
                     // Keep GL layer composited so the surface still lays out while loading (avoids 0×0 / stuck first frame on some devices).
                     compositingStrategy = CompositingStrategy.Auto
                 },
             factory = { renderHost.view },
         )
-        when (loadState) {
-            MetricAvatarLoadState.Loading -> {
-                MetricAvatarLoading(
-                    messageRes = loadingMessageRes,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-
-            MetricAvatarLoadState.Error -> {
+        when {
+            loadState == MetricAvatarLoadState.Error -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
@@ -300,7 +348,11 @@ internal fun MetricAvatarPreview(
                 }
             }
 
-            MetricAvatarLoadState.Ready -> { /* GL surface visible */
+            !firstFrameReady -> {
+                MetricAvatarLoading(
+                    messageRes = loadingMessageRes,
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
         }
     }
@@ -321,13 +373,25 @@ internal fun MetricAvatarLoading(
         ) {
             CircularProgressIndicator()
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
-            Text(
-                text = stringResource(messageRes),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            MetricAvatarStatusText(messageRes = messageRes)
         }
     }
+}
+
+@Composable
+internal fun MetricAvatarStatusText(
+    @StringRes messageRes: Int,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = stringResource(messageRes),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier = modifier.widthIn(
+            max = dimensionResource(R.dimen.metric_avatar_text_max_width),
+        ),
+    )
 }
 
 @Composable
@@ -374,6 +438,9 @@ private enum class MetricAvatarLoadState {
 
 private const val TOUCH_YAW_SENSITIVITY = 0.25f
 private const val TOUCH_PITCH_SENSITIVITY = 0.2f
+private const val TWO_FINGER_ZOOM_SLOP_MULTIPLIER = 1.25f
+private const val TWO_FINGER_ZOOM_DOMINANCE_RATIO = 1.25f
+private const val TWO_FINGER_ZOOM_SENSITIVITY = 0.85f
 private const val FRAME_ANIMATION_DURATION_MS = 360L
 private const val FRAME_ANIMATION_FRAME_DELAY_MS = 16L
 private const val RENDER_THREAD_JOIN_TIMEOUT_MS = 250L
@@ -400,14 +467,20 @@ private interface MetricAvatarRenderHost {
     fun applyLoadedMeshForCompare(mesh: ObjMesh)
     fun setCompareRotationLink(link: CompareRotationLink?)
     fun setShowSkinAreas(show: Boolean)
+    fun setMeshGlow(glow: Float)
     fun setDrawBackground(draw: Boolean)
     fun setTouchRotationEnabled(enabled: Boolean)
+    fun setZoomPanEnabled(enabled: Boolean)
+    fun setBaseDistanceScale(scale: Float)
     fun setVisualTransformListener(listener: ((Float, Float, Int, Int) -> Unit)?)
     fun setLeaderSegments(segments: List<ModelLeaderSegment>?)
     fun setBaseOrientation(yawDeg: Float, pitchDeg: Float)
     fun setFramingRegion(region: BodyMeasurementRegion?)
     fun setRenderFailureListener(listener: (() -> Unit)?)
+    fun setOnFirstFrameRendered(listener: (() -> Unit)?)
 }
+
+private enum class TwoFingerGesture { UNDECIDED, ZOOM, PAN }
 
 private class MetricAvatarTextureView(
     context: Context,
@@ -415,8 +488,17 @@ private class MetricAvatarTextureView(
 ) : TextureView(context), TextureView.SurfaceTextureListener, MetricAvatarRenderHost {
     private val avatarRenderer = MetricAvatarRenderer()
     private var touchRotationEnabled = true
+    private var zoomPanEnabled = false
     private var lastX = 0f
     private var lastY = 0f
+    private var lastCentroidX = 0f
+    private var lastCentroidY = 0f
+    private var twoFingerGesture: TwoFingerGesture? = null
+    private var gestureStartSpan = 0f
+    private var gestureLastSpan = 0f
+    private var gestureStartCx = 0f
+    private var gestureStartCy = 0f
+    private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop.toFloat()
     private var renderThread: HandlerThread? = null
     private var renderHandler: Handler? = null
     private var eglDisplay: EGLDisplay? = null
@@ -424,6 +506,8 @@ private class MetricAvatarTextureView(
     private var eglSurface: EGLSurface? = null
     private var boundCompareLink: CompareRotationLink? = null
     private var renderFailureListener: (() -> Unit)? = null
+    private var onFirstFrameRendered: (() -> Unit)? = null
+    private var pendingFirstFrameNotify = false
     private var animationFrameScheduled = false
     private val pendingEvents = mutableListOf<() -> Unit>()
     private val compareRenderNotify: () -> Unit = { requestRenderOnThread() }
@@ -506,7 +590,12 @@ private class MetricAvatarTextureView(
         return true
     }
 
-    override fun onSurfaceTextureUpdated(surface: SurfaceTexture) = Unit
+    override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
+        if (pendingFirstFrameNotify) {
+            pendingFirstFrameNotify = false
+            onFirstFrameRendered?.invoke()
+        }
+    }
 
     private fun startRenderThread(surface: SurfaceTexture, width: Int, height: Int) {
         if (renderThread != null) return
@@ -538,8 +627,7 @@ private class MetricAvatarTextureView(
             releaseEgl()
             thread?.quitSafely()
         }
-        // Block briefly so a following startRenderThread() can't spin up a second
-        // thread that races this one tearing down the shared EGL handles.
+        // Avoid a new render thread racing EGL teardown.
         thread?.join(RENDER_THREAD_JOIN_TIMEOUT_MS)
     }
 
@@ -710,6 +798,7 @@ private class MetricAvatarTextureView(
     }
 
     override fun applyLoadedMesh(mesh: ObjMesh, yawDeg: Float, pitchDeg: Float) {
+        pendingFirstFrameNotify = true
         queueRenderEvent {
             avatarRenderer.setRotationLink(null)
             avatarRenderer.setBaseOrientation(yawDeg, pitchDeg)
@@ -719,6 +808,7 @@ private class MetricAvatarTextureView(
     }
 
     override fun applyLoadedMeshForCompare(mesh: ObjMesh) {
+        pendingFirstFrameNotify = true
         queueRenderEvent {
             avatarRenderer.setMesh(mesh)
             drawFrame()
@@ -730,6 +820,13 @@ private class MetricAvatarTextureView(
         boundCompareLink = link
         queueRenderEvent { avatarRenderer.setRotationLink(link) }
         link?.addInvalidateCallback(compareRenderNotify)
+    }
+
+    override fun setMeshGlow(glow: Float) {
+        queueRenderEvent {
+            avatarRenderer.setMeshGlow(glow)
+            drawFrame()
+        }
     }
 
     override fun setShowSkinAreas(show: Boolean) {
@@ -748,6 +845,17 @@ private class MetricAvatarTextureView(
 
     override fun setTouchRotationEnabled(enabled: Boolean) {
         touchRotationEnabled = enabled
+    }
+
+    override fun setZoomPanEnabled(enabled: Boolean) {
+        zoomPanEnabled = enabled
+    }
+
+    override fun setBaseDistanceScale(scale: Float) {
+        queueRenderEvent {
+            avatarRenderer.setBaseDistanceScale(scale)
+            drawFrame()
+        }
     }
 
     override fun setVisualTransformListener(listener: ((Float, Float, Int, Int) -> Unit)?) {
@@ -782,6 +890,10 @@ private class MetricAvatarTextureView(
         renderFailureListener = listener
     }
 
+    override fun setOnFirstFrameRendered(listener: (() -> Unit)?) {
+        onFirstFrameRendered = listener
+    }
+
     private fun notifyRenderFailure() {
         val listener = renderFailureListener ?: return
         mainHandler.post { listener() }
@@ -791,44 +903,135 @@ private class MetricAvatarTextureView(
         if (!touchRotationEnabled) return false
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                // Own the whole gesture: stop the surrounding Compose scroll / body-part
-                // list from intercepting it mid-drag (which caused jitter + snap-back).
+                // Avoid parent scroll intercept during model dragging.
                 parent?.requestDisallowInterceptTouchEvent(true)
                 onInteractionChanged(true)
                 lastX = event.x
                 lastY = event.y
             }
 
-            MotionEvent.ACTION_MOVE -> {
-                val dx = event.x - lastX
-                val dy = event.y - lastY
-                val link = boundCompareLink
-                if (link != null) {
-                    link.applyRotationDelta(
-                        dx * TOUCH_YAW_SENSITIVITY,
-                        dy * TOUCH_PITCH_SENSITIVITY
-                    )
-                } else {
-                    queueRenderEvent {
-                        avatarRenderer.rotateBy(
-                            dyaw = dx * TOUCH_YAW_SENSITIVITY,
-                            dpitch = dy * TOUCH_PITCH_SENSITIVITY,
-                        )
-                        drawFrame()
-                    }
+            MotionEvent.ACTION_POINTER_DOWN ->
+                if (zoomPanEnabled && event.pointerCount >= 2) beginTwoFinger(event)
+
+            MotionEvent.ACTION_POINTER_UP -> {
+                if (event.pointerCount - 1 < 2) {
+                    twoFingerGesture = null
+                    val survivor = if (event.actionIndex == 0) 1 else 0
+                    lastX = event.getX(survivor)
+                    lastY = event.getY(survivor)
+                } else if (zoomPanEnabled) {
+                    beginTwoFinger(event)
                 }
-                lastX = event.x
-                lastY = event.y
+            }
+
+            MotionEvent.ACTION_MOVE -> {
+                if (zoomPanEnabled && twoFingerGesture != null && event.pointerCount >= 2) {
+                    handleTwoFingerMove(event)
+                } else if (twoFingerGesture == null) {
+                    val dx = event.x - lastX
+                    val dy = event.y - lastY
+                    val link = boundCompareLink
+                    if (link != null) {
+                        link.applyRotationDelta(
+                            dx * TOUCH_YAW_SENSITIVITY,
+                            dy * TOUCH_PITCH_SENSITIVITY
+                        )
+                    } else {
+                        queueRenderEvent {
+                            avatarRenderer.rotateBy(
+                                dyaw = dx * TOUCH_YAW_SENSITIVITY,
+                                dpitch = dy * TOUCH_PITCH_SENSITIVITY,
+                            )
+                            drawFrame()
+                        }
+                    }
+                    lastX = event.x
+                    lastY = event.y
+                }
             }
 
             MotionEvent.ACTION_UP -> {
                 performClick()
                 onInteractionChanged(false)
+                twoFingerGesture = null
             }
 
-            MotionEvent.ACTION_CANCEL -> onInteractionChanged(false)
+            MotionEvent.ACTION_CANCEL -> {
+                onInteractionChanged(false)
+                twoFingerGesture = null
+            }
         }
         return true
+    }
+
+    private fun beginTwoFinger(event: MotionEvent) {
+        twoFingerGesture = TwoFingerGesture.UNDECIDED
+        gestureStartSpan = spanOf(event)
+        gestureLastSpan = gestureStartSpan
+        gestureStartCx = averagePointer(event, excludeIndex = -1, axisX = true)
+        gestureStartCy = averagePointer(event, excludeIndex = -1, axisX = false)
+        lastCentroidX = gestureStartCx
+        lastCentroidY = gestureStartCy
+    }
+
+    private fun handleTwoFingerMove(event: MotionEvent) {
+        val span = spanOf(event)
+        val cx = averagePointer(event, excludeIndex = -1, axisX = true)
+        val cy = averagePointer(event, excludeIndex = -1, axisX = false)
+        if (twoFingerGesture == TwoFingerGesture.UNDECIDED) {
+            val spanDelta = abs(span - gestureStartSpan)
+            val panDelta = hypot(cx - gestureStartCx, cy - gestureStartCy)
+            val zoomIsClear =
+                spanDelta >= touchSlop * TWO_FINGER_ZOOM_SLOP_MULTIPLIER &&
+                        spanDelta > panDelta * TWO_FINGER_ZOOM_DOMINANCE_RATIO
+            when {
+                zoomIsClear -> twoFingerGesture = TwoFingerGesture.ZOOM
+                panDelta >= touchSlop -> twoFingerGesture = TwoFingerGesture.PAN
+            }
+        }
+        when (twoFingerGesture) {
+            TwoFingerGesture.ZOOM -> if (gestureLastSpan > 0f) applyZoomFactor(span / gestureLastSpan)
+            TwoFingerGesture.PAN -> applyPan(cx - lastCentroidX, cy - lastCentroidY)
+            else -> Unit
+        }
+        gestureLastSpan = span
+        lastCentroidX = cx
+        lastCentroidY = cy
+    }
+
+    private fun spanOf(event: MotionEvent): Float {
+        if (event.pointerCount < 2) return 0f
+        return hypot(event.getX(1) - event.getX(0), event.getY(1) - event.getY(0))
+    }
+
+    private fun averagePointer(event: MotionEvent, excludeIndex: Int, axisX: Boolean): Float {
+        var sum = 0f
+        var count = 0
+        for (i in 0 until event.pointerCount) {
+            if (i == excludeIndex) continue
+            sum += if (axisX) event.getX(i) else event.getY(i)
+            count++
+        }
+        return if (count == 0) {
+            if (axisX) event.getX(0) else event.getY(0)
+        } else {
+            sum / count
+        }
+    }
+
+    private fun applyZoomFactor(factor: Float) {
+        queueRenderEvent {
+            avatarRenderer.zoomBy(factor.pow(TWO_FINGER_ZOOM_SENSITIVITY))
+            if (boundCompareLink == null) drawFrame()
+        }
+    }
+
+    private fun applyPan(dxPixels: Float, dyPixels: Float) {
+        if (dxPixels == 0f && dyPixels == 0f) return
+        queueRenderEvent {
+            avatarRenderer.panBy(dxPixels, dyPixels)
+            if (boundCompareLink == null) drawFrame()
+        }
     }
 
     override fun performClick(): Boolean {
@@ -1239,12 +1442,20 @@ private object ObjParser {
     private const val OBJ_URL_CONNECT_TIMEOUT_MS = 10_000
     private const val OBJ_URL_READ_TIMEOUT_MS = 15_000
 
+    private const val OBJ_DISK_CACHE_DIR = "metric_avatar_obj"
+    private const val OBJ_DISK_CACHE_MAX_FILES = 16
+    private const val OBJ_DISK_CACHE_MAX_BYTES = 64L * 1024L * 1024L
+
     /** Minimum whitespace-separated tokens for a valid `v x y z` vertex line. */
     private const val OBJ_VERTEX_LINE_MIN_TOKENS = 4
 
     private const val OBJ_VERTEX_COLOR_LINE_MIN_TOKENS = 7
 
     private const val DEFAULT_VERTEX_GREY = 0.4f
+
+    private const val MESH_CACHE_MAX_ENTRIES = 6
+
+    private val meshCache = LruCache<String, ObjMesh>(MESH_CACHE_MAX_ENTRIES)
 
     /**
      * Body regions where vertices are not merged aggressively.
@@ -1287,17 +1498,16 @@ private object ObjParser {
         return dx * dx + dy * dy + dz * dz
     }
 
-    fun parse(url: String, includeVertexColors: Boolean = false): ObjMesh {
+    fun parse(url: String, cacheDir: File, includeVertexColors: Boolean = false): ObjMesh {
+        val cacheKey = if (includeVertexColors) "$url#colors" else url
+        meshCache.get(cacheKey)?.let { return it.withIndependentBuffers() }
+
         val vertices = ArrayList<FloatArray>()
         val colors = if (includeVertexColors) ArrayList<FloatArray>() else null
         var hasColors = false
         val faces = ArrayList<IntArray>()
-        val connection = URL(url).openConnection().apply {
-            connectTimeout = OBJ_URL_CONNECT_TIMEOUT_MS
-            readTimeout = OBJ_URL_READ_TIMEOUT_MS
-        }
 
-        BufferedReader(InputStreamReader(connection.getInputStream())).use { reader ->
+        objFileReader(url, cacheDir).use { reader ->
             reader.lineSequence().forEach { line ->
                 when {
                     line.startsWith("v ") -> if (parseVertex(line, vertices, colors)) hasColors =
@@ -1355,7 +1565,7 @@ private object ObjParser {
         val buffer = triangles.toDirectFloatBuffer()
         val wireBuffer = wireLines.toDirectFloatBuffer()
 
-        return ObjMesh(
+        val mesh = ObjMesh(
             vertexBuffer = buffer,
             vertexCount = triangles.size / FLOATS_PER_VERTEX,
             wireVertexBuffer = wireBuffer,
@@ -1364,6 +1574,76 @@ private object ObjParser {
             measurementGuide = measurementGuide,
             colorBuffer = triangleColors?.toDirectFloatBuffer(),
         )
+        meshCache.put(cacheKey, mesh)
+        return mesh.withIndependentBuffers()
+    }
+
+    // Two previews can render one cached mesh without sharing buffer positions.
+    private fun ObjMesh.withIndependentBuffers(): ObjMesh = copy(
+        vertexBuffer = vertexBuffer.duplicate(),
+        wireVertexBuffer = wireVertexBuffer.duplicate(),
+        colorBuffer = colorBuffer?.duplicate(),
+    )
+
+    private fun objFileReader(url: String, cacheDir: File): BufferedReader {
+        val dir = File(cacheDir, OBJ_DISK_CACHE_DIR).apply { mkdirs() }
+        val cacheFile = File(dir, cacheFileName(url))
+        if (!cacheFile.exists() || cacheFile.length() == 0L) {
+            downloadObj(url, dir, cacheFile)
+        }
+        cacheFile.setLastModified(System.currentTimeMillis())
+        val reader = cacheFile.bufferedReader()
+        trimDiskCache(dir, cacheFile)
+        return reader
+    }
+
+    @Synchronized
+    private fun trimDiskCache(dir: File, activeFile: File) {
+        val cachedFiles = dir.listFiles { file ->
+            file.isFile && file.extension == "obj"
+        }.orEmpty().sortedWith(
+            compareByDescending<File> { it == activeFile }
+                .thenByDescending { it.lastModified() },
+        )
+        var retainedFiles = 0
+        var retainedBytes = 0L
+
+        cachedFiles.forEach { file ->
+            val fileSize = file.length()
+            val retain = file == activeFile ||
+                    (retainedFiles < OBJ_DISK_CACHE_MAX_FILES &&
+                            retainedBytes + fileSize <= OBJ_DISK_CACHE_MAX_BYTES)
+            if (retain) {
+                retainedFiles += 1
+                retainedBytes += fileSize
+            } else {
+                file.delete()
+            }
+        }
+    }
+
+    private fun downloadObj(url: String, dir: File, dest: File) {
+        val connection = URL(url).openConnection().apply {
+            connectTimeout = OBJ_URL_CONNECT_TIMEOUT_MS
+            readTimeout = OBJ_URL_READ_TIMEOUT_MS
+        }
+        // Do not expose partial downloads to concurrent readers.
+        val tmp = File.createTempFile("obj", ".tmp", dir)
+        try {
+            connection.getInputStream().use { input ->
+                tmp.outputStream().use { output -> input.copyTo(output) }
+            }
+            if (!tmp.renameTo(dest)) {
+                tmp.copyTo(dest, overwrite = true)
+            }
+        } finally {
+            tmp.delete()
+        }
+    }
+
+    private fun cacheFileName(url: String): String {
+        val digest = MessageDigest.getInstance("SHA-256").digest(url.toByteArray())
+        return digest.joinToString("") { "%02x".format(it) } + ".obj"
     }
 
     private fun parseVertex(
@@ -1838,6 +2118,8 @@ private class MetricAvatarRenderer {
     private var uModelView = 0
     private var uMeshColor = 0
     private var uUseVertexColor = 0
+    private var uMeshGlow = 0
+    private var meshGlow = 0f
     private var showSkinAreas = false
 
     private var leaderProgram = 0
@@ -1878,6 +2160,13 @@ private class MetricAvatarRenderer {
 
     /** User drag-rotation applied on top of the active frame's yaw; reset when the part changes. */
     private var framingYawOffsetDeg = 0f
+
+    private var userZoom = MetricAvatarCamera.MIN_USER_ZOOM
+
+    private var baseDistanceScale = 1f
+
+    private var userPanX = 0f
+    private var userPanY = 0f
     private var frameCache: Map<BodyMeasurementRegion, AvatarFrame> = emptyMap()
     private var animatedFrame: AvatarFrame? = null
     private var frameAnimationStart: AvatarFrame? = null
@@ -1908,7 +2197,6 @@ private class MetricAvatarRenderer {
             lastPostedYaw = Float.NaN
             lastPostedPitch = Float.NaN
         } else {
-            // Force the next draw to post yaw/pitch/viewport to Compose (e.g. Visual tab overlay).
             lastPostedYaw = Float.NaN
             lastPostedPitch = Float.NaN
         }
@@ -2062,7 +2350,14 @@ private class MetricAvatarRenderer {
 
     fun setMesh(value: ObjMesh) {
         mesh = value
+        resetUserView()
         rebuildFrameCache()
+    }
+
+    private fun resetUserView() {
+        userZoom = MetricAvatarCamera.MIN_USER_ZOOM
+        userPanX = 0f
+        userPanY = 0f
     }
 
     fun setBaseOrientation(yawDeg: Float, pitchDeg: Float) {
@@ -2081,6 +2376,7 @@ private class MetricAvatarRenderer {
         val startFrame = currentAvatarFrame()
         framingRegion = region
         framingYawOffsetDeg = 0f
+        resetUserView()
         val targetFrame = targetAvatarFrame()
         if (startFrame == null || targetFrame == null) {
             animatedFrame = targetFrame
@@ -2100,17 +2396,72 @@ private class MetricAvatarRenderer {
         showSkinAreas = show
     }
 
+    fun setMeshGlow(glow: Float) {
+        meshGlow = glow.coerceIn(0f, 1f)
+    }
+
     fun rotateBy(dyaw: Float, dpitch: Float) {
         val link = rotationLink
         when {
             link != null -> link.applyRotationDelta(dyaw, dpitch)
-            // Framed (Visual tab): horizontal spin only, layered on the frame's yaw.
             framingRegion != null -> framingYawOffsetDeg += dyaw
             else -> {
                 yaw += dyaw
                 pitch = (pitch + dpitch).coerceIn(MIN_PITCH_DEG, MAX_PITCH_DEG)
             }
         }
+    }
+
+    fun setBaseDistanceScale(scale: Float) {
+        baseDistanceScale = scale
+    }
+
+    fun zoomBy(factor: Float) {
+        val link = rotationLink
+        if (link != null) {
+            link.applyZoomFactor(factor)
+            val (maxX, maxY) = panBoundsWorld()
+            link.clampPan(maxX, maxY)
+        } else {
+            userZoom = (userZoom * factor).coerceIn(
+                MetricAvatarCamera.MIN_USER_ZOOM,
+                MetricAvatarCamera.MAX_USER_ZOOM,
+            )
+            val (maxX, maxY) = panBoundsWorld()
+            userPanX = userPanX.coerceIn(-maxX, maxX)
+            userPanY = userPanY.coerceIn(-maxY, maxY)
+        }
+    }
+
+    fun panBy(dxPixels: Float, dyPixels: Float) {
+        if (viewportHeight <= 0) return
+        val worldPerPixel =
+            2f * currentDrawDistance() * MetricAvatarCamera.HALF_FOV_TAN / viewportHeight
+        val dxWorld = dxPixels * worldPerPixel
+        val dyWorld = -dyPixels * worldPerPixel
+        val (maxX, maxY) = panBoundsWorld()
+        val link = rotationLink
+        if (link != null) {
+            link.applyPanDelta(dxWorld, dyWorld, maxX, maxY)
+        } else {
+            userPanX = (userPanX + dxWorld).coerceIn(-maxX, maxX)
+            userPanY = (userPanY + dyWorld).coerceIn(-maxY, maxY)
+        }
+    }
+
+    private fun currentDrawDistance(): Float =
+        viewDistance * (animatedFrame?.distanceScale ?: baseDistanceScale) / modelZoom()
+
+    // Keep panning inside model bounds as zoom changes the visible area.
+    private fun panBoundsWorld(): Pair<Float, Float> {
+        if (viewportHeight <= 0) return 0f to 0f
+        val bounds = mesh?.bounds ?: return 0f to 0f
+        val keep = MetricAvatarCamera.PAN_EDGE_KEEP_FRACTION
+        val halfWindowY = currentDrawDistance() * MetricAvatarCamera.HALF_FOV_TAN
+        val halfWindowX = halfWindowY * (viewportWidth.toFloat() / viewportHeight)
+        val maxX = ((bounds.maxX - bounds.minX) / 2f - halfWindowX * keep).coerceAtLeast(0f)
+        val maxY = ((bounds.maxY - bounds.minY) / 2f - halfWindowY * keep).coerceAtLeast(0f)
+        return maxX to maxY
     }
 
     private fun modelYaw(): Float {
@@ -2121,6 +2472,21 @@ private class MetricAvatarRenderer {
     private fun modelPitch(): Float {
         val link = rotationLink
         return if (link != null) synchronized(link) { link.pitch } else pitch
+    }
+
+    private fun modelZoom(): Float {
+        val link = rotationLink
+        return if (link != null) synchronized(link) { link.zoom } else userZoom
+    }
+
+    private fun modelPanX(): Float {
+        val link = rotationLink
+        return if (link != null) synchronized(link) { link.panX } else userPanX
+    }
+
+    private fun modelPanY(): Float {
+        val link = rotationLink
+        return if (link != null) synchronized(link) { link.panY } else userPanY
     }
 
     private fun rebuildFrameCache() {
@@ -2184,6 +2550,7 @@ private class MetricAvatarRenderer {
         aColor = GLES20.glGetAttribLocation(program, "aColor")
         uMvp = GLES20.glGetUniformLocation(program, "uMvp")
         uUseVertexColor = GLES20.glGetUniformLocation(program, "uUseVertexColor")
+        uMeshGlow = GLES20.glGetUniformLocation(program, "uMeshGlow")
         uSkinColor = GLES20.glGetUniformLocation(program, "uSkinColor")
         uSuitColor = GLES20.glGetUniformLocation(program, "uSuitColor")
         uShowSkin = GLES20.glGetUniformLocation(program, "uShowSkin")
@@ -2283,9 +2650,9 @@ private class MetricAvatarRenderer {
     private fun updateAvatarMatrices(frame: AvatarFrame?) {
         val drawYaw = if (frame != null) frame.yawDeg + framingYawOffsetDeg else modelYaw()
         val drawPitch = frame?.pitchDeg ?: modelPitch()
-        val drawDistance = viewDistance * (frame?.distanceScale ?: 1f)
-        val drawTranslateX = frame?.translateX ?: 0f
-        val drawTranslateY = frame?.translateY ?: 0f
+        val drawDistance = viewDistance * (frame?.distanceScale ?: baseDistanceScale) / modelZoom()
+        val drawTranslateX = (frame?.translateX ?: 0f) + modelPanX()
+        val drawTranslateY = (frame?.translateY ?: 0f) + modelPanY()
         val drawEyeHeight = frame?.eyeHeight ?: MetricAvatarCamera.EYE_HEIGHT
 
         Matrix.setLookAtM(
@@ -2311,6 +2678,7 @@ private class MetricAvatarRenderer {
         GLES20.glUniform4f(uSuitColor, SUIT_R, SUIT_G, SUIT_B, 1f)
         GLES20.glUniform4f(uMeshColor, MESH_R, MESH_G, MESH_B, 1f)
         GLES20.glUniform1f(uShowSkin, if (showSkinAreas) 1f else 0f)
+        if (uMeshGlow >= 0) GLES20.glUniform1f(uMeshGlow, meshGlow)
     }
 
     private fun drawAvatarBody(m: ObjMesh) {
@@ -2554,8 +2922,10 @@ private class MetricAvatarRenderer {
             varying vec3 vColor;
             uniform vec4 uSkinColor; uniform vec4 uSuitColor; uniform vec4 uMeshColor;
             uniform float uShowSkin; uniform mat4 uModelView; uniform float uUseVertexColor;
+            uniform float uMeshGlow;
 
             const float WIRE_WIDTH = 0.7;
+            const float WIRE_GLOW_RIM_POWER = 3.5;
             const float WIRE_INTENSITY = 0.46;
             const float ANALYSIS_WIRE_INTENSITY_BOOST = 0.08;
             const float STITCH_START = 0.91;
@@ -2653,10 +3023,12 @@ private class MetricAvatarRenderer {
                 vec3 body = bodyBaseColor(falloff);
                 float edge = meshEdgeCoverage(vBary, vEdgeMask);
                 vec3 wireCol = flatWireColor(nView, lightDir);
-                // Analysis changes affect only the teal wire mesh, never the body fill.
                 wireCol = colorAnalysisWire(wireCol, vColor);
                 vec3 finalBodyCol = applyMeshWire(body, wireCol, edge, uUseVertexColor);
                 finalBodyCol = applyJunctionStitch(finalBodyCol, wireCol, vBary);
+
+                float rim = pow(1.0 - max(nView.z, 0.0), WIRE_GLOW_RIM_POWER);
+                finalBodyCol += uMeshColor.rgb * rim * clamp(uMeshGlow, 0.0, 1.0);
 
                 // Not used for now:
                 // finalBodyCol = applyPointHighlightNotUsedForNow(finalBodyCol, wireCol, vBary);

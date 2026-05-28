@@ -102,7 +102,6 @@ internal fun BodyTrendChart(
     var chartAreaLeftPx by remember { mutableIntStateOf(0) }
     var chartAreaWidth by remember { mutableIntStateOf(0) }
     var tooltipWidth by remember { mutableIntStateOf(0) }
-    // Size the gutter to the widest Y label.
     var yAxisWidthPx by remember { mutableIntStateOf(0) }
 
     val chartColors = DarkTheme.extendedColors
@@ -114,7 +113,6 @@ internal fun BodyTrendChart(
 
     val pointLabelMeasurer = rememberTextMeasurer()
     val pointLabelStyle = MaterialTheme.typography.bodySmall
-    // Label points nearest visible ticks.
     val labeledIndices = remember(chart) {
         if (chart.points.isEmpty()) {
             emptyList()
@@ -175,7 +173,6 @@ internal fun BodyTrendChart(
                         .weight(1f)
                         .padding(top = dimensionResource(R.dimen.spacer_m)),
                 )
-                // The embedded card opens the full range-selector screen.
                 if (onOpenClick != null) IconButton(
                     onClick = onOpenClick,
                     enabled = !showTooltip,
@@ -269,7 +266,6 @@ internal fun BodyTrendChart(
                                         floatArrayOf(gridDashWidth.toPx(), gridDashWidth.toPx()),
                                         0f,
                                     )
-                                    // Highlight the zero line.
                                     chart.gridLines.forEach { value ->
                                         val y = size.height * mapValueToFraction(
                                             value,
@@ -287,7 +283,6 @@ internal fun BodyTrendChart(
                                             strokeWidth = if (isZero) centerStrokePx else gridStrokePx,
                                         )
                                     }
-                                    // X-axis tick grid lines.
                                     chart.axisLabels.forEach { label ->
                                         val x =
                                             ((label.timestamp - chart.rangeStartMillis).toFloat() /
@@ -301,7 +296,6 @@ internal fun BodyTrendChart(
                                             pathEffect = verticalDashEffect,
                                         )
                                     }
-                                    // Chart boundaries.
                                     drawLine(
                                         color = chartColors.chartAxisLine,
                                         start = Offset(0f, 0f),
@@ -807,7 +801,6 @@ private fun DrawScope.drawTimeSeries(
 
     val tangents = monotoneTangents(coords)
     val linePath = buildCubicPath(coords, tangents)
-    // Fill toward zero, not the card bottom.
     val zeroY = size.height * mapValueToFraction(0f, yAxisBound)
     val fillPath = Path().apply {
         addPath(linePath)
@@ -816,7 +809,6 @@ private fun DrawScope.drawTimeSeries(
         close()
     }
 
-    // Fade the fill toward zero.
     val farY = coords.maxByOrNull { abs(it.y - zeroY) }?.y ?: zeroY
     drawPath(
         path = fillPath,
@@ -835,7 +827,6 @@ private fun DrawScope.drawTimeSeries(
             endY = zeroY,
         ),
     )
-    // Keep dashes continuous within each phase.
     var strokePhase = segmentPhase(renderedPoints[0], renderedPoints[1])
     var strokePath = Path().apply { moveTo(coords[0].x, coords[0].y) }
     fun drawStroke(path: Path, phase: BodyTrendPhase) {
@@ -920,7 +911,6 @@ private fun monotoneTangents(points: List<Offset>): FloatArray {
     return tangent
 }
 
-/** Appends one monotone-cubic segment from the path's current point (start) to end. */
 private fun Path.cubicSegmentTo(
     start: Offset,
     end: Offset,

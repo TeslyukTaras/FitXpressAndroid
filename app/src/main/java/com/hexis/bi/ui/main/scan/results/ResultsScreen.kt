@@ -401,11 +401,8 @@ private fun GradientCenteredLabel(messageRes: Int) {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = stringResource(messageRes),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
+        MetricAvatarStatusText(
+            messageRes = messageRes,
             modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
         )
     }

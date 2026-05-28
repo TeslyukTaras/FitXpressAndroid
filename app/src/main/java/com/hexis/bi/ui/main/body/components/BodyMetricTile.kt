@@ -20,7 +20,6 @@ internal fun BodyMetricTile(
     value: String,
     delta: Float?,
     modifier: Modifier = Modifier,
-    /** True for metrics where a decrease is healthier (e.g. body fat); flips the delta colour. */
     decreaseIsPositive: Boolean = false,
 ) {
     Column(
