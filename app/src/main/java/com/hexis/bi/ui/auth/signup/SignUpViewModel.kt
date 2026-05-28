@@ -12,6 +12,7 @@ import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.utils.isValidEmail
 import com.hexis.bi.ui.auth.SignUpEvent
 import com.hexis.bi.ui.base.BaseViewModel
+import com.hexis.bi.utils.constants.ProfileConstants
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -135,7 +136,8 @@ class SignUpViewModel(
 
     private fun validatePassword(password: String): String? = when {
         password.isBlank() -> appContext.getString(R.string.error_password_required)
-        password.length < 6 -> appContext.getString(R.string.error_password_too_short)
+        password.length < ProfileConstants.PASSWORD_MIN_LENGTH ->
+            appContext.getString(R.string.error_password_too_short)
         !password.any { it.isUpperCase() } -> appContext.getString(R.string.error_password_no_uppercase)
         !password.any { it.isLowerCase() } -> appContext.getString(R.string.error_password_no_lowercase)
         !password.any { it.isDigit() } -> appContext.getString(R.string.error_password_no_digit)

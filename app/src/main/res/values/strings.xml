@@ -337,7 +337,7 @@
     <string name="error_terms_not_accepted">Please accept the Terms &amp; Privacy Policy to continue</string>
 
     <!-- Password strength errors -->
-    <string name="error_password_too_short">Must be at least 6 characters</string>
+    <string name="error_password_too_short">Must be at least 8 characters</string>
     <string name="error_password_no_uppercase">Must contain an uppercase letter</string>
     <string name="error_password_no_lowercase">Must contain a lowercase letter</string>
     <string name="error_password_no_digit">Must contain a number</string>
@@ -355,7 +355,7 @@
     <string name="error_auth_wrong_password">Incorrect email or password</string>
     <string name="error_auth_user_not_found">No account found with this email</string>
     <string name="error_auth_email_in_use">An account with this email already exists</string>
-    <string name="error_auth_weak_password">Password must be at least 6 characters</string>
+    <string name="error_auth_weak_password">Password must be at least 8 characters</string>
     <string name="error_auth_user_disabled">This account has been disabled. Contact support</string>
     <string name="error_auth_too_many_requests">Too many attempts. Please try again later</string>
     <string name="error_auth_network">Network error. Check your connection and try again</string>
