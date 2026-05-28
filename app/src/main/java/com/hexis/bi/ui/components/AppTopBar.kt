@@ -10,6 +10,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -20,9 +21,11 @@ import com.hexis.bi.R
 fun AppTopBar(
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
+    logoTint: Color = MaterialTheme.colorScheme.onBackground,
+    containerColor: Color = MaterialTheme.colorScheme.background,
 ) {
     CenterAlignedTopAppBar(
-        title = { AppLogo() },
+        title = { AppLogo(tint = logoTint) },
         navigationIcon = {
             if (onBack != null) {
                 IconButton(onClick = onBack) {
@@ -38,7 +41,7 @@ fun AppTopBar(
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background,
+            containerColor = containerColor,
         ),
         modifier = modifier,
     )

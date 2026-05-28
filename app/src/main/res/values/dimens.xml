@@ -134,7 +134,7 @@
     <!-- Effects -->
     <dimen name="blur_dialog_backdrop">2dp</dimen>
     <dimen name="glass_background_blur">5dp</dimen>
-    <dimen name="glass_rim_width">0.5dp</dimen>
+    <dimen name="glass_rim_width">0.25dp</dimen>
 
     <!-- Dividers -->
     <dimen name="divider_size">1dp</dimen>

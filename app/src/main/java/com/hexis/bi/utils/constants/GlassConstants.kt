@@ -8,6 +8,7 @@ internal object GlassConstants {
 
     /** Alpha applied to primary when used as a soft selection highlight (pickers, date selection). */
     const val SELECTION_HIGHLIGHT_ALPHA = 0.15f
+    const val PRIMARY_BUTTON_BACKGROUND_ALPHA = 0.92f
     const val TEXT_FIELD_BACKGROUND_ALPHA = 0.75f
     const val TEXT_FIELD_BORDER_ALPHA = 0.25f
 

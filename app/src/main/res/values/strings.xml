@@ -13,6 +13,7 @@
     <string name="action_skip">Skip</string>
     <string name="action_next">Next</string>
     <string name="action_start">Start</string>
+    <string name="action_get_started">Get Started</string>
     <string name="action_login">Log In</string>
     <string name="action_signup">Sign Up</string>
     <string name="action_forgot_password">Forgot Password?</string>
@@ -369,8 +370,10 @@
 
     <!-- App info screen -->
     <string name="app_info_page_indicator">%1$d/%2$d</string>
+    <string name="app_info_title_accent">Your Body\nKnows</string>
+    <string name="app_info_title_rest">Before You Do</string>
+    <string name="app_info_subtitle">Understand your body through visual intelligence.</string>
 
-    <string name="app_info_page1_title">Track body changes, not just weight</string>
     <string name="screen_health_connections">Health Connections</string>
     <string name="health_connections_subtitle">Sync sleep, recovery, and activity for insights.</string>
     <string name="health_connection_dummy">Terra Dummy</string>
@@ -466,13 +469,6 @@
     <string name="msg_health_connect_nothing_to_disconnect">Nothing to disconnect</string>
     <string name="msg_wearable_connected">%1$s connected</string>
     <string name="msg_wearable_disconnected">%1$s disconnected from Terra</string>
-
-    <string name="app_info_page1_subtitle">Understand your body\'s intelligence — and the changes shaping it — like never before.</string>
-    <string name="app_info_page1_emphasis">No scales. No tape measures.</string>
-
-    <string name="app_info_page2_title">See real body changes over time</string>
-    <string name="app_info_page2_subtitle">clearly, visually, and accurately</string>
-    <string name="app_info_page2_emphasis">No scales. No tape measures. Connect your wearable and reveal your body\'s true intelligence.</string>
 
     <!-- Profile onboarding screen -->
     <string name="onboarding_personal_info_title">Personal information</string>
