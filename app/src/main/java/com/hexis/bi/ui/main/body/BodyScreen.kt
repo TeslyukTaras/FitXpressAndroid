@@ -124,6 +124,7 @@ fun BodyScreen(
                     BodyTab.Visual -> VisualContent(
                         state = state.visual,
                         onBodyPartSelected = viewModel::selectBodyPart,
+                        onModeSelected = viewModel::selectVisualMode,
                         onScanSelected = viewModel::selectVisualScan,
                         modifier = Modifier.weight(1f),
                     )

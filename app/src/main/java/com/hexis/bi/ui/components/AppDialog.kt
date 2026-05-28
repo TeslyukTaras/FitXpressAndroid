@@ -1,5 +1,6 @@
 package com.hexis.bi.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,7 +20,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.DialogBackdrop
+import com.hexis.bi.ui.theme.overlayBorder
 
 /**
  * Standard full-screen dialog overlay used across the app.
@@ -59,13 +60,18 @@ fun AppDialog(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(DialogBackdrop)
+            .background(MaterialTheme.colorScheme.scrim)
             .imePadding(),
         contentAlignment = Alignment.Center,
     ) {
         Card(
             shape = MaterialTheme.shapes.medium,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+            // 0.5px edge: contrasting on dark, blends with the card background on light.
+            border = BorderStroke(
+                dimensionResource(R.dimen.border_line),
+                MaterialTheme.colorScheme.overlayBorder(),
+            ),
             modifier = modifier
                 .fillMaxWidth()
                 .padding(horizontal = dimensionResource(R.dimen.padding_medium)),

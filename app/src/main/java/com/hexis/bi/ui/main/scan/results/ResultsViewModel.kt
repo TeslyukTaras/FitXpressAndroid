@@ -7,6 +7,7 @@ import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanResult
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.scan.ScanRecord
+import com.hexis.bi.data.scan.ThreeDLookRepository
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.isMetricUnitSystem
@@ -22,10 +23,14 @@ class ResultsViewModel(
     private val userRepository: UserRepository,
     private val scanResultRepository: ScanResultRepository,
     private val scanHistoryRepository: ScanHistoryRepository,
+    private val threeDLookRepository: ThreeDLookRepository,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(ResultsState())
     val state: StateFlow<ResultsState> = _state.asStateFlow()
+
+    private var currentMeasurementId: String? = null
+    private var previousMeasurementId: String? = null
 
     init {
         loadUnitSystem()
@@ -66,6 +71,7 @@ class ResultsViewModel(
     }
 
     private fun applyFreshScanImmediate(result: ScanResult) {
+        currentMeasurementId = result.measurementId
         val rows = MeasurementMapper.map(
             current = result.response,
             previous = null,
@@ -91,6 +97,7 @@ class ResultsViewModel(
                 prev?.takeIf { it.measurements.isNotEmpty() } to
                     beforePrev?.takeIf { it.measurements.isNotEmpty() }
             }
+        previousMeasurementId = previousScan?.measurementId
         val rows = MeasurementMapper.map(
             current = latest.response,
             previous = previousScan,
@@ -103,9 +110,11 @@ class ResultsViewModel(
                 previousDate = previousScan?.timestamp?.millisToShortMonthDay(),
             )
         }
+        loadColorAnalysisIfEnabled()
     }
 
     private fun applyHistoryImmediate(current: ScanRecord) {
+        currentMeasurementId = current.measurementId
         val rows = MeasurementMapper.mapFromRecords(
             current = current,
             previous = null,
@@ -128,6 +137,7 @@ class ResultsViewModel(
         val older = scanHistoryRepository.getOlderScanRecordsBefore(cutoff, limit = 2).getOrElse { return }
         val previous = older.getOrNull(0)?.takeIf { it.measurements.isNotEmpty() }
         val beforePrevious = older.getOrNull(1)?.takeIf { it.measurements.isNotEmpty() }
+        previousMeasurementId = previous?.measurementId
         val rows = MeasurementMapper.mapFromRecords(current, previous, beforePrevious)
         _state.update {
             it.copy(
@@ -136,6 +146,7 @@ class ResultsViewModel(
                 previousDate = previous?.timestamp?.millisToShortMonthDay(),
             )
         }
+        loadColorAnalysisIfEnabled()
     }
 
     fun selectTab(tab: ResultsTab) {
@@ -143,7 +154,33 @@ class ResultsViewModel(
     }
 
     fun toggleColorAnalysis() {
-        _state.update { it.copy(colorAnalysisEnabled = !it.colorAnalysisEnabled) }
+        val enabling = !_state.value.colorAnalysisEnabled
+        _state.update { it.copy(colorAnalysisEnabled = enabling) }
+        if (enabling) loadColorAnalysisIfEnabled()
+    }
+
+    private fun loadColorAnalysisIfEnabled() {
+        if (!_state.value.colorAnalysisEnabled ||
+            _state.value.colorAnalysis is ColorAnalysisUiState.Loading
+        ) return
+        val before = previousMeasurementId
+        val after = currentMeasurementId
+        if (before.isNullOrBlank() || after.isNullOrBlank()) {
+            _state.update { it.copy(colorAnalysis = ColorAnalysisUiState.Unavailable) }
+            return
+        }
+        if (_state.value.colorAnalysis is ColorAnalysisUiState.Ready) return
+        _state.update { it.copy(colorAnalysis = ColorAnalysisUiState.Loading) }
+        launch(showLoading = false) {
+            threeDLookRepository.loadColorAnalysisMeshUrl(beforeMeasurementId = before, afterMeasurementId = after)
+                .onSuccess { meshUrl ->
+                    val ready = ColorAnalysisUiState.Ready(coloredModelUrl = meshUrl)
+                    _state.update { it.copy(colorAnalysis = ready) }
+                }
+                .onFailure {
+                    _state.update { it.copy(colorAnalysis = ColorAnalysisUiState.Error) }
+                }
+        }
     }
 
     fun toggleSkinAreas() {

@@ -155,20 +155,20 @@ internal object MeasurementVisualAnchors {
     private val segmentsByKey: Map<String, ModelLeaderSegment> = mapOf(
         /* Neck: below cranium, front midline */
         "neck" to ModelLeaderSegment(0f, 1.06f, 0.13f, 0.42f, 1.22f, 0.18f),
-        /* Shoulder line — higher than chest, lateral */
-        "shoulders" to ModelLeaderSegment(0.48f, 1.00f, 0.11f, 0.72f, 0.98f, 0.16f),
-        /* Mid chest */
-        "chest" to ModelLeaderSegment(0f, 0.67f, 0.17f, 0.38f, 0.76f, 0.22f),
-        /* Mid forearm — right arm, kept far enough lateral to avoid torso / love-handle hits. */
-        "forearm" to ModelLeaderSegment(0.86f, 0.16f, 0.11f, 1.12f, 0.08f, 0.18f),
-        /* Upper arm — mid-biceps (above elbow crease; higher Y avoids sliding to elbow in scans) */
-        "bicep" to ModelLeaderSegment(-0.58f, 0.63f, 0.11f, -0.88f, 0.56f, 0.18f),
+        /* Shoulder shelf - slightly above the original shoulder line. */
+        "shoulders" to ModelLeaderSegment(0.48f, 1.03f, 0.11f, 0.72f, 1.02f, 0.16f),
+        /* Upper chest, below the armpits without overlapping the shoulder band. */
+        "chest" to ModelLeaderSegment(0f, 0.74f, 0.17f, 0.38f, 0.77f, 0.22f),
+        /* Mid forearm - right arm, clear of the elbow crease. */
+        "forearm" to ModelLeaderSegment(0.86f, 0.29f, 0.11f, 1.12f, 0.24f, 0.18f),
+        /* Upper arm - middle of the biceps; horizontal slicing avoids elbow drift. */
+        "bicep" to ModelLeaderSegment(-0.58f, 0.74f, 0.11f, -0.88f, 0.68f, 0.18f),
         "upperWaist" to ModelLeaderSegment(0f, 0.38f, 0.15f, 0.38f, 0.38f, 0.20f),
         /* Natural waist — above iliac crest */
         "waist" to ModelLeaderSegment(0f, 0.24f, 0.15f, 0.42f, 0.18f, 0.22f),
         "lowerWaist" to ModelLeaderSegment(0f, 0.07f, 0.14f, 0.38f, 0.04f, 0.20f),
-        /* Left leg — slightly raised */
-        "thigh" to ModelLeaderSegment(-0.24f, -0.42f, 0.11f, -0.55f, -0.48f, 0.18f),
+        /* Left upper thigh - above the knee-side drift seen in mesh centroids. */
+        "thigh" to ModelLeaderSegment(-0.24f, -0.29f, 0.11f, -0.55f, -0.35f, 0.18f),
         /* Calf — right leg */
         "calf" to ModelLeaderSegment(0.20f, -0.95f, 0.10f, 0.52f, -1.02f, 0.16f),
     )
@@ -502,13 +502,16 @@ private fun hasArmWingContamination(
 
 private fun pickShouldersSample(samples: List<TorsoSliceSample>): TorsoSliceSample? {
     val fallbackY = MeasurementVisualAnchors.fallbackAnchorPosition("shoulders")?.get(1) ?: 1.0f
-    // Slightly above template shoulder line so the band sits on the shoulder shelf, not mid-arm.
-    val refY = fallbackY + 0.06f
+    val refY = fallbackY
     val candidates = samples
-        .filter { abs(it.y - refY) <= 0.28f }
+        .filter { abs(it.y - refY) <= 0.20f }
         .filter { it.aspectXZ <= TORSO_ARM_ASPECT_LIMIT }
-    return candidates.maxByOrNull { sample ->
-        sample.widthX * 1.4f + sample.area * 0.35f - abs(sample.centerX) * 2f + sample.y * 0.35f
+    // Selecting maximum width pulls this band down into the arms; keep it at the shelf height.
+    return candidates.minByOrNull { sample ->
+        abs(sample.y - refY) * 8f +
+            abs(sample.centerX) * 2f -
+            sample.widthX * 0.20f -
+            sample.area * 0.10f
     } ?: samples.minByOrNull { abs(it.y - refY) }
 }
 
@@ -522,8 +525,11 @@ private fun pickChestSample(
         .filter { it.y < shoulderY - 0.06f }
         .filter { abs(it.y - fallbackY) <= 0.30f }
         .filter { it.aspectXZ <= TORSO_ARM_ASPECT_LIMIT }
-    return candidates.maxByOrNull { sample ->
-        sample.area * 1.2f + sample.depthZ * 0.8f - abs(sample.centerX) * 4f
+    return candidates.minByOrNull { sample ->
+        abs(sample.y - fallbackY) * 6f +
+            abs(sample.centerX) * 4f -
+            sample.area * 0.35f -
+            sample.depthZ * 0.20f
     } ?: samples
         .filter { it.aspectXZ <= TORSO_ARM_ASPECT_LIMIT }
         .filter { abs(it.centerX) <= CHEST_MAX_CENTER_X_ABS * 1.8f }
@@ -564,11 +570,12 @@ private fun pickChestSampleStrict(
         .filter { it.widthX <= lowerTorsoRefWidth * CHEST_MAX_WIDTH_TO_LOWER_WAIST_RATIO }
         .filter { !hasArmWingContamination(it, lowerTorsoRefWidth) }
 
-    return candidates.maxByOrNull { sample ->
-        sample.area * 1.15f +
-            sample.depthZ * 0.9f -
-            abs(sample.y - fallbackY) * 0.35f -
-            abs(sample.centerX) * 8f
+    // After excluding arm-contaminated loops, preserve the intended upper-chest height.
+    return candidates.minByOrNull { sample ->
+        abs(sample.y - fallbackY) * 8f +
+            abs(sample.centerX) * 8f -
+            sample.area * 0.20f -
+            sample.depthZ * 0.20f
     }
 }
 
@@ -731,10 +738,8 @@ private fun slicePlaneNormalFor(
     "neck" -> neckSlicePlaneNormal()
     "shoulders", "chest",
     "upperWaist", "waist", "lowerWaist" -> floatArrayOf(0f, 1f, 0f)
-    /*
-     * Plane ⟂ upper arm: shoulder-side hint → bicep (not torso centroid→bicep, which tilts through chest/elbow).
-     */
-    "bicep" -> limbAxis(lateralShoulderTowardLimb(anchors, leftSide = true), anchors[key])
+    // Keep biceps on the mid-upper-arm level; an arm-axis plane drops visibly to the elbow.
+    "bicep" -> floatArrayOf(0f, 1f, 0f)
     /* Right forearm: mirrored upper-arm root → forearm so cut lies in the arm plane, not across torso. */
     "forearm" -> {
         val bi = anchors["bicep"]
@@ -760,7 +765,7 @@ private fun slicePlaneNormalForOpposite(
     anchors: Map<String, FloatArray>,
     oppositeBandAnchor: FloatArray,
 ): FloatArray = when (key) {
-    "bicep" -> limbAxis(lateralShoulderTowardLimb(anchors, leftSide = false), oppositeBandAnchor)
+    "bicep" -> floatArrayOf(0f, 1f, 0f)
     "forearm" -> {
         val bi = anchors["bicep"]
         if (bi != null) limbAxis(bi, oppositeBandAnchor) else floatArrayOf(0f, 1f, 0f)
@@ -785,16 +790,6 @@ private fun virtualHipMirrored(anchors: Map<String, FloatArray>): FloatArray? {
 
 private fun mirrorX(a: FloatArray): FloatArray = floatArrayOf(-a[0], a[1], a[2])
 
-/**
- * Approximate lateral shoulder on one side so limb slice normals aim **down the arm**, not toward mid-chest.
- */
-private fun lateralShoulderTowardLimb(anchors: Map<String, FloatArray>, leftSide: Boolean): FloatArray {
-    val sh = anchors["shoulders"] ?: MeasurementVisualAnchors.fallbackAnchorPosition("shoulders")!!
-    val lateral = max(abs(sh[0]), 0.34f)
-    val x = if (leftSide) -lateral else lateral
-    return floatArrayOf(x, sh[1], sh[2])
-}
-
 /** Unit vector from `parent` to `band`, falling back to vertical when either is missing. */
 private fun limbAxis(parent: FloatArray?, band: FloatArray?): FloatArray {
     if (parent == null || band == null) return floatArrayOf(0f, 1f, 0f)
@@ -818,21 +813,12 @@ private fun virtualHipFor(anchors: Map<String, FloatArray>): FloatArray? {
  */
 private fun blendAnchorWithFallback(key: String, computed: FloatArray?): FloatArray {
     val ref = MeasurementVisualAnchors.fallbackAnchorPosition(key) ?: return computed ?: floatArrayOf(0f, 0f, 0f)
-    if (key == "forearm") return ref.copyOf()
+    // These bands identify a specific limb zone; centroid blending visibly slides them
+    // toward an adjacent joint on differently proportioned scans.
+    if (key == "forearm" || key == "bicep" || key == "thigh") return ref.copyOf()
     if (computed == null) return ref.copyOf()
-    val yWeight: Float
-    val xzWeight: Float
-    when (key) {
-        /* Stronger pull to canonical limb band height/lateral — reduces centroid drift to elbow/torso */
-        "bicep", "forearm" -> {
-            yWeight = 0.82f
-            xzWeight = 0.52f
-        }
-        else -> {
-            yWeight = 0.68f
-            xzWeight = 0.42f
-        }
-    }
+    val yWeight = 0.68f
+    val xzWeight = 0.42f
     return floatArrayOf(
         computed[0] * (1f - xzWeight) + ref[0] * xzWeight,
         computed[1] * (1f - yWeight) + ref[1] * yWeight,

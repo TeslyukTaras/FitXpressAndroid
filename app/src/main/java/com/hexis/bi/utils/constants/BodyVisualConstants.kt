@@ -44,19 +44,11 @@ internal object BodyVisualConstants {
         BodyVisualMeasurementDisplayRow(BodyMeasurementRegion.Chest, R.string.body_part_chest),
         BodyVisualMeasurementDisplayRow(
             BodyMeasurementRegion.Forearm,
-            R.string.body_part_left_forearm
-        ),
-        BodyVisualMeasurementDisplayRow(
-            BodyMeasurementRegion.Forearm,
-            R.string.body_part_right_forearm
+            R.string.body_part_forearms
         ),
         BodyVisualMeasurementDisplayRow(
             BodyMeasurementRegion.Bicep,
-            R.string.body_part_left_biceps_upper_arm
-        ),
-        BodyVisualMeasurementDisplayRow(
-            BodyMeasurementRegion.Bicep,
-            R.string.body_part_right_biceps_upper_arm
+            R.string.body_part_biceps_upper_arm_single_line
         ),
         BodyVisualMeasurementDisplayRow(
             BodyMeasurementRegion.UpperWaist,
@@ -73,16 +65,13 @@ internal object BodyVisualConstants {
         ),
         BodyVisualMeasurementDisplayRow(
             BodyMeasurementRegion.Thigh,
-            R.string.body_part_right_thigh
+            R.string.body_part_thighs
         ),
-        BodyVisualMeasurementDisplayRow(BodyMeasurementRegion.Thigh, R.string.body_part_left_thigh),
-        BodyVisualMeasurementDisplayRow(BodyMeasurementRegion.Calf, R.string.body_part_right_calf),
-        BodyVisualMeasurementDisplayRow(BodyMeasurementRegion.Calf, R.string.body_part_left_calf),
+        BodyVisualMeasurementDisplayRow(BodyMeasurementRegion.Calf, R.string.body_part_calves),
         BodyVisualMeasurementDisplayRow(
             BodyMeasurementRegion.Ankle,
-            R.string.body_part_right_ankle
+            R.string.body_part_ankles
         ),
-        BodyVisualMeasurementDisplayRow(BodyMeasurementRegion.Ankle, R.string.body_part_left_ankle),
     )
 
     /** Visual-tab label for a region; the scroll selector lists [BodyMeasurementRegion.entries]. */

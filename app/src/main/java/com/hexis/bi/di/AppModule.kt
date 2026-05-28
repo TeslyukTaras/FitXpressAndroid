@@ -99,7 +99,7 @@ val appModule = module {
             .build()
     }
     single { ThreeDLookApi(get(), androidContext()) }
-    single { ThreeDLookRepository(get()) }
+    single { ThreeDLookRepository(get(), get()) }
     single { ScanResultRepository() }
     single { ScanHistoryRepository(get(), get()) }
     single { TerraAuthApi(get()) }
@@ -155,13 +155,13 @@ val appModule = module {
     viewModel { MySuitViewModel(androidApplication(), get(), get()) }
     viewModel { NotificationsSettingsViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { NotificationsViewModel(androidApplication(), get()) }
-    viewModel { BodyViewModel(androidApplication(), get(), get()) }
+    viewModel { BodyViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { SleepViewModel(androidApplication(), get(), get()) }
     viewModel { ActivityViewModel(androidApplication(), get(), get(), get()) }
     viewModel { RecoveryViewModel(androidApplication(), get()) }
     viewModel { ScanViewModel(androidApplication(), get()) }
     viewModel { StartScanViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
-    viewModel { ResultsViewModel(androidApplication(), get(), get(), get()) }
+    viewModel { ResultsViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { ScanHistoryViewModel(androidApplication(), get()) }
     viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get()) }
     viewModel { OnboardingViewModel(androidApplication(), get(), get()) }

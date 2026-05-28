@@ -173,9 +173,7 @@ internal fun BodyTrendChart(
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier
                         .weight(1f)
-                        .padding(
-                            top = dimensionResource(R.dimen.spacer_m)
-                        ),
+                        .padding(top = dimensionResource(R.dimen.spacer_m)),
                 )
                 // The embedded card opens the full range-selector screen.
                 if (onOpenClick != null) IconButton(
@@ -923,7 +921,12 @@ private fun monotoneTangents(points: List<Offset>): FloatArray {
 }
 
 /** Appends one monotone-cubic segment from the path's current point (start) to end. */
-private fun Path.cubicSegmentTo(start: Offset, end: Offset, startTangent: Float, endTangent: Float) {
+private fun Path.cubicSegmentTo(
+    start: Offset,
+    end: Offset,
+    startTangent: Float,
+    endTangent: Float
+) {
     val dx = end.x - start.x
     cubicTo(
         start.x + dx / 3f, start.y + startTangent * dx / 3f,

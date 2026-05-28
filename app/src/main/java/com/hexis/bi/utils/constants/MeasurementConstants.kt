@@ -15,4 +15,7 @@ object MeasurementConstants {
     /** Animation timings for the Results preview exit fade transition (ms). */
     const val RESULTS_PREVIEW_EXIT_FADE_MS = 200
     const val RESULTS_PREVIEW_EXIT_SETTLE_MS = 24
+
+    const val BODY_PROGRESS_POLL_INTERVAL_MS = 2_000L
+    const val BODY_PROGRESS_MAX_POLL_ATTEMPTS = 30
 }

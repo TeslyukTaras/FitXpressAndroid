@@ -50,6 +50,7 @@ import java.util.Locale
 internal fun VisualContent(
     state: VisualState,
     onBodyPartSelected: (BodyMeasurementRegion) -> Unit,
+    onModeSelected: (BodyVisualMode) -> Unit,
     onScanSelected: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -132,6 +133,7 @@ internal fun VisualContent(
                 state = state,
                 selectedScanLabel = selectedScanLabel,
                 shortDateFormatter = shortDateFormatter,
+                onModeSelected = onModeSelected,
                 modifier = summaryCardModifier,
             )
             Spacer(Modifier.height(dimensionResource(R.dimen.body_visual_bottom_spacer)))
@@ -145,6 +147,7 @@ internal fun VisualContent(
             state = state.copy(selectedBodyPart = BodyMeasurementRegion.Bicep),
             selectedScanLabel = selectedScanLabel,
             shortDateFormatter = shortDateFormatter,
+            onModeSelected = onModeSelected,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = horizontalPadding)

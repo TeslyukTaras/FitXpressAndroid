@@ -119,12 +119,25 @@ fun ResultsScreen(
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
+            val coloredModelUrl = if (
+                state.selectedTab == ResultsTab.Visual &&
+                state.colorAnalysisEnabled
+            ) {
+                (state.colorAnalysis as? ColorAnalysisUiState.Ready)?.coloredModelUrl
+            } else {
+                null
+            }
+            val isColoredModel = !coloredModelUrl.isNullOrBlank()
+
             ScanResultsPreviewSection(
                 selectedTab = state.selectedTab,
-                model3dUrl = state.model3dUrl,
+                model3dUrl = coloredModelUrl ?: state.model3dUrl,
+                useModelVertexColors = isColoredModel,
                 previousModel3dUrl = state.previousModel3dUrl,
                 isPreviewSectionLoading = state.isPreviewSectionLoading,
                 showSkinAreas = state.showSkinAreas,
+                colorAnalysisEnabled = state.colorAnalysisEnabled,
+                colorAnalysis = state.colorAnalysis,
                 onModelInteractionChanged = { isModelInteracting = it },
                 measurements = state.measurements,
                 isMetric = state.isMetric,
@@ -137,6 +150,7 @@ fun ResultsScreen(
                 ColorAnalysisCard(
                     modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium)),
                     enabled = state.colorAnalysisEnabled,
+                    colorAnalysis = state.colorAnalysis,
                     onToggle = viewModel::toggleColorAnalysis,
                 )
 
@@ -160,9 +174,12 @@ fun ResultsScreen(
 private fun ScanResultsPreviewSection(
     selectedTab: ResultsTab,
     model3dUrl: String?,
+    useModelVertexColors: Boolean,
     previousModel3dUrl: String?,
     isPreviewSectionLoading: Boolean,
     showSkinAreas: Boolean,
+    colorAnalysisEnabled: Boolean,
+    colorAnalysis: ColorAnalysisUiState,
     onModelInteractionChanged: (Boolean) -> Unit,
     measurements: List<MeasurementRow>,
     isMetric: Boolean,
@@ -170,11 +187,11 @@ private fun ScanResultsPreviewSection(
 ) {
     var visualTransform by remember { mutableStateOf<VisualAvatarTransform?>(null) }
 
-    var avatarMeshReady by remember(model3dUrl) { mutableStateOf(false) }
+    var avatarMeshReady by remember(model3dUrl, useModelVertexColors) { mutableStateOf(false) }
 
-    var measurementGuide by remember(model3dUrl) { mutableStateOf<MetricAvatarMeasurementGuide?>(null) }
+    var measurementGuide by remember(model3dUrl, useModelVertexColors) { mutableStateOf<MetricAvatarMeasurementGuide?>(null) }
 
-    LaunchedEffect(model3dUrl) {
+    LaunchedEffect(model3dUrl, useModelVertexColors) {
         measurementGuide = null
         visualTransform = null
         avatarMeshReady = false
@@ -226,7 +243,15 @@ private fun ScanResultsPreviewSection(
                 ResultsTab.Visual,
                 ResultsTab.Posture,
                 -> {
-                    if (!model3dUrl.isNullOrBlank()) {
+                    val isColorModelLoading = selectedTab == ResultsTab.Visual &&
+                        colorAnalysisEnabled &&
+                        colorAnalysis is ColorAnalysisUiState.Loading
+                    if (isColorModelLoading) {
+                        MetricAvatarLoading(
+                            messageRes = R.string.scan_results_color_analysis_loading,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    } else if (!model3dUrl.isNullOrBlank()) {
                         val profileYaw = when (selectedTab) {
                             ResultsTab.Posture -> MetricAvatarSideProfileYawDegrees
                             else -> 0f
@@ -234,6 +259,7 @@ private fun ScanResultsPreviewSection(
                         Box(Modifier.fillMaxSize()) {
                             MetricAvatarPreview(
                                 modelUrl = model3dUrl,
+                                useModelVertexColors = useModelVertexColors,
                                 showSkinAreas = showSkinAreas,
                                 onInteractionChanged = onModelInteractionChanged,
                                 modifier = Modifier.fillMaxSize(),
@@ -242,6 +268,15 @@ private fun ScanResultsPreviewSection(
                                 leaderSegments = null,
                                 onMeasurementGuideLoaded = { measurementGuide = it },
                                 onAvatarReady = { avatarMeshReady = true },
+                                loadingMessageRes = if (
+                                    selectedTab == ResultsTab.Visual &&
+                                    colorAnalysisEnabled &&
+                                    colorAnalysis is ColorAnalysisUiState.Ready
+                                ) {
+                                    R.string.scan_results_color_analysis_loading
+                                } else {
+                                    R.string.scan_results_avatar_loading
+                                },
                                 onVisualTransformChanged =
                                     if (selectedTab == ResultsTab.Visual) {
                                         { yaw, pitch, w, h ->
@@ -267,6 +302,7 @@ private fun ScanResultsPreviewSection(
                                         .pointerInteropFilter(onTouchEvent = { false }),
                                 )
                             }
+
                         }
                     } else {
                         GradientCenteredLabel(messageRes = R.string.scan_results_preview_unavailable)
@@ -379,6 +415,7 @@ private fun GradientCenteredLabel(messageRes: Int) {
 private fun ColorAnalysisCard(
     modifier: Modifier = Modifier,
     enabled: Boolean,
+    colorAnalysis: ColorAnalysisUiState,
     onToggle: () -> Unit,
 ) {
     Row(
@@ -401,6 +438,26 @@ private fun ColorAnalysisCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.secondary,
             )
+            val statusRes = when {
+                !enabled -> null
+                colorAnalysis is ColorAnalysisUiState.Unavailable ->
+                    R.string.scan_results_color_analysis_needs_two_scans
+                colorAnalysis is ColorAnalysisUiState.Error ->
+                    R.string.scan_results_color_analysis_error
+                else -> null
+            }
+            if (statusRes != null) {
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
+                Text(
+                    text = stringResource(statusRes),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (colorAnalysis is ColorAnalysisUiState.Error) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.secondary
+                    },
+                )
+            }
         }
         AppSwitch(
             checked = enabled,
