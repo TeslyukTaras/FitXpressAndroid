@@ -75,6 +75,7 @@
     <dimen name="measurement_leader_stroke_width">1.25dp</dimen>
     <dimen name="metric_avatar_retry_button_height">40dp</dimen>
     <dimen name="metric_avatar_retry_icon_size">18dp</dimen>
+    <dimen name="metric_avatar_text_max_width">140dp</dimen>
     <dimen name="measurement_leader_pill_column_max_width">132dp</dimen>
     <dimen name="measurement_leader_pill_value_text_size">14sp</dimen>
     <dimen name="measurement_leader_pill_title_text_size">12sp</dimen>

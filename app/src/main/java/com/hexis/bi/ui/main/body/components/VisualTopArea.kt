@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,7 +15,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.zIndex
 import com.hexis.bi.R
@@ -26,6 +24,7 @@ import com.hexis.bi.ui.main.body.BodyVisualMode
 import com.hexis.bi.ui.main.body.VisualState
 import com.hexis.bi.ui.main.scan.results.MetricAvatarLoading
 import com.hexis.bi.ui.main.scan.results.MetricAvatarPreview
+import com.hexis.bi.ui.main.scan.results.MetricAvatarStatusText
 import java.text.SimpleDateFormat
 
 @Composable
@@ -111,11 +110,13 @@ private fun BodyModelPreview(
                     messageRes = R.string.body_visual_color_loading,
                     modifier = Modifier.fillMaxSize(),
                 )
-                BodyVisualColorModel.Unavailable -> ColorStatusLabel(
+                BodyVisualColorModel.Unavailable -> MetricAvatarStatusText(
                     messageRes = R.string.body_visual_color_unavailable,
+                    modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
                 )
-                BodyVisualColorModel.Error -> ColorStatusLabel(
+                BodyVisualColorModel.Error -> MetricAvatarStatusText(
                     messageRes = R.string.body_visual_color_error,
+                    modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
                 )
                 is BodyVisualColorModel.Ready -> Unit
             }
@@ -151,25 +152,14 @@ private fun BoxScope.ModelPreview(
 }
 
 @Composable
-private fun ColorStatusLabel(messageRes: Int) {
-    Text(
-        text = stringResource(messageRes),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
-    )
-}
-
-@Composable
 private fun ModelPlaceholder(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.background(MaterialTheme.colorScheme.surface),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = stringResource(R.string.body_visual_model_placeholder),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        MetricAvatarStatusText(
+            messageRes = R.string.body_visual_model_placeholder,
+            modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
         )
     }
 }

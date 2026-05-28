@@ -99,8 +99,11 @@ fun BodyScreen(
                         .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
                 )
 
-                if (state.selectedTab == BodyTab.Stats || state.selectedTab == BodyTab.Posture) {
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+                when (state.selectedTab) {
+                    BodyTab.Stats, BodyTab.Posture ->
+                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+
+                    BodyTab.Visual, BodyTab.Compare -> Unit
                 }
 
                 when (state.selectedTab) {
@@ -123,8 +126,9 @@ fun BodyScreen(
                     BodyTab.Visual -> VisualContent(
                         state = state.visual,
                         cardHeightPx = state.modelCardHeightPx,
+                        isMetric = state.isMetric,
                         onBodyPartSelected = viewModel::selectBodyPart,
-                        onModeSelected = viewModel::selectVisualMode,
+                        onModeSelected = viewModel::selectMode,
                         onScanSelected = viewModel::selectVisualScan,
                         modifier = Modifier.weight(1f),
                     )
@@ -132,9 +136,10 @@ fun BodyScreen(
                     BodyTab.Compare -> CompareContent(
                         state = state.compare,
                         cardHeightPx = state.modelCardHeightPx,
+                        isMetric = state.isMetric,
                         onSelectLeftScan = viewModel::selectCompareLeftScan,
                         onSelectRightScan = viewModel::selectCompareRightScan,
-                        onModeSelected = viewModel::selectCompareMode,
+                        onModeSelected = viewModel::selectMode,
                         modifier = Modifier.weight(1f),
                     )
 
@@ -151,12 +156,11 @@ fun BodyScreen(
                     }
                 }
 
-                if (state.visual.hasData) {
-                    CompactSummaryCardHeight(
-                        state = state.visual,
-                        onMeasured = viewModel::setModelCardHeight,
-                    )
-                }
+                CompactSummaryCardHeight(
+                    state = state.visual,
+                    isMetric = state.isMetric,
+                    onMeasured = viewModel::setModelCardHeight,
+                )
             }
         }
 

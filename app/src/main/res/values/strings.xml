@@ -234,9 +234,8 @@
     <string name="body_visual_color_error">Couldn\'t load color view for this comparison.</string>
     <string name="body_visual_value_missing">—</string>
     <string name="body_visual_part_bullet">—</string>
-    <string name="body_visual_unit_cm">cm</string>
-    <string name="body_visual_delta_increase">+%1$s cm ↑</string>
-    <string name="body_visual_delta_decrease">−%1$s cm ↓</string>
+    <string name="body_visual_delta_increase">+%1$s %2$s ↑</string>
+    <string name="body_visual_delta_decrease">−%1$s %2$s ↓</string>
     <!-- Compare tab -->
     <string name="body_compare_subtitle_latest">Body Evolution – comparing latest scans</string>
     <string name="body_compare_subtitle">Body Evolution – comparing selected scans</string>
@@ -637,7 +636,7 @@
     <string name="scan_results_no_value">-</string>
     <string name="scan_results_loading">Loading results…</string>
     <string name="scan_results_preview_unavailable">3D preview unavailable</string>
-    <string name="scan_results_avatar_loading">Loading 3D preview…</string>
+    <string name="scan_results_avatar_loading">Preparing Body Evolution View</string>
     <string name="scan_results_compare_no_previous">No previous scan to compare</string>
     <string name="scan_results_compare_previous">Previous</string>
     <string name="scan_results_compare_current">Current</string>

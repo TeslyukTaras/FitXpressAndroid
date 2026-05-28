@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -58,6 +59,7 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -72,7 +74,6 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.BufferedReader
 import java.io.File
-import java.io.InputStreamReader
 import java.net.URL
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -191,6 +192,7 @@ internal fun MetricAvatarPreview(
     touchRotationEnabled: Boolean = true,
     zoomPanEnabled: Boolean = false,
     baseDistanceScale: Float = 1f,
+    meshGlow: Float = 0f,
     /** When false, the parent already drew [metricAvatarPreviewGradientBackground]. */
     useGradientBackground: Boolean = true,
     initialYawDegrees: Float = 0f,
@@ -232,7 +234,12 @@ internal fun MetricAvatarPreview(
         )
     }
     LaunchedEffect(renderHost, zoomPanEnabled) { renderHost.setZoomPanEnabled(zoomPanEnabled) }
-    LaunchedEffect(renderHost, baseDistanceScale) { renderHost.setBaseDistanceScale(baseDistanceScale) }
+    LaunchedEffect(renderHost, baseDistanceScale) {
+        renderHost.setBaseDistanceScale(
+            baseDistanceScale
+        )
+    }
+    LaunchedEffect(renderHost, meshGlow) { renderHost.setMeshGlow(meshGlow) }
     LaunchedEffect(renderHost, framingRegion) { renderHost.setFramingRegion(framingRegion) }
 
     DisposableEffect(renderHost) {
@@ -366,13 +373,25 @@ internal fun MetricAvatarLoading(
         ) {
             CircularProgressIndicator()
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
-            Text(
-                text = stringResource(messageRes),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            MetricAvatarStatusText(messageRes = messageRes)
         }
     }
+}
+
+@Composable
+internal fun MetricAvatarStatusText(
+    @StringRes messageRes: Int,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = stringResource(messageRes),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier = modifier.widthIn(
+            max = dimensionResource(R.dimen.metric_avatar_text_max_width),
+        ),
+    )
 }
 
 @Composable
@@ -448,6 +467,7 @@ private interface MetricAvatarRenderHost {
     fun applyLoadedMeshForCompare(mesh: ObjMesh)
     fun setCompareRotationLink(link: CompareRotationLink?)
     fun setShowSkinAreas(show: Boolean)
+    fun setMeshGlow(glow: Float)
     fun setDrawBackground(draw: Boolean)
     fun setTouchRotationEnabled(enabled: Boolean)
     fun setZoomPanEnabled(enabled: Boolean)
@@ -802,6 +822,13 @@ private class MetricAvatarTextureView(
         link?.addInvalidateCallback(compareRenderNotify)
     }
 
+    override fun setMeshGlow(glow: Float) {
+        queueRenderEvent {
+            avatarRenderer.setMeshGlow(glow)
+            drawFrame()
+        }
+    }
+
     override fun setShowSkinAreas(show: Boolean) {
         queueRenderEvent {
             avatarRenderer.setShowSkinAreas(show)
@@ -956,7 +983,7 @@ private class MetricAvatarTextureView(
             val panDelta = hypot(cx - gestureStartCx, cy - gestureStartCy)
             val zoomIsClear =
                 spanDelta >= touchSlop * TWO_FINGER_ZOOM_SLOP_MULTIPLIER &&
-                    spanDelta > panDelta * TWO_FINGER_ZOOM_DOMINANCE_RATIO
+                        spanDelta > panDelta * TWO_FINGER_ZOOM_DOMINANCE_RATIO
             when {
                 zoomIsClear -> twoFingerGesture = TwoFingerGesture.ZOOM
                 panDelta >= touchSlop -> twoFingerGesture = TwoFingerGesture.PAN
@@ -1584,8 +1611,8 @@ private object ObjParser {
         cachedFiles.forEach { file ->
             val fileSize = file.length()
             val retain = file == activeFile ||
-                (retainedFiles < OBJ_DISK_CACHE_MAX_FILES &&
-                    retainedBytes + fileSize <= OBJ_DISK_CACHE_MAX_BYTES)
+                    (retainedFiles < OBJ_DISK_CACHE_MAX_FILES &&
+                            retainedBytes + fileSize <= OBJ_DISK_CACHE_MAX_BYTES)
             if (retain) {
                 retainedFiles += 1
                 retainedBytes += fileSize
@@ -2091,6 +2118,8 @@ private class MetricAvatarRenderer {
     private var uModelView = 0
     private var uMeshColor = 0
     private var uUseVertexColor = 0
+    private var uMeshGlow = 0
+    private var meshGlow = 0f
     private var showSkinAreas = false
 
     private var leaderProgram = 0
@@ -2367,6 +2396,10 @@ private class MetricAvatarRenderer {
         showSkinAreas = show
     }
 
+    fun setMeshGlow(glow: Float) {
+        meshGlow = glow.coerceIn(0f, 1f)
+    }
+
     fun rotateBy(dyaw: Float, dpitch: Float) {
         val link = rotationLink
         when {
@@ -2402,7 +2435,8 @@ private class MetricAvatarRenderer {
 
     fun panBy(dxPixels: Float, dyPixels: Float) {
         if (viewportHeight <= 0) return
-        val worldPerPixel = 2f * currentDrawDistance() * MetricAvatarCamera.HALF_FOV_TAN / viewportHeight
+        val worldPerPixel =
+            2f * currentDrawDistance() * MetricAvatarCamera.HALF_FOV_TAN / viewportHeight
         val dxWorld = dxPixels * worldPerPixel
         val dyWorld = -dyPixels * worldPerPixel
         val (maxX, maxY) = panBoundsWorld()
@@ -2516,6 +2550,7 @@ private class MetricAvatarRenderer {
         aColor = GLES20.glGetAttribLocation(program, "aColor")
         uMvp = GLES20.glGetUniformLocation(program, "uMvp")
         uUseVertexColor = GLES20.glGetUniformLocation(program, "uUseVertexColor")
+        uMeshGlow = GLES20.glGetUniformLocation(program, "uMeshGlow")
         uSkinColor = GLES20.glGetUniformLocation(program, "uSkinColor")
         uSuitColor = GLES20.glGetUniformLocation(program, "uSuitColor")
         uShowSkin = GLES20.glGetUniformLocation(program, "uShowSkin")
@@ -2643,6 +2678,7 @@ private class MetricAvatarRenderer {
         GLES20.glUniform4f(uSuitColor, SUIT_R, SUIT_G, SUIT_B, 1f)
         GLES20.glUniform4f(uMeshColor, MESH_R, MESH_G, MESH_B, 1f)
         GLES20.glUniform1f(uShowSkin, if (showSkinAreas) 1f else 0f)
+        if (uMeshGlow >= 0) GLES20.glUniform1f(uMeshGlow, meshGlow)
     }
 
     private fun drawAvatarBody(m: ObjMesh) {
@@ -2886,8 +2922,10 @@ private class MetricAvatarRenderer {
             varying vec3 vColor;
             uniform vec4 uSkinColor; uniform vec4 uSuitColor; uniform vec4 uMeshColor;
             uniform float uShowSkin; uniform mat4 uModelView; uniform float uUseVertexColor;
+            uniform float uMeshGlow;
 
             const float WIRE_WIDTH = 0.7;
+            const float WIRE_GLOW_RIM_POWER = 3.5;
             const float WIRE_INTENSITY = 0.46;
             const float ANALYSIS_WIRE_INTENSITY_BOOST = 0.08;
             const float STITCH_START = 0.91;
@@ -2988,6 +3026,9 @@ private class MetricAvatarRenderer {
                 wireCol = colorAnalysisWire(wireCol, vColor);
                 vec3 finalBodyCol = applyMeshWire(body, wireCol, edge, uUseVertexColor);
                 finalBodyCol = applyJunctionStitch(finalBodyCol, wireCol, vBary);
+
+                float rim = pow(1.0 - max(nView.z, 0.0), WIRE_GLOW_RIM_POWER);
+                finalBodyCol += uMeshColor.rgb * rim * clamp(uMeshGlow, 0.0, 1.0);
 
                 // Not used for now:
                 // finalBodyCol = applyPointHighlightNotUsedForNow(finalBodyCol, wireCol, vBary);

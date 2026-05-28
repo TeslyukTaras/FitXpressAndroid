@@ -47,6 +47,7 @@ import java.util.Locale
 internal fun VisualContent(
     state: VisualState,
     cardHeightPx: Int,
+    isMetric: Boolean,
     onBodyPartSelected: (BodyMeasurementRegion) -> Unit,
     onModeSelected: (BodyVisualMode) -> Unit,
     onScanSelected: (Long) -> Unit,
@@ -126,6 +127,7 @@ internal fun VisualContent(
                 state = state,
                 selectedScanLabel = selectedScanLabel,
                 shortDateFormatter = shortDateFormatter,
+                isMetric = isMetric,
                 onModeSelected = onModeSelected,
                 modifier = summaryCardModifier,
             )
@@ -153,11 +155,22 @@ internal fun VisualContent(
 @Composable
 internal fun CompactSummaryCardHeight(
     state: VisualState,
+    isMetric: Boolean,
     onMeasured: (Int) -> Unit,
 ) {
     val configuration = LocalConfiguration.current
     val locale = ConfigurationCompat.getLocales(configuration)[0] ?: Locale.ROOT
     val shortDateFormatter = remember(locale) { shortMonthDayFormatter(locale) }
+    val sampleState = remember(
+        state.mode,
+        state.latestScanTimestamp != null,
+        state.previousScanTimestamp != null,
+        state.latestMeasurements.isNotEmpty(),
+        state.previousMeasurements.isNotEmpty(),
+        state.beforePreviousMeasurements.isNotEmpty(),
+    ) {
+        state.copy(selectedBodyPart = BodyMeasurementRegion.Bicep)
+    }
     Box(
         modifier = Modifier.layout { measurable, constraints ->
             val placeable = measurable.measure(constraints)
@@ -165,9 +178,10 @@ internal fun CompactSummaryCardHeight(
         },
     ) {
         VisualSummaryCard(
-            state = state.copy(selectedBodyPart = BodyMeasurementRegion.Bicep),
+            state = sampleState,
             selectedScanLabel = stringResource(R.string.body_visual_latest_scan),
             shortDateFormatter = shortDateFormatter,
+            isMetric = isMetric,
             onModeSelected = {},
             modifier = Modifier
                 .fillMaxWidth()
@@ -198,7 +212,7 @@ internal fun ModelEdgeShadow(
 }
 
 @Composable
-private fun VisualEmptyState(modifier: Modifier = Modifier) {
+internal fun VisualEmptyState(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,

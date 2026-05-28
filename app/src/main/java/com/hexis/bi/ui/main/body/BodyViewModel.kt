@@ -48,6 +48,7 @@ class BodyViewModel(
 
     private var allScans: List<ScanRecord> = emptyList()
     private val loadingVisualColorPairs = mutableSetOf<Pair<String, String>>()
+    private val loadingCompareColorPairs = mutableSetOf<Pair<String, String>>()
     private var requestedVisualColorPair: Pair<String, String>? = null
     private var requestedLeftColorPair: Pair<String, String>? = null
     private var requestedRightColorPair: Pair<String, String>? = null
@@ -94,7 +95,12 @@ class BodyViewModel(
         }
     }
 
-    fun selectVisualMode(mode: BodyVisualMode) = selectColorMode(mode)
+    fun selectMode(mode: BodyVisualMode) {
+        applyColorMode(mode)
+        viewModelScope.launch {
+            preferencesRepository.setBodyVisualMode(mode.name)
+        }
+    }
 
     fun selectVisualScan(timestamp: Long) {
         updateVisualScan(selectedTimestamp = timestamp)
@@ -108,16 +114,7 @@ class BodyViewModel(
         updateCompareScans(rightTimestamp = timestamp)
     }
 
-    fun selectCompareMode(mode: BodyVisualMode) = selectColorMode(mode)
-
     fun retry() = loadData()
-
-    private fun selectColorMode(mode: BodyVisualMode) {
-        applyColorMode(mode)
-        viewModelScope.launch {
-            preferencesRepository.setBodyVisualMode(mode.name)
-        }
-    }
 
     private fun observeColorMode() {
         viewModelScope.launch {
@@ -130,13 +127,11 @@ class BodyViewModel(
     }
 
     private fun applyColorMode(mode: BodyVisualMode) {
-        if (_state.value.visual.mode != mode || _state.value.compare.mode != mode) {
-            _state.update {
-                it.copy(
-                    visual = it.visual.copy(mode = mode),
-                    compare = it.compare.copy(mode = mode),
-                )
-            }
+        _state.update {
+            it.copy(
+                visual = it.visual.copy(mode = mode),
+                compare = it.compare.copy(mode = mode),
+            )
         }
         if (mode != BodyVisualMode.Color) return
         when (_state.value.selectedTab) {
@@ -192,8 +187,8 @@ class BodyViewModel(
             }
             updateVisualScan(selectedTimestamp = _state.value.visual.latestScanTimestamp)
             updateCompareScans(
-                leftTimestamp = latest?.timestamp,
-                rightTimestamp = previous?.timestamp,
+                leftTimestamp = _state.value.compare.leftScanTimestamp ?: latest?.timestamp,
+                rightTimestamp = _state.value.compare.rightScanTimestamp ?: previous?.timestamp,
             )
             rebuildChart()
         }
@@ -331,9 +326,10 @@ class BodyViewModel(
     }
 
     private fun scanAndPrevious(timestamp: Long?): Pair<ScanRecord?, ScanRecord?> {
+        if (timestamp == null) return null to null
         val index = allScans.indexOfLast { it.timestamp == timestamp }
         if (index < 0) return null to null
-        return allScans[index] to allScans.getOrNull(index - 1)
+        return allScans.getOrNull(index) to allScans.getOrNull(index - 1)
     }
 
     private fun loadCompareColorMeshesIfNeeded() {
@@ -364,24 +360,37 @@ class BodyViewModel(
         }
 
         updateCompareColorModel(isLeft, BodyVisualColorModel.Loading)
+        if (!loadingCompareColorPairs.add(pair)) return
+
         viewModelScope.launch {
             threeDLookRepository.loadColorAnalysisMeshUrl(
                 beforeMeasurementId = pair.first,
                 afterMeasurementId = pair.second,
             ).onSuccess { meshUrl ->
-                if (isRequestedColorPair(isLeft, pair)) {
-                    updateCompareColorModel(isLeft, BodyVisualColorModel.Ready(meshUrl))
-                }
+                applyCompareColorResult(pair, BodyVisualColorModel.Ready(meshUrl))
             }.onFailure {
-                if (isRequestedColorPair(isLeft, pair)) {
-                    updateCompareColorModel(isLeft, BodyVisualColorModel.Error)
-                }
+                applyCompareColorResult(pair, BodyVisualColorModel.Error)
             }
+            loadingCompareColorPairs.remove(pair)
         }
     }
 
-    private fun isRequestedColorPair(isLeft: Boolean, pair: Pair<String, String>): Boolean =
-        if (isLeft) requestedLeftColorPair == pair else requestedRightColorPair == pair
+    private fun applyCompareColorResult(
+        pair: Pair<String, String>,
+        model: BodyVisualColorModel,
+    ) {
+        val leftMatches = requestedLeftColorPair == pair
+        val rightMatches = requestedRightColorPair == pair
+        if (!leftMatches && !rightMatches) return
+        _state.update {
+            it.copy(
+                compare = it.compare.copy(
+                    leftColorModel = if (leftMatches) model else it.compare.leftColorModel,
+                    rightColorModel = if (rightMatches) model else it.compare.rightColorModel,
+                ),
+            )
+        }
+    }
 
     private fun updateCompareColorModel(isLeft: Boolean, model: BodyVisualColorModel) {
         _state.update {

@@ -34,6 +34,7 @@ internal fun VisualSummaryCard(
     state: VisualState,
     selectedScanLabel: String,
     shortDateFormatter: SimpleDateFormat,
+    isMetric: Boolean,
     onModeSelected: (BodyVisualMode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -80,12 +81,14 @@ internal fun VisualSummaryCard(
             state = state,
             selectedScanLabel = selectedScanLabel,
             shortDateFormatter = shortDateFormatter,
+            isMetric = isMetric,
         )
         else SelectedPartMeasurementRow(
             part = part,
             state = state,
             selectedScanLabel = selectedScanLabel,
             shortDateFormatter = shortDateFormatter,
+            isMetric = isMetric,
         )
     }
 }
@@ -95,6 +98,7 @@ private fun FullBodyMeasurementList(
     state: VisualState,
     selectedScanLabel: String,
     shortDateFormatter: SimpleDateFormat,
+    isMetric: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -119,6 +123,7 @@ private fun FullBodyMeasurementList(
                         state.beforePreviousMeasurements,
                         row.region
                     ),
+                    isMetric = isMetric,
                 )
             }
     }
@@ -130,6 +135,7 @@ private fun SelectedPartMeasurementRow(
     state: VisualState,
     selectedScanLabel: String,
     shortDateFormatter: SimpleDateFormat,
+    isMetric: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -142,6 +148,7 @@ private fun SelectedPartMeasurementRow(
             date = state.latestScanTimestamp?.let { shortDateFormatter.format(Date(it)) },
             valueCm = measurementValue(state.latestMeasurements, part),
             deltaCm = measurementDelta(part, state),
+            isMetric = isMetric,
             modifier = Modifier.weight(1f),
         )
 
@@ -154,6 +161,7 @@ private fun SelectedPartMeasurementRow(
             date = state.previousScanTimestamp?.let { shortDateFormatter.format(Date(it)) },
             valueCm = measurementValue(state.previousMeasurements, part),
             deltaCm = previousMeasurementDelta(part, state),
+            isMetric = isMetric,
             modifier = Modifier.weight(1f)
         )
     }
@@ -165,6 +173,7 @@ private fun MeasurementComparisonRow(
     latestCm: Float?,
     previousCm: Float?,
     beforePreviousCm: Float?,
+    isMetric: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -190,6 +199,7 @@ private fun MeasurementComparisonRow(
             MeasurementValueBlock(
                 valueCm = latestCm,
                 deltaCm = if (latestCm != null && previousCm != null) latestCm - previousCm else null,
+                isMetric = isMetric,
                 modifier = Modifier.weight(1f),
             )
 
@@ -201,6 +211,7 @@ private fun MeasurementComparisonRow(
                 valueCm = previousCm,
                 deltaCm = if (previousCm != null && beforePreviousCm != null)
                     previousCm - beforePreviousCm else null,
+                isMetric = isMetric,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -231,6 +242,7 @@ private fun MeasurementColumn(
     date: String?,
     valueCm: Float?,
     deltaCm: Float?,
+    isMetric: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val missing = stringResource(R.string.body_visual_value_missing)
@@ -253,6 +265,6 @@ private fun MeasurementColumn(
             )
         }
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
-        MeasurementValueBlock(valueCm = valueCm, deltaCm = deltaCm)
+        MeasurementValueBlock(valueCm = valueCm, deltaCm = deltaCm, isMetric = isMetric)
     }
 }

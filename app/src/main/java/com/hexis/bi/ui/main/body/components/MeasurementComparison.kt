@@ -22,7 +22,8 @@ import com.hexis.bi.domain.body.BodyMeasurementRegion
 import com.hexis.bi.ui.dark.AppVerticalGradientDivider
 import com.hexis.bi.ui.theme.MeasurementValueStyle
 import com.hexis.bi.ui.theme.dark.DarkTheme
-import com.hexis.bi.utils.constants.BodyVisualConstants.CM_VALUE_FORMAT
+import com.hexis.bi.utils.cmToInches
+import com.hexis.bi.utils.constants.BodyVisualConstants.MEASUREMENT_VALUE_FORMAT
 import kotlin.math.abs
 
 @Composable
@@ -85,16 +86,13 @@ private fun MeasurementDateHeaderColumn(
 internal fun MeasurementValueBlock(
     valueCm: Float?,
     deltaCm: Float?,
+    isMetric: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val missing = stringResource(R.string.body_visual_value_missing)
-    val valueNumber = valueCm?.let { CM_VALUE_FORMAT.format(it) }
-    val valueUnit = stringResource(R.string.body_visual_unit_cm)
-    val deltaText = deltaCm?.let { d ->
-        val deltaRes = if (d >= 0f) R.string.body_visual_delta_increase
-        else R.string.body_visual_delta_decrease
-        stringResource(deltaRes, CM_VALUE_FORMAT.format(abs(d)))
-    }
+    val unit = stringResource(if (isMetric) R.string.unit_cm else R.string.unit_in)
+    val displayValue = valueCm?.let { if (isMetric) it else it.cmToInches() }
+    val valueNumber = displayValue?.let { MEASUREMENT_VALUE_FORMAT.format(it) }
 
     Column(modifier = modifier) {
         if (valueNumber == null) {
@@ -110,18 +108,26 @@ internal fun MeasurementValueBlock(
                         append(valueNumber)
                     }
                     append(" ")
-                    append(valueUnit)
+                    append(unit)
                 },
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
         }
-        if (deltaText != null) {
+        if (deltaCm != null) {
+            val displayDelta = if (isMetric) deltaCm else deltaCm.cmToInches()
+            val deltaRes = if (displayDelta >= 0f) R.string.body_visual_delta_increase
+            else R.string.body_visual_delta_decrease
+            val deltaText = stringResource(
+                deltaRes,
+                MEASUREMENT_VALUE_FORMAT.format(abs(displayDelta)),
+                unit,
+            )
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
             Text(
                 text = deltaText,
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (deltaCm >= 0f) DarkTheme.extendedColors.positive
+                color = if (displayDelta >= 0f) DarkTheme.extendedColors.positive
                 else DarkTheme.extendedColors.negative,
             )
         }

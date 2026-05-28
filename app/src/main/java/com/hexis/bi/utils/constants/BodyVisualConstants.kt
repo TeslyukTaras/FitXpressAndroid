@@ -6,12 +6,13 @@ import com.hexis.bi.domain.body.BodyMeasurementRegion
 
 internal object BodyVisualConstants {
 
-    const val CM_VALUE_FORMAT = "%.1f"
+    const val MEASUREMENT_VALUE_FORMAT = "%.1f"
 
     const val COMPARE_MODEL_DISTANCE_SCALE = 1.45f
 
-    const val COMPARE_MODEL_BLUR_TOP_BAND_FRACTION = 0.25f
+    const val CURRENT_SCAN_MESH_GLOW = 0.01f
 
+    const val COMPARE_MODEL_BLUR_TOP_BAND_FRACTION = 0.25f
     const val MODEL_BLUR_TOP_BAND_FRACTION = 0.4f
 
     const val MODEL_BLUR_BOTTOM_BAND_FRACTION = 0.15f

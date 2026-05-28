@@ -1,6 +1,5 @@
 package com.hexis.bi.ui.main.body
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -50,6 +49,7 @@ import com.hexis.bi.ui.main.body.components.modelBlur
 import com.hexis.bi.ui.main.scan.results.CompareRotationLink
 import com.hexis.bi.ui.main.scan.results.MetricAvatarLoading
 import com.hexis.bi.ui.main.scan.results.MetricAvatarPreview
+import com.hexis.bi.ui.main.scan.results.MetricAvatarStatusText
 import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.utils.constants.BodyVisualConstants
 import com.hexis.bi.utils.constants.BodyVisualConstants.FULL_BODY_MEASUREMENT_ROWS
@@ -63,6 +63,7 @@ import java.util.Locale
 internal fun CompareContent(
     state: CompareState,
     cardHeightPx: Int,
+    isMetric: Boolean,
     onSelectLeftScan: (Long) -> Unit,
     onSelectRightScan: (Long) -> Unit,
     onModeSelected: (BodyVisualMode) -> Unit,
@@ -75,23 +76,14 @@ internal fun CompareContent(
                 dimensionResource(R.dimen.spacer_l)
 
     if (!state.hasData) {
-        Column(
+        VisualEmptyState(
             modifier = modifier
                 .fillMaxSize()
                 .padding(
                     horizontal = horizontalPadding,
                     vertical = dimensionResource(R.dimen.spacer_2xl),
                 ),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Text(
-                text = stringResource(R.string.body_visual_no_data),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-        }
+        )
         return
     }
 
@@ -127,6 +119,7 @@ internal fun CompareContent(
                 state = state,
                 usesLatestAndPreviousScans = usesLatestAndPreviousScans,
                 shortDateFormatter = shortDateFormatter,
+                isMetric = isMetric,
                 onModeSelected = onModeSelected,
                 modifier = Modifier.padding(horizontal = horizontalPadding),
             )
@@ -145,50 +138,52 @@ private fun CompareTopArea(
     onSelectRightScan: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier) {
-        CompareModelsPanel(
-            state = state,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(modelAreaHeight)
-                .align(Alignment.TopCenter),
-        )
-
-        Column(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .fillMaxWidth()
-                .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
-        ) {
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-            Text(
-                text = stringResource(
-                    if (usesLatestAndPreviousScans) R.string.body_compare_subtitle_latest
-                    else R.string.body_compare_subtitle,
-                ),
-                style = TitleDimTextStyle,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Box(modifier = modifier) {
+            CompareModelsPanel(
+                state = state,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(modelAreaHeight)
+                    .align(Alignment.TopCenter),
             )
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
-            Row(modifier = Modifier.fillMaxWidth()) {
-                VisualScanDateDropdown(
-                    label = "",
-                    selectedTimestamp = state.leftScanTimestamp,
-                    options = state.scanOptions,
-                    dateFormatter = dateFormatter,
-                    onScanSelected = onSelectLeftScan,
-                    modifier = Modifier.weight(1f),
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .fillMaxWidth()
+                    .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+            ) {
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+                Text(
+                    text = stringResource(
+                        if (usesLatestAndPreviousScans) R.string.body_compare_subtitle_latest
+                        else R.string.body_compare_subtitle,
+                    ),
+                    style = TitleDimTextStyle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
                 )
-                VisualScanDateDropdown(
-                    label = "",
-                    selectedTimestamp = state.rightScanTimestamp,
-                    options = state.scanOptions,
-                    dateFormatter = dateFormatter,
-                    onScanSelected = onSelectRightScan,
-                    modifier = Modifier.weight(1f),
-                )
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    VisualScanDateDropdown(
+                        label = "",
+                        selectedTimestamp = state.leftScanTimestamp,
+                        options = state.scanOptions,
+                        dateFormatter = dateFormatter,
+                        onScanSelected = onSelectLeftScan,
+                        modifier = Modifier.weight(1f),
+                    )
+                    VisualScanDateDropdown(
+                        label = "",
+                        selectedTimestamp = state.rightScanTimestamp,
+                        options = state.scanOptions,
+                        dateFormatter = dateFormatter,
+                        onScanSelected = onSelectRightScan,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
         }
     }
@@ -201,33 +196,37 @@ private fun CompareModelsPanel(
 ) {
     val rotationLink =
         remember(state.leftModel3dUrl, state.rightModel3dUrl) { CompareRotationLink() }
-    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-        Row(modifier = modifier) {
-            CompareModelColumn(
-                baseModelUrl = state.leftModel3dUrl,
-                colorModel = state.leftColorModel,
-                mode = state.mode,
-                rotationLink = rotationLink,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
+    val leftTs = state.leftScanTimestamp
+    val rightTs = state.rightScanTimestamp
+    val leftIsCurrent = leftTs != null && (rightTs == null || leftTs >= rightTs)
+    val rightIsCurrent = rightTs != null && (leftTs == null || rightTs > leftTs)
+    Row(modifier = modifier) {
+        CompareModelColumn(
+            baseModelUrl = state.leftModel3dUrl,
+            colorModel = state.leftColorModel,
+            mode = state.mode,
+            rotationLink = rotationLink,
+            meshGlow = if (leftIsCurrent) BodyVisualConstants.CURRENT_SCAN_MESH_GLOW else 0f,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(),
+        )
+        AppVerticalGradientDivider(
+            modifier = Modifier.padding(
+                top = dimensionResource(R.dimen.spacer_6xl),
+                bottom = dimensionResource(R.dimen.spacer_xl)
             )
-            AppVerticalGradientDivider(
-                modifier = Modifier.padding(
-                    top = dimensionResource(R.dimen.spacer_6xl),
-                    bottom = dimensionResource(R.dimen.spacer_xl)
-                )
-            )
-            CompareModelColumn(
-                baseModelUrl = state.rightModel3dUrl,
-                colorModel = state.rightColorModel,
-                mode = state.mode,
-                rotationLink = rotationLink,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-            )
-        }
+        )
+        CompareModelColumn(
+            baseModelUrl = state.rightModel3dUrl,
+            colorModel = state.rightColorModel,
+            mode = state.mode,
+            rotationLink = rotationLink,
+            meshGlow = if (rightIsCurrent) BodyVisualConstants.CURRENT_SCAN_MESH_GLOW else 0f,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(),
+        )
     }
 }
 
@@ -237,6 +236,7 @@ private fun CompareModelColumn(
     colorModel: BodyVisualColorModel,
     mode: BodyVisualMode,
     rotationLink: CompareRotationLink,
+    meshGlow: Float,
     modifier: Modifier = Modifier,
 ) {
     val readyColor = colorModel as? BodyVisualColorModel.Ready
@@ -262,12 +262,21 @@ private fun CompareModelColumn(
                     modifier = Modifier.fillMaxSize(),
                 )
 
-                BodyVisualColorModel.Unavailable -> ModelStatusLabel(R.string.body_visual_color_unavailable)
-                BodyVisualColorModel.Error -> ModelStatusLabel(R.string.body_visual_color_error)
+                BodyVisualColorModel.Unavailable -> MetricAvatarStatusText(
+                    messageRes = R.string.body_visual_color_unavailable,
+                    modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
+                )
+                BodyVisualColorModel.Error -> MetricAvatarStatusText(
+                    messageRes = R.string.body_visual_color_error,
+                    modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
+                )
                 is BodyVisualColorModel.Ready -> Unit
             }
 
-            modelUrl.isNullOrBlank() -> ModelStatusLabel(R.string.body_visual_model_placeholder)
+            modelUrl.isNullOrBlank() -> MetricAvatarStatusText(
+                messageRes = R.string.body_visual_model_placeholder,
+                modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
+            )
 
             else -> key(modelUrl) {
                 MetricAvatarPreview(
@@ -280,6 +289,7 @@ private fun CompareModelColumn(
                     compareRotationLink = rotationLink,
                     zoomPanEnabled = true,
                     baseDistanceScale = BodyVisualConstants.COMPARE_MODEL_DISTANCE_SCALE,
+                    meshGlow = meshGlow,
                     loadingMessageRes = if (showColor) R.string.body_visual_color_loading
                     else R.string.scan_results_avatar_loading,
                 )
@@ -289,21 +299,11 @@ private fun CompareModelColumn(
 }
 
 @Composable
-private fun ModelStatusLabel(messageRes: Int) {
-    Text(
-        text = stringResource(messageRes),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
-    )
-}
-
-@Composable
 private fun CompareSummaryCard(
     state: CompareState,
     usesLatestAndPreviousScans: Boolean,
     shortDateFormatter: SimpleDateFormat,
+    isMetric: Boolean,
     onModeSelected: (BodyVisualMode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -380,15 +380,17 @@ private fun CompareSummaryCard(
                 leftPreviousCm = measurementValue(state.leftPreviousMeasurements, row.region),
                 rightCm = measurementValue(state.rightMeasurements, row.region),
                 rightPreviousCm = measurementValue(state.rightPreviousMeasurements, row.region),
+                isMetric = isMetric,
             )
         }
     }
 }
 
 private fun CompareState.usesLatestAndPreviousScans(): Boolean {
-    val latestTimestamp = scanOptions.firstOrNull()?.timestamp ?: return false
-    val previousTimestamp = scanOptions.getOrNull(1)?.timestamp ?: return false
-    return setOf(leftScanTimestamp, rightScanTimestamp) == setOf(latestTimestamp, previousTimestamp)
+    val latest = scanOptions.firstOrNull()?.timestamp ?: return false
+    val previous = scanOptions.getOrNull(1)?.timestamp ?: return false
+    return (leftScanTimestamp == latest && rightScanTimestamp == previous) ||
+            (leftScanTimestamp == previous && rightScanTimestamp == latest)
 }
 
 @Composable
@@ -398,6 +400,7 @@ private fun CompareMeasurementRow(
     leftPreviousCm: Float?,
     rightCm: Float?,
     rightPreviousCm: Float?,
+    isMetric: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -423,6 +426,7 @@ private fun CompareMeasurementRow(
             MeasurementValueBlock(
                 valueCm = leftCm,
                 deltaCm = if (leftCm != null && leftPreviousCm != null) leftCm - leftPreviousCm else null,
+                isMetric = isMetric,
                 modifier = Modifier.weight(1f),
             )
 
@@ -433,6 +437,7 @@ private fun CompareMeasurementRow(
             MeasurementValueBlock(
                 valueCm = rightCm,
                 deltaCm = if (rightCm != null && rightPreviousCm != null) rightCm - rightPreviousCm else null,
+                isMetric = isMetric,
                 modifier = Modifier.weight(1f),
             )
         }
