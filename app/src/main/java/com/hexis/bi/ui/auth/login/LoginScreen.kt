@@ -1,22 +1,12 @@
 package com.hexis.bi.ui.auth.login
 
 import android.app.Activity
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,9 +16,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -45,15 +32,11 @@ import androidx.compose.ui.text.withLink
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.auth.LoginEvent
-import com.hexis.bi.ui.auth.components.AuthLogoTopBar
+import com.hexis.bi.ui.auth.components.AuthScreenScaffold
 import com.hexis.bi.ui.auth.components.ContinueDivider
 import com.hexis.bi.ui.auth.components.SocialAuthRow
-import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.dark.DarkOutlinedTextField
 import com.hexis.bi.ui.dark.DarkPrimaryButton
-import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.dark.darkScreenBackground
-import com.hexis.bi.ui.theme.dark.DarkTheme
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -80,162 +63,122 @@ fun LoginScreen(
         }
     }
 
-    DarkTheme {
-        LightStatusBarIcons()
-
-        Box(
-            modifier = modifier
-                .fillMaxSize()
-                .darkScreenBackground(),
+    AuthScreenScaffold(
+        modifier = modifier,
+        isLoading = isLoading,
+        error = error,
+        onDismissError = viewModel::clearError,
+        message = message,
+        onDismissMessage = viewModel::clearMessage,
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.Start,
         ) {
-            Image(
-                painter = painterResource(R.drawable.img_auth_gradient),
-                contentDescription = null,
-                contentScale = ContentScale.FillWidth,
-                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .fillMaxWidth(),
+            Text(
+                text = stringResource(R.string.login_title),
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.onBackground,
             )
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
+            Text(
+                text = stringResource(R.string.login_subtitle),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
-            BaseScreen(
-                modifier = Modifier.fillMaxSize(),
-                containerColor = Color.Transparent,
-                isLoading = isLoading,
-                error = error,
-                onDismissError = viewModel::clearError,
-                message = message,
-                onDismissMessage = viewModel::clearMessage,
-                topBar = { AuthLogoTopBar() },
-            ) {
-                val scrollState = rememberScrollState()
-                BoxWithConstraints(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .imePadding(),
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .verticalScroll(scrollState)
-                            .heightIn(min = maxHeight)
-                            .padding(horizontal = dimensionResource(R.dimen.padding_medium))
-                            .padding(bottom = dimensionResource(R.dimen.padding_auth_vertical)),
-                        verticalArrangement = Arrangement.Bottom,
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.Start,
-                        ) {
-                            Text(
-                                text = stringResource(R.string.login_title),
-                                style = MaterialTheme.typography.headlineLarge,
-                                color = MaterialTheme.colorScheme.onBackground,
-                            )
-                            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
-                            Text(
-                                text = stringResource(R.string.login_subtitle),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
-                        Spacer(Modifier.height(dimensionResource(R.dimen.padding_auth_vertical)))
+        DarkOutlinedTextField(
+            value = state.email,
+            onValueChange = viewModel::updateEmail,
+            label = stringResource(R.string.label_email),
+            placeholder = stringResource(R.string.placeholder_email),
+            error = state.emailError,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            modifier = Modifier.fillMaxWidth(),
+        )
 
-                        DarkOutlinedTextField(
-                            value = state.email,
-                            onValueChange = viewModel::updateEmail,
-                            label = stringResource(R.string.label_email),
-                            placeholder = stringResource(R.string.placeholder_email),
-                            error = state.emailError,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-                        DarkOutlinedTextField(
-                            value = state.password,
-                            onValueChange = viewModel::updatePassword,
-                            label = stringResource(R.string.label_password),
-                            placeholder = stringResource(R.string.placeholder_password),
-                            error = state.passwordError,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                            visualTransformation = if (state.isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                            trailingIcon = {
-                                IconButton(onClick = viewModel::togglePasswordVisibility) {
-                                    Icon(
-                                        painter = painterResource(
-                                            if (state.isPasswordVisible) R.drawable.ic_eye_open else R.drawable.ic_eye_closed
-                                        ),
-                                        contentDescription = stringResource(R.string.cd_toggle_password),
-                                    )
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-
-                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-                        Text(
-                            text = stringResource(R.string.action_forgot_password),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .align(Alignment.End)
-                                .clickable { onForgotPassword() },
-                        )
-
-                        Spacer(Modifier.height(dimensionResource(R.dimen.padding_auth_vertical)))
-
-                        DarkPrimaryButton(
-                            text = stringResource(R.string.action_login),
-                            onClick = viewModel::login,
-                            isLoading = isLoading,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-
-                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-                        ContinueDivider()
-
-                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-                        SocialAuthRow(
-                            onGoogleClick = { viewModel.loginWithGoogle(context) },
-                            onAppleClick = { viewModel.loginWithApple(context as Activity) },
-                        )
-
-                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
-
-                        val noAccountText = buildAnnotatedString {
-                            append(stringResource(R.string.no_account))
-                            append(" ")
-                            withLink(
-                                LinkAnnotation.Clickable(
-                                    tag = "SIGNUP",
-                                    styles = TextLinkStyles(
-                                        SpanStyle(
-                                            color = MaterialTheme.colorScheme.primary,
-                                            fontWeight = FontWeight.SemiBold,
-                                        )
-                                    ),
-                                    linkInteractionListener = { viewModel.navigateToSignUp() },
-                                )
-                            ) {
-                                append(stringResource(R.string.action_signup))
-                            }
-                        }
-                        Text(
-                            text = noAccountText,
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            ),
-                        )
-                    }
+        DarkOutlinedTextField(
+            value = state.password,
+            onValueChange = viewModel::updatePassword,
+            label = stringResource(R.string.label_password),
+            placeholder = stringResource(R.string.placeholder_password),
+            error = state.passwordError,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            visualTransformation = if (state.isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                IconButton(onClick = viewModel::togglePasswordVisibility) {
+                    Icon(
+                        painter = painterResource(
+                            if (state.isPasswordVisible) R.drawable.ic_eye_open else R.drawable.ic_eye_closed
+                        ),
+                        contentDescription = stringResource(R.string.cd_toggle_password),
+                    )
                 }
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+        Text(
+            text = stringResource(R.string.action_forgot_password),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .align(Alignment.End)
+                .clickable { onForgotPassword() },
+        )
+
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
+
+        DarkPrimaryButton(
+            text = stringResource(R.string.action_login),
+            onClick = viewModel::login,
+            isLoading = isLoading,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+        ContinueDivider()
+
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+        SocialAuthRow(
+            onGoogleClick = { viewModel.loginWithGoogle(context) },
+            onAppleClick = { viewModel.loginWithApple(context as Activity) },
+        )
+
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
+
+        val noAccountText = buildAnnotatedString {
+            append(stringResource(R.string.no_account))
+            append(" ")
+            withLink(
+                LinkAnnotation.Clickable(
+                    tag = "SIGNUP",
+                    styles = TextLinkStyles(
+                        SpanStyle(
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    ),
+                    linkInteractionListener = { viewModel.navigateToSignUp() },
+                )
+            ) {
+                append(stringResource(R.string.action_signup))
             }
         }
+        Text(
+            text = noAccountText,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
+        )
     }
 }
