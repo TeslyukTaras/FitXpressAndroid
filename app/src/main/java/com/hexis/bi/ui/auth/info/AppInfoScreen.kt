@@ -26,7 +26,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import com.hexis.bi.R
-import com.hexis.bi.ui.components.AppLogo
+import com.hexis.bi.ui.auth.components.AuthTopBar
 import com.hexis.bi.ui.dark.DarkPrimaryButton
 import com.hexis.bi.ui.dark.LightStatusBarIcons
 import com.hexis.bi.ui.theme.dark.DarkTheme
@@ -75,16 +75,11 @@ fun AppInfoScreen(
                     .fillMaxWidth(),
             )
 
-            Box(
+            AuthTopBar(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(top = dimensionResource(R.dimen.spacer_2xl)),
-                contentAlignment = Alignment.Center,
-            ) {
-                AppLogo(tint = MaterialTheme.colorScheme.primary)
-            }
+                    .fillMaxWidth(),
+            )
 
             Column(
                 modifier = Modifier

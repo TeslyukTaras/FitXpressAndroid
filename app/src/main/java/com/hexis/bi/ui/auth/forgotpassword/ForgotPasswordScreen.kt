@@ -7,14 +7,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -31,12 +27,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
-import com.hexis.bi.ui.base.BaseScreen
-import com.hexis.bi.ui.components.AppButton
+import com.hexis.bi.ui.auth.components.AuthScreenScaffold
 import com.hexis.bi.ui.components.AppDialog
-import com.hexis.bi.ui.components.AppTextField
-import com.hexis.bi.ui.components.AppTopBar
+import com.hexis.bi.ui.dark.DarkOutlinedTextField
+import com.hexis.bi.ui.dark.DarkPrimaryButton
 import com.hexis.bi.ui.theme.Green
+import com.hexis.bi.ui.theme.dark.DarkTheme
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -49,46 +45,43 @@ fun ForgotPasswordScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
 
-    Box(modifier = modifier) {
-        BaseScreen(
-            modifier = Modifier
-                .fillMaxSize()
-                .then(
-                    if (state.showSuccessDialog)
-                        Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
-                    else Modifier
-                ),
-            isLoading = isLoading,
-            error = error,
-            onDismissError = viewModel::clearError,
-            topBar = { AppTopBar(onBack = onNavigateBack) },
+    DarkTheme {
+        Box(
+            modifier = modifier.fillMaxSize(),
         ) {
-            Column(
+            AuthScreenScaffold(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .navigationBarsPadding()
-                    .imePadding()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .then(
+                        if (state.showSuccessDialog)
+                            Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
+                        else Modifier
+                    ),
+                isLoading = isLoading,
+                error = error,
+                onDismissError = viewModel::clearError,
+                onBack = onNavigateBack,
+                bottomPadding = dimensionResource(R.dimen.padding_forgot_password_bottom_button),
             ) {
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.Start,
+                ) {
+                    Text(
+                        text = stringResource(R.string.forgot_password_title),
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
+                    Text(
+                        text = stringResource(R.string.forgot_password_subtitle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
 
-                Text(
-                    text = stringResource(R.string.forgot_password_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
-                Text(
-                    text = stringResource(R.string.forgot_password_subtitle),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.secondary,
-                )
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxl)))
 
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
-
-                AppTextField(
+                DarkOutlinedTextField(
                     value = state.email,
                     onValueChange = viewModel::updateEmail,
                     label = stringResource(R.string.label_email),
@@ -99,27 +92,25 @@ fun ForgotPasswordScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxl)))
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-                AppButton(
+                DarkPrimaryButton(
                     text = stringResource(R.string.action_send_code),
                     onClick = viewModel::sendCode,
                     enabled = state.email.isNotBlank(),
                     isLoading = isLoading,
                     modifier = Modifier.fillMaxWidth(),
                 )
-
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
             }
-        }
 
-        if (state.showSuccessDialog) AppDialog(
-            onDismiss = {
-                viewModel.dismissSuccessDialog()
-                onNavigateBack()
-            },
-        ) {
-            ForgotPasswordSuccessDialogContent(email = state.email)
+            if (state.showSuccessDialog) AppDialog(
+                onDismiss = {
+                    viewModel.dismissSuccessDialog()
+                    onNavigateBack()
+                },
+            ) {
+                ForgotPasswordSuccessDialogContent(email = state.email)
+            }
         }
     }
 }
