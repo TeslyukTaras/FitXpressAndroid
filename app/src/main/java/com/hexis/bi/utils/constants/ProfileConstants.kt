@@ -5,6 +5,8 @@ import com.hexis.bi.utils.constants.MeasurementConstants.KG_TO_LB
 
 object ProfileConstants {
 
+    const val PASSWORD_MIN_LENGTH = 8
+
     const val HEIGHT_CM_MIN = 130f
     const val HEIGHT_CM_MAX = 230f
     const val HEIGHT_IN_MIN = HEIGHT_CM_MIN / CM_TO_IN
