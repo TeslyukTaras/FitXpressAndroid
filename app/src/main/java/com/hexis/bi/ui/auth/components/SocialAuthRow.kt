@@ -15,6 +15,9 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
+import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.utils.constants.GlassConstants
+import com.hexis.bi.utils.glass
 
 @Composable
 internal fun SocialAuthRow(
@@ -46,10 +49,18 @@ private fun SocialButton(iconRes: Int, contentDescription: String, onClick: () -
         modifier = Modifier
             .size(dimensionResource(R.dimen.size_social_button))
             .clip(CircleShape)
+            .glass(
+                shape = CircleShape,
+                level = GlassConstants.LEVEL_DEFAULT,
+                fill = DarkTheme.extendedColors.surfaceTranslucent,
+                backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
+                rimWidth = dimensionResource(R.dimen.glass_rim_width),
+                backgroundAlpha = GlassConstants.TEXT_FIELD_BACKGROUND_ALPHA,
+            )
             .border(
-                dimensionResource(R.dimen.border_thin),
-                MaterialTheme.colorScheme.secondaryFixed,
-                CircleShape
+                dimensionResource(R.dimen.border_line),
+                MaterialTheme.colorScheme.outline.copy(alpha = GlassConstants.TEXT_FIELD_BORDER_ALPHA),
+                CircleShape,
             ),
     ) {
         Icon(

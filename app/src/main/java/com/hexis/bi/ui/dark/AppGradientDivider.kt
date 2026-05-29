@@ -17,11 +17,31 @@ import com.hexis.bi.ui.theme.GradientDividerCenter
 import com.hexis.bi.ui.theme.GradientDividerEdge
 import com.hexis.bi.utils.constants.GradientDividerConstants
 
-private fun horizontalFadeBrush(): Brush = Brush.horizontalGradient(
-    GradientDividerConstants.EDGE_STOP to GradientDividerEdge,
-    GradientDividerConstants.CENTER_STOP to GradientDividerCenter,
-    GradientDividerConstants.END_STOP to GradientDividerEdge,
-)
+/**
+ * Which edge(s) a gradient divider fades toward.
+ * - [BOTH]: solid in the middle, fading to transparent at both ends (default).
+ * - [START]: solid at the start edge, fading to transparent at the end.
+ * - [END]: transparent at the start edge, strengthening to solid at the end.
+ */
+enum class GradientDividerDirection { BOTH, START, END }
+
+private fun horizontalFadeBrush(direction: GradientDividerDirection): Brush = when (direction) {
+    GradientDividerDirection.BOTH -> Brush.horizontalGradient(
+        GradientDividerConstants.EDGE_STOP to GradientDividerEdge,
+        GradientDividerConstants.CENTER_STOP to GradientDividerCenter,
+        GradientDividerConstants.END_STOP to GradientDividerEdge,
+    )
+
+    GradientDividerDirection.START -> Brush.horizontalGradient(
+        GradientDividerConstants.EDGE_STOP to GradientDividerCenter,
+        GradientDividerConstants.END_STOP to GradientDividerEdge,
+    )
+
+    GradientDividerDirection.END -> Brush.horizontalGradient(
+        GradientDividerConstants.EDGE_STOP to GradientDividerEdge,
+        GradientDividerConstants.END_STOP to GradientDividerCenter,
+    )
+}
 
 private fun verticalFadeBrush(): Brush = Brush.verticalGradient(
     GradientDividerConstants.EDGE_STOP to GradientDividerEdge,
@@ -37,8 +57,9 @@ private fun verticalFadeBrush(): Brush = Brush.verticalGradient(
 fun AppHorizontalGradientDivider(
     modifier: Modifier = Modifier,
     thickness: Dp = dimensionResource(R.dimen.border_line),
+    direction: GradientDividerDirection = GradientDividerDirection.BOTH,
 ) {
-    val brush = remember { horizontalFadeBrush() }
+    val brush = remember(direction) { horizontalFadeBrush(direction) }
     Box(
         modifier
             .fillMaxWidth()
