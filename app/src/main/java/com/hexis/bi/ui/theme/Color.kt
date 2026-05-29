@@ -65,9 +65,12 @@ val BodyToggleSelectedLabel = Color(0xFFF6F6F6)
 val BodyToggleUnselectedLabel = Color(0xFFE7E7E7)
 val AccentBlue = Color(0xFF5C93ED)
 
-val DarkPrimaryButtonGradientTop = Color(0xA31DC4B3)
-val DarkPrimaryButtonGradientBottom = Color(0xA30B2020)
+val DarkPrimaryButtonGradientTop = Color(0xFF1DC4B3)
+val DarkPrimaryButtonGradientBottom = Color(0xFF0B2020)
 val DarkPrimaryButtonDisabledFill = Color(0x66AEB4BB)
+
+val AppInfoAccentGradientStart = Color(0x00007296)
+val AppInfoAccentGradientEnd = Color(0xFF1DC4B3)
 
 val DialogBackdrop = Color(0x40424242)
 val DialogWindowBackground = Color(0xFF1A1A1A)
@@ -88,3 +91,6 @@ val GradientDividerEdge = Color(0x00BDBEC0)
 
 /** Center band `#EFF0F3` (same value as [GridLineLightGray]). */
 val GradientDividerCenter = GridLineLightGray
+
+val AlphaMaskOpaque = Color.White
+val AlphaMaskTransparent = Color.Transparent

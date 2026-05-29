@@ -68,7 +68,7 @@ val Typography = Typography(
     headlineLarge = TextStyle(
         fontFamily = Urbanist,
         fontWeight = FontWeight.Medium,
-        fontSize = 28.sp,
+        fontSize = 30.sp,
         lineHeight = 34.sp,
         letterSpacing = 0.sp,
     ),

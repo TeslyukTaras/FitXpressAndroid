@@ -1,11 +1,15 @@
 package com.hexis.bi.ui.dark
 
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,6 +18,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.painterResource
 import com.hexis.bi.R
 import com.hexis.bi.ui.theme.DarkPrimaryButtonDisabledFill
 import com.hexis.bi.ui.theme.DarkPrimaryButtonGradientBottom
@@ -29,6 +34,7 @@ fun DarkPrimaryButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     isLoading: Boolean = false,
+    @DrawableRes trailingIcon: Int? = null,
 ) {
     val isActive = enabled && !isLoading
     val shape = MaterialTheme.shapes.small
@@ -67,7 +73,6 @@ fun DarkPrimaryButton(
                 level = GlassConstants.LEVEL_RAISED,
                 fill = if (isActive) Color.Transparent else DarkPrimaryButtonDisabledFill,
                 fillBrush = fillBrush,
-                backgroundAlpha = 1f,
                 backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
                 rimWidth = dimensionResource(R.dimen.glass_rim_width),
                 lightingStrength = 0.65f,
@@ -78,9 +83,20 @@ fun DarkPrimaryButton(
             strokeWidth = dimensionResource(R.dimen.border_thin),
             modifier = Modifier.size(dimensionResource(R.dimen.size_loading_indicator)),
         )
-        else Text(
-            text = text,
-            style = MaterialTheme.typography.bodyLarge,
-        )
+        else {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            if (trailingIcon != null) {
+                Spacer(modifier = Modifier.size(dimensionResource(R.dimen.spacer_l)))
+                Icon(
+                    painter = painterResource(trailingIcon),
+                    contentDescription = null,
+                    tint = LocalContentColor.current,
+                    modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+                )
+            }
+        }
     }
 }

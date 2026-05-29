@@ -9,13 +9,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
 
 @Composable
-fun AppLogo(modifier: Modifier = Modifier) {
+fun AppLogo(
+    modifier: Modifier = Modifier,
+    tint: Color = MaterialTheme.colorScheme.onBackground,
+) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -24,13 +28,13 @@ fun AppLogo(modifier: Modifier = Modifier) {
         Icon(
             painter = painterResource(R.drawable.ic_logo_icon),
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.onBackground,
+            tint = tint,
             modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
         )
         Text(
             text = stringResource(R.string.logo_name),
             style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = tint,
         )
     }
 }
