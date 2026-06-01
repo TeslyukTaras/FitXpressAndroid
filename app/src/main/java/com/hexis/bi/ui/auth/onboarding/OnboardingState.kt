@@ -27,6 +27,8 @@ data class OnboardingState(
     val isSuitConnected: Boolean = false,
     val connectedSuitId: String = "",
     val connectedStatus: String = "",
+    val showSuitCareSheet: Boolean = false,
+    val careInstructionsAccepted: Boolean = false,
 ) : HealthParameters {
     override val heightSliderValue: Float
         get() = if (isMetric) heightCm else heightCm.cmToInches()

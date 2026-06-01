@@ -473,12 +473,29 @@
     <!-- Profile onboarding screen -->
     <string name="onboarding_personal_info_title">Personal information</string>
     <string name="onboarding_personal_info_subtitle">This helps personalize your results\nand progress tracking.</string>
-    <string name="onboarding_suit_connect_title">Connect your scanning suit</string>
+    <string name="onboarding_suit_connect_title">Connect Your Hexis-BI Suit</string>
     <string name="onboarding_suit_connect_subtitle">If you already have a suit, connect it now.\nYou can also do this later in Settings.</string>
     <string name="onboarding_suit_id_hint">You can find the ID on your suit tag or packaging</string>
     <string name="onboarding_no_suit">No scanning suit yet?</string>
     <string name="onboarding_buy_one">Buy one</string>
     <string name="action_back">Back</string>
+
+    <!-- Suit care (shown after connecting a suit) -->
+    <string name="suit_care_title">Suit Care</string>
+    <string name="suit_care_intro">Please review these care instructions before using your suit. This step is required to continue.</string>
+    <string name="suit_care_instructions_label">Care instructions</string>
+    <string name="suit_care_footer">Proper care helps protect the suit markers and keeps future scans accurate.</string>
+    <string name="suit_care_confirm">I have read and understood these instructions</string>
+    <string name="action_continue">Continue</string>
+    <string-array name="suit_care_instructions">
+        <item>Cold hand wash or gentle machine wash</item>
+        <item>Wash separately</item>
+        <item>Do not bleach</item>
+        <item>Do not tumble dry</item>
+        <item>Do not iron</item>
+        <item>Air dry only</item>
+        <item>Avoid excessive heat</item>
+    </string-array>
 
     <!-- Profile incomplete dialog (shown before scan) -->
     <string name="profile_incomplete_dialog_title">Complete your profile</string>

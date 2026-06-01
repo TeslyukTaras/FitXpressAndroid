@@ -55,6 +55,8 @@ class OnboardingViewModel(
                     isSuitConnected = true,
                     connectedSuitId = suitId,
                     connectedStatus = "Active",
+                    showSuitCareSheet = true,
+                    careInstructionsAccepted = false,
                 )
             }
         }
@@ -71,6 +73,11 @@ class OnboardingViewModel(
         }
         launch { suitRepository.disconnect() }
     }
+
+    fun setCareInstructionsAccepted(accepted: Boolean) =
+        _state.update { it.copy(careInstructionsAccepted = accepted) }
+
+    fun dismissSuitCareSheet() = _state.update { it.copy(showSuitCareSheet = false) }
 
     fun finish() = launch {
         val s = _state.value
