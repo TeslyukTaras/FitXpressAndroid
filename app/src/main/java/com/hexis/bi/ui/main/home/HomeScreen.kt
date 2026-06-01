@@ -41,6 +41,7 @@ fun HomeScreen(
     onSleepClick: () -> Unit = {},
     onActivityClick: () -> Unit = {},
     onRecoveryClick: () -> Unit = {},
+    onLongevityClick: () -> Unit = {},
     onScanClick: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel(),
 ) {
@@ -125,7 +126,12 @@ fun HomeScreen(
 
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
 
-                IntelligenceScoresCard(scores = state.intelligenceScores)
+                IntelligenceScoresCard(
+                    scores = state.intelligenceScores,
+                    onScoreClick = { key ->
+                        if (key == IntelligenceScoreKey.LONGEVITY) onLongevityClick()
+                    },
+                )
             }
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))

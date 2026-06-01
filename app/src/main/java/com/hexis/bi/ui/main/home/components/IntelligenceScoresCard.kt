@@ -1,9 +1,12 @@
 package com.hexis.bi.ui.main.home.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -18,6 +21,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.font.FontWeight
 import com.hexis.bi.R
 import com.hexis.bi.ui.main.home.IntelligenceScoreData
+import com.hexis.bi.ui.main.home.IntelligenceScoreKey
 import com.hexis.bi.ui.main.home.ScoreLevel
 import com.hexis.bi.ui.theme.Green
 import com.hexis.bi.ui.theme.Red300
@@ -27,24 +31,38 @@ import com.hexis.bi.ui.theme.Yellow
 fun IntelligenceScoresCard(
     scores: List<IntelligenceScoreData>,
     modifier: Modifier = Modifier,
+    onScoreClick: (IntelligenceScoreKey) -> Unit = {},
 ) {
-    Row(
+    Column(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_s)),
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_s)),
     ) {
-        scores.forEach { score ->
-            ScoreItem(
-                score = score,
-                modifier = Modifier.weight(1f),
-            )
+        scores.chunked(2).forEach { rowScores ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Max),
+                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_s)),
+            ) {
+                rowScores.forEach { score ->
+                    ScoreItem(
+                        score = score,
+                        onClick = { onScoreClick(score.key) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                    )
+                }
+                if (rowScores.size < 2) Spacer(Modifier.weight(1f))
+            }
         }
-
     }
 }
 
 @Composable
 private fun ScoreItem(
     score: IntelligenceScoreData,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val valueColor: Color = when (score.level) {
@@ -59,7 +77,9 @@ private fun ScoreItem(
         elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(R.dimen.elevation_none)),
     ) {
         Column(
-            modifier = Modifier.padding(dimensionResource(R.dimen.spacer_m)),
+            modifier = Modifier
+                .clickable(onClick = onClick)
+                .padding(dimensionResource(R.dimen.spacer_m)),
         ) {
             Text(
                 text = score.title,
@@ -74,5 +94,4 @@ private fun ScoreItem(
             )
         }
     }
-
 }

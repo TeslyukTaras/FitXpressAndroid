@@ -7,8 +7,10 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.sin
 import kotlin.math.sqrt
+import kotlin.math.tan
 
 /**
  * Single place for avatar **model-space math**, projection (matches GL MVP), fallback anchors,
@@ -24,11 +26,13 @@ internal object MetricAvatarCamera {
     const val MIN_ASPECT_FOR_FRAMING = 0.6f
     const val VIEW_DISTANCE_SAFETY_MARGIN = 1.25f
     const val EYE_HEIGHT = 0.85f
+
     /**
      * Neck slice plane vs horizontal (degrees): rotates plane normal from +Y toward +Z so the neck
      * ring tilts forward (chin side slightly lower). Matches [neckSlicePlaneNormal].
      */
     const val NECK_SLICE_FORWARD_TILT_DEG = 15f
+
     /** Camera distance multiplier — lower = closer camera / larger figure in the preview. */
     const val PREVIEW_DISTANCE_SCALE = 0.82f
 
@@ -37,7 +41,7 @@ internal object MetricAvatarCamera {
     const val MAX_USER_ZOOM = 3f
 
     /** Pre-computed tan(FOV/2), used to convert a screen-pixel pan into world units. */
-    val HALF_FOV_TAN: Float = Math.tan(Math.toRadians(FOV_DEG.toDouble() / 2.0)).toFloat()
+    val HALF_FOV_TAN: Float = tan(Math.toRadians(FOV_DEG.toDouble() / 2.0)).toFloat()
 
     /**
      * Fraction of the visible half-window subtracted from the figure half-extent when clamping pan.
@@ -68,14 +72,14 @@ internal object MetricAvatarPackedGeometry {
 
 internal fun computeMetricAvatarViewDistance(viewWidth: Int, viewHeight: Int): Float {
     val aspect = viewWidth.toFloat() / viewHeight.toFloat().coerceAtLeast(1f)
-    val tanHalfFov = kotlin.math.tan(Math.toRadians(MetricAvatarCamera.FOV_DEG / 2.0)).toFloat()
+    val tanHalfFov = tan(Math.toRadians(MetricAvatarCamera.FOV_DEG / 2.0)).toFloat()
         .coerceAtLeast(MetricAvatarCamera.MIN_TAN_HALF_FOV)
     val distForHeight = 1.0f / tanHalfFov
     val distForWidth =
         1.0f / (tanHalfFov * aspect.coerceAtLeast(MetricAvatarCamera.MIN_ASPECT_FOR_FRAMING))
     return max(distForHeight, distForWidth) *
-        MetricAvatarCamera.VIEW_DISTANCE_SAFETY_MARGIN *
-        MetricAvatarCamera.PREVIEW_DISTANCE_SCALE
+            MetricAvatarCamera.VIEW_DISTANCE_SAFETY_MARGIN *
+            MetricAvatarCamera.PREVIEW_DISTANCE_SCALE
 }
 
 /**
@@ -187,8 +191,6 @@ internal object MeasurementVisualAnchors {
         "calf" to ModelLeaderSegment(0.20f, -0.95f, 0.10f, 0.52f, -1.02f, 0.16f),
     )
 
-    fun segmentForKey(key: String): ModelLeaderSegment? = segmentsByKey[key]
-
     fun fallbackAnchorPosition(key: String): FloatArray? =
         segmentsByKey[key]?.let { floatArrayOf(it.ax, it.ay, it.az) }
 }
@@ -255,6 +257,7 @@ private const val TORSO_PROFILE_SLICE_COUNT = 96
 private const val TORSO_MIN_LOOP_POINTS = 8
 private const val TORSO_ARM_ASPECT_LIMIT = 4.1f
 private const val TORSO_MIN_AREA = 0.005f
+
 /** Chest slice width vs waist / lower torso — tight to reject arm-inclusive contours (stricter set). */
 private const val CHEST_MAX_WIDTH_TO_WAIST_RATIO = 1.42f
 private const val CHEST_MAX_WIDTH_TO_LOWER_WAIST_RATIO = 1.32f
@@ -262,6 +265,7 @@ private const val CHEST_MAX_CENTER_X_ABS = 0.045f
 private const val CHEST_ARM_WING_RATIO = 0.12f
 
 private const val OBESE_WAIST_FLATNESS_RATIO = 0.52f
+
 /** Normalized-space nudge below template waist Y when area profile is flat (smaller = less drop). */
 private const val OBESE_WAIST_DOWN_SHIFT = 0.038f
 private const val WAIST_MIN_BELOW_CHEST = 0.18f
@@ -269,7 +273,7 @@ private const val WAIST_MIN_BELOW_CHEST = 0.18f
 /** Upper-waist ring must sit clearly above the natural (mid) waist band. */
 private const val TORSO_UPPER_ABOVE_WAIST_MIN = 0.055f
 
-/** Midline X + Y/Z from [anchors] (torso Y/Z come from [buildTorsoProfile] when available). */
+/** Midline X + Y/Z from anchors (torso Y/Z come from [buildTorsoProfile] when available). */
 private fun stabilizedSliceAnchorForMeasurement(
     key: String,
     anchor: FloatArray,
@@ -330,8 +334,8 @@ private fun buildTorsoProfile(
                 ?: samples
                     .filter {
                         it.aspectXZ <= TORSO_ARM_ASPECT_LIMIT &&
-                            it.y >= waist.y + TORSO_UPPER_ABOVE_WAIST_MIN &&
-                            it.y <= chest.y - 0.04f
+                                it.y >= waist.y + TORSO_UPPER_ABOVE_WAIST_MIN &&
+                                it.y <= chest.y - 0.04f
                     }
                     .minByOrNull { abs(it.y - replTarget) }
         }
@@ -363,8 +367,8 @@ private fun buildTorsoSliceSamples(
     var maxY = -Float.MAX_VALUE
     vertices.forEachIndexed { index, v ->
         if (!usedVertices[index]) return@forEachIndexed
-        minY = kotlin.math.min(minY, v[1])
-        maxY = kotlin.math.max(maxY, v[1])
+        minY = min(minY, v[1])
+        maxY = max(maxY, v[1])
     }
     if (minY >= maxY) return emptyList()
 
@@ -403,6 +407,7 @@ private fun buildCentralTorsoSliceSample(
         coords.add(floatArrayOf(p[0], p[1], p[2]))
         return id
     }
+
     val graph = HashMap<Int, MutableSet<Int>>()
     fun addEdge(a: Int, b: Int) {
         if (a == b) return
@@ -449,13 +454,13 @@ private fun centralTorsoCycleProfileScore(
     val sample = makeTorsoSliceSample(planeY, loopPts, planeNormal) ?: return Float.MAX_VALUE
 
     val midlinePenalty = abs(sample.centerX) * 10f
-    val armAspectPenalty = kotlin.math.max(0f, sample.aspectXZ - TORSO_ARM_ASPECT_LIMIT) * 8f
+    val armAspectPenalty = max(0f, sample.aspectXZ - TORSO_ARM_ASPECT_LIMIT) * 8f
     val compactness = (sample.perimeter * sample.perimeter) / sample.area.coerceAtLeast(1e-6f)
 
     return midlinePenalty +
-        armAspectPenalty +
-        compactness * 0.015f -
-        sample.area * 0.25f
+            armAspectPenalty +
+            compactness * 0.015f -
+            sample.area * 0.25f
 }
 
 private fun makeTorsoSliceSample(
@@ -516,17 +521,16 @@ private fun hasArmWingContamination(
 
 private fun pickShouldersSample(samples: List<TorsoSliceSample>): TorsoSliceSample? {
     val fallbackY = MeasurementVisualAnchors.fallbackAnchorPosition("shoulders")?.get(1) ?: 1.0f
-    val refY = fallbackY
     val candidates = samples
-        .filter { abs(it.y - refY) <= 0.20f }
+        .filter { abs(it.y - fallbackY) <= 0.20f }
         .filter { it.aspectXZ <= TORSO_ARM_ASPECT_LIMIT }
     // Selecting maximum width pulls this band down into the arms; keep it at the shelf height.
     return candidates.minByOrNull { sample ->
-        abs(sample.y - refY) * 8f +
-            abs(sample.centerX) * 2f -
-            sample.widthX * 0.20f -
-            sample.area * 0.10f
-    } ?: samples.minByOrNull { abs(it.y - refY) }
+        abs(sample.y - fallbackY) * 8f +
+                abs(sample.centerX) * 2f -
+                sample.widthX * 0.20f -
+                sample.area * 0.10f
+    } ?: samples.minByOrNull { abs(it.y - fallbackY) }
 }
 
 private fun pickChestSample(
@@ -541,9 +545,9 @@ private fun pickChestSample(
         .filter { it.aspectXZ <= TORSO_ARM_ASPECT_LIMIT }
     return candidates.minByOrNull { sample ->
         abs(sample.y - fallbackY) * 6f +
-            abs(sample.centerX) * 4f -
-            sample.area * 0.35f -
-            sample.depthZ * 0.20f
+                abs(sample.centerX) * 4f -
+                sample.area * 0.35f -
+                sample.depthZ * 0.20f
     } ?: samples
         .filter { it.aspectXZ <= TORSO_ARM_ASPECT_LIMIT }
         .filter { abs(it.centerX) <= CHEST_MAX_CENTER_X_ABS * 1.8f }
@@ -566,7 +570,7 @@ private fun pickChestSampleStrict(
         .filter { abs(it.y - fallbackY) <= 0.35f }
         .minByOrNull { abs(it.centerX) }
         ?.widthX
-        ?: return null
+    ?: return null
 
     val lowerTorsoRefWidth = samples
         .filter { it.y < fallbackY - 0.12f }
@@ -576,6 +580,7 @@ private fun pickChestSampleStrict(
         ?: torsoRefWidth
 
     val candidates = samples
+        .asSequence()
         .filter { it.y < shoulderY - 0.12f }
         .filter { abs(it.y - fallbackY) <= 0.34f }
         .filter { it.aspectXZ <= TORSO_ARM_ASPECT_LIMIT }
@@ -583,13 +588,14 @@ private fun pickChestSampleStrict(
         .filter { it.widthX <= torsoRefWidth * CHEST_MAX_WIDTH_TO_WAIST_RATIO }
         .filter { it.widthX <= lowerTorsoRefWidth * CHEST_MAX_WIDTH_TO_LOWER_WAIST_RATIO }
         .filter { !hasArmWingContamination(it, lowerTorsoRefWidth) }
+        .toList()
 
     // After excluding arm-contaminated loops, preserve the intended upper-chest height.
     return candidates.minByOrNull { sample ->
         abs(sample.y - fallbackY) * 8f +
-            abs(sample.centerX) * 8f -
-            sample.area * 0.20f -
-            sample.depthZ * 0.20f
+                abs(sample.centerX) * 8f -
+                sample.area * 0.20f -
+                sample.depthZ * 0.20f
     }
 }
 
@@ -622,15 +628,15 @@ private fun pickWaistSample(
         val targetY = fallbackY - OBESE_WAIST_DOWN_SHIFT
         candidates.minByOrNull { sample ->
             abs(sample.y - targetY) * 2.4f +
-                abs(sample.centerX) * 4f +
-                sample.aspectXZ * 0.08f
+                    abs(sample.centerX) * 4f +
+                    sample.aspectXZ * 0.08f
         }
     } else {
         candidates.minByOrNull { sample ->
             val normalizedArea = (sample.area - minArea) / areaRange
             normalizedArea * 1.35f +
-                abs(sample.y - fallbackY) * 0.65f +
-                abs(sample.centerX) * 4f
+                    abs(sample.y - fallbackY) * 0.65f +
+                    abs(sample.centerX) * 4f
         }
     }
 }
@@ -664,7 +670,29 @@ internal data class MetricAvatarMeasurementGuide(
     val crossSectionPolylinesOpposite: Map<String, FloatArray> = emptyMap(),
     /** Neck slice plane in model space; used for guide math and parser detail protection. */
     val neckClipPlane: FloatArray,
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as MetricAvatarMeasurementGuide
+
+        if (anchorPoints != other.anchorPoints) return false
+        if (crossSectionPolylines != other.crossSectionPolylines) return false
+        if (crossSectionPolylinesOpposite != other.crossSectionPolylinesOpposite) return false
+        if (!neckClipPlane.contentEquals(other.neckClipPlane)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = anchorPoints.hashCode()
+        result = 31 * result + crossSectionPolylines.hashCode()
+        result = 31 * result + crossSectionPolylinesOpposite.hashCode()
+        result = 31 * result + neckClipPlane.contentHashCode()
+        return result
+    }
+}
 
 internal fun neckSlicePlaneNormal(): FloatArray {
     val rad = Math.toRadians(MetricAvatarCamera.NECK_SLICE_FORWARD_TILT_DEG.toDouble())
@@ -760,6 +788,7 @@ private fun slicePlaneNormalFor(
         val fo = anchors[key]
         if (bi != null && fo != null) limbAxis(mirrorX(bi), fo) else floatArrayOf(0f, 1f, 0f)
     }
+
     "thigh" -> limbAxis(virtualHipFor(anchors), anchors[key])
     /* Right calf: axis from mirrored left-thigh → right calf. */
     "calf" -> {
@@ -767,6 +796,7 @@ private fun slicePlaneNormalFor(
         val ca = anchors[key]
         if (th != null && ca != null) limbAxis(mirrorX(th), ca) else floatArrayOf(0f, 1f, 0f)
     }
+
     else -> floatArrayOf(0f, 1f, 0f)
 }
 
@@ -784,14 +814,17 @@ private fun slicePlaneNormalForOpposite(
         val bi = anchors["bicep"]
         if (bi != null) limbAxis(bi, oppositeBandAnchor) else floatArrayOf(0f, 1f, 0f)
     }
+
     "thigh" -> {
         val hip = virtualHipMirrored(anchors)
         if (hip != null) limbAxis(hip, oppositeBandAnchor) else floatArrayOf(0f, 1f, 0f)
     }
+
     "calf" -> {
         val th = anchors["thigh"]
         if (th != null) limbAxis(th, oppositeBandAnchor) else floatArrayOf(0f, 1f, 0f)
     }
+
     else -> slicePlaneNormalFor(key, anchors)
 }
 
@@ -826,7 +859,12 @@ private fun virtualHipFor(anchors: Map<String, FloatArray>): FloatArray? {
  * Mesh centroids are biased; blend toward curated fallbacks — heavier on **Y** so band heights match anatomy.
  */
 private fun blendAnchorWithFallback(key: String, computed: FloatArray?): FloatArray {
-    val ref = MeasurementVisualAnchors.fallbackAnchorPosition(key) ?: return computed ?: floatArrayOf(0f, 0f, 0f)
+    val ref =
+        MeasurementVisualAnchors.fallbackAnchorPosition(key) ?: return computed ?: floatArrayOf(
+            0f,
+            0f,
+            0f
+        )
     // These bands identify a specific limb zone; centroid blending visibly slides them
     // toward an adjacent joint on differently proportioned scans.
     if (key == "forearm" || key == "bicep" || key == "thigh") return ref.copyOf()
@@ -937,10 +975,12 @@ private fun pickBestBoundaryCycle(
                 compareBy<List<Int>> { centroidDistSq(it) }
                     .thenByDescending { polygonAreaUV(it, coords, planeNormal) },
             )
+
         in TorsoCircumferenceKeys ->
             cycles.minByOrNull { cycle ->
                 torsoCycleScore(cycle, coords, measurementKey, anchor, planeNormal)
             }
+
         else ->
             cycles.minByOrNull { cycle ->
                 genericCycleScore(cycle, coords, anchor, planeNormal)
@@ -1009,10 +1049,10 @@ private fun torsoCycleScore(
     val compactnessPenalty = (perimeter * perimeter) / area
     val sideBalancePenalty = torsoSideBalancePenalty(cycle, coords)
     return anchorDistSq * 18f +
-        midlinePenalty * 8f +
-        sideBalancePenalty * 5f +
-        compactnessPenalty * 0.015f -
-        area * 0.35f
+            midlinePenalty * 8f +
+            sideBalancePenalty * 5f +
+            compactnessPenalty * 0.015f -
+            area * 0.35f
 }
 
 private fun genericCycleScore(
@@ -1044,7 +1084,7 @@ private fun filterTorsoFallbackPoints(
     val maxHalfWidth = width * 0.62f
     return points.filter { p ->
         abs(p[0] - centerX) <= maxHalfWidth &&
-            abs(p[2] - anchor[2]) <= width * 0.65f
+                abs(p[2] - anchor[2]) <= width * 0.65f
     }
 }
 
@@ -1070,12 +1110,17 @@ private fun collectPlaneFaceSegments(
             val ia = face[i]
             val ib = face[(i + 1) % n]
             if (!usedVertices[ia] || !usedVertices[ib]) continue
-            intersectEdgeWithPlane(vertices[ia], vertices[ib], planePoint, planeNormal)?.let { hits.add(it) }
+            intersectEdgeWithPlane(
+                vertices[ia],
+                vertices[ib],
+                planePoint,
+                planeNormal
+            )?.let { hits.add(it) }
         }
         if (hits.size == 2) {
             out.add(
                 floatArrayOf(hits[0][0], hits[0][1], hits[0][2]) to
-                    floatArrayOf(hits[1][0], hits[1][1], hits[1][2]),
+                        floatArrayOf(hits[1][0], hits[1][1], hits[1][2]),
             )
         }
     }
@@ -1109,6 +1154,7 @@ private fun buildSliceBoundaryLoopFromMesh(
         coords.add(floatArrayOf(p[0], p[1], p[2]))
         return newId
     }
+
     val graph = HashMap<Int, MutableSet<Int>>()
     fun addEdge(a: Int, b: Int) {
         if (a == b) return
@@ -1140,8 +1186,9 @@ private fun buildSliceBoundaryLoopFromMesh(
     if (cycles.isEmpty()) return null
     val minFull = MIN_CROSS_SECTION_POINTS
     val largeEnough = cycles.filter { it.size >= minFull }
-    val candidateCycles = if (largeEnough.isNotEmpty()) largeEnough else cycles
-    val best = pickBestBoundaryCycle(candidateCycles, coords, measurementKey, anchor, planeNormal) ?: return null
+    val candidateCycles = largeEnough.ifEmpty { cycles }
+    val best = pickBestBoundaryCycle(candidateCycles, coords, measurementKey, anchor, planeNormal)
+        ?: return null
     val minAccept = if (largeEnough.isNotEmpty()) minFull else MIN_CROSS_SECTION_POINTS / 2
     if (best.size < minAccept) return null
     return List(best.size) { idx ->
@@ -1298,6 +1345,7 @@ private fun filterSlicePointsForMeasurement(
                 }
             }
         }
+
         "forearm" -> {
             val ay = anchor[1]
             /* Larger inclusion than bicep — forearm slice often elongates; strict tube was clipping the loop */
@@ -1324,6 +1372,7 @@ private fun filterSlicePointsForMeasurement(
                 }
             }
         }
+
         "thigh" -> {
             val ballR = if (relaxed) 0.42f else 0.38f
             val nearLeg = filterPointsNearAnchorXZ(p, ax, az, ballR)
@@ -1345,6 +1394,7 @@ private fun filterSlicePointsForMeasurement(
                 }
             }
         }
+
         "calf" -> {
             val ballR = if (relaxed) 0.42f else 0.38f
             val nearLeg = filterPointsNearAnchorXZ(p, ax, az, ballR)
@@ -1366,6 +1416,7 @@ private fun filterSlicePointsForMeasurement(
                 }
             }
         }
+
         "neck" -> {
             val prox = filterPointsNearAnchorXZ(p, ax, az, if (relaxed) 0.26f else 0.22f)
             if (prox.size >= MIN_CROSS_SECTION_POINTS / 2) p = prox
@@ -1387,6 +1438,7 @@ private fun filterSlicePointsForMeasurement(
             /* Symmetric strip of extreme lateral lobes (arms on horizontal chest cut) — rules use abs(x), no anchor bias */
             if (!relaxed) p = filterChestStripSymmetricArmWings(p)
         }
+
         "upperWaist", "waist", "lowerWaist" -> {
             val prox = filterPointsNearAnchorXZ(p, 0f, az, if (relaxed) 0.58f else 0.52f)
             if (prox.size >= MIN_CROSS_SECTION_POINTS / 2) p = prox
@@ -1394,6 +1446,7 @@ private fun filterSlicePointsForMeasurement(
             p = filterTorsoMedianRadiusAboutMidline(p, factor = f1)
             if (!relaxed) p = filterTorsoMedianRadiusAboutMidline(p, factor = 1.22f)
         }
+
         else -> Unit
     }
     return p
@@ -1449,7 +1502,10 @@ private fun filterTorsoMedianRadius(points: List<FloatArray>, factor: Float): Li
  * Torso slice trim using radius √(x² + (z−zMid)²) with **zMid** = slice median depth — symmetric left/right
  * so an off-center mesh origin does not shave only one breast side.
  */
-private fun filterTorsoMedianRadiusAboutMidline(points: List<FloatArray>, factor: Float): List<FloatArray> {
+private fun filterTorsoMedianRadiusAboutMidline(
+    points: List<FloatArray>,
+    factor: Float
+): List<FloatArray> {
     if (points.size < 6) return points
     val zs = points.map { it[2] }.sorted()
     val zMid = zs[zs.size / 2]
@@ -1474,6 +1530,7 @@ private fun filterChestStripSymmetricArmWings(points: List<FloatArray>): List<Fl
     val zMid = zs[zs.size / 2]
     fun rSym(p: FloatArray): Float =
         hypot(p[0].toDouble(), (p[2] - zMid).toDouble()).toFloat()
+
     val band = points.filter { abs(it[0]) < 0.19f }
     if (band.size < 6) return points
     val refRs = band.map { rSym(it) }.sorted()
@@ -1525,11 +1582,11 @@ private fun intersectEdgeWithPlane(
     val ny = planeNormal[1]
     val nz = planeNormal[2]
     val dp = (p[0] - planePoint[0]) * nx +
-        (p[1] - planePoint[1]) * ny +
-        (p[2] - planePoint[2]) * nz
+            (p[1] - planePoint[1]) * ny +
+            (p[2] - planePoint[2]) * nz
     val dq = (q[0] - planePoint[0]) * nx +
-        (q[1] - planePoint[1]) * ny +
-        (q[2] - planePoint[2]) * nz
+            (q[1] - planePoint[1]) * ny +
+            (q[2] - planePoint[2]) * nz
     val eps = 1e-5f
     return when {
         abs(dp) < eps && abs(dq) < eps -> null
@@ -1579,7 +1636,9 @@ private fun orderAroundSliceCentroid(
         sx += p[0]; sy += p[1]; sz += p[2]
     }
     val n = points.size.toFloat()
-    val cx = sx / n; val cy = sy / n; val cz = sz / n
+    val cx = sx / n;
+    val cy = sy / n;
+    val cz = sz / n
     val (u, v) = inPlaneBasis(planeNormal)
     return points.sortedBy {
         val dx = it[0] - cx

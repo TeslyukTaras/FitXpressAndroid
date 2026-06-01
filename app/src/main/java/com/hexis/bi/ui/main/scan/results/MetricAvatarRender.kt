@@ -183,10 +183,10 @@ internal const val MetricAvatarSideProfileYawDegrees = 90f
 
 @Composable
 internal fun MetricAvatarPreview(
+    modifier: Modifier = Modifier,
     modelUrl: String,
     useModelVertexColors: Boolean = false,
     onInteractionChanged: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
     showSkinAreas: Boolean = false,
     drawBackground: Boolean = true,
     touchRotationEnabled: Boolean = true,
@@ -1067,7 +1067,7 @@ private data class AvatarFrame(
     val distanceScale: Float,
     val translateX: Float,
     val translateY: Float,
-    /** Camera eye height vs the part centre: >0 looks down from above, 0 is level, <0 from below. */
+    /** Camera eye height vs the part center: >0 looks down from above, 0 is level, <0 from below. */
     val eyeHeight: Float,
 )
 
@@ -1256,7 +1256,7 @@ private object MetricAvatarFrameSolver {
             val distanceScale =
                 (visibleSpan / targetSpan).coerceIn(MIN_DISTANCE_SCALE, MAX_DISTANCE_SCALE)
 
-            // Put the part's centre on the camera axis (accounting for the same yaw+pitch
+            // Put the part's center on the camera axis (accounting for the same yaw+pitch
             // the mesh is drawn with), then offset within the frame. The offset scales with
             // distanceScale so every part lands at the same on-screen position regardless
             // of how far the camera pulled back.
@@ -1394,7 +1394,7 @@ private object MetricAvatarFrameSolver {
     }
 
     /**
-     * A region's bounds centre after the avatar's yaw (about +Y) then pitch (about +X)
+     * A region's bounds center after the avatar's yaw (about +Y) then pitch (about +X)
      * rotation — the same order [MetricAvatarRenderer.updateAvatarMatrices] draws with.
      * Returns the on-screen-relevant (x, y); the part is centred by translating by its negation.
      */
@@ -1841,7 +1841,7 @@ private object ObjParser {
         val y = vertex[1]
         val towardHead = vertex[0] * neckClipPlane[0] + vertex[1] * neckClipPlane[1] +
                 vertex[2] * neckClipPlane[2] + neckClipPlane[3] > 1e-5f
-        val hands = kotlin.math.abs(x) >= PROTECTED_REGION_HANDS_ABS_X &&
+        val hands = abs(x) >= PROTECTED_REGION_HANDS_ABS_X &&
                 y >= PROTECTED_REGION_HANDS_MIN_Y && y <= PROTECTED_REGION_HANDS_MAX_Y
         val feet = y <= PROTECTED_REGION_FEET_MAX_Y
         return towardHead || hands || feet
@@ -2209,8 +2209,8 @@ private class MetricAvatarRenderer {
         val y = modelYaw()
         val p = modelPitch()
         if (!force &&
-            kotlin.math.abs(y - lastPostedYaw) < VISUAL_TRANSFORM_POST_MIN_DELTA &&
-            kotlin.math.abs(p - lastPostedPitch) < VISUAL_TRANSFORM_POST_MIN_DELTA
+            abs(y - lastPostedYaw) < VISUAL_TRANSFORM_POST_MIN_DELTA &&
+            abs(p - lastPostedPitch) < VISUAL_TRANSFORM_POST_MIN_DELTA
         ) {
             return
         }
@@ -2503,7 +2503,7 @@ private class MetricAvatarRenderer {
             return
         }
 
-        frameCache = MetricAvatarFrameSolver.buildFrames(mesh.measurementGuide, mesh.bounds)
+        frameCache = buildFrames(mesh.measurementGuide, mesh.bounds)
         animatedFrame = targetAvatarFrame()
         frameAnimationStart = null
         frameAnimationTarget = null
@@ -2857,7 +2857,7 @@ private class MetricAvatarRenderer {
         private const val CLIP_TRIANGLE_X2 = -1f
         private const val CLIP_TRIANGLE_Y2 = 3f
 
-        /** Radial gradient matching [@color/metric_avatar_preview_gradient_inner] / [_outer] (Compose + GL). */
+        /** Radial gradient matching [@color/metric_avatar_preview_gradient_inner] / _outer (Compose + GL). */
         private const val GRADIENT_VERTEX_SHADER = """
             attribute vec2 aClip;
             void main() {
