@@ -97,7 +97,7 @@ fun BaseScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.4f)),
+                    .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.4f)),
             ) {
                 if (loadingContent != null) {
                     loadingContent()

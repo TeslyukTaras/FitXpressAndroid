@@ -1,5 +1,7 @@
 package com.hexis.bi.ui.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -22,6 +24,7 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
+private const val NAV_ANIM_DURATION_MS = 300
 
 @Composable
 fun AppNavGraph(modifier: Modifier = Modifier) {
@@ -50,6 +53,10 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
         navController = navController,
         startDestination = destination,
         modifier = modifier,
+        enterTransition = { slideIntoContainer(SlideDirection.Left, tween(NAV_ANIM_DURATION_MS)) },
+        exitTransition = { slideOutOfContainer(SlideDirection.Left, tween(NAV_ANIM_DURATION_MS)) },
+        popEnterTransition = { slideIntoContainer(SlideDirection.Right, tween(NAV_ANIM_DURATION_MS)) },
+        popExitTransition = { slideOutOfContainer(SlideDirection.Right, tween(NAV_ANIM_DURATION_MS)) },
     ) {
         composable(Route.APP_INFO) {
             AppInfoScreen(

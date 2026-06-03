@@ -146,7 +146,7 @@ private fun BoxScope.LoadingOverlay() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.4f)),
+            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.4f)),
     ) {
         CircularProgressIndicator(
             color = MaterialTheme.colorScheme.primary,
