@@ -4,16 +4,10 @@ import android.app.Activity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -39,12 +33,11 @@ import androidx.compose.ui.text.withLink
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.auth.SignUpEvent
+import com.hexis.bi.ui.auth.components.AuthScreenScaffold
 import com.hexis.bi.ui.auth.components.ContinueDivider
 import com.hexis.bi.ui.auth.components.SocialAuthRow
-import com.hexis.bi.ui.base.BaseScreen
-import com.hexis.bi.ui.components.AppButton
-import com.hexis.bi.ui.components.AppTextField
-import com.hexis.bi.ui.components.AppTopBar
+import com.hexis.bi.ui.dark.DarkOutlinedTextField
+import com.hexis.bi.ui.dark.DarkPrimaryButton
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -69,167 +62,162 @@ fun SignUpScreen(
         }
     }
 
-    BaseScreen(
+    AuthScreenScaffold(
         modifier = modifier,
         isLoading = isLoading,
         error = error,
         onDismissError = viewModel::clearError,
-        topBar = { AppTopBar() },
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .navigationBarsPadding()
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.Start,
         ) {
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
-
             Text(
                 text = stringResource(R.string.signup_title),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
             Text(
                 text = stringResource(R.string.signup_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.secondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
-
-            AppTextField(
-                value = state.firstName,
-                onValueChange = viewModel::updateFirstName,
-                label = stringResource(R.string.label_first_name),
-                placeholder = stringResource(R.string.placeholder_first_name),
-                error = state.firstNameError,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-            AppTextField(
-                value = state.lastName,
-                onValueChange = viewModel::updateLastName,
-                label = stringResource(R.string.label_last_name),
-                placeholder = stringResource(R.string.placeholder_last_name),
-                error = state.lastNameError,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-            AppTextField(
-                value = state.email,
-                onValueChange = viewModel::updateEmail,
-                label = stringResource(R.string.label_email),
-                placeholder = stringResource(R.string.placeholder_email),
-                error = state.emailError,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-            AppTextField(
-                value = state.password,
-                onValueChange = viewModel::updatePassword,
-                label = stringResource(R.string.label_password),
-                placeholder = stringResource(R.string.placeholder_password),
-                error = state.passwordError,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                visualTransformation = if (state.isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                trailingIcon = {
-                    IconButton(onClick = viewModel::togglePasswordVisibility) {
-                        Icon(
-                            painter = painterResource(
-                                if (state.isPasswordVisible) R.drawable.ic_eye_open else R.drawable.ic_eye_closed
-                            ),
-                            contentDescription = stringResource(R.string.cd_toggle_password),
-                        )
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-            AppTextField(
-                value = state.confirmPassword,
-                onValueChange = viewModel::updateConfirmPassword,
-                label = stringResource(R.string.label_confirm_password),
-                placeholder = stringResource(R.string.placeholder_confirm_password),
-                error = state.confirmPasswordError,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                visualTransformation = if (state.isConfirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                trailingIcon = {
-                    IconButton(onClick = viewModel::toggleConfirmPasswordVisibility) {
-                        Icon(
-                            painter = painterResource(
-                                if (state.isConfirmPasswordVisible) R.drawable.ic_eye_open else R.drawable.ic_eye_closed
-                            ),
-                            contentDescription = stringResource(R.string.cd_toggle_password),
-                        )
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-            TermsRow(
-                accepted = state.isTermsAccepted,
-                onToggle = viewModel::toggleTerms,
-            )
-
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
-
-            AppButton(
-                text = stringResource(R.string.action_signup),
-                onClick = viewModel::signUp,
-                isLoading = isLoading,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-            ContinueDivider()
-
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-            SocialAuthRow(
-                onGoogleClick = { viewModel.signUpWithGoogle(context) },
-                onAppleClick = { viewModel.signUpWithApple(context as Activity) },
-            )
-
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
-
-            val haveAccountText = buildAnnotatedString {
-                append(stringResource(R.string.have_account))
-                append(" ")
-                withLink(
-                    LinkAnnotation.Clickable(
-                        tag = "LOGIN",
-                        styles = TextLinkStyles(
-                            SpanStyle(
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                        ),
-                        linkInteractionListener = { viewModel.navigateToLogin() },
-                    )
-                ) {
-                    append(stringResource(R.string.action_login))
-                }
-            }
-            Text(
-                text = haveAccountText,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    color = MaterialTheme.colorScheme.secondary,
-                ),
-            )
-
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
         }
+
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
+
+        DarkOutlinedTextField(
+            value = state.firstName,
+            onValueChange = viewModel::updateFirstName,
+            label = stringResource(R.string.label_first_name),
+            placeholder = stringResource(R.string.placeholder_first_name),
+            error = state.firstNameError,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+        DarkOutlinedTextField(
+            value = state.lastName,
+            onValueChange = viewModel::updateLastName,
+            label = stringResource(R.string.label_last_name),
+            placeholder = stringResource(R.string.placeholder_last_name),
+            error = state.lastNameError,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+        DarkOutlinedTextField(
+            value = state.email,
+            onValueChange = viewModel::updateEmail,
+            label = stringResource(R.string.label_email),
+            placeholder = stringResource(R.string.placeholder_email),
+            error = state.emailError,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+        DarkOutlinedTextField(
+            value = state.password,
+            onValueChange = viewModel::updatePassword,
+            label = stringResource(R.string.label_password),
+            placeholder = stringResource(R.string.placeholder_password),
+            error = state.passwordError,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            visualTransformation = if (state.isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                IconButton(onClick = viewModel::togglePasswordVisibility) {
+                    Icon(
+                        painter = painterResource(
+                            if (state.isPasswordVisible) R.drawable.ic_eye_open else R.drawable.ic_eye_closed
+                        ),
+                        contentDescription = stringResource(R.string.cd_toggle_password),
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+        DarkOutlinedTextField(
+            value = state.confirmPassword,
+            onValueChange = viewModel::updateConfirmPassword,
+            label = stringResource(R.string.label_confirm_password),
+            placeholder = stringResource(R.string.placeholder_confirm_password),
+            error = state.confirmPasswordError,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            visualTransformation = if (state.isConfirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                IconButton(onClick = viewModel::toggleConfirmPasswordVisibility) {
+                    Icon(
+                        painter = painterResource(
+                            if (state.isConfirmPasswordVisible) R.drawable.ic_eye_open else R.drawable.ic_eye_closed
+                        ),
+                        contentDescription = stringResource(R.string.cd_toggle_password),
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+        TermsRow(
+            accepted = state.isTermsAccepted,
+            onToggle = viewModel::toggleTerms,
+        )
+
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
+
+        DarkPrimaryButton(
+            text = stringResource(R.string.action_signup),
+            onClick = viewModel::signUp,
+            isLoading = isLoading,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+        ContinueDivider()
+
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+        SocialAuthRow(
+            onGoogleClick = { viewModel.signUpWithGoogle(context) },
+            onAppleClick = { viewModel.signUpWithApple(context as Activity) },
+        )
+
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
+
+        val haveAccountText = buildAnnotatedString {
+            append(stringResource(R.string.have_account))
+            append(" ")
+            withLink(
+                LinkAnnotation.Clickable(
+                    tag = "LOGIN",
+                    styles = TextLinkStyles(
+                        SpanStyle(
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    ),
+                    linkInteractionListener = { viewModel.navigateToLogin() },
+                )
+            ) {
+                append(stringResource(R.string.action_login))
+            }
+        }
+        Text(
+            text = haveAccountText,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
+        )
     }
 }
 
@@ -248,7 +236,7 @@ private fun TermsRow(accepted: Boolean, onToggle: () -> Unit) {
                     if (accepted) R.drawable.ic_checkbox_check else R.drawable.ic_checkbox_uncheck
                 ),
                 contentDescription = null,
-                tint = if (accepted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+                tint = if (accepted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Spacer(Modifier.size(dimensionResource(R.dimen.spacer_xs)))
@@ -280,7 +268,7 @@ private fun TermsRow(accepted: Boolean, onToggle: () -> Unit) {
         Text(
             text = termsText,
             style = MaterialTheme.typography.bodyMedium.copy(
-                color = MaterialTheme.colorScheme.secondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             ),
         )
     }

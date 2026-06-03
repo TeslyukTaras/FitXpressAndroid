@@ -51,12 +51,12 @@ import com.hexis.bi.R
 import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
+import com.hexis.bi.ui.auth.components.AuthTopBar
 import com.hexis.bi.ui.components.AppButton
 import com.hexis.bi.ui.components.AppDatePicker
 import com.hexis.bi.ui.components.AppDropdown
 import com.hexis.bi.ui.components.AppOutlinedButton
 import com.hexis.bi.ui.components.AppTextField
-import com.hexis.bi.ui.components.AppTopBar
 import com.hexis.bi.ui.components.my_suit.SuitConnectedBanner
 import com.hexis.bi.ui.components.my_suit.SuitInfoRow
 import com.hexis.bi.ui.components.profile.HeathParametersSection
@@ -109,8 +109,7 @@ fun OnboardingScreen(
             error = error,
             onDismissError = viewModel::clearError,
             topBar = {
-                if (pagerState.currentPage == 0) AppTopBar()
-                else BaseTopBar(
+                if (pagerState.currentPage != 0) BaseTopBar(
                     title = stringResource(R.string.my_suit_title),
                     onBack = { scope.launch { pagerState.animateScrollToPage(0) } },
                 )
@@ -223,87 +222,93 @@ private fun PersonalInfoPage(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .imePadding()
-            .padding(horizontal = dimensionResource(R.dimen.padding_medium))
             .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+        AuthTopBar()
 
-        Text(
-            text = stringResource(R.string.onboarding_personal_info_title),
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center,
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = stringResource(R.string.onboarding_personal_info_title),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center,
+            )
 
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
 
-        Text(
-            text = stringResource(R.string.onboarding_personal_info_subtitle),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.secondary,
-            textAlign = TextAlign.Center,
-        )
+            Text(
+                text = stringResource(R.string.onboarding_personal_info_subtitle),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.secondary,
+                textAlign = TextAlign.Center,
+            )
 
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_6xl)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_6xl)))
 
-        // Date of birth
-        Box(modifier = Modifier.fillMaxWidth()) {
-            AppTextField(
-                value = state.dateOfBirth,
-                onValueChange = {},
-                readOnly = true,
-                label = stringResource(R.string.label_date_of_birth),
-                placeholder = stringResource(R.string.placeholder_date_of_birth),
-                trailingIcon = {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_calendar),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+            // Date of birth
+            Box(modifier = Modifier.fillMaxWidth()) {
+                AppTextField(
+                    value = state.dateOfBirth,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = stringResource(R.string.label_date_of_birth),
+                    placeholder = stringResource(R.string.placeholder_date_of_birth),
+                    trailingIcon = {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_calendar),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable(onClick = viewModel::showDatePicker),
+                )
+            }
+
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+            // Gender
+            AppDropdown(
+                options = GenderOption.entries,
+                selectedOption = state.gender,
+                onOptionSelected = { viewModel.selectGender(it) },
+                label = stringResource(R.string.label_gender),
+                optionLabel = { option ->
+                    stringResource(
+                        when (option) {
+                            GenderOption.Male -> R.string.gender_male
+                            GenderOption.Female -> R.string.gender_female
+                            GenderOption.Other -> R.string.gender_other
+                        }
                     )
                 },
                 modifier = Modifier.fillMaxWidth(),
             )
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .clickable(onClick = viewModel::showDatePicker),
+
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+            // Units + Height + Weight card
+            HeathParametersSection(
+                params = state,
+                onSelectMetric = viewModel::selectMetric,
+                onSelectImperial = viewModel::selectImperial,
+                onHeightChange = viewModel::updateHeight,
+                onWeightChange = viewModel::updateWeight,
             )
+
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
         }
-
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-        // Gender
-        AppDropdown(
-            options = GenderOption.entries,
-            selectedOption = state.gender,
-            onOptionSelected = { viewModel.selectGender(it) },
-            label = stringResource(R.string.label_gender),
-            optionLabel = { option ->
-                stringResource(
-                    when (option) {
-                        GenderOption.Male -> R.string.gender_male
-                        GenderOption.Female -> R.string.gender_female
-                        GenderOption.Other -> R.string.gender_other
-                    }
-                )
-            },
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-        // Units + Height + Weight card
-        HeathParametersSection(
-            params = state,
-            onSelectMetric = viewModel::selectMetric,
-            onSelectImperial = viewModel::selectImperial,
-            onHeightChange = viewModel::updateHeight,
-            onWeightChange = viewModel::updateWeight,
-        )
-
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
     }
 }
 

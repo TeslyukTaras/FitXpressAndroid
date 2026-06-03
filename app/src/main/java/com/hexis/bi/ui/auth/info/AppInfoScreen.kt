@@ -3,7 +3,6 @@ package com.hexis.bi.ui.auth.info
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -26,12 +26,9 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import com.hexis.bi.R
-import com.hexis.bi.ui.components.AppLogo
-import com.hexis.bi.ui.components.FigmaGradientAccentLayer
+import com.hexis.bi.ui.auth.components.AuthTopBar
 import com.hexis.bi.ui.dark.DarkPrimaryButton
 import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.theme.AppInfoAccentGradientEnd
-import com.hexis.bi.ui.theme.AppInfoAccentGradientStart
 import com.hexis.bi.ui.theme.dark.DarkTheme
 import com.hexis.bi.utils.constants.AuthFlowConstants
 
@@ -68,18 +65,21 @@ fun AppInfoScreen(
                 Spacer(modifier = Modifier.weight(AuthFlowConstants.HERO_BOTTOM_SPACER_WEIGHT))
             }
 
-            TealAccentLayer()
-
-            Box(
+            Image(
+                painter = painterResource(R.drawable.img_app_info_gradient),
+                contentDescription = null,
+                contentScale = ContentScale.FillWidth,
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(top = dimensionResource(R.dimen.spacer_2xl)),
-                contentAlignment = Alignment.Center,
-            ) {
-                AppLogo(tint = MaterialTheme.colorScheme.primary)
-            }
+                    .fillMaxWidth(),
+            )
+
+            AuthTopBar(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth(),
+            )
 
             Column(
                 modifier = Modifier
@@ -122,21 +122,4 @@ fun AppInfoScreen(
             }
         }
     }
-}
-
-@Composable
-private fun BoxScope.TealAccentLayer() {
-    FigmaGradientAccentLayer(
-        figmaLeftDp = AuthFlowConstants.TEAL_LAYER_VISIBLE_LEFT_DP,
-        figmaTopDp = AuthFlowConstants.TEAL_LAYER_VISIBLE_TOP_DP,
-        figmaWidthDp = AuthFlowConstants.TEAL_LAYER_SIZE_DP,
-        figmaHeightDp = AuthFlowConstants.TEAL_LAYER_SIZE_DP,
-        figmaAngleDeg = AuthFlowConstants.TEAL_LAYER_FIGMA_ANGLE_DEG,
-        opacity = AuthFlowConstants.TEAL_LAYER_OPACITY,
-        gradientStartColor = AppInfoAccentGradientStart,
-        gradientEndColor = AppInfoAccentGradientEnd,
-        cornerFadeStart = AuthFlowConstants.TEAL_CORNER_FADE_START,
-        cornerFadeRadiusFactor = AuthFlowConstants.TEAL_CORNER_FADE_RADIUS_FACTOR,
-        sideFadeEnd = AuthFlowConstants.TEAL_SIDE_FADE_END,
-    )
 }
