@@ -11,6 +11,10 @@ internal object DarkBackgroundConstants {
     const val CARD_FILL_STOP_START = 0.0372f
     const val CARD_FILL_STOP_END = 0.9901f
 
+    const val PROMO_BANNER_GRADIENT_ANGLE_DEG = 246.16f
+    const val PROMO_BANNER_STOP_START = 0.0557f
+    const val PROMO_BANNER_STOP_END = 0.8058f
+
     const val TOP_SCRIM_HEIGHT_FRACTION = 0.18f
     const val TOP_SCRIM_HOLD_FRACTION = 0.2f
     const val BOTTOM_SCRIM_HEIGHT_FRACTION = 0.20f

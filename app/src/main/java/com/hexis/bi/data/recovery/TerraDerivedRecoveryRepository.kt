@@ -68,6 +68,15 @@ class TerraDerivedRecoveryRepository(
         return Result.success(snapshots)
     }
 
+    /**
+     * Clears only the derived caches. The underlying [sleepRepository] / [activityRepository] are
+     * the same singletons the caller invalidates directly, so they aren't re-invalidated here.
+     */
+    override suspend fun invalidate() {
+        rangeCache.clear()
+        dayCache.clear()
+    }
+
     private suspend fun fetchSnapshotsForRange(
         start: LocalDate,
         end: LocalDate,

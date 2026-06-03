@@ -32,13 +32,14 @@ import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.components.AppButton
 import com.hexis.bi.ui.components.AppDialog
 import com.hexis.bi.ui.components.AppOutlinedButton
-import com.hexis.bi.ui.components.MainNavBottomBar
 import com.hexis.bi.ui.dark.DarkMainNavBottomBar
 import com.hexis.bi.ui.main.body.BodyScreen
 import com.hexis.bi.ui.main.body.PhysiqueBalanceScreen
 import com.hexis.bi.ui.main.home.HomeScreen
 import com.hexis.bi.ui.main.home.activity.ActivityScreen
 import com.hexis.bi.ui.main.home.longevity.LongevityScreen
+import com.hexis.bi.ui.main.home.paceofaging.PaceOfAgingScreen
+import com.hexis.bi.ui.main.home.physiquedrift.PhysiqueDriftScreen
 import com.hexis.bi.ui.main.home.recovery.RecoveryScreen
 import com.hexis.bi.ui.main.home.sleep.SleepScreen
 import com.hexis.bi.ui.main.notifications.NotificationsScreen
@@ -74,6 +75,25 @@ fun MainScreen(
     val scope = rememberCoroutineScope()
     var showProfileIncompleteDialog by remember { mutableStateOf(false) }
 
+    // Starts a scan only when the profile is complete; otherwise prompts to finish the profile.
+    // Shared by the bottom-nav scan button and the Home "Scan" tile.
+    val launchScan: () -> Unit = {
+        scope.launch {
+            val profile = userRepository.getUser().getOrNull()
+            val isComplete = profile != null
+                    && profile.heightCm != null
+                    && profile.weightKg != null
+                    && profile.dateOfBirth != null
+            if (isComplete) {
+                navController.navigate(Route.Main.SCAN) {
+                    launchSingleTop = true
+                }
+            } else {
+                showProfileIncompleteDialog = true
+            }
+        }
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         NavHost(
             modifier = Modifier.fillMaxSize(),
@@ -88,7 +108,10 @@ fun MainScreen(
                     onSleepClick = { navController.navigate(Route.Main.SLEEP) },
                     onRecoveryClick = { navController.navigate(Route.Main.RECOVERY) },
                     onLongevityClick = { navController.navigate(Route.Main.LONGEVITY) },
+                    onPhysiqueDriftClick = { navController.navigate(Route.Main.PHYSIQUE_DRIFT) },
+                    onPaceOfAgingClick = { navController.navigate(Route.Main.PACE_OF_AGING) },
                     onActivityClick = { navController.navigate(Route.Main.ACTIVITY) },
+                    onScanClick = launchScan,
                 )
             }
             composable(Route.Main.SLEEP) {
@@ -99,6 +122,12 @@ fun MainScreen(
             }
             composable(Route.Main.LONGEVITY) {
                 LongevityScreen(onBack = { navController.popBackStackOnce() })
+            }
+            composable(Route.Main.PHYSIQUE_DRIFT) {
+                PhysiqueDriftScreen(onBack = { navController.popBackStackOnce() })
+            }
+            composable(Route.Main.PACE_OF_AGING) {
+                PaceOfAgingScreen(onBack = { navController.popBackStackOnce() })
             }
             composable(Route.Main.ACTIVITY) {
                 ActivityScreen(onBack = { navController.popBackStackOnce() })
@@ -197,46 +226,20 @@ fun MainScreen(
                     popUpTo(Route.Main.HOME) { inclusive = false }
                 }
             }
-            val onScanClick: () -> Unit = {
-                scope.launch {
-                    val profile = userRepository.getUser().getOrNull()
-                    val isComplete = profile != null
-                            && profile.heightCm != null
-                            && profile.weightKg != null
-                            && profile.dateOfBirth != null
-                    if (isComplete) {
-                        navController.navigate(Route.Main.SCAN) {
-                            launchSingleTop = true
-                        }
-                    } else {
-                        showProfileIncompleteDialog = true
-                    }
-                }
-            }
 
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth(),
             ) {
-                if (isBodySelected) {
-                    DarkTheme {
-                        DarkMainNavBottomBar(
-                            isHomeSelected = isHomeSelected,
-                            isBodySelected = isBodySelected,
-                            onHomeClick = onHomeClick,
-                            onBodyClick = onBodyClick,
-                            onScanClick = onScanClick,
-                            hazeAlpha = 1f,
-                        )
-                    }
-                } else {
-                    MainNavBottomBar(
+                DarkTheme {
+                    DarkMainNavBottomBar(
                         isHomeSelected = isHomeSelected,
                         isBodySelected = isBodySelected,
                         onHomeClick = onHomeClick,
                         onBodyClick = onBodyClick,
-                        onScanClick = onScanClick,
+                        onScanClick = launchScan,
+                        hazeAlpha = 1f,
                     )
                 }
             }

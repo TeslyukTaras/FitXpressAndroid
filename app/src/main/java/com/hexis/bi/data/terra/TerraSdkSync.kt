@@ -3,6 +3,9 @@ package com.hexis.bi.data.terra
 import android.os.SystemClock
 import co.tryterra.terra.TerraManager
 import co.tryterra.terra.enums.Connections
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -23,6 +26,15 @@ object TerraSdkSync {
 
     private const val FOREGROUND_DEBOUNCE_MS = 20L * 60L * 1000L
     private const val DEFAULT_LOOKBACK_DAYS = 30L
+
+    /**
+     * Emits once each time a pull actually lands fresh data in Terra REST (i.e. whenever
+     * [syncLinkedConnections] returns true). Screens observe this to reload their overview without
+     * the user having to leave and re-enter — the "new data arrived" push the REST repos can't
+     * provide on their own. Process-wide, no replay: it's a transient event, not state.
+     */
+    private val _dataSynced = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val dataSynced: SharedFlow<Unit> = _dataSynced.asSharedFlow()
 
     /**
      * @param force skips the foreground debounce (e.g. right after a successful `initConnection`).
@@ -66,6 +78,7 @@ object TerraSdkSync {
                 )
             }
         }
+        _dataSynced.tryEmit(Unit)
         return true
     }
 

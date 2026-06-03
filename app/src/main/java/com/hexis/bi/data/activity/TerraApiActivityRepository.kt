@@ -51,6 +51,8 @@ class TerraApiActivityRepository(
         }.onSuccess { rangeCache.put(key, it) }
     }
 
+    override suspend fun invalidate() = rangeCache.clear()
+
     private suspend fun fetchJsonForUser(
         terraUserId: String,
         start: LocalDate,
