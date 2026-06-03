@@ -170,6 +170,14 @@ internal val MeasurementValueStyle = TextStyle(
     letterSpacing = 0.sp,
 )
 
+internal val MeasurementTitleValueStyle = TextStyle(
+    fontFamily = Urbanist,
+    fontWeight = FontWeight.Medium,
+    fontSize = 48.sp,
+    lineHeight = 42.sp,
+    letterSpacing = 0.sp,
+)
+
 internal val TitleHighlightTextStyle = TextStyle(
     fontFamily = Urbanist,
     fontWeight = FontWeight.Medium,

@@ -24,20 +24,23 @@ object TerraSdkSync {
     private const val FOREGROUND_DEBOUNCE_MS = 20L * 60L * 1000L
     private const val DEFAULT_LOOKBACK_DAYS = 30L
 
-    /** @param force skips the foreground debounce (e.g. right after a successful `initConnection`). */
+    /**
+     * @param force skips the foreground debounce (e.g. right after a successful `initConnection`).
+     * @return true when a pull actually ran; false when there was nothing to sync or it was debounced.
+     */
     suspend fun syncLinkedConnections(
         manager: TerraManager?,
         reason: String,
         force: Boolean = false,
         lookbackDays: Long = DEFAULT_LOOKBACK_DAYS,
-    ) {
-        val mgr = manager ?: return
+    ): Boolean {
+        val mgr = manager ?: return false
         val linked = enumValues<Connections>().filter { mgr.getUserId(it) != null }
-        if (linked.isEmpty()) return
+        if (linked.isEmpty()) return false
 
         if (!shouldProceed(force)) {
             Timber.d("TerraSdkSync skip (%s): debounced", reason)
-            return
+            return false
         }
 
         val end = Date()
@@ -63,6 +66,7 @@ object TerraSdkSync {
                 )
             }
         }
+        return true
     }
 
     private suspend fun shouldProceed(force: Boolean): Boolean = debounceMutex.withLock {

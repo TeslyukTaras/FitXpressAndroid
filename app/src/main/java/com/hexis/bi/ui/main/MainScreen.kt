@@ -38,6 +38,7 @@ import com.hexis.bi.ui.main.body.BodyScreen
 import com.hexis.bi.ui.main.body.PhysiqueBalanceScreen
 import com.hexis.bi.ui.main.home.HomeScreen
 import com.hexis.bi.ui.main.home.activity.ActivityScreen
+import com.hexis.bi.ui.main.home.longevity.LongevityScreen
 import com.hexis.bi.ui.main.home.recovery.RecoveryScreen
 import com.hexis.bi.ui.main.home.sleep.SleepScreen
 import com.hexis.bi.ui.main.notifications.NotificationsScreen
@@ -86,6 +87,7 @@ fun MainScreen(
                     onSettingsClick = { navController.navigate(Route.Main.SETTINGS) },
                     onSleepClick = { navController.navigate(Route.Main.SLEEP) },
                     onRecoveryClick = { navController.navigate(Route.Main.RECOVERY) },
+                    onLongevityClick = { navController.navigate(Route.Main.LONGEVITY) },
                     onActivityClick = { navController.navigate(Route.Main.ACTIVITY) },
                 )
             }
@@ -94,6 +96,9 @@ fun MainScreen(
             }
             composable(Route.Main.RECOVERY) {
                 RecoveryScreen(onBack = { navController.popBackStackOnce() })
+            }
+            composable(Route.Main.LONGEVITY) {
+                LongevityScreen(onBack = { navController.popBackStackOnce() })
             }
             composable(Route.Main.ACTIVITY) {
                 ActivityScreen(onBack = { navController.popBackStackOnce() })

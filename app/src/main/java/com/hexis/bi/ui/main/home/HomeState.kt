@@ -17,7 +17,10 @@ data class OverviewCardData(
     val variant: OverviewCardVariant = OverviewCardVariant.Default,
 )
 
+enum class IntelligenceScoreKey { VBI, VLI, POA, LONGEVITY }
+
 data class IntelligenceScoreData(
+    val key: IntelligenceScoreKey,
     val title: String,
     val value: String,
     val level: ScoreLevel,
@@ -36,9 +39,10 @@ internal fun buildOverviewCards(
 ): List<OverviewCardData> = listOf(sleepCard, activityCard, recoveryCard, scanCard)
 
 private val defaultIntelligenceScores = listOf(
-    IntelligenceScoreData(title = "VBI Score", value = "20", level = ScoreLevel.Low),
-    IntelligenceScoreData(title = "VLI Score", value = "60", level = ScoreLevel.Medium),
-    IntelligenceScoreData(title = "POA Score", value = "100", level = ScoreLevel.High),
+    IntelligenceScoreData(IntelligenceScoreKey.VBI, title = "VBI Score", value = "20", level = ScoreLevel.Low),
+    IntelligenceScoreData(IntelligenceScoreKey.VLI, title = "VLI Score", value = "60", level = ScoreLevel.Medium),
+    IntelligenceScoreData(IntelligenceScoreKey.POA, title = "POA Score", value = "100", level = ScoreLevel.High),
+    IntelligenceScoreData(IntelligenceScoreKey.LONGEVITY, title = "Longevity", value = "82", level = ScoreLevel.High),
 )
 
 data class HomeState(

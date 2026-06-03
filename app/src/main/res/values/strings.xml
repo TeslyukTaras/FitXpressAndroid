@@ -689,4 +689,61 @@
     <string name="scan_error_timeout">Scan timed out. Please try again.</string>
     <string name="scan_error_with_detail">%1$s: %2$s</string>
     <string name="activity_goal_label_format">" / %1$s"</string>
+
+    <!-- Longevity screen -->
+    <string name="longevity_screen_title">Longevity</string>
+    <string name="longevity_score_card_title">Healthy Aging Score</string>
+    <string name="longevity_score_value">%1$d</string>
+    <string name="longevity_score_max">/ 100</string>
+    <string name="longevity_score_description">Your Longevity score shows how well your body is aging based on key health signals.</string>
+    <string name="longevity_synced_format">Based on your latest synced data · %1$s</string>
+    <string name="longevity_trend_title">Longevity Trend</string>
+    <string name="longevity_tab_daily">Daily</string>
+    <string name="longevity_tab_weekly">Weekly</string>
+    <string name="longevity_trend_today_label">Today\'s Trend</string>
+    <string name="longevity_trend_weekly_label">Weekly Trend</string>
+    <string name="longevity_daily_axis_start">12 am</string>
+    <string name="longevity_daily_axis_end">11:59 pm</string>
+    <string name="longevity_trend_improving">Improving</string>
+    <string name="longevity_trend_stable">Stable</string>
+    <string name="longevity_trend_decreasing">Decreasing</string>
+
+    <!-- Longevity signals -->
+    <string name="longevity_signals_title">Longevity Signals</string>
+    <string name="longevity_signal_hrv">HRV</string>
+    <string name="longevity_signal_rhr">RHR</string>
+    <string name="longevity_signal_sleep">Sleep</string>
+    <string name="longevity_signal_recovery">Recovery</string>
+    <string name="longevity_signal_activity">Activity</string>
+    <string name="longevity_signal_vo2_max">VO2 Max</string>
+    <string name="longevity_signal_waist_profile">Waist Profile</string>
+    <string name="longevity_signal_physique_trend">Physique Trend</string>
+    <string name="longevity_signal_stress_load">Stress Load</string>
+    <string name="longevity_unit_ms">ms</string>
+    <string name="longevity_unit_steps">st</string>
+
+    <!-- Longevity insight -->
+    <string name="longevity_insight_title">Longevity Insight</string>
+    <string name="longevity_insight_body">Your recovery and activity trends are improving, which may support better long-term health and body resilience.</string>
+
+    <!-- Longevity info sheet -->
+    <string name="longevity_info_sheet_intro">Longevity shows how well your body is aging based on key health signals.</string>
+    <string name="longevity_info_sheet_heading_1">1. HRV</string>
+    <string name="longevity_info_sheet_body_1">Shows recovery and nervous system balance. Higher is usually better.</string>
+    <string name="longevity_info_sheet_heading_2">2. Resting Heart Rate</string>
+    <string name="longevity_info_sheet_body_2">Shows your heart rate at rest. Lower is usually better.</string>
+    <string name="longevity_info_sheet_heading_3">3. Sleep</string>
+    <string name="longevity_info_sheet_body_3">Good sleep supports recovery and long-term health.</string>
+    <string name="longevity_info_sheet_heading_4">4. Activity</string>
+    <string name="longevity_info_sheet_body_4">Steps, workouts, and movement consistency support longevity.</string>
+    <string name="longevity_info_sheet_heading_5">5. Recovery</string>
+    <string name="longevity_info_sheet_body_5">Shows how ready your body is based on sleep, stress, activity load, heart rate, and HRV.</string>
+    <string name="longevity_info_sheet_heading_6">6. Waist Profile</string>
+    <string name="longevity_info_sheet_body_6">Shows body composition and abdominal fat trends.</string>
+    <string name="longevity_info_sheet_heading_7">7. VO2 Max</string>
+    <string name="longevity_info_sheet_body_7">Shows cardio fitness and how well your body uses oxygen.</string>
+    <string name="longevity_info_sheet_heading_8">8. Total Score</string>
+    <string name="longevity_info_sheet_body_8">Combines these signals into one healthy aging score.</string>
+    <string name="longevity_info_sheet_heading_9">9. Stress Load</string>
+    <string name="longevity_info_sheet_body_9">Shows how daily physical and nervous system strain may affect recovery, resilience, and long-term health over time.</string>
 </resources>

@@ -42,6 +42,15 @@ private object TerraActivityJsonKeys {
         const val DISTANCE_DATA = "distance_data"
         const val ACTIVITY_DATA = "activity_data"
         const val CALORIES_DATA = "calories_data"
+        const val OXYGEN_DATA = "oxygen_data"
+    }
+
+    object Vo2 {
+        const val VO2MAX_ML_PER_MIN_PER_KG = "vo2max_ml_per_min_per_kg"
+        const val VO2_MAX_ML_PER_MIN_PER_KG = "vo2_max_ml_per_min_per_kg"
+        const val VO2MAX = "vo2max"
+        const val VO2_MAX = "vo2_max"
+        val CANDIDATES = listOf(VO2MAX_ML_PER_MIN_PER_KG, VO2_MAX_ML_PER_MIN_PER_KG, VO2MAX, VO2_MAX)
     }
 
     object Steps {
@@ -94,8 +103,16 @@ object TerraActivityJsonMapper {
             distanceKm = distanceKm,
             activeCalories = calories,
             hourlySteps = hourlySteps,
+            vo2MaxMlPerMinPerKg = root.extractVo2Max(),
         )
     }
+}
+
+private fun JsonObject.extractVo2Max(): Float? {
+    val oxygenData = this[TerraActivityJsonKeys.Nodes.OXYGEN_DATA]?.jsonObject
+    return (oxygenData.firstFloatByKeysDeep(TerraActivityJsonKeys.Vo2.CANDIDATES)
+        ?: this.firstFloatByKeysDeep(TerraActivityJsonKeys.Vo2.CANDIDATES))
+        ?.takeIf { it > 0f }
 }
 
 private fun JsonObject.dateOrNull(): LocalDate? {
