@@ -160,7 +160,7 @@ val appModule = module {
     viewModel { SleepViewModel(androidApplication(), get(), get()) }
     viewModel { ActivityViewModel(androidApplication(), get(), get(), get()) }
     viewModel { RecoveryViewModel(androidApplication(), get()) }
-    viewModel { LongevityViewModel(androidApplication()) }
+    viewModel { LongevityViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { ScanViewModel(androidApplication(), get()) }
     viewModel { StartScanViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { ResultsViewModel(androidApplication(), get(), get(), get(), get()) }

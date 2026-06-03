@@ -30,6 +30,12 @@ data class LongevityTrendData(
     val axisLabels: List<String> = emptyList(),
     /** Index into [axisLabels] of the current date, highlighted on the x-axis (-1 = none). */
     val currentLabelIndex: Int = -1,
+    /**
+     * Number of x slots the line is spaced across. When set (e.g. 24 hours), a partial [points]
+     * list stops part-way instead of stretching to the right edge — used so the daily curve is
+     * drawn only up to the current hour. Null spaces [points] evenly across the full width.
+     */
+    val xAxisSpanCount: Int? = null,
     /** Date label shown under the section title (e.g. "Dec 24" or "Dec 18 - Dec 24"). */
     val dateLabel: String = "",
     val trend: LongevityTrend = LongevityTrend.Improving,

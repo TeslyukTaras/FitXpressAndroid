@@ -702,6 +702,8 @@
     <string name="longevity_tab_weekly">Weekly</string>
     <string name="longevity_trend_today_label">Today\'s Trend</string>
     <string name="longevity_trend_weekly_label">Weekly Trend</string>
+    <string name="longevity_daily_axis_start">12 am</string>
+    <string name="longevity_daily_axis_end">11:59 pm</string>
     <string name="longevity_trend_improving">Improving</string>
     <string name="longevity_trend_stable">Stable</string>
     <string name="longevity_trend_decreasing">Decreasing</string>

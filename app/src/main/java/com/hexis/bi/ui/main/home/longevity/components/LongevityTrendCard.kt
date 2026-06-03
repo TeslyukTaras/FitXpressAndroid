@@ -1,7 +1,6 @@
 package com.hexis.bi.ui.main.home.longevity.components
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -44,21 +43,12 @@ internal fun LongevityTrendCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.longevity_trend_title),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                if (trendData.dateLabel.isNotEmpty()) {
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
-                    Text(
-                        text = trendData.dateLabel,
-                        style = TitleHighlightTextStyle,
-                        color = AccentBlue,
-                    )
-                }
-            }
+            Text(
+                modifier = Modifier.weight(1f),
+                text = stringResource(R.string.longevity_trend_title),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
 
             BodySegmentedToggleTrack {
                 LongevityTab.entries.forEachIndexed { index, tab ->
@@ -73,12 +63,19 @@ internal fun LongevityTrendCard(
             }
         }
 
+        Text(
+            text = trendData.dateLabel,
+            style = TitleHighlightTextStyle,
+            color = AccentBlue,
+        )
+
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxl)))
 
         LongevityLineChart(
             points = trendData.points,
             axisLabels = trendData.axisLabels,
             currentLabelIndex = trendData.currentLabelIndex,
+            xAxisSpanCount = trendData.xAxisSpanCount,
         )
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))

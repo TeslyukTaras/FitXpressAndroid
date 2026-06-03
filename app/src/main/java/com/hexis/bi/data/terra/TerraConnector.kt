@@ -69,6 +69,7 @@ class TerraConnector(
             CustomPermissions.ACTIVITY_SUMMARY,
             CustomPermissions.OXYGEN_SATURATION,
             CustomPermissions.RESPIRATORY_RATE,
+            CustomPermissions.VO2MAX,
         )
     }
 }

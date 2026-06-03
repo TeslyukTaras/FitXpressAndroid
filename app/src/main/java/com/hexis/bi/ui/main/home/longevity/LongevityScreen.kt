@@ -44,6 +44,8 @@ fun LongevityScreen(
     viewModel: LongevityViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
 
     LightStatusBarIcons()
 
@@ -58,6 +60,9 @@ fun LongevityScreen(
                     )
                     .darkScreenBackground(),
                 containerColor = Color.Transparent,
+                isLoading = isLoading,
+                error = error,
+                onDismissError = viewModel::clearError,
                 topBar = {
                     BaseTopBar(
                         title = stringResource(R.string.longevity_screen_title),

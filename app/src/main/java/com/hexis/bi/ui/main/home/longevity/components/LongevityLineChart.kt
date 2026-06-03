@@ -49,6 +49,7 @@ internal fun LongevityLineChart(
     axisLabels: List<String>,
     modifier: Modifier = Modifier,
     currentLabelIndex: Int = -1,
+    xAxisSpanCount: Int? = null,
 ) {
     val chartHeight = dimensionResource(R.dimen.longevity_chart_height)
     val gridStroke = dimensionResource(R.dimen.longevity_chart_grid_stroke)
@@ -107,7 +108,10 @@ internal fun LongevityLineChart(
                             strokeWidth = strokePx,
                         )
                         if (points.size >= 2) {
-                            drawSmoothLine(points, lineColor, lineStroke.toPx())
+                            // Spread points across the full span (e.g. 24 hours) when given, so a
+                            // partial series ends part-way; otherwise spread evenly across the width.
+                            val span = (xAxisSpanCount ?: points.size).coerceAtLeast(2)
+                            drawSmoothLine(points, lineColor, lineStroke.toPx(), span)
                         }
                     },
             )
@@ -152,9 +156,14 @@ private fun DrawScope.drawHorizontalGridLines(
     }
 }
 
-private fun DrawScope.drawSmoothLine(points: List<Float>, color: Color, strokeWidthPx: Float) {
+private fun DrawScope.drawSmoothLine(
+    points: List<Float>,
+    color: Color,
+    strokeWidthPx: Float,
+    xSpan: Int,
+) {
     val coords = points.mapIndexed { index, value ->
-        val x = index.toFloat() / (points.size - 1) * size.width
+        val x = index.toFloat() / (xSpan - 1) * size.width
         val y = size.height * mapValueToFraction(value)
         Offset(x, y)
     }

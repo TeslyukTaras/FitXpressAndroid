@@ -8,4 +8,6 @@ data class ActivitySummary(
     val distanceKm: Float,
     val activeCalories: Int,
     val hourlySteps: Map<Int, Int> = emptyMap(),
+    /** Cardio fitness in mL/min/kg from Terra `oxygen_data`; null when not reported. */
+    val vo2MaxMlPerMinPerKg: Float? = null,
 )
