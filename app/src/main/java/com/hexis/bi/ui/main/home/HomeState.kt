@@ -61,18 +61,20 @@ data class HomeState(
     val scan: ScanOverview = ScanOverview(),
     val recoveryScore: Int? = null,
     val longevityScore: Int? = null,
+    val paceOfAgingValue: String? = null,
+    val paceOfAgingScore: Int? = null,
 ) {
     /**
-     * The four "Body Intelligence" gauges. Recovery and Longevity are implemented, so they show their
-     * score (0 when there's no data yet); Physique Drift and Pace of Aging aren't built yet, so they
-     * show a "Coming" placeholder.
+     * The four "Body Intelligence" gauges. Recovery, Longevity and Pace of Aging are implemented, so
+     * they show their value (0 when there's no data yet); Physique Drift isn't built yet, so it shows
+     * a "Coming" placeholder.
      */
     val intelligenceScores: List<IntelligenceScoreData>
         get() = listOf(
             scoreGauge(IntelligenceScoreKey.RECOVERY, R.string.intelligence_recovery, recoveryScore),
             comingSoon(IntelligenceScoreKey.PHYSIQUE_DRIFT, R.string.intelligence_physique_drift),
             scoreGauge(IntelligenceScoreKey.LONGEVITY, R.string.intelligence_longevity, longevityScore),
-            comingSoon(IntelligenceScoreKey.PACE_OF_AGING, R.string.intelligence_pace_of_aging),
+            paceGauge(),
         )
 
     private fun scoreGauge(key: IntelligenceScoreKey, @StringRes titleRes: Int, score: Int?): IntelligenceScoreData {
@@ -81,6 +83,16 @@ data class HomeState(
             key = key,
             titleRes = titleRes,
             value = clamped.toString(),
+            fraction = clamped / IntelligenceConstants.MAX_SCORE,
+        )
+    }
+
+    private fun paceGauge(): IntelligenceScoreData {
+        val clamped = (paceOfAgingScore ?: 0).coerceIn(0, IntelligenceConstants.MAX_SCORE_INT)
+        return IntelligenceScoreData(
+            key = IntelligenceScoreKey.PACE_OF_AGING,
+            titleRes = R.string.intelligence_pace_of_aging,
+            value = paceOfAgingValue ?: 0.toString(),
             fraction = clamped / IntelligenceConstants.MAX_SCORE,
         )
     }

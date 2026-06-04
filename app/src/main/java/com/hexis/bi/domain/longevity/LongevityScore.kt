@@ -43,22 +43,23 @@ fun computeLongevityScore(inputs: LongevityInputs): Int? {
     return (weighted / totalWeight).roundToInt().coerceIn(0, 100)
 }
 
-private fun hrvScore(ms: Int): Float =
+// Per-signal 0–100 normalisations, shared with the Pace of Aging formula.
+internal fun hrvScore(ms: Int): Float =
     linearScore(ms.toFloat(), LongevityConstants.HRV_SCORE_AT_ZERO_MS, LongevityConstants.HRV_SCORE_AT_HUNDRED_MS)
 
-private fun rhrScore(bpm: Int): Float =
+internal fun rhrScore(bpm: Int): Float =
     linearScore(bpm.toFloat(), LongevityConstants.RHR_SCORE_AT_ZERO_BPM, LongevityConstants.RHR_SCORE_AT_HUNDRED_BPM)
 
-private fun activityScore(steps: Int): Float =
+internal fun activityScore(steps: Int): Float =
     linearScore(steps.toFloat(), LongevityConstants.ACTIVITY_SCORE_AT_ZERO_STEPS, LongevityConstants.ACTIVITY_SCORE_AT_HUNDRED_STEPS)
 
-private fun bodyFatScore(percent: Float): Float =
+internal fun bodyFatScore(percent: Float): Float =
     linearScore(percent, LongevityConstants.BODY_FAT_SCORE_AT_ZERO_PERCENT, LongevityConstants.BODY_FAT_SCORE_AT_HUNDRED_PERCENT)
 
-private fun waistScore(ratio: Float): Float =
+internal fun waistScore(ratio: Float): Float =
     linearScore(ratio, LongevityConstants.WAIST_HEIGHT_SCORE_AT_ZERO, LongevityConstants.WAIST_HEIGHT_SCORE_AT_HUNDRED)
 
-private fun vo2Score(value: Float): Float =
+internal fun vo2Score(value: Float): Float =
     linearScore(value, LongevityConstants.VO2_SCORE_AT_ZERO, LongevityConstants.VO2_SCORE_AT_HUNDRED)
 
 /** Maps [value] to 0–100, linear between [atZero] and [atHundred]; handles inverted scales. */
