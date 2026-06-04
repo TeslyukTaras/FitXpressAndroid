@@ -3,6 +3,7 @@ package com.hexis.bi.data.sleep
 import com.hexis.bi.data.terra.TerraApi
 import com.hexis.bi.data.terra.TerraRangeJsonFetcher
 import com.hexis.bi.data.terra.TerraRestSourceResolver
+import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.data.terra.TtlCache
 import com.hexis.bi.data.terra.fetchMergedFromAllSources
 import com.hexis.bi.utils.constants.TerraCacheConstants
@@ -24,6 +25,7 @@ class TerraApiSleepRepository(
 
     private val rangeCache = TtlCache<Pair<LocalDate, LocalDate>, List<SleepSession>>(
         ttlMs = TerraCacheConstants.RANGE_CACHE_TTL_MS,
+        generation = { TerraSdkSync.syncGeneration },
     )
 
     override suspend fun getSessionForNight(date: LocalDate): Result<SleepSession?> =
@@ -55,8 +57,6 @@ class TerraApiSleepRepository(
             }
         }.onSuccess { rangeCache.put(key, it) }
     }
-
-    override suspend fun invalidate() = rangeCache.clear()
 
     private suspend fun fetchJsonForUser(
         terraUserId: String,

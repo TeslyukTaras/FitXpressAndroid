@@ -4,6 +4,7 @@ import com.hexis.bi.data.activity.ActivityRepository
 import com.hexis.bi.data.activity.ActivitySummary
 import com.hexis.bi.data.sleep.SleepRepository
 import com.hexis.bi.data.sleep.SleepSession
+import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.data.terra.TtlCache
 import com.hexis.bi.utils.constants.RecoveryConstants
 import com.hexis.bi.utils.constants.SleepConstants
@@ -22,9 +23,11 @@ class TerraDerivedRecoveryRepository(
 
     private val rangeCache = TtlCache<Pair<LocalDate, LocalDate>, List<RecoverySnapshot>>(
         ttlMs = TerraCacheConstants.RANGE_CACHE_TTL_MS,
+        generation = { TerraSdkSync.syncGeneration },
     )
     private val dayCache = TtlCache<LocalDate, CachedRecoverySnapshot>(
         ttlMs = TerraCacheConstants.RANGE_CACHE_TTL_MS,
+        generation = { TerraSdkSync.syncGeneration },
     )
 
     override suspend fun getSnapshotForDate(date: LocalDate): Result<RecoverySnapshot?> =
@@ -66,15 +69,6 @@ class TerraDerivedRecoveryRepository(
         val snapshots = days.mapNotNull { cachedByDate[it]?.snapshot }
         rangeCache.put(key, snapshots)
         return Result.success(snapshots)
-    }
-
-    /**
-     * Clears only the derived caches. The underlying [sleepRepository] / [activityRepository] are
-     * the same singletons the caller invalidates directly, so they aren't re-invalidated here.
-     */
-    override suspend fun invalidate() {
-        rangeCache.clear()
-        dayCache.clear()
     }
 
     private suspend fun fetchSnapshotsForRange(

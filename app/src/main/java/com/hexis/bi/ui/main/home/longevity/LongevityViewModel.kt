@@ -144,9 +144,7 @@ class LongevityViewModel(
         val weeklyLabels = days.map { it.dayOfMonth.toString() }
         val weekRangeLabel = "${days.first().format(MONTH_DAY)} - ${days.last().format(MONTH_DAY)}"
 
-        val score = dayScore(today)
-            ?: days.reversed().firstNotNullOfOrNull { dayScore(it) }
-            ?: 0
+        val score = currentLongevityScore(days, recovery, activity, latestScan, heightCm)
 
         // Daily tab: intraday "current longevity". Steps accrue hour by hour (real hourly data),
         // while the overnight signals (HRV, RHR, sleep) and body fat stay constant for the day,

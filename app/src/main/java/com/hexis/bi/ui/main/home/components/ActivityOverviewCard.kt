@@ -15,7 +15,6 @@ import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
 import com.hexis.bi.ui.dark.BodyGlassCard
 import com.hexis.bi.ui.main.home.ActivityOverview
-import com.hexis.bi.ui.theme.MiniTextStyle
 
 @Composable
 internal fun ActivityOverviewCard(
@@ -58,12 +57,12 @@ internal fun ActivityOverviewCard(
         ) {
             Text(
                 text = stringResource(R.string.home_activity_start_label),
-                style = MiniTextStyle,
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.secondary,
             )
             Text(
                 text = stringResource(R.string.home_activity_end_label),
-                style = MiniTextStyle,
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.secondary,
             )
         }

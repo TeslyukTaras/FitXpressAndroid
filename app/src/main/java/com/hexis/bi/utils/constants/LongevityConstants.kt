@@ -3,6 +3,9 @@ package com.hexis.bi.utils.constants
 internal object LongevityConstants {
     const val MAX_SCORE = 100f
 
+    /** Days of history the current score scans (newest day with data wins); also the Weekly tab span. */
+    const val SCORE_WINDOW_DAYS = 7
+
     /** Y-axis grid values for the longevity trend chart (bottom to top). */
     val GRID_LINES = listOf(0f, 25f, 70f, 100f)
 

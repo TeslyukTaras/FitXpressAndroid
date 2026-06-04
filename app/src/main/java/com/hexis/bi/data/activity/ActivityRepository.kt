@@ -9,7 +9,4 @@ interface ActivityRepository {
         start: LocalDate,
         end: LocalDate,
     ): Result<List<ActivitySummary>>
-
-    /** Drops cached summaries so the next read re-fetches — call after a Terra sync lands new data. */
-    suspend fun invalidate()
 }

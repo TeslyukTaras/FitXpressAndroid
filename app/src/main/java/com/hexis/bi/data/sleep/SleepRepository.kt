@@ -9,7 +9,4 @@ interface SleepRepository {
         start: LocalDate,
         end: LocalDate,
     ): Result<List<SleepSession>>
-
-    /** Drops cached sessions so the next read re-fetches — call after a Terra sync lands new data. */
-    suspend fun invalidate()
 }

@@ -16,11 +16,11 @@ import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.body.BodyMeasurementKeys
 import com.hexis.bi.domain.body.BodyMeasurementRegion
-import com.hexis.bi.domain.longevity.LongevityInputs
-import com.hexis.bi.domain.longevity.computeLongevityScore
 import com.hexis.bi.domain.suit.SuitRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.base.UiEvent
+import com.hexis.bi.ui.main.home.longevity.currentLongevityScore
+import com.hexis.bi.ui.main.home.longevity.longevityScoreWindow
 import com.hexis.bi.ui.main.scan.results.MeasurementChange
 import com.hexis.bi.utils.calculateAge
 import com.hexis.bi.utils.cmToInches
@@ -39,7 +39,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -68,10 +67,7 @@ class HomeViewModel(
     private val _state = MutableStateFlow(HomeState())
     val state = _state.asStateFlow()
 
-    /**
-     * Pokes the overview pipeline. Replay-less: a poke before the collector is active is covered by
-     * the next Home RESUME, which always pokes again.
-     */
+    /** Pokes the overview pipeline; replay-less since every Home RESUME re-pokes. */
     private val refreshTrigger = MutableSharedFlow<Unit>(
         extraBufferCapacity = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST,
@@ -135,86 +131,73 @@ class HomeViewModel(
             .catch { setError(it.message) }
             .launchIn(viewModelScope)
 
-        // Single reactive pipeline for the overview cards. A poke (Home RESUME / manual) reads
-        // through the 60s repo caches; a Terra sync emits on dataSynced and forces a fresh read so
-        // newly-synced data shows without the user leaving the screen.
-        merge(
-            refreshTrigger.map { false },
-            TerraSdkSync.dataSynced.map { true },
-        )
-            .onEach { forceFresh -> reloadOverview(forceFresh) }
+        // A poke (RESUME/manual) reads through the repo caches; a Terra sync (dataSynced) bumps the
+        // cache generation, so the same read transparently refetches the just-synced data.
+        merge(refreshTrigger, TerraSdkSync.dataSynced)
+            .onEach { reloadOverview() }
             .launchIn(viewModelScope)
     }
 
-    /**
-     * Pokes the overview pipeline to re-derive every card. Call when Home is shown so values
-     * refresh after returning from a detail screen; a Terra sync refreshes them automatically.
-     */
+    /** Re-derives every overview card. Called on each Home RESUME; Terra syncs also trigger it. */
     fun refreshOverview() {
         refreshTrigger.tryEmit(Unit)
     }
 
     /**
-     * Re-derives last night's sleep, today's activity, recovery, the latest scan and the longevity
-     * score from a **single** consistent read, then commits them in one state update. Recovery and
-     * longevity share the same fetched snapshot, and activity feeds both its own card and longevity,
-     * so the cards can no longer drift apart.
-     *
-     * @param forceFresh true after a Terra sync — invalidates the 60s repo caches so the read
-     * reflects the data that was just pulled rather than a pre-sync cached value.
+     * Re-derives all overview cards from one consistent read so recovery, activity and the longevity
+     * score (which shares their data) can't drift apart. Errors degrade the affected card to its
+     * empty state rather than blocking the screen — individual reads already return null on failure.
      */
-    private suspend fun reloadOverview(forceFresh: Boolean) {
+    private suspend fun reloadOverview() {
         try {
             terraManagerHolder.awaitCurrentOrTimeout()
-            if (forceFresh) {
-                sleepRepository.invalidate()
-                activityRepository.invalidate()
-                recoveryRepository.invalidate()
-            }
             coroutineScope {
                 val today = LocalDate.now()
+                val window = longevityScoreWindow(today)
+                val windowStart = window.first()
+
                 val profileDeferred = async { userRepository.getUser().getOrNull() }
                 val sleepDeferred = async { sleepRepository.getSessionForNight(today).getOrNull() }
-                val activityDeferred = async { activityRepository.getSummaryForDate(today).getOrNull() }
-                val recoveryDeferred = async { recoveryRepository.getSnapshotForDate(today).getOrNull() }
+                // The longevity window doubles as the source for today's recovery + activity cards.
+                val recoveryDeferred = async {
+                    recoveryRepository.getSnapshotsForRange(windowStart, today).getOrNull().orEmpty()
+                }
+                val activityDeferred = async {
+                    activityRepository.getSummariesForRange(windowStart, today).getOrNull().orEmpty()
+                }
                 // LIST_SUMMARY carries the circumference subdoc — all the key-change + trend need.
                 val scanListDeferred = async {
                     scanHistoryRepository
                         .getRecentScans(SCAN_TREND_LIMIT, ScanFetchProjection.LIST_SUMMARY)
                         .getOrNull()
                 }
-                // FULL latest scan: longevity needs fatPercentage, which LIST_SUMMARY omits.
-                val latestFullScanDeferred = async {
-                    scanHistoryRepository.getRecentScans(limit = 1L).getOrNull()?.firstOrNull()
-                }
 
                 val profile = profileDeferred.await()
                 val isMetric = profile?.unitSystem.isMetricUnitSystem()
+                val heightCm = profile?.heightCm?.toFloat()
                 val sleepSession = sleepDeferred.await()
-                val activitySummary = activityDeferred.await()
-                val recoverySnapshot = recoveryDeferred.await()
+                val recovery = recoveryDeferred.await()
+                val activity = activityDeferred.await()
                 val scans = scanListDeferred.await()
-                val latestFullScan = latestFullScanDeferred.await()
+                // Body fat/waist for longevity come from the same scan the card shows as latest, so a
+                // scan landing mid-read can't make the gauge and the card disagree. FULL adds the
+                // fatPercentage that LIST_SUMMARY omits.
+                val latestFullScan = scans?.firstOrNull()?.id?.let {
+                    scanHistoryRepository.getScanRecordById(it).getOrNull()
+                }
 
-                val steps = (activitySummary?.steps ?: 0).coerceAtLeast(0)
-                val hourlySteps = activitySummary?.let { s ->
+                val todayActivity = activity.firstOrNull { it.date == today }
+                val todayRecovery = recovery.firstOrNull { it.date == today }
+                val steps = (todayActivity?.steps ?: 0).coerceAtLeast(0)
+                val hourlySteps = todayActivity?.let { s ->
                     (0 until ActivityConstants.HOURS_IN_DAY).map { (s.hourlySteps[it] ?: 0).toFloat() }
                 }.orEmpty()
-                val scanDate = scans?.getOrNull(0)?.let {
+                val scanDate = scans?.firstOrNull()?.let {
                     SimpleDateFormat(DateFormatConstants.SHORT_MONTH_DAY, Locale.getDefault())
                         .format(Date(it.timestamp))
                 }
-                val longevityScore = computeLongevityScore(
-                    LongevityInputs(
-                        hrvMs = recoverySnapshot?.hrvMs,
-                        restingHeartRateBpm = recoverySnapshot?.restingHeartRateBpm,
-                        sleepScore = recoverySnapshot?.sleepScore,
-                        steps = activitySummary?.steps,
-                        bodyFatPercent = latestFullScan?.fatPercentage,
-                        waistToHeightRatio = waistToHeightRatio(latestFullScan, profile?.heightCm?.toFloat()),
-                        vo2Max = activitySummary?.vo2MaxMlPerMinPerKg,
-                    )
-                )
+                val longevityScore =
+                    currentLongevityScore(window, recovery, activity, latestFullScan, heightCm)
 
                 _state.update {
                     it.copy(
@@ -226,7 +209,7 @@ class HomeViewModel(
                             steps = formatSteps(steps),
                             hourlySteps = hourlySteps,
                         ),
-                        recoveryScore = (recoverySnapshot?.score ?: 0).coerceAtLeast(0),
+                        recoveryScore = (todayRecovery?.score ?: 0).coerceAtLeast(0),
                         scan = buildScanOverview(scans, isMetric),
                         latestScanDate = scanDate,
                         longevityScore = longevityScore,
@@ -238,14 +221,6 @@ class HomeViewModel(
         } catch (e: Exception) {
             setError(e.message)
         }
-    }
-
-    private fun waistToHeightRatio(scan: ScanRecord?, heightCm: Float?): Float? {
-        val height = heightCm?.takeIf { it > 0f } ?: return null
-        val waist = scan?.let {
-            BodyMeasurementKeys.valueFor(it.measurements, BodyMeasurementRegion.Waist)
-        } ?: return null
-        return waist / height
     }
 
     private fun buildScanOverview(scans: List<ScanRecord>?, isMetric: Boolean): ScanOverview {

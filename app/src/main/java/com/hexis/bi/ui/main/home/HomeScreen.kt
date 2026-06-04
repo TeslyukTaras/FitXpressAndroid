@@ -61,8 +61,7 @@ fun HomeScreen(
 
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(lifecycleOwner) {
-        // Refresh on every return to Home (not just first composition) so values reflect detail-screen
-        // edits and background syncs. Terra syncs also push updates via the ViewModel's pipeline.
+        // Refresh on every return to Home (not just first composition); Terra syncs also push updates.
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             viewModel.refreshOverview()
         }

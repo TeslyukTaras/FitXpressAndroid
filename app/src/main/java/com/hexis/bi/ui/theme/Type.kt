@@ -195,12 +195,3 @@ internal val TitleDimTextStyle = TextStyle(
     letterSpacing = 0.sp,
     fontFeatureSettings = "lnum,pnum",
 )
-
-internal val MiniTextStyle = TextStyle(
-    fontFamily = Urbanist,
-    fontWeight = FontWeight.Normal,
-    fontSize = 9.sp,
-    lineHeight = 9.sp,
-    letterSpacing = 0.sp,
-    fontFeatureSettings = "lnum,pnum",
-)

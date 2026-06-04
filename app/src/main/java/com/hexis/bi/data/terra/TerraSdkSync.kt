@@ -13,6 +13,7 @@ import timber.log.Timber
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Date
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.coroutines.resume
 
 /**
@@ -28,13 +29,18 @@ object TerraSdkSync {
     private const val DEFAULT_LOOKBACK_DAYS = 30L
 
     /**
-     * Emits once each time a pull actually lands fresh data in Terra REST (i.e. whenever
-     * [syncLinkedConnections] returns true). Screens observe this to reload their overview without
-     * the user having to leave and re-enter — the "new data arrived" push the REST repos can't
-     * provide on their own. Process-wide, no replay: it's a transient event, not state.
+     * Emits whenever a pull lands fresh data ([syncLinkedConnections] returns true) so screens can
+     * reload without leaving and re-entering. Process-wide, no replay — a transient event, not state.
      */
     private val _dataSynced = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val dataSynced: SharedFlow<Unit> = _dataSynced.asSharedFlow()
+
+    /**
+     * Monotonic counter bumped each time a pull lands. [TtlCache] keys entries on it so reads after a
+     * sync miss the stale value and refetch, even if the [dataSynced] emission was missed.
+     */
+    private val generation = AtomicLong(0L)
+    val syncGeneration: Long get() = generation.get()
 
     /**
      * @param force skips the foreground debounce (e.g. right after a successful `initConnection`).
@@ -78,6 +84,8 @@ object TerraSdkSync {
                 )
             }
         }
+        // Bump the generation before notifying so a reload triggered by dataSynced reads fresh.
+        generation.incrementAndGet()
         _dataSynced.tryEmit(Unit)
         return true
     }

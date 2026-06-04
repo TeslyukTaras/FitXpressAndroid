@@ -63,32 +63,27 @@ data class HomeState(
     val longevityScore: Int? = null,
 ) {
     /**
-     * The four "Body Intelligence" gauges. Recovery reflects the loaded score; the rest show a
-     * "Coming" placeholder until their data sources land (no mock values).
+     * The four "Body Intelligence" gauges. Recovery and Longevity are implemented, so they show their
+     * score (0 when there's no data yet); Physique Drift and Pace of Aging aren't built yet, so they
+     * show a "Coming" placeholder.
      */
     val intelligenceScores: List<IntelligenceScoreData>
-        get() {
-            val recovery = (recoveryScore ?: 0).coerceIn(0, IntelligenceConstants.MAX_SCORE_INT)
-            return listOf(
-                IntelligenceScoreData(
-                    key = IntelligenceScoreKey.RECOVERY,
-                    titleRes = R.string.intelligence_recovery,
-                    value = recovery.toString(),
-                    fraction = recovery / IntelligenceConstants.MAX_SCORE,
-                ),
-                comingSoon(IntelligenceScoreKey.PHYSIQUE_DRIFT, R.string.intelligence_physique_drift),
-                longevityScore?.let { score ->
-                    val clamped = score.coerceIn(0, IntelligenceConstants.MAX_SCORE_INT)
-                    IntelligenceScoreData(
-                        key = IntelligenceScoreKey.LONGEVITY,
-                        titleRes = R.string.intelligence_longevity,
-                        value = clamped.toString(),
-                        fraction = clamped / IntelligenceConstants.MAX_SCORE,
-                    )
-                } ?: comingSoon(IntelligenceScoreKey.LONGEVITY, R.string.intelligence_longevity),
-                comingSoon(IntelligenceScoreKey.PACE_OF_AGING, R.string.intelligence_pace_of_aging),
-            )
-        }
+        get() = listOf(
+            scoreGauge(IntelligenceScoreKey.RECOVERY, R.string.intelligence_recovery, recoveryScore),
+            comingSoon(IntelligenceScoreKey.PHYSIQUE_DRIFT, R.string.intelligence_physique_drift),
+            scoreGauge(IntelligenceScoreKey.LONGEVITY, R.string.intelligence_longevity, longevityScore),
+            comingSoon(IntelligenceScoreKey.PACE_OF_AGING, R.string.intelligence_pace_of_aging),
+        )
+
+    private fun scoreGauge(key: IntelligenceScoreKey, @StringRes titleRes: Int, score: Int?): IntelligenceScoreData {
+        val clamped = (score ?: 0).coerceIn(0, IntelligenceConstants.MAX_SCORE_INT)
+        return IntelligenceScoreData(
+            key = key,
+            titleRes = titleRes,
+            value = clamped.toString(),
+            fraction = clamped / IntelligenceConstants.MAX_SCORE,
+        )
+    }
 
     private fun comingSoon(key: IntelligenceScoreKey, @StringRes titleRes: Int) =
         IntelligenceScoreData(
