@@ -22,6 +22,7 @@ data class TopChangeVsPrevious(
     @StringRes val bodyPartRes: Int,
     val deltaCm: Float,
     val change: MeasurementChange?,
+    val region: BodyMeasurementRegion,
 )
 
 object MeasurementMapper {
@@ -116,6 +117,7 @@ object MeasurementMapper {
             bodyPartRes = bodyPartRes(region),
             deltaCm = bestDelta,
             change = classifyChange(bestDelta, region.decreaseIsPositive),
+            region = region,
         )
     }
 

@@ -4,22 +4,24 @@ import android.app.Application
 import androidx.lifecycle.viewModelScope
 import com.hexis.bi.R
 import com.hexis.bi.data.activity.ActivityRepository
-import com.hexis.bi.data.activity.ActivitySummary
 import com.hexis.bi.data.notification.NotificationInboxRepository
 import com.hexis.bi.data.recovery.RecoveryRepository
-import com.hexis.bi.data.recovery.RecoverySnapshot
 import com.hexis.bi.data.scan.MeasurementMapper
 import com.hexis.bi.data.scan.ScanFetchProjection
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanRecord
 import com.hexis.bi.data.sleep.SleepRepository
-import com.hexis.bi.data.sleep.SleepSession
 import com.hexis.bi.data.terra.TerraManagerHolder
+import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.data.user.UserRepository
+import com.hexis.bi.domain.body.BodyMeasurementKeys
+import com.hexis.bi.domain.body.BodyMeasurementRegion
 import com.hexis.bi.domain.suit.SuitRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.base.UiEvent
-import com.hexis.bi.ui.main.home.recovery.RecoveryStatus
+import com.hexis.bi.ui.main.home.longevity.currentLongevityScore
+import com.hexis.bi.ui.main.home.longevity.longevityScoreWindow
+import com.hexis.bi.ui.main.scan.results.MeasurementChange
 import com.hexis.bi.utils.calculateAge
 import com.hexis.bi.utils.cmToInches
 import com.hexis.bi.utils.constants.ActivityConstants
@@ -27,15 +29,19 @@ import com.hexis.bi.utils.constants.DateFormatConstants
 import com.hexis.bi.utils.constants.SleepConstants
 import com.hexis.bi.utils.inchesToFeetAndInches
 import com.hexis.bi.utils.isMetricUnitSystem
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.Date
@@ -58,25 +64,14 @@ class HomeViewModel(
     notificationInbox: NotificationInboxRepository,
 ) : BaseViewModel(application) {
 
-    private val _state = MutableStateFlow(
-        HomeState(
-            sleepGoalHours = SleepConstants.DEFAULT_SLEEP_GOAL_HOURS,
-            activityGoalSteps = ActivityConstants.DEFAULT_STEP_GOAL,
-            overviewCards = buildOverviewCards(
-                HomeOverviewDefaults.placeholderSleepCard(
-                    appContext,
-                    SleepConstants.DEFAULT_SLEEP_GOAL_HOURS,
-                ),
-                HomeOverviewDefaults.placeholderActivityCard(
-                    appContext,
-                    ActivityConstants.DEFAULT_STEP_GOAL,
-                ),
-                HomeOverviewDefaults.placeholderRecoveryCard(appContext),
-                HomeOverviewDefaults.placeholderScanCard(appContext),
-            ),
-        ),
-    )
+    private val _state = MutableStateFlow(HomeState())
     val state = _state.asStateFlow()
+
+    /** Pokes the overview pipeline; replay-less since every Home RESUME re-pokes. */
+    private val refreshTrigger = MutableSharedFlow<Unit>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
 
     init {
         combine(
@@ -110,14 +105,12 @@ class HomeViewModel(
                                 val (ft, inches) = it.inchesToFeetAndInches()
                                 appContext.getString(R.string.unit_height_ft_in, ft, inches)
                             },
-                        age = profile.dateOfBirth?.calculateAge()
-                            ?.let { appContext.getString(R.string.unit_age_years, it) },
+                        age = profile.dateOfBirth?.calculateAge()?.toString(),
                         sleepGoalHours = goalHours,
                         activityGoalSteps = activityGoalSteps,
+                        sleep = current.sleep.copy(goalHours = goalHours),
                     )
                 }
-                patchSleepOverviewGoalSubtitle(goalHours)
-                patchActivityOverviewGoalSubtitle(activityGoalSteps)
             }
             .catch { setError(it.message) }
             .launchIn(viewModelScope)
@@ -137,209 +130,109 @@ class HomeViewModel(
             }
             .catch { setError(it.message) }
             .launchIn(viewModelScope)
+
+        // A poke (RESUME/manual) reads through the repo caches; a Terra sync (dataSynced) bumps the
+        // cache generation, so the same read transparently refetches the just-synced data.
+        merge(refreshTrigger, TerraSdkSync.dataSynced)
+            .onEach { reloadOverview() }
+            .launchIn(viewModelScope)
     }
 
-    /**
-     * Updates only the sleep card subtitle when sleepGoalHours changes from Firestore settings,
-     * without re-hitting Terra REST for duration.
-     */
-    private fun patchSleepOverviewGoalSubtitle(goalHours: Int) {
-        val subtitle = appContext.getString(R.string.home_sleep_goal, goalHours.toString())
-        _state.update { s ->
-            val current = s.overviewCards.getOrNull(OVERVIEW_SLEEP_INDEX) ?: return@update s
-            if (current.subtitle == subtitle) return@update s
-            s.copy(
-                overviewCards = s.overviewCards.replaced(
-                    OVERVIEW_SLEEP_INDEX,
-                    current.copy(subtitle = subtitle)
-                )
-            )
-        }
-    }
-
-    /**
-     * Updates only the activity card subtitle when [activityGoalSteps] changes from Firestore
-     * settings, without re-hitting Terra REST for today's steps.
-     */
-    private fun patchActivityOverviewGoalSubtitle(activityGoalSteps: Int) {
-        val subtitle = appContext.getString(
-            R.string.home_activity_goal,
-            HomeOverviewDefaults.formatSteps(activityGoalSteps),
-        )
-        _state.update { s ->
-            val current = s.overviewCards.getOrNull(OVERVIEW_ACTIVITY_INDEX) ?: return@update s
-            if (current.subtitle == subtitle) return@update s
-            s.copy(
-                overviewCards = s.overviewCards.replaced(
-                    OVERVIEW_ACTIVITY_INDEX,
-                    current.copy(subtitle = subtitle)
-                )
-            )
-        }
-    }
-
-    /**
-     * Loads last night's sleep duration and today's activity for the overview cards. Call when Home
-     * is shown so values refresh after returning from Sleep / Activity / Health Connect sync.
-     */
+    /** Re-derives every overview card. Called on each Home RESUME; Terra syncs also trigger it. */
     fun refreshOverview() {
-        viewModelScope.launch {
+        refreshTrigger.tryEmit(Unit)
+    }
+
+    /**
+     * Re-derives all overview cards from one consistent read so recovery, activity and the longevity
+     * score (which shares their data) can't drift apart. Errors degrade the affected card to its
+     * empty state rather than blocking the screen — individual reads already return null on failure.
+     */
+    private suspend fun reloadOverview() {
+        try {
             terraManagerHolder.awaitCurrentOrTimeout()
-            val sleepJob = async { loadSleepOverview() }
-            val activityJob = async { loadActivityOverview() }
-            val recoveryJob = async { loadRecoveryOverview() }
-            val scanJob = async { loadScanOverview() }
-            sleepJob.await()
-            activityJob.await()
-            recoveryJob.await()
-            scanJob.await()
+            coroutineScope {
+                val today = LocalDate.now()
+                val window = longevityScoreWindow(today)
+                val windowStart = window.first()
+
+                val profileDeferred = async { userRepository.getUser().getOrNull() }
+                val sleepDeferred = async { sleepRepository.getSessionForNight(today).getOrNull() }
+                // The longevity window doubles as the source for today's recovery + activity cards.
+                val recoveryDeferred = async {
+                    recoveryRepository.getSnapshotsForRange(windowStart, today).getOrNull().orEmpty()
+                }
+                val activityDeferred = async {
+                    activityRepository.getSummariesForRange(windowStart, today).getOrNull().orEmpty()
+                }
+                // LIST_SUMMARY carries the circumference subdoc — all the key-change + trend need.
+                val scanListDeferred = async {
+                    scanHistoryRepository
+                        .getRecentScans(SCAN_TREND_LIMIT, ScanFetchProjection.LIST_SUMMARY)
+                        .getOrNull()
+                }
+
+                val profile = profileDeferred.await()
+                val isMetric = profile?.unitSystem.isMetricUnitSystem()
+                val heightCm = profile?.heightCm?.toFloat()
+                val sleepSession = sleepDeferred.await()
+                val recovery = recoveryDeferred.await()
+                val activity = activityDeferred.await()
+                val scans = scanListDeferred.await()
+                // Body fat/waist for longevity come from the same scan the card shows as latest, so a
+                // scan landing mid-read can't make the gauge and the card disagree. FULL adds the
+                // fatPercentage that LIST_SUMMARY omits.
+                val latestFullScan = scans?.firstOrNull()?.id?.let {
+                    scanHistoryRepository.getScanRecordById(it).getOrNull()
+                }
+
+                val todayActivity = activity.firstOrNull { it.date == today }
+                val todayRecovery = recovery.firstOrNull { it.date == today }
+                val steps = (todayActivity?.steps ?: 0).coerceAtLeast(0)
+                val hourlySteps = todayActivity?.let { s ->
+                    (0 until ActivityConstants.HOURS_IN_DAY).map { (s.hourlySteps[it] ?: 0).toFloat() }
+                }.orEmpty()
+                val scanDate = scans?.firstOrNull()?.let {
+                    SimpleDateFormat(DateFormatConstants.SHORT_MONTH_DAY, Locale.getDefault())
+                        .format(Date(it.timestamp))
+                }
+                val longevityScore =
+                    currentLongevityScore(window, recovery, activity, latestFullScan, heightCm)
+
+                _state.update {
+                    it.copy(
+                        sleep = it.sleep.copy(
+                            durationMinutes = (sleepSession?.durationMinutes ?: 0).coerceAtLeast(0),
+                            goalHours = it.sleepGoalHours,
+                        ),
+                        activity = ActivityOverview(
+                            steps = formatSteps(steps),
+                            hourlySteps = hourlySteps,
+                        ),
+                        recoveryScore = (todayRecovery?.score ?: 0).coerceAtLeast(0),
+                        scan = buildScanOverview(scans, isMetric),
+                        latestScanDate = scanDate,
+                        longevityScore = longevityScore,
+                    )
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            setError(e.message)
         }
     }
 
-    private suspend fun loadSleepOverview() {
-        val goalHours = _state.value.sleepGoalHours
-        val goalSubtitle = appContext.getString(R.string.home_sleep_goal, goalHours.toString())
-
-        sleepRepository.getSessionForNight(LocalDate.now()).fold(
-            onSuccess = { session ->
-                val card = session.toSleepOverviewCard(goalSubtitle)
-                _state.update {
-                    it.copy(
-                        overviewCards = it.overviewCards.replaced(
-                            OVERVIEW_SLEEP_INDEX,
-                            card
-                        )
-                    )
-                }
-            },
-            onFailure = {
-                val card = (null as SleepSession?).toSleepOverviewCard(goalSubtitle)
-                _state.update {
-                    it.copy(
-                        overviewCards = it.overviewCards.replaced(
-                            OVERVIEW_SLEEP_INDEX,
-                            card
-                        )
-                    )
-                }
-            },
+    private fun buildScanOverview(scans: List<ScanRecord>?, isMetric: Boolean): ScanOverview {
+        val latest = scans?.getOrNull(0) ?: return ScanOverview(
+            value = appContext.getString(R.string.stat_unknown),
+            subtitle = appContext.getString(R.string.home_scan_no_data),
         )
-    }
-
-    private suspend fun loadActivityOverview() {
-        val stepsGoal = _state.value.activityGoalSteps
-        val goalSubtitle = appContext.getString(
-            R.string.home_activity_goal,
-            HomeOverviewDefaults.formatSteps(stepsGoal),
-        )
-
-        activityRepository.getSummaryForDate(LocalDate.now()).fold(
-            onSuccess = { summary ->
-                val card = summary.toActivityOverviewCard(goalSubtitle)
-                _state.update {
-                    it.copy(
-                        overviewCards = it.overviewCards.replaced(
-                            OVERVIEW_ACTIVITY_INDEX,
-                            card
-                        )
-                    )
-                }
-            },
-            onFailure = {
-                val card = (null as ActivitySummary?).toActivityOverviewCard(goalSubtitle)
-                _state.update {
-                    it.copy(
-                        overviewCards = it.overviewCards.replaced(
-                            OVERVIEW_ACTIVITY_INDEX,
-                            card
-                        )
-                    )
-                }
-            },
-        )
-    }
-
-    private fun SleepSession?.toSleepOverviewCard(goalSubtitle: String): OverviewCardData {
-        val hours = (this?.durationMinutes ?: 0).coerceAtLeast(0) / 60f
-        return HomeOverviewDefaults.sleepCard(
-            context = appContext,
-            goalSubtitle = goalSubtitle,
-            value = HomeOverviewDefaults.formatSleepHours(hours),
-            valueLabel = appContext.getString(R.string.unit_hours_short),
-        )
-    }
-
-    private suspend fun loadRecoveryOverview() {
-        recoveryRepository.getSnapshotForDate(LocalDate.now()).fold(
-            onSuccess = { snapshot ->
-                val card = snapshot.toRecoveryOverviewCard()
-                _state.update {
-                    it.copy(
-                        overviewCards = it.overviewCards.replaced(
-                            OVERVIEW_RECOVERY_INDEX,
-                            card
-                        )
-                    )
-                }
-            },
-            onFailure = {
-                val card = (null as RecoverySnapshot?).toRecoveryOverviewCard()
-                _state.update {
-                    it.copy(
-                        overviewCards = it.overviewCards.replaced(
-                            OVERVIEW_RECOVERY_INDEX,
-                            card
-                        )
-                    )
-                }
-            },
-        )
-    }
-
-    private fun RecoverySnapshot?.toRecoveryOverviewCard(): OverviewCardData {
-        val score = (this?.score ?: 0).coerceAtLeast(0)
-        return HomeOverviewDefaults.recoveryCard(
-            context = appContext,
-            value = appContext.getString(R.string.home_recovery_score_value, score),
-            statusSubtitle = appContext.getString(RecoveryStatus.fromScore(score).labelRes),
-        )
-    }
-
-    private fun ActivitySummary?.toActivityOverviewCard(goalSubtitle: String): OverviewCardData {
-        val steps = (this?.steps ?: 0).coerceAtLeast(0)
-        return HomeOverviewDefaults.activityCard(
-            context = appContext,
-            goalSubtitle = goalSubtitle,
-            value = HomeOverviewDefaults.formatSteps(steps),
-            valueLabel = appContext.getString(R.string.home_activity_value_label),
-        )
-    }
-
-    private suspend fun loadScanOverview() {
-        val isMetric = userRepository.getUser().getOrNull()?.unitSystem.isMetricUnitSystem()
-        // LIST_SUMMARY carries the circumference subdoc, which is all topChangeVsPreviousScan needs.
-        val card = scanHistoryRepository
-            .getRecentScans(limit = 2L, projection = ScanFetchProjection.LIST_SUMMARY)
-            .map { scans -> buildScanCard(scans.getOrNull(0), scans.getOrNull(1), isMetric) }
-            .getOrElse { HomeOverviewDefaults.placeholderScanCard(appContext) }
-        _state.update {
-            it.copy(overviewCards = it.overviewCards.replaced(OVERVIEW_SCAN_INDEX, card))
-        }
-    }
-
-    private fun buildScanCard(
-        latest: ScanRecord?,
-        previous: ScanRecord?,
-        isMetric: Boolean,
-    ): OverviewCardData {
-        latest ?: return HomeOverviewDefaults.placeholderScanCard(appContext)
         val dateLabel = SimpleDateFormat(DateFormatConstants.SHORT_MONTH_DAY, Locale.getDefault())
             .format(Date(latest.timestamp))
-        val topChange = MeasurementMapper.topChangeVsPreviousScan(latest, previous)
-            ?: return HomeOverviewDefaults.scanCard(
-                context = appContext,
+        val topChange = MeasurementMapper.topChangeVsPreviousScan(latest, scans.getOrNull(1))
+            ?: return ScanOverview(
                 value = dateLabel,
-                valueLabel = null,
                 subtitle = appContext.getString(R.string.home_scan_last_scan),
             )
         val magnitude = abs(if (isMetric) topChange.deltaCm else topChange.deltaCm.cmToInches())
@@ -347,21 +240,25 @@ class HomeViewModel(
         val arrow = appContext.getString(
             if (topChange.deltaCm < 0f) R.string.home_scan_arrow_down else R.string.home_scan_arrow_up
         )
-        return HomeOverviewDefaults.scanCard(
-            context = appContext,
-            value = String.format(Locale.US, "%.1f %s", magnitude, unit),
+        return ScanOverview(
+            value = String.format(Locale.US, "%.1f", magnitude),
+            unit = unit,
             valueLabel = appContext.getString(
                 R.string.home_scan_change_label, arrow, appContext.getString(topChange.bodyPartRes),
             ),
             subtitle = appContext.getString(R.string.home_scan_key_change, dateLabel),
+            changePositive = topChange.change?.let { it == MeasurementChange.Positive },
+            trend = scanTrend(scans, topChange.region),
         )
     }
-}
 
-private fun List<OverviewCardData>.replaced(
-    index: Int,
-    card: OverviewCardData
-): List<OverviewCardData> {
-    if (index !in indices) return this
-    return toMutableList().also { it[index] = card }
+    /** Measurement values (oldest → newest) for the most-changed region, for the sparkline. */
+    private fun scanTrend(scans: List<ScanRecord>, region: BodyMeasurementRegion): List<Float> =
+        scans.reversed().mapNotNull { BodyMeasurementKeys.valueFor(it.measurements, region) }
+
+    private fun formatSteps(steps: Int): String = "%,d".format(steps.coerceAtLeast(0))
+
+    private companion object {
+        const val SCAN_TREND_LIMIT = 8L
+    }
 }

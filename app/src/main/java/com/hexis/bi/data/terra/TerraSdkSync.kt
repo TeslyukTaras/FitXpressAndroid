@@ -3,6 +3,9 @@ package com.hexis.bi.data.terra
 import android.os.SystemClock
 import co.tryterra.terra.TerraManager
 import co.tryterra.terra.enums.Connections
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -10,6 +13,7 @@ import timber.log.Timber
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Date
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.coroutines.resume
 
 /**
@@ -23,6 +27,20 @@ object TerraSdkSync {
 
     private const val FOREGROUND_DEBOUNCE_MS = 20L * 60L * 1000L
     private const val DEFAULT_LOOKBACK_DAYS = 30L
+
+    /**
+     * Emits whenever a pull lands fresh data ([syncLinkedConnections] returns true) so screens can
+     * reload without leaving and re-entering. Process-wide, no replay — a transient event, not state.
+     */
+    private val _dataSynced = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val dataSynced: SharedFlow<Unit> = _dataSynced.asSharedFlow()
+
+    /**
+     * Monotonic counter bumped each time a pull lands. [TtlCache] keys entries on it so reads after a
+     * sync miss the stale value and refetch, even if the [dataSynced] emission was missed.
+     */
+    private val generation = AtomicLong(0L)
+    val syncGeneration: Long get() = generation.get()
 
     /**
      * @param force skips the foreground debounce (e.g. right after a successful `initConnection`).
@@ -66,6 +84,9 @@ object TerraSdkSync {
                 )
             }
         }
+        // Bump the generation before notifying so a reload triggered by dataSynced reads fresh.
+        generation.incrementAndGet()
+        _dataSynced.tryEmit(Unit)
         return true
     }
 

@@ -10,6 +10,12 @@ internal val BodyGlassInk = Color(0x38030909)
 internal val BodyGlassHighlightTopStart = Color(0x5E1DC4B3)
 internal val BodyGlassHighlightBottomEnd = Color(0x4D1DC4B3)
 
+internal val PromoBannerStart = Color(0xA31DC4B3)
+internal val PromoBannerEnd = Color(0xA30B2020)
+
+internal val ActivityIdleBar = Color(0x29F6F6F6)
+internal val ScanSparklineMarkerFill = Color(0xFF173633)
+
 internal val DarkTextMuted = Color(0xFFAEB4BB)
 internal val DarkBorderMuted = Color(0x66AEB4BB)
 internal val SurfaceTranslucent = Color(0x4D090909)

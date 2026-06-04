@@ -19,6 +19,7 @@ import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import com.hexis.bi.R
+import com.hexis.bi.ui.theme.dark.DarkTheme
 
 @Composable
 fun AppAvatar(
@@ -30,7 +31,7 @@ fun AppAvatar(
         modifier = modifier
             .size(size)
             .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.secondaryFixed),
+            .background(DarkTheme.extendedColors.surfaceTranslucent),
         contentAlignment = Alignment.Center,
     ) {
         if (!imageUrl.isNullOrBlank()) AsyncImage(
@@ -47,7 +48,7 @@ fun AppAvatar(
         else Icon(
             painter = painterResource(R.drawable.ic_user),
             contentDescription = stringResource(R.string.cd_avatar),
-            tint = MaterialTheme.colorScheme.secondary,
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(dimensionResource(R.dimen.icon_large)),
         )
     }

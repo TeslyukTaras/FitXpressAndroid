@@ -143,24 +143,35 @@
 
     <!-- Home screen -->
     <string name="home_welcome">Welcome Back!</string>
+    <string name="home_latest_scan">Latest Scan · %1$s</string>
     <string name="home_stat_weight">Weight</string>
     <string name="home_stat_height">Height</string>
     <string name="home_stat_age">Age</string>
-    <string name="home_banner_title">Get more accurate measurements</string>
-    <string name="home_banner_body">Clearer results - better progress tracking.</string>
-    <string name="home_action_buy_suit">Buy suit</string>
+    <string name="home_banner_title">Smarter\nBody Scans</string>
+    <string name="home_banner_body">Your body knows before you do</string>
+    <string name="home_action_buy_suit">Buy Suit</string>
     <string name="home_overview_title">Overview</string>
     <string name="home_intelligence_scores_title">Intelligence Scores</string>
+    <string name="home_intelligence_title">Body Intelligence</string>
+    <string name="intelligence_recovery">Recovery</string>
+    <string name="intelligence_physique_drift">Physique Drift</string>
+    <string name="intelligence_longevity">Longevity</string>
+    <string name="intelligence_pace_of_aging">Pace Of Aging</string>
+    <string name="intelligence_coming">Coming</string>
     <string name="home_card_sleep">Sleep</string>
+    <string name="home_card_activity">Activity</string>
     <string name="home_card_activity_score">Activity Score</string>
     <string name="home_card_recovery">Recovery</string>
+    <!-- Activity mini bar chart day-range labels. -->
+    <string name="home_activity_start_label">12 am</string>
+    <string name="home_activity_end_label">11:59 pm</string>
     <string name="home_recovery_score_value">%1$d/100</string>
     <string name="home_card_scan">Scan</string>
     <!-- Home "Scan" overview card. -->
     <string name="home_scan_no_data">No scans yet</string>
     <string name="home_scan_last_scan">Last scan</string>
-    <!-- Subtitle with the scan date, e.g. "Dec 15 • Key change". -->
-    <string name="home_scan_key_change">%1$s • Key change</string>
+    <!-- Subtitle with the scan date, e.g. "Key Change · Dec 15". -->
+    <string name="home_scan_key_change">Key Change · %1$s</string>
     <!-- valueLabel: arrow + body part, e.g. "↓ Mid Waist". -->
     <string name="home_scan_change_label">%1$s %2$s</string>
     <string name="home_scan_arrow_down">↓</string>
@@ -284,6 +295,7 @@
     <string name="health_provider_google_health">Google Health</string>
     <string name="health_provider_apple_health">Apple Health</string>
     <string name="unit_hours_short">h</string>
+    <string name="unit_minutes_short">m</string>
     <string name="unit_percent">%</string>
     <string name="unit_ms">ms</string>
     <string name="unit_bpm">bpm</string>
@@ -329,7 +341,6 @@
     <string name="unit_height_ft_in">%1$d ft %2$d in</string>
     <string name="unit_weight_kg">%1$d kg</string>
     <string name="unit_weight_lb">%1$d lb</string>
-    <string name="unit_age_years">%1$d years</string>
 
     <!-- Validation errors -->
     <string name="error_email_required">Email is required</string>
@@ -689,6 +700,14 @@
     <string name="scan_error_timeout">Scan timed out. Please try again.</string>
     <string name="scan_error_with_detail">%1$s: %2$s</string>
     <string name="activity_goal_label_format">" / %1$s"</string>
+
+    <!-- Physique Drift screen -->
+    <string name="physique_drift_screen_title">Physique Drift</string>
+    <string name="physique_drift_coming_soon">Physique Drift insights are coming soon.</string>
+
+    <!-- Pace of Aging screen -->
+    <string name="pace_of_aging_screen_title">Pace Of Aging</string>
+    <string name="pace_of_aging_coming_soon">Pace Of Aging insights are coming soon.</string>
 
     <!-- Longevity screen -->
     <string name="longevity_screen_title">Longevity</string>

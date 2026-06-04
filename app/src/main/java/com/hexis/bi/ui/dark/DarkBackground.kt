@@ -15,6 +15,8 @@ import com.hexis.bi.ui.theme.dark.BodyGlassGreen
 import com.hexis.bi.ui.theme.dark.BodyGlassInk
 import com.hexis.bi.ui.theme.dark.DarkMeshBottom
 import com.hexis.bi.ui.theme.dark.DarkMeshTop
+import com.hexis.bi.ui.theme.dark.PromoBannerEnd
+import com.hexis.bi.ui.theme.dark.PromoBannerStart
 import com.hexis.bi.utils.constants.DarkBackgroundConstants
 import kotlin.math.cos
 import kotlin.math.hypot
@@ -90,6 +92,16 @@ internal fun bodyGlassCardFillBrush(size: Size): Brush {
     return Brush.linearGradient(
         DarkBackgroundConstants.CARD_FILL_STOP_START to BodyGlassGreen,
         DarkBackgroundConstants.CARD_FILL_STOP_END to BodyGlassInk,
+        start = start,
+        end = end,
+    )
+}
+
+internal fun promoBannerFillBrush(size: Size): Brush {
+    val (start, end) = gradientEndpoints(size, DarkBackgroundConstants.PROMO_BANNER_GRADIENT_ANGLE_DEG)
+    return Brush.linearGradient(
+        DarkBackgroundConstants.PROMO_BANNER_STOP_START to PromoBannerStart,
+        DarkBackgroundConstants.PROMO_BANNER_STOP_END to PromoBannerEnd,
         start = start,
         end = end,
     )

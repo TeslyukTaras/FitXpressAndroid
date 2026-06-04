@@ -12,7 +12,6 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +22,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.AppAvatar
+import com.hexis.bi.ui.theme.dark.DefaultDarkExtendedColors
 
 @Composable
 fun HomeHeader(
@@ -32,6 +32,7 @@ fun HomeHeader(
     onNotificationClick: () -> Unit,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
+    subtitle: String? = null,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -43,16 +44,18 @@ fun HomeHeader(
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = stringResource(R.string.home_welcome),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.secondary,
-            )
-            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
-            Text(
                 text = userName,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
+            if (!subtitle.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
 
         IconButton(
@@ -60,37 +63,35 @@ fun HomeHeader(
                 .size(dimensionResource(R.dimen.icon_normalized))
                 .align(Alignment.Top),
             onClick = onNotificationClick,
-            colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.background)
         ) {
             BadgedBox(
                 modifier = Modifier.fillMaxSize(),
                 badge = {
                     if (hasUnreadNotifications) Badge(
-                        modifier.size(dimensionResource(R.dimen.size_indicator)),
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        modifier.size(dimensionResource(R.dimen.size_indicator_bigger)),
+                        containerColor = DefaultDarkExtendedColors.positive,
                     )
                 }
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_bell),
                     contentDescription = stringResource(R.string.cd_notification),
-                    tint = MaterialTheme.colorScheme.onBackground,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
                 )
             }
         }
-        Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacer_2xs)))
+        Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacer_3xs)))
         IconButton(
             modifier = Modifier
                 .size(dimensionResource(R.dimen.icon_normalized))
                 .align(Alignment.Top),
             onClick = onSettingsClick,
-            colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.background)
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_settings),
                 contentDescription = stringResource(R.string.cd_settings),
-                tint = MaterialTheme.colorScheme.onBackground,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
             )
         }

@@ -1,6 +1,5 @@
 package com.hexis.bi.ui.main.home
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -19,17 +18,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
+import com.hexis.bi.ui.dark.LightStatusBarIcons
+import com.hexis.bi.ui.dark.darkScreenBackground
+import com.hexis.bi.ui.main.home.components.ActivityOverviewCard
 import com.hexis.bi.ui.main.home.components.HomeHeader
 import com.hexis.bi.ui.main.home.components.IntelligenceScoresCard
-import com.hexis.bi.ui.main.home.components.OverviewCard
 import com.hexis.bi.ui.main.home.components.PromoBanner
+import com.hexis.bi.ui.main.home.components.ScanOverviewCard
+import com.hexis.bi.ui.main.home.components.SleepOverviewCard
 import com.hexis.bi.ui.main.home.components.UserStatsCard
+import com.hexis.bi.ui.theme.dark.DarkTheme
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -42,6 +50,8 @@ fun HomeScreen(
     onActivityClick: () -> Unit = {},
     onRecoveryClick: () -> Unit = {},
     onLongevityClick: () -> Unit = {},
+    onPhysiqueDriftClick: () -> Unit = {},
+    onPaceOfAgingClick: () -> Unit = {},
     onScanClick: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel(),
 ) {
@@ -49,8 +59,15 @@ fun HomeScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
 
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        // Refresh on every return to Home (not just first composition); Terra syncs also push updates.
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewModel.refreshOverview()
+        }
+    }
+
     LaunchedEffect(Unit) {
-        viewModel.refreshOverview()
         viewModel.events.collect { event ->
             when (event) {
                 is HomeEvent.NavigateToLogin -> onLogout()
@@ -58,119 +75,121 @@ fun HomeScreen(
         }
     }
 
-    val cardClicks = listOf(onSleepClick, onActivityClick, onRecoveryClick, onScanClick)
+    LightStatusBarIcons()
 
-    BaseScreen(
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        isLoading = isLoading,
-        error = error,
-        onDismissError = viewModel::clearError,
-    ) {
-        Column(
-            modifier = Modifier
+    DarkTheme {
+        BaseScreen(
+            modifier = modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(
-                    start = dimensionResource(R.dimen.padding_medium),
-                    end = dimensionResource(R.dimen.padding_medium),
-                    top = dimensionResource(R.dimen.padding_top),
-                ),
+                .darkScreenBackground(),
+            containerColor = Color.Transparent,
+            isLoading = isLoading,
+            error = error,
+            onDismissError = viewModel::clearError,
         ) {
-            HomeHeader(
-                userName = state.userName,
-                imageUrl = state.imageUrl,
-                hasUnreadNotifications = state.hasUnreadNotifications,
-                onNotificationClick = onNotificationClick,
-                onSettingsClick = onSettingsClick,
-            )
-
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-            val unknown = stringResource(R.string.stat_unknown)
-            UserStatsCard(
-                weight = state.weight ?: unknown,
-                height = state.height ?: unknown,
-                age = state.age ?: unknown,
-            )
-
-            if (!state.isSuitConnected) {
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-                PromoBanner(onBuyClick = { /* TODO */ })
-            }
-
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-            Text(
-                text = stringResource(R.string.home_overview_title),
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
-
-            OverviewGrid(
-                cards = state.overviewCards,
-                cardClicks = cardClicks,
-            )
-
-            if (state.isSuitConnected && state.intelligenceScores.isNotEmpty()) {
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-                Text(
-                    text = stringResource(R.string.home_intelligence_scores_title),
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium),
-                    color = MaterialTheme.colorScheme.onBackground,
+            val navClearance =
+                dimensionResource(R.dimen.size_bottom_nav_center) +
+                        dimensionResource(R.dimen.spacer_l) +
+                        dimensionResource(R.dimen.spacer_2xl)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(
+                        start = dimensionResource(R.dimen.padding_medium),
+                        end = dimensionResource(R.dimen.padding_medium),
+                        top = dimensionResource(R.dimen.padding_top),
+                        bottom = navClearance
+                    ),
+            ) {
+                val scanSubtitle = state.latestScanDate?.let {
+                    stringResource(R.string.home_latest_scan, it)
+                }
+                HomeHeader(
+                    userName = state.userName,
+                    imageUrl = state.imageUrl,
+                    subtitle = scanSubtitle,
+                    hasUnreadNotifications = state.hasUnreadNotifications,
+                    onNotificationClick = onNotificationClick,
+                    onSettingsClick = onSettingsClick,
                 )
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+
+                val unknown = stringResource(R.string.stat_unknown)
+                UserStatsCard(
+                    weight = state.weight ?: unknown,
+                    height = state.height ?: unknown,
+                    age = state.age ?: unknown,
+                )
+
+                if (!state.isSuitConnected) {
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+                    PromoBanner(onBuyClick = { /* TODO */ })
+                }
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+
+                SectionTitle(stringResource(R.string.home_overview_title))
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(IntrinsicSize.Max),
+                    horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_s)),
+                ) {
+                    ActivityOverviewCard(
+                        data = state.activity,
+                        onClick = onActivityClick,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                    )
+                    SleepOverviewCard(
+                        data = state.sleep,
+                        onClick = onSleepClick,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                    )
+                }
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
+
+                ScanOverviewCard(
+                    data = state.scan,
+                    onClick = onScanClick,
+                )
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+
+                SectionTitle(stringResource(R.string.home_intelligence_title))
 
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
 
                 IntelligenceScoresCard(
                     scores = state.intelligenceScores,
                     onScoreClick = { key ->
-                        if (key == IntelligenceScoreKey.LONGEVITY) onLongevityClick()
+                        when (key) {
+                            IntelligenceScoreKey.RECOVERY -> onRecoveryClick()
+                            IntelligenceScoreKey.PHYSIQUE_DRIFT -> onPhysiqueDriftClick()
+                            IntelligenceScoreKey.LONGEVITY -> onLongevityClick()
+                            IntelligenceScoreKey.PACE_OF_AGING -> onPaceOfAgingClick()
+                        }
                     },
                 )
             }
-
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
         }
     }
 }
 
 @Composable
-private fun OverviewGrid(
-    cards: List<OverviewCardData>,
-    cardClicks: List<() -> Unit>,
-) {
-    val rows = cards.chunked(2)
-    var index = 0
-    Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_m))) {
-        rows.forEach { rowCards ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Max),
-                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_s)),
-            ) {
-                rowCards.forEach { card ->
-                    val cardIndex = index++
-                    OverviewCard(
-                        title = card.title,
-                        iconRes = card.iconRes,
-                        value = card.value,
-                        subtitle = card.subtitle,
-                        variant = card.variant,
-                        valueLabel = card.valueLabel,
-                        onClick = cardClicks.getOrElse(cardIndex) { {} },
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
-                    )
-                }
-                if (rowCards.size < 2) Spacer(Modifier.weight(1f))
-            }
-        }
-    }
+private fun SectionTitle(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium),
+        color = MaterialTheme.colorScheme.onBackground,
+    )
 }
