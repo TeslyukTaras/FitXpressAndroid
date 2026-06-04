@@ -11,7 +11,44 @@ internal fun ScanRecord.muscleMassPercentage(): Float? {
 }
 
 internal fun ScanRecord.physiqueScore(heightCm: Float?): Float? =
-    scoreFor(physiqueScoreParts(heightCm))
+    physiqueScoreBreakdown(heightCm)?.score
+
+internal data class PhysiqueScoreBreakdown(
+    val score: Float,
+    val bodyFatPercent: Float?,
+    val leanBodyPercent: Float?,
+    val waistToHeightRatio: Float?,
+    val shoulderToWaistRatio: Float?,
+    val bodyFatScore: Float?,
+    val leanMassScore: Float?,
+    val waistShapeScore: Float?,
+    val proportionScore: Float?,
+)
+
+internal fun ScanRecord.physiqueScoreBreakdown(heightCm: Float?): PhysiqueScoreBreakdown? {
+    val bodyFat = fatPercentage
+    val lean = muscleMassPercentage()
+    val waistRatio = waistToHeightRatio(heightCm)
+    val shoulderRatio = shoulderToWaistRatio()
+    val parts = physiqueScoreParts(
+        bodyFatPercent = bodyFat,
+        leanMassPercent = lean,
+        waistToHeightRatio = waistRatio,
+        shoulderToWaistRatio = shoulderRatio,
+    )
+    val score = scoreFor(parts) ?: return null
+    return PhysiqueScoreBreakdown(
+        score = score,
+        bodyFatPercent = bodyFat,
+        leanBodyPercent = lean,
+        waistToHeightRatio = waistRatio,
+        shoulderToWaistRatio = shoulderRatio,
+        bodyFatScore = parts[PhysiqueScoreMetric.BodyFat]?.score,
+        leanMassScore = parts[PhysiqueScoreMetric.LeanMass]?.score,
+        waistShapeScore = parts[PhysiqueScoreMetric.WaistShape]?.score,
+        proportionScore = parts[PhysiqueScoreMetric.Proportion]?.score,
+    )
+}
 
 /**
  * Computes drift from components captured in both scans, so missing optional
@@ -42,26 +79,39 @@ private enum class PhysiqueScoreMetric {
 private data class ScorePart(val weight: Float, val score: Float)
 
 private fun ScanRecord.physiqueScoreParts(heightCm: Float?): Map<PhysiqueScoreMetric, ScorePart> =
+    physiqueScoreParts(
+        bodyFatPercent = fatPercentage,
+        leanMassPercent = muscleMassPercentage(),
+        waistToHeightRatio = waistToHeightRatio(heightCm),
+        shoulderToWaistRatio = shoulderToWaistRatio(),
+    )
+
+private fun physiqueScoreParts(
+    bodyFatPercent: Float?,
+    leanMassPercent: Float?,
+    waistToHeightRatio: Float?,
+    shoulderToWaistRatio: Float?,
+): Map<PhysiqueScoreMetric, ScorePart> =
     buildMap {
-        fatPercentage?.let {
+        bodyFatPercent?.let {
             put(
                 PhysiqueScoreMetric.BodyFat,
                 ScorePart(BodyConstants.PHYSIQUE_WEIGHT_BODY_FAT, bodyFatScore(it)),
             )
         }
-        muscleMassPercentage()?.let {
+        leanMassPercent?.let {
             put(
                 PhysiqueScoreMetric.LeanMass,
                 ScorePart(BodyConstants.PHYSIQUE_WEIGHT_LEAN_MASS, leanMassScore(it)),
             )
         }
-        waistToHeightRatio(heightCm)?.let {
+        waistToHeightRatio?.let {
             put(
                 PhysiqueScoreMetric.WaistShape,
                 ScorePart(BodyConstants.PHYSIQUE_WEIGHT_WAIST_SHAPE, waistShapeScore(it)),
             )
         }
-        shoulderToWaistRatio()?.let {
+        shoulderToWaistRatio?.let {
             put(
                 PhysiqueScoreMetric.Proportion,
                 ScorePart(BodyConstants.PHYSIQUE_WEIGHT_PROPORTION, proportionScore(it)),

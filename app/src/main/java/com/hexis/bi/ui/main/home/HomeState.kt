@@ -60,19 +60,19 @@ data class HomeState(
     val sleep: SleepOverview = SleepOverview(),
     val scan: ScanOverview = ScanOverview(),
     val recoveryScore: Int? = null,
+    val physiqueScore: Float? = null,
     val longevityScore: Int? = null,
     val paceOfAgingValue: String? = null,
     val paceOfAgingScore: Int? = null,
 ) {
     /**
-     * The four "Body Intelligence" gauges. Recovery, Longevity and Pace of Aging are implemented, so
-     * they show their value (0 when there's no data yet); Physique Drift isn't built yet, so it shows
-     * a "Coming" placeholder.
+     * The four "Body Intelligence" gauges. Recovery and Longevity use 0-100 scores; Physique Drift
+     * uses a 1-10 score; Pace of Aging displays the pace multiplier with a derived 0-100 fill.
      */
     val intelligenceScores: List<IntelligenceScoreData>
         get() = listOf(
             scoreGauge(IntelligenceScoreKey.RECOVERY, R.string.intelligence_recovery, recoveryScore),
-            comingSoon(IntelligenceScoreKey.PHYSIQUE_DRIFT, R.string.intelligence_physique_drift),
+            physiqueGauge(),
             scoreGauge(IntelligenceScoreKey.LONGEVITY, R.string.intelligence_longevity, longevityScore),
             paceGauge(),
         )
@@ -97,12 +97,18 @@ data class HomeState(
         )
     }
 
-    private fun comingSoon(key: IntelligenceScoreKey, @StringRes titleRes: Int) =
-        IntelligenceScoreData(
-            key = key,
-            titleRes = titleRes,
-            value = "",
-            fraction = 0f,
-            comingSoon = true,
+    private fun physiqueGauge(): IntelligenceScoreData {
+        val clamped = (physiqueScore ?: 0f).coerceIn(PHYSIQUE_MIN_SCORE, PHYSIQUE_MAX_SCORE)
+        return IntelligenceScoreData(
+            key = IntelligenceScoreKey.PHYSIQUE_DRIFT,
+            titleRes = R.string.intelligence_physique_drift,
+            value = if (physiqueScore == null) "0" else String.format(java.util.Locale.US, "%.1f", clamped),
+            fraction = clamped / PHYSIQUE_MAX_SCORE,
         )
+    }
+
+    private companion object {
+        const val PHYSIQUE_MIN_SCORE = 0f
+        const val PHYSIQUE_MAX_SCORE = 10f
+    }
 }

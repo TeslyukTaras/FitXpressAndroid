@@ -809,22 +809,22 @@ private fun DrawScope.drawTimeSeries(
         close()
     }
 
-    val farY = coords.maxByOrNull { abs(it.y - zeroY) }?.y ?: zeroY
+    // Symmetric drop shadow: opaque at the line's extremes (above AND below zero), fading to
+    // transparent at the zero axis. Anchoring the gradient around zeroY (not a single farY) means
+    // the fill always falls toward the middle regardless of whether the series rises or drops.
+    val maxDist = (coords.maxOfOrNull { abs(it.y - zeroY) } ?: 0f).coerceAtLeast(1f)
+    val edgeColor = color.copy(alpha = BodyConstants.CHART_FILL_START_ALPHA * BodyConstants.CHART_FILL_OPACITY)
+    val zeroColor = color.copy(alpha = BodyConstants.CHART_FILL_END_ALPHA * BodyConstants.CHART_FILL_OPACITY)
     drawPath(
         path = fillPath,
         brush = Brush.verticalGradient(
             colorStops = arrayOf(
-                BodyConstants.CHART_FILL_START_STOP to color.copy(
-                    alpha = BodyConstants.CHART_FILL_START_ALPHA *
-                            BodyConstants.CHART_FILL_OPACITY,
-                ),
-                BodyConstants.CHART_FILL_END_STOP to color.copy(
-                    alpha = BodyConstants.CHART_FILL_END_ALPHA *
-                            BodyConstants.CHART_FILL_OPACITY,
-                ),
+                0f to edgeColor,   // farthest above the zero axis
+                0.5f to zeroColor, // zero axis (transparent toward the middle)
+                1f to edgeColor,   // farthest below the zero axis
             ),
-            startY = farY,
-            endY = zeroY,
+            startY = zeroY - maxDist,
+            endY = zeroY + maxDist,
         ),
     )
     var strokePhase = segmentPhase(renderedPoints[0], renderedPoints[1])

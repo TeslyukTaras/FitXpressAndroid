@@ -38,6 +38,14 @@ enum class BodyTimeRange {
             Month -> R.string.body_range_month
             Year -> R.string.body_range_year
         }
+
+    @get:StringRes
+    val periodLabelRes: Int
+        get() = when (this) {
+            Week -> R.string.body_physique_drift_period_week
+            Month -> R.string.body_physique_drift_period_month
+            Year -> R.string.body_physique_drift_period_year
+        }
 }
 
 enum class BodyLoadState { Loading, Ready, Error }
@@ -160,6 +168,7 @@ data class BodyState(
     val massUnit: BodyMassUnit = BodyMassUnit.Percent,
     val timeRange: BodyTimeRange = BodyTimeRange.Week,
     val composition: BodyComposition = BodyComposition.empty(),
+    val periodPhysiqueDrift: Float? = null,
     val chart: BodyChartData = BodyChartData(0L, 0L),
     val showBisInfo: Boolean = false,
     val visual: VisualState = VisualState(),

@@ -273,7 +273,9 @@ class ScanHistoryRepository(
                             timestamp = doc.savedAtMillis(),
                             modelPreviewPngBase64 = doc.getString(FIELD_MODEL_PREVIEW_PNG_BASE64),
                             measurements = loadSubNumericParams(doc, SUB_CIRCUMFERENCE_PARAMS),
+                            weightKg = doc.numericField(FIELD_WEIGHT, FIELD_ESTIMATED_WEIGHT),
                             fatPercentage = doc.numericField(FIELD_FAT_PERCENTAGE),
+                            leanBodyMassKg = doc.numericField(FIELD_LEAN_BODY_MASS, FIELD_ESTIMATED_LEAN_BODY_MASS),
                         )
                         ScanFetchProjection.FULL -> buildFullScanRecord(doc)
                     }

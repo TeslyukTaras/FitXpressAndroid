@@ -155,7 +155,7 @@ private fun PhysiqueBalanceSummary(state: BodyState) {
         PhysiqueMetricCard(
             title = stringResource(R.string.body_physique_drift),
             value = formatSignedValue(physiqueDrift(state)),
-            caption = stringResource(R.string.body_physique_drift_period),
+            caption = stringResource(state.timeRange.periodLabelRes),
             highlighted = true,
             modifier = Modifier
                 .weight(0.45f)
@@ -273,7 +273,7 @@ private fun PhysiqueMetricCard(
     }
 }
 
-private fun physiqueDrift(state: BodyState): Float? = state.composition.deltaBisScore
+private fun physiqueDrift(state: BodyState): Float? = state.periodPhysiqueDrift
 
 @Composable
 private fun formatSignedValue(value: Float?): String {

@@ -16,6 +16,7 @@ import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.body.BodyMeasurementKeys
 import com.hexis.bi.domain.body.BodyMeasurementRegion
+import com.hexis.bi.domain.body.physiqueScore
 import com.hexis.bi.domain.longevity.PaceOfAgingInputs
 import com.hexis.bi.domain.longevity.agingScore
 import com.hexis.bi.domain.longevity.computePaceOfAging
@@ -175,6 +176,12 @@ class HomeViewModel(
                 val heightCm = profile?.heightCm?.toFloat()
                 val scans = scanListDeferred.await()
                 publishScanOverview(scans, isMetric)
+                // physiqueScore needs a FULL scan: shoulders comes from front_linear_params, so the
+                // LIST_SUMMARY `scans` record (circumference only) would drop the Proportion component
+                // and yield a different score than the Physique Drift screen. Refetch the latest in full.
+                val latestFullScan = scans?.firstOrNull()?.id
+                    ?.let { scanHistoryRepository.getScanRecordById(it).getOrNull() }
+                _state.update { it.copy(physiqueScore = latestFullScan?.physiqueScore(heightCm)) }
 
                 val terra = terraDeferred.await()
                 val latestScan = scans?.firstOrNull()

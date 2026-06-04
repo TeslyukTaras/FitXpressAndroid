@@ -68,7 +68,7 @@ fun HomeHeader(
                 modifier = Modifier.fillMaxSize(),
                 badge = {
                     if (hasUnreadNotifications) Badge(
-                        modifier.size(dimensionResource(R.dimen.size_indicator_bigger)),
+                        modifier.size(dimensionResource(R.dimen.size_indicator)),
                         containerColor = DefaultDarkExtendedColors.positive,
                     )
                 }

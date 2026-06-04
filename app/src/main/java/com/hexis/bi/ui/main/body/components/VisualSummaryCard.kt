@@ -116,6 +116,7 @@ private fun FullBodyMeasurementList(
                 )
                 else Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
                 MeasurementComparisonRow(
+                    region = row.region,
                     label = stringResource(row.labelRes),
                     latestCm = measurementValue(state.latestMeasurements, row.region),
                     previousCm = measurementValue(state.previousMeasurements, row.region),
@@ -149,6 +150,7 @@ private fun SelectedPartMeasurementRow(
             valueCm = measurementValue(state.latestMeasurements, part),
             deltaCm = measurementDelta(part, state),
             isMetric = isMetric,
+            decreaseIsPositive = part.decreaseIsPositive,
             modifier = Modifier.weight(1f),
         )
 
@@ -162,6 +164,7 @@ private fun SelectedPartMeasurementRow(
             valueCm = measurementValue(state.previousMeasurements, part),
             deltaCm = previousMeasurementDelta(part, state),
             isMetric = isMetric,
+            decreaseIsPositive = part.decreaseIsPositive,
             modifier = Modifier.weight(1f)
         )
     }
@@ -169,6 +172,7 @@ private fun SelectedPartMeasurementRow(
 
 @Composable
 private fun MeasurementComparisonRow(
+    region: BodyMeasurementRegion,
     label: String,
     latestCm: Float?,
     previousCm: Float?,
@@ -200,6 +204,7 @@ private fun MeasurementComparisonRow(
                 valueCm = latestCm,
                 deltaCm = if (latestCm != null && previousCm != null) latestCm - previousCm else null,
                 isMetric = isMetric,
+                decreaseIsPositive = region.decreaseIsPositive,
                 modifier = Modifier.weight(1f),
             )
 
@@ -212,6 +217,7 @@ private fun MeasurementComparisonRow(
                 deltaCm = if (previousCm != null && beforePreviousCm != null)
                     previousCm - beforePreviousCm else null,
                 isMetric = isMetric,
+                decreaseIsPositive = region.decreaseIsPositive,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -243,6 +249,7 @@ private fun MeasurementColumn(
     valueCm: Float?,
     deltaCm: Float?,
     isMetric: Boolean,
+    decreaseIsPositive: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val missing = stringResource(R.string.body_visual_value_missing)
@@ -265,6 +272,11 @@ private fun MeasurementColumn(
             )
         }
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
-        MeasurementValueBlock(valueCm = valueCm, deltaCm = deltaCm, isMetric = isMetric)
+        MeasurementValueBlock(
+            valueCm = valueCm,
+            deltaCm = deltaCm,
+            isMetric = isMetric,
+            decreaseIsPositive = decreaseIsPositive,
+        )
     }
 }

@@ -48,15 +48,19 @@ internal object BodyConstants {
     /** Recommended days between scans; drives the "Next Scan" countdown. */
     const val SCAN_CADENCE_DAYS = 7L
 
-    /** Leading portion of the forecast rendered as short-term predicted drift. */
-    const val PREDICTED_DRIFT_FRACTION = 0.25f
+    /**
+     * Leading portion of the forecast styled as short-term predicted drift (dashed); the remainder
+     * is the future estimate (dotted). The forecast tail is drawn with a handful of nodes (not one
+     * per day), split evenly between the two phases, with drift realized on an easeIn curve so the
+     * fan starts gently near the origin and accelerates outward to its max at the final point.
+     */
+    const val PREDICTED_DRIFT_FRACTION = 0.4f
 
     const val CHART_MONOTONE_TANGENT_LIMIT = 3f
     const val CHART_FILL_OPACITY = 0.26f
+    /** Drop-shadow fill alpha at the line's extreme (above/below zero); fades to [CHART_FILL_END_ALPHA] at the zero axis. */
     const val CHART_FILL_START_ALPHA = 0.83f
     const val CHART_FILL_END_ALPHA = 0.0001f
-    const val CHART_FILL_START_STOP = 0.0374f
-    const val CHART_FILL_END_STOP = 0.796f
 
     const val PHYSIQUE_SCORE_MIN = 1f
     const val PHYSIQUE_SCORE_MAX = 10f
