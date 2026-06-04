@@ -59,7 +59,8 @@ import java.util.Date
  * Projection controls **subcollection** reads and **merged maps** on [ScanRecord]:
  *
  * - [TIMESTAMPS_ONLY]: no subcollections — for date-range checks (e.g. reminders).
- * - [LIST_SUMMARY]: `circumferenceParams/data` only per scan — history list + top change vs previous.
+ * - [LIST_SUMMARY]: parent summary fields + `circumferenceParams/data` only per scan — history list,
+ *   top change vs previous, and Home intelligence gauges.
  * - [FULL]: circumference + front + side linear subdocs each once; merged [measurements] + linear maps; [model3dUrl] from parent — Results / deltas.
  */
 enum class ScanFetchProjection {
@@ -272,6 +273,7 @@ class ScanHistoryRepository(
                             timestamp = doc.savedAtMillis(),
                             modelPreviewPngBase64 = doc.getString(FIELD_MODEL_PREVIEW_PNG_BASE64),
                             measurements = loadSubNumericParams(doc, SUB_CIRCUMFERENCE_PARAMS),
+                            fatPercentage = doc.numericField(FIELD_FAT_PERCENTAGE),
                         )
                         ScanFetchProjection.FULL -> buildFullScanRecord(doc)
                     }

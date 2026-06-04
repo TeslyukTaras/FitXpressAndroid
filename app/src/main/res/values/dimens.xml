@@ -173,5 +173,6 @@
     <dimen name="home_sparkline_marker_border">1.5dp</dimen>
     <dimen name="home_intelligence_gauge_stroke">5.5dp</dimen>
     <dimen name="home_scan_spacer">40dp</dimen>
+    <dimen name="pace_meter_bar_height">5.5dp</dimen>
 
 </resources>

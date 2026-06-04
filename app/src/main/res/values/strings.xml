@@ -707,7 +707,44 @@
 
     <!-- Pace of Aging screen -->
     <string name="pace_of_aging_screen_title">Pace Of Aging</string>
-    <string name="pace_of_aging_coming_soon">Pace Of Aging insights are coming soon.</string>
+    <string name="pace_of_aging_trend_title">Aging Trend</string>
+    <string name="pace_of_aging_than_average">than average</string>
+    <string name="pace_of_aging_slower_format">%1$d%% slower</string>
+    <string name="pace_of_aging_faster_format">%1$d%% faster</string>
+    <string name="pace_of_aging_on_pace">On pace</string>
+    <string name="pace_of_aging_desc_slower">Your body is aging more slowly than average.</string>
+    <string name="pace_of_aging_desc_normal">Your body is aging at a normal rate.</string>
+    <string name="pace_of_aging_desc_faster">Your body is aging faster than average.</string>
+    <string name="pace_of_aging_synced_format">Based on your latest synced data - %1$s</string>
+    <string name="pace_of_aging_no_data">Connect a wearable and sync to see your aging trend.</string>
+    <string name="pace_of_aging_stat_waist">Waist Profile</string>
+    <string name="pace_of_aging_stat_body_fat">Body Fat</string>
+    <string name="pace_of_aging_insight_title">Body Aging Insight</string>
+    <string name="pace_of_aging_insight_slower">Your body is aging slower than average. %1$s is helping the most.</string>
+    <string name="pace_of_aging_insight_normal">Your body is aging at a normal rate. %1$s is the strongest signal.</string>
+    <string name="pace_of_aging_insight_faster">Your body is aging faster than average. %1$s is adding the most load.</string>
+    <string name="pace_of_aging_insight_generic">Sync your health data to see what\'s driving your aging pace.</string>
+    <string name="pace_of_aging_signal_hrv">HRV</string>
+    <string name="pace_of_aging_signal_rhr">resting heart rate</string>
+    <string name="pace_of_aging_signal_sleep">sleep</string>
+    <string name="pace_of_aging_signal_recovery">recovery</string>
+    <string name="pace_of_aging_signal_activity">activity</string>
+    <string name="pace_of_aging_signal_body_fat">body fat</string>
+    <string name="pace_of_aging_signal_waist">waist</string>
+    <string name="pace_of_aging_signal_vo2">VO2 Max</string>
+    <string name="pace_of_aging_signal_stress">stress</string>
+    <string name="pace_of_aging_info_title">How Body Age works</string>
+    <string name="pace_of_aging_info_intro">Body Age shows how fast your body is aging compared to a normal aging rate.</string>
+    <string name="pace_of_aging_info_heading_1">1. Pace of Aging</string>
+    <string name="pace_of_aging_info_body_1">A value below 1.0 means your body is aging slower than average. A value above 1.0 means faster aging.</string>
+    <string name="pace_of_aging_info_heading_2">2. Lower is Better</string>
+    <string name="pace_of_aging_info_body_2">Below 0.95 means slower aging.\n0.96–1.05 means normal aging.\nAbove 1.05 means faster aging.</string>
+    <string name="pace_of_aging_info_heading_3">3. What Lowers Aging Speed</string>
+    <string name="pace_of_aging_info_body_3">High HRV, good sleep, strong VO2 Max, and good recovery help reduce aging load.</string>
+    <string name="pace_of_aging_info_heading_4">4. What Increases Aging Speed</string>
+    <string name="pace_of_aging_info_body_4">Poor sleep, high stress, high abdominal fat, poor recovery, and low activity can increase aging load.</string>
+    <string name="pace_of_aging_info_heading_5">5. Why It Changes</string>
+    <string name="pace_of_aging_info_body_5">Your result can change as your sleep, recovery, stress, activity, body fat, and fitness levels change.</string>
 
     <!-- Longevity screen -->
     <string name="longevity_screen_title">Longevity</string>

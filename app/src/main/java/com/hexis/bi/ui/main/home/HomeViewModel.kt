@@ -16,11 +16,15 @@ import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.body.BodyMeasurementKeys
 import com.hexis.bi.domain.body.BodyMeasurementRegion
+import com.hexis.bi.domain.longevity.PaceOfAgingInputs
+import com.hexis.bi.domain.longevity.agingScore
+import com.hexis.bi.domain.longevity.computePaceOfAging
 import com.hexis.bi.domain.suit.SuitRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.base.UiEvent
 import com.hexis.bi.ui.main.home.longevity.currentLongevityScore
 import com.hexis.bi.ui.main.home.longevity.longevityScoreWindow
+import com.hexis.bi.ui.main.home.longevity.waistToHeightRatio
 import com.hexis.bi.ui.main.scan.results.MeasurementChange
 import com.hexis.bi.utils.calculateAge
 import com.hexis.bi.utils.cmToInches
@@ -44,6 +48,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import java.text.SimpleDateFormat
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
@@ -150,69 +155,53 @@ class HomeViewModel(
      */
     private suspend fun reloadOverview() {
         try {
-            terraManagerHolder.awaitCurrentOrTimeout()
             coroutineScope {
                 val today = LocalDate.now()
                 val window = longevityScoreWindow(today)
                 val windowStart = window.first()
 
                 val profileDeferred = async { userRepository.getUser().getOrNull() }
-                val sleepDeferred = async { sleepRepository.getSessionForNight(today).getOrNull() }
-                // The longevity window doubles as the source for today's recovery + activity cards.
-                val recoveryDeferred = async {
-                    recoveryRepository.getSnapshotsForRange(windowStart, today).getOrNull().orEmpty()
-                }
-                val activityDeferred = async {
-                    activityRepository.getSummariesForRange(windowStart, today).getOrNull().orEmpty()
-                }
-                // LIST_SUMMARY carries the circumference subdoc — all the key-change + trend need.
                 val scanListDeferred = async {
                     scanHistoryRepository
                         .getRecentScans(SCAN_TREND_LIMIT, ScanFetchProjection.LIST_SUMMARY)
                         .getOrNull()
                 }
+                val terraDeferred = async {
+                    loadTerraOverview(today, windowStart)
+                }
 
                 val profile = profileDeferred.await()
                 val isMetric = profile?.unitSystem.isMetricUnitSystem()
                 val heightCm = profile?.heightCm?.toFloat()
-                val sleepSession = sleepDeferred.await()
-                val recovery = recoveryDeferred.await()
-                val activity = activityDeferred.await()
                 val scans = scanListDeferred.await()
-                // Body fat/waist for longevity come from the same scan the card shows as latest, so a
-                // scan landing mid-read can't make the gauge and the card disagree. FULL adds the
-                // fatPercentage that LIST_SUMMARY omits.
-                val latestFullScan = scans?.firstOrNull()?.id?.let {
-                    scanHistoryRepository.getScanRecordById(it).getOrNull()
-                }
+                publishScanOverview(scans, isMetric)
 
-                val todayActivity = activity.firstOrNull { it.date == today }
-                val todayRecovery = recovery.firstOrNull { it.date == today }
-                val steps = (todayActivity?.steps ?: 0).coerceAtLeast(0)
-                val hourlySteps = todayActivity?.let { s ->
-                    (0 until ActivityConstants.HOURS_IN_DAY).map { (s.hourlySteps[it] ?: 0).toFloat() }
-                }.orEmpty()
-                val scanDate = scans?.firstOrNull()?.let {
-                    SimpleDateFormat(DateFormatConstants.SHORT_MONTH_DAY, Locale.getDefault())
-                        .format(Date(it.timestamp))
-                }
+                val terra = terraDeferred.await()
+                val latestScan = scans?.firstOrNull()
+                val todayActivity = terra.activity.firstOrNull { it.date == today }
+                val todayRecovery = terra.recovery.firstOrNull { it.date == today }
                 val longevityScore =
-                    currentLongevityScore(window, recovery, activity, latestFullScan, heightCm)
+                    currentLongevityScore(window, terra.recovery, terra.activity, latestScan, heightCm)
+                val pace = computePaceOfAging(
+                    PaceOfAgingInputs(
+                        hrvMs = todayRecovery?.hrvMs,
+                        restingHeartRateBpm = todayRecovery?.restingHeartRateBpm,
+                        sleepScore = todayRecovery?.sleepScore,
+                        recoveryScore = todayRecovery?.score,
+                        steps = todayActivity?.steps,
+                        bodyFatPercent = latestScan?.fatPercentage,
+                        waistToHeightRatio = waistToHeightRatio(latestScan, heightCm),
+                        vo2Max = todayActivity?.vo2MaxMlPerMinPerKg,
+                        stressLevel = todayRecovery?.stressLevel,
+                    )
+                )?.pace
 
                 _state.update {
                     it.copy(
-                        sleep = it.sleep.copy(
-                            durationMinutes = (sleepSession?.durationMinutes ?: 0).coerceAtLeast(0),
-                            goalHours = it.sleepGoalHours,
-                        ),
-                        activity = ActivityOverview(
-                            steps = formatSteps(steps),
-                            hourlySteps = hourlySteps,
-                        ),
                         recoveryScore = (todayRecovery?.score ?: 0).coerceAtLeast(0),
-                        scan = buildScanOverview(scans, isMetric),
-                        latestScanDate = scanDate,
                         longevityScore = longevityScore,
+                        paceOfAgingValue = pace?.let { p -> String.format(Locale.US, PACE_FORMAT, p) },
+                        paceOfAgingScore = pace?.let { p -> agingScore(p) },
                     )
                 }
             }
@@ -220,6 +209,58 @@ class HomeViewModel(
             throw e
         } catch (e: Exception) {
             setError(e.message)
+        }
+    }
+
+    private suspend fun loadTerraOverview(today: LocalDate, windowStart: LocalDate): TerraOverview {
+        terraManagerHolder.awaitCurrentOrTimeout()
+        return coroutineScope {
+            val sleepDeferred = async {
+                sleepRepository.getSessionsForRange(windowStart.minusDays(1), today).getOrNull().orEmpty()
+            }
+            val activityDeferred = async {
+                activityRepository.getSummariesForRange(windowStart, today).getOrNull().orEmpty()
+            }
+
+            val sleep = sleepDeferred.await()
+            val activity = activityDeferred.await()
+            val sleepSession = sleep.minByOrNull {
+                abs(ChronoUnit.DAYS.between(it.wakeTime.toLocalDate(), today))
+            }
+            val todayActivity = activity.firstOrNull { it.date == today }
+            val steps = (todayActivity?.steps ?: 0).coerceAtLeast(0)
+            val hourlySteps = todayActivity?.let { s ->
+                (0 until ActivityConstants.HOURS_IN_DAY).map { (s.hourlySteps[it] ?: 0).toFloat() }
+            }.orEmpty()
+
+            _state.update {
+                it.copy(
+                    sleep = it.sleep.copy(
+                        durationMinutes = (sleepSession?.durationMinutes ?: 0).coerceAtLeast(0),
+                        goalHours = it.sleepGoalHours,
+                    ),
+                    activity = ActivityOverview(
+                        steps = formatSteps(steps),
+                        hourlySteps = hourlySteps,
+                    ),
+                )
+            }
+
+            val recovery = recoveryRepository.getSnapshotsForRange(windowStart, today).getOrNull().orEmpty()
+            TerraOverview(activity = activity, recovery = recovery)
+        }
+    }
+
+    private fun publishScanOverview(scans: List<ScanRecord>?, isMetric: Boolean) {
+        val scanDate = scans?.firstOrNull()?.let {
+            SimpleDateFormat(DateFormatConstants.SHORT_MONTH_DAY, Locale.getDefault())
+                .format(Date(it.timestamp))
+        }
+        _state.update {
+            it.copy(
+                scan = buildScanOverview(scans, isMetric),
+                latestScanDate = scanDate,
+            )
         }
     }
 
@@ -260,5 +301,11 @@ class HomeViewModel(
 
     private companion object {
         const val SCAN_TREND_LIMIT = 8L
+        const val PACE_FORMAT = "%.2fx"
     }
+
+    private data class TerraOverview(
+        val activity: List<com.hexis.bi.data.activity.ActivitySummary>,
+        val recovery: List<com.hexis.bi.data.recovery.RecoverySnapshot>,
+    )
 }
