@@ -88,6 +88,7 @@ internal fun MeasurementValueBlock(
     deltaCm: Float?,
     isMetric: Boolean,
     modifier: Modifier = Modifier,
+    decreaseIsPositive: Boolean = false,
 ) {
     val missing = stringResource(R.string.body_visual_value_missing)
     val unit = stringResource(if (isMetric) R.string.unit_cm else R.string.unit_in)
@@ -118,6 +119,7 @@ internal fun MeasurementValueBlock(
             val displayDelta = if (isMetric) deltaCm else deltaCm.cmToInches()
             val deltaRes = if (displayDelta >= 0f) R.string.body_visual_delta_increase
             else R.string.body_visual_delta_decrease
+            val isPositiveChange = if (decreaseIsPositive) deltaCm < 0f else deltaCm > 0f
             val deltaText = stringResource(
                 deltaRes,
                 MEASUREMENT_VALUE_FORMAT.format(abs(displayDelta)),
@@ -127,8 +129,11 @@ internal fun MeasurementValueBlock(
             Text(
                 text = deltaText,
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (displayDelta >= 0f) DarkTheme.extendedColors.positive
-                else DarkTheme.extendedColors.negative,
+                color = when {
+                    deltaCm == 0f -> MaterialTheme.colorScheme.onSurfaceVariant
+                    isPositiveChange -> DarkTheme.extendedColors.positive
+                    else -> DarkTheme.extendedColors.negative
+                },
             )
         }
     }

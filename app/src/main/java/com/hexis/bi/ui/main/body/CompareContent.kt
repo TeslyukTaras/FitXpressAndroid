@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.core.os.ConfigurationCompat
 import com.hexis.bi.R
+import com.hexis.bi.domain.body.BodyMeasurementRegion
 import com.hexis.bi.ui.dark.AppHorizontalGradientDivider
 import com.hexis.bi.ui.dark.AppVerticalGradientDivider
 import com.hexis.bi.ui.dark.BodyGlassCard
@@ -375,6 +376,7 @@ private fun CompareSummaryCard(
             )
             else Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
             CompareMeasurementRow(
+                region = row.region,
                 label = stringResource(row.labelRes),
                 leftCm = measurementValue(state.leftMeasurements, row.region),
                 leftPreviousCm = measurementValue(state.leftPreviousMeasurements, row.region),
@@ -395,6 +397,7 @@ private fun CompareState.usesLatestAndPreviousScans(): Boolean {
 
 @Composable
 private fun CompareMeasurementRow(
+    region: BodyMeasurementRegion,
     label: String,
     leftCm: Float?,
     leftPreviousCm: Float?,
@@ -427,6 +430,7 @@ private fun CompareMeasurementRow(
                 valueCm = leftCm,
                 deltaCm = if (leftCm != null && leftPreviousCm != null) leftCm - leftPreviousCm else null,
                 isMetric = isMetric,
+                decreaseIsPositive = region.decreaseIsPositive,
                 modifier = Modifier.weight(1f),
             )
 
@@ -438,6 +442,7 @@ private fun CompareMeasurementRow(
                 valueCm = rightCm,
                 deltaCm = if (rightCm != null && rightPreviousCm != null) rightCm - rightPreviousCm else null,
                 isMetric = isMetric,
+                decreaseIsPositive = region.decreaseIsPositive,
                 modifier = Modifier.weight(1f),
             )
         }

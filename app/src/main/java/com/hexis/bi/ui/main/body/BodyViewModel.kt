@@ -32,8 +32,8 @@ import java.time.ZoneId
 import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
-import kotlin.math.ceil
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 class BodyViewModel(
     application: Application,
@@ -47,6 +47,7 @@ class BodyViewModel(
     val state: StateFlow<BodyState> = _state.asStateFlow()
 
     private var allScans: List<ScanRecord> = emptyList()
+    private var heightCm: Float? = null
     private val loadingVisualColorPairs = mutableSetOf<Pair<String, String>>()
     private val loadingCompareColorPairs = mutableSetOf<Pair<String, String>>()
     private var requestedVisualColorPair: Pair<String, String>? = null
@@ -78,7 +79,7 @@ class BodyViewModel(
     }
 
     fun selectTimeRange(range: BodyTimeRange) {
-        _state.update { it.copy(timeRange = range) }
+        _state.update { it.copy(timeRange = range, periodPhysiqueDrift = computePeriodDrift(range)) }
         rebuildChart()
     }
 
@@ -167,6 +168,7 @@ class BodyViewModel(
             }
 
             allScans = scans.sortedBy { it.timestamp }
+            heightCm = profile?.heightCm?.toFloat()
 
             val latest = allScans.lastOrNull()
             val previous = allScans.dropLast(1).lastOrNull()
@@ -175,7 +177,7 @@ class BodyViewModel(
             else buildComposition(
                 latest = latest,
                 previous = previous,
-                heightCm = profile?.heightCm?.toFloat(),
+                heightCm = heightCm,
             )
 
             _state.update {
@@ -183,6 +185,7 @@ class BodyViewModel(
                     loadState = BodyLoadState.Ready,
                     isMetric = isMetric,
                     composition = composition,
+                    periodPhysiqueDrift = computePeriodDrift(it.timeRange),
                 )
             }
             updateVisualScan(selectedTimestamp = _state.value.visual.latestScanTimestamp)
@@ -464,7 +467,7 @@ class BodyViewModel(
         val rangeStart = startDay.atStartOfDay(zone).toInstant().toEpochMilli()
         val rangeEnd = endDay.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
 
-        val series = buildSeries(scans, zone, rangeStart, rangeEnd)
+        val series = buildSeries(scans, zone, rangeStart, rangeEnd, anchorPreviousAtStart = true)
 
         val labelFormatter = SimpleDateFormat(DateFormatConstants.DAY_MONTH_NUMERIC, Locale.getDefault())
         val labels = centeredTickTimestamps(
@@ -497,7 +500,7 @@ class BodyViewModel(
         val rangeStart = startDay.atStartOfDay(zone).toInstant().toEpochMilli()
         val rangeEnd = endDay.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
 
-        val series = buildSeries(scans, zone, rangeStart, rangeEnd)
+        val series = buildSeries(scans, zone, rangeStart, rangeEnd, anchorPreviousAtStart = true)
 
         val totalMonths = ChronoUnit.MONTHS.between(
             YearMonth.from(startDay),
@@ -627,9 +630,7 @@ class BodyViewModel(
         val endDay = LocalDate.ofInstant(Date(rangeEndMillis).toInstant(), zone)
         val daysAhead = ChronoUnit.DAYS.between(lastDay, endDay).toInt()
         if (daysAhead <= 0) return points
-        val predictedDriftDays = ceil(daysAhead * BodyConstants.PREDICTED_DRIFT_FRACTION)
-            .toInt()
-            .coerceAtLeast(1)
+        val driftFraction = BodyConstants.PREDICTED_DRIFT_FRACTION
 
         val recent = sourceSlope ?: points.getOrNull(points.lastIndex - 1)?.let { it to last }
         val (muscleStep, fatStep) = recent?.let { (previous, latest) ->
@@ -642,27 +643,50 @@ class BodyViewModel(
 
         val muscleDrift = muscleStep * daysAhead
         val fatDrift = fatStep * daysAhead
+
+        // Sparse forecast: a few nodes split evenly across the predicted-drift and future-estimate
+        // phases (not one per day). Drift is realized on an easeIn curve (see predictedNodes), so the
+        // fan starts gently near the origin and accelerates outward to its max at the final point.
         val out = points.toMutableList()
-        for (step in 1..daysAhead) {
-            val day = lastDay.plusDays(step.toLong())
+        val seenOffsets = LinkedHashSet<Int>()
+        for (node in predictedNodes(driftFraction)) {
+            val dayOffset = (daysAhead * node.timeFraction).roundToInt().coerceIn(1, daysAhead)
+            if (!seenOffsets.add(dayOffset)) continue
+            val timeFraction = dayOffset.toFloat() / daysAhead
+            val day = lastDay.plusDays(dayOffset.toLong())
             val ts = day.atTime(12, 0).atZone(zone).toInstant().toEpochMilli()
-            val ease = easeOut(step.toFloat() / daysAhead)
             out += BodyTrendPoint(
                 timestamp = ts,
                 deltaFat = 0f,
                 deltaMuscle = 0f,
-                absoluteFat = (last.absoluteFat + fatDrift * ease).coerceIn(0f, 100f),
-                absoluteMuscle = (last.absoluteMuscle + muscleDrift * ease).coerceIn(0f, 100f),
+                absoluteFat = (last.absoluteFat + fatDrift * node.driftRealized).coerceIn(0f, 100f),
+                absoluteMuscle = (last.absoluteMuscle + muscleDrift * node.driftRealized)
+                    .coerceIn(0f, 100f),
                 isInterpolated = true,
-                phase = if (step <= predictedDriftDays) PredictedDrift else FutureEstimate,
+                phase = if (timeFraction <= driftFraction) PredictedDrift else FutureEstimate,
             )
         }
         return out
     }
 
-    private fun easeOut(t: Float): Float {
-        val x = t.coerceIn(0f, 1f)
-        return 1f - (1f - x) * (1f - x)
+    /** A forecast tail node: where it sits in the window and how much of the drift it has realized. */
+    private data class PredictedNode(val timeFraction: Float, val driftRealized: Float)
+
+    /**
+     * Forecast tail nodes, split evenly between the predicted-drift and future-estimate phases (2
+     * each). Drift is realized on an easeIn (quadratic) curve, so the fan starts gently near the
+     * origin — a flat-looking plateau — and accelerates outward, reaching the full projected drift
+     * at the final point (widest at the right edge), matching the design rather than a linear ramp.
+     */
+    private fun predictedNodes(driftFraction: Float): List<PredictedNode> {
+        val futureSpan = 1f - driftFraction
+        val timeFractions = listOf(
+            driftFraction * 0.5f,               // predicted drift
+            driftFraction,                      // predicted drift
+            driftFraction + futureSpan * 0.5f,  // future estimate
+            driftFraction + futureSpan,         // future estimate
+        )
+        return timeFractions.map { t -> PredictedNode(t, t * t) }
     }
 
     private fun applyBaselineDeltas(points: List<BodyTrendPoint>): List<BodyTrendPoint> {
@@ -711,5 +735,23 @@ class BodyViewModel(
     private fun delta(current: Float?, previous: Float?): Float? {
         if (current == null || previous == null) return null
         return current - previous
+    }
+
+    private fun computePeriodDrift(range: BodyTimeRange): Float? {
+        val latest = allScans.lastOrNull() ?: return null
+        val baseline = periodDriftBaseline(latest, range) ?: return null
+        return comparablePhysiqueScoreDelta(latest, baseline, heightCm)
+    }
+
+    private fun periodDriftBaseline(latest: ScanRecord, range: BodyTimeRange): ScanRecord? {
+        val zone = ZoneId.systemDefault()
+        val latestDay = LocalDate.ofInstant(Date(latest.timestamp).toInstant(), zone)
+        val periodStartMillis = when (range) {
+            BodyTimeRange.Week -> latestDay.minusWeeks(1)
+            BodyTimeRange.Month -> latestDay.minusMonths(1)
+            BodyTimeRange.Year -> latestDay.minusYears(1)
+        }.atStartOfDay(zone).toInstant().toEpochMilli()
+        return allScans.lastOrNull { it.timestamp <= periodStartMillis }
+            ?: allScans.firstOrNull { it.timestamp < latest.timestamp }
     }
 }

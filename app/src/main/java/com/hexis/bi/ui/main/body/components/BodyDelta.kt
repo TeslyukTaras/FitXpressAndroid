@@ -13,15 +13,16 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
+import com.hexis.bi.ui.theme.TitleHighlightTextStyle
 import com.hexis.bi.ui.theme.dark.DarkTheme
 import java.util.Locale
 import kotlin.math.abs
 
 @Composable
 internal fun BodyDelta(
+    modifier: Modifier = Modifier,
     delta: Float,
     decreaseIsPositive: Boolean = false,
-    modifier: Modifier = Modifier,
 ) {
     val rising = delta > 0f
     val color = when {
@@ -32,7 +33,7 @@ internal fun BodyDelta(
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_3xs)),
+        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_xxs)),
     ) {
         Icon(
             painter = painterResource(if (rising) R.drawable.ic_trend_up else R.drawable.ic_trend_down),
@@ -42,7 +43,7 @@ internal fun BodyDelta(
         )
         Text(
             text = formatDelta(delta),
-            style = MaterialTheme.typography.bodyMedium,
+            style = TitleHighlightTextStyle,
             color = color,
         )
     }

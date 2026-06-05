@@ -205,7 +205,9 @@
     <string name="body_chart_legend_predicted_drift">Predicted\nDrift</string>
     <string name="body_chart_legend_future_estimate">Future\nEstimate</string>
     <string name="body_physique_drift">Physique Drift</string>
-    <string name="body_physique_drift_period">since last scan</string>
+    <string name="body_physique_drift_period_week">this week</string>
+    <string name="body_physique_drift_period_month">this month</string>
+    <string name="body_physique_drift_period_year">this year</string>
     <string name="body_next_scan">Next Scan</string>
     <string name="body_next_scan_days_suffix">days</string>
     <string name="body_next_scan_estimate">Next Scan\nEstimate</string>
@@ -703,7 +705,49 @@
 
     <!-- Physique Drift screen -->
     <string name="physique_drift_screen_title">Physique Drift</string>
-    <string name="physique_drift_coming_soon">Physique Drift insights are coming soon.</string>
+    <string name="physique_drift_screen_title_short">Physique</string>
+    <string name="physique_drift_score_title">Physique Drift</string>
+    <string name="physique_drift_score_scale">/ 10</string>
+    <string name="physique_drift_score_body">Physique Drift shows your body composition, shape, and proportions.</string>
+    <string name="physique_drift_latest_scan_format">Based on your latest scan - %1$s</string>
+    <string name="physique_drift_latest_scan_unknown">Based on your latest scan</string>
+    <string name="physique_drift_no_data">Complete a body scan to see your physique score.</string>
+    <string name="physique_drift_level_athletic">Athletic</string>
+    <string name="physique_drift_level_improving">Improving</string>
+    <string name="physique_drift_level_needs_work">Needs Work</string>
+    <string name="physique_drift_level_athletic_desc">Lean and Balanced</string>
+    <string name="physique_drift_level_improving_desc">Average / Improving</string>
+    <string name="physique_drift_level_needs_work_desc">Higher fat / lower conditioning</string>
+    <string name="physique_drift_body_composition">Body Composition</string>
+    <string name="physique_drift_body_fat">Body Fat</string>
+    <string name="physique_drift_lean_body">Lean Body Mass</string>
+    <string name="physique_drift_contributors">Physique Contributors</string>
+    <string name="physique_drift_waist_profile">Waist Profile</string>
+    <string name="physique_drift_proportions">Proportions</string>
+    <string name="physique_drift_symmetry">Symmetry</string>
+    <string name="physique_drift_shoulder_waist_ratio">Shoulder to Waist Ratio</string>
+    <string name="physique_drift_improving">Improving</string>
+    <string name="physique_drift_balanced">Balanced</string>
+    <string name="physique_drift_well_balanced">Well Balanced</string>
+    <string name="physique_drift_developing">Developing</string>
+    <string name="physique_drift_needs_work">Needs Work</string>
+    <string name="physique_drift_insight_title">Physique Insight</string>
+    <string name="physique_drift_insight_athletic">Your body composition looks balanced, and your waist shape is improving. Symmetry and proportions also support a strong physique drift.</string>
+    <string name="physique_drift_insight_improving">Your physique is improving. Reducing body fat while preserving lean mass can move the score toward the athletic range.</string>
+    <string name="physique_drift_insight_needs_work">Your score has room to improve. Focus on sustainable fat loss, lean mass, waist profile, and balanced proportions.</string>
+    <string name="physique_drift_insight_no_data">Complete a scan to see how body fat, lean mass, waist shape, and proportions affect your score.</string>
+    <string name="physique_drift_info_title">How Physique Drift works</string>
+    <string name="physique_drift_info_intro">Physique Drift shows your overall body shape on a 1-10 scale.</string>
+    <string name="physique_drift_info_heading_1">1. Body Fat</string>
+    <string name="physique_drift_info_body_1">The main factor. Lower body fat can improve the score, but only within a healthy range.</string>
+    <string name="physique_drift_info_heading_2">2. Lean Body</string>
+    <string name="physique_drift_info_body_2">More lean mass can support a stronger and more athletic body shape.</string>
+    <string name="physique_drift_info_heading_3">3. Waist Profile</string>
+    <string name="physique_drift_info_body_3">A smaller waist relative to height can improve the physique score.</string>
+    <string name="physique_drift_info_heading_4">4. Proportions</string>
+    <string name="physique_drift_info_body_4">Shoulder-to-waist ratio, symmetry, and overall shape help define the final result.</string>
+    <string name="physique_drift_info_heading_5">5. Total Score</string>
+    <string name="physique_drift_info_body_5">Body fat contributes 50%%, lean body 25%%, waist shape 15%%, and proportions 10%%. 8-10 means lean / athletic, 5-7 means average / improving, and below 5 suggests more room for body composition improvement.</string>
 
     <!-- Pace of Aging screen -->
     <string name="pace_of_aging_screen_title">Pace Of Aging</string>

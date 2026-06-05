@@ -91,9 +91,11 @@ object MeasurementMapper {
      * Circumference with the largest absolute delta vs [previous];
      * null if there is no prior scan, no overlapping keys, or all deltas are negligible.
      *
-     * All [BodyMeasurementRegion.measurableRegions] resolve to circumference keys, so
-     * [ScanFetchProjection.LIST_SUMMARY] (circumference subdoc only) is sufficient input
-     * here. If linear-param regions are ever added, this method requires [ScanFetchProjection.FULL].
+     * Most [BodyMeasurementRegion.measurableRegions] resolve to circumference keys, so a
+     * [ScanFetchProjection.LIST_SUMMARY] record (circumference subdoc only) is enough to pick a
+     * top change without crashing. Note `shoulders` lives in `front_linear_params`, so under
+     * LIST_SUMMARY it is silently absent and never wins — pass [ScanFetchProjection.FULL] if the
+     * shoulders delta must be considered. (This is the same reason physiqueScore needs FULL.)
      */
     fun topChangeVsPreviousScan(current: ScanRecord, previous: ScanRecord?): TopChangeVsPrevious? {
         if (previous == null) return null
