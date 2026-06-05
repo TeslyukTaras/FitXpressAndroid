@@ -49,6 +49,7 @@
     <string name="notification_settings_title">Settings</string>
     <string name="notifications_mark_all_read">Mark all as read</string>
     <string name="notifications_time_just_now">Just now</string>
+    <string name="notifications_time_ago">%1$s ago</string>
     <string name="notif_next_scheduled_scan_title">Next scheduled scan</string>
     <string name="notif_next_scheduled_scan_body">Your next scan is on %1$s</string>
     <string name="notif_scan_today_title">Scan today</string>
