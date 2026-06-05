@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -39,6 +39,11 @@ import com.hexis.bi.R
 import com.hexis.bi.data.notification.InboxItem
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
+import com.hexis.bi.ui.dark.AppHorizontalGradientDivider
+import com.hexis.bi.ui.dark.LightStatusBarIcons
+import com.hexis.bi.ui.dark.darkScreenBackground
+import com.hexis.bi.ui.theme.TitleHighlightTextStyle
+import com.hexis.bi.ui.theme.dark.DarkTheme
 import com.hexis.bi.utils.constants.NotificationUi
 import org.koin.androidx.compose.koinViewModel
 
@@ -51,75 +56,75 @@ fun NotificationsScreen(
     val items by viewModel.items.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
-    val background = MaterialTheme.colorScheme.background
 
-    BaseScreen(
-        modifier = modifier,
-        isLoading = isLoading,
-        error = error,
-        onDismissError = viewModel::clearError,
-        topBar = {
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .background(background),
-            ) {
-                BaseTopBar(
-                    title = stringResource(R.string.screen_notifications),
-                    onBack = onBack,
-                )
-                if (items.isNotEmpty()) Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = dimensionResource(R.dimen.spacer_xxs)),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    TextButton(onClick = { viewModel.markAllRead() }) {
-                        Text(
-                            text = stringResource(R.string.notifications_mark_all_read),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
+    LightStatusBarIcons()
+
+    DarkTheme {
+        BaseScreen(
+            modifier = modifier
+                .fillMaxSize()
+                .darkScreenBackground(),
+            containerColor = Color.Transparent,
+            isLoading = isLoading,
+            error = error,
+            onDismissError = viewModel::clearError,
+            topBar = {
+                Column(Modifier.fillMaxWidth()) {
+                    BaseTopBar(
+                        title = stringResource(R.string.screen_notifications),
+                        onBack = onBack,
+                        background = Color.Transparent,
+                    )
+                    if (items.isNotEmpty()) Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = dimensionResource(R.dimen.spacer_xxs)),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        TextButton(onClick = { viewModel.markAllRead() }) {
+                            Text(
+                                text = stringResource(R.string.notifications_mark_all_read),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
                     }
                 }
+            },
+        ) {
+            if (items.isEmpty()) Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_bell),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.size(dimensionResource(R.dimen.icon_large)),
+                )
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+                Text(
+                    text = stringResource(R.string.notifications_empty),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.secondary,
+                )
             }
-        },
-    ) {
-        if (items.isEmpty()) Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_bell),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.size(dimensionResource(R.dimen.icon_large)),
-            )
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
-            Text(
-                text = stringResource(R.string.notifications_empty),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.secondary,
-            )
-        }
-        else LazyColumn(
-            Modifier
-                .fillMaxSize()
-                .padding(horizontal = dimensionResource(R.dimen.padding_medium))
-        ) {
-            itemsIndexed(
-                items = items,
-                key = { _, row -> row.id },
-            ) { index, item ->
-                if (index > 0) HorizontalDivider(
-                    thickness = dimensionResource(R.dimen.divider_size),
-                    color = MaterialTheme.colorScheme.secondaryFixed,
-                )
-                NotificationListRow(
-                    item = item,
-                    onClick = { if (!item.isRead) viewModel.markRead(item.id) },
-                )
+            else LazyColumn(
+                Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = dimensionResource(R.dimen.padding_medium))
+            ) {
+                itemsIndexed(
+                    items = items,
+                    key = { _, row -> row.id },
+                ) { index, item ->
+                    if (index > 0) AppHorizontalGradientDivider()
+                    NotificationListRow(
+                        item = item,
+                        onClick = { if (!item.isRead) viewModel.markRead(item.id) },
+                    )
+                }
             }
         }
     }
@@ -130,14 +135,7 @@ private fun NotificationListRow(
     item: InboxItem,
     onClick: () -> Unit,
 ) {
-    val timeLabel: String =
-        if (item.createdAtEpochMillis > NotificationUi.RELATIVE_TIME_EPOCH_UNSET)
-            DateUtils.getRelativeTimeSpanString(
-                item.createdAtEpochMillis,
-                System.currentTimeMillis(),
-                DateUtils.MINUTE_IN_MILLIS,
-            ).toString()
-        else stringResource(R.string.notifications_time_just_now)
+    val timeLabel = shortRelativeTimeLabel(item.createdAtEpochMillis)
 
     Row(
         modifier = Modifier
@@ -159,8 +157,7 @@ private fun NotificationListRow(
             Text(
                 text = item.body,
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (item.isRead) MaterialTheme.colorScheme.secondary
-                else MaterialTheme.colorScheme.onBackground,
+                color = MaterialTheme.colorScheme.secondary,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -170,8 +167,8 @@ private fun NotificationListRow(
             Text(
                 modifier = Modifier.align(Alignment.TopEnd),
                 text = timeLabel,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.secondary,
+                style = TitleHighlightTextStyle,
+                color = DarkTheme.extendedColors.timestamp,
                 textAlign = TextAlign.End,
             )
             if (!item.isRead) UnreadIndicator(modifier = Modifier.align(Alignment.BottomEnd))
@@ -187,4 +184,22 @@ private fun UnreadIndicator(modifier: Modifier = Modifier) {
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.primary),
     )
+}
+
+/** Compact relative time, e.g. "7m ago", "2h ago", "3d ago"; "Just now" under a minute. */
+@Composable
+private fun shortRelativeTimeLabel(epochMillis: Long): String {
+    val justNow = stringResource(R.string.notifications_time_just_now)
+    val diff = System.currentTimeMillis() - epochMillis
+    if (epochMillis <= NotificationUi.RELATIVE_TIME_EPOCH_UNSET ||
+        diff < DateUtils.MINUTE_IN_MILLIS
+    ) return justNow
+    val short = when {
+        diff < DateUtils.HOUR_IN_MILLIS -> "${diff / DateUtils.MINUTE_IN_MILLIS}m"
+        diff < DateUtils.DAY_IN_MILLIS -> "${diff / DateUtils.HOUR_IN_MILLIS}h"
+        diff < DateUtils.WEEK_IN_MILLIS -> "${diff / DateUtils.DAY_IN_MILLIS}d"
+        diff < DateUtils.YEAR_IN_MILLIS -> "${diff / DateUtils.WEEK_IN_MILLIS}w"
+        else -> "${diff / DateUtils.YEAR_IN_MILLIS}y"
+    }
+    return stringResource(R.string.notifications_time_ago, short)
 }
