@@ -30,6 +30,10 @@ internal object BodyVisualConstants {
     const val BODY_PART_SELECTOR_SCROLL_SPEED = 0.34f
     const val BODY_PART_SELECTOR_PRE_CONSUMED_SCROLL_RATIO =
         1f - BODY_PART_SELECTOR_SCROLL_SPEED
+    /** Horizontal (Compare) selector damps less than the vertical one so it scrolls more freely. */
+    const val BODY_PART_SELECTOR_HORIZONTAL_SCROLL_SPEED = 0.5f
+    const val BODY_PART_SELECTOR_HORIZONTAL_PRE_CONSUMED_SCROLL_RATIO =
+        1f - BODY_PART_SELECTOR_HORIZONTAL_SCROLL_SPEED
     const val BODY_PART_SELECTOR_EDGE_UNLOCK_ITEMS = 2.5f
     const val BODY_PART_SELECTOR_SNAP_EPSILON_PX = 1f
 

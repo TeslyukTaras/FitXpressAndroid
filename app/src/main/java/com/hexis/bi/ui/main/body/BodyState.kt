@@ -87,6 +87,7 @@ data class VisualState(
 data class CompareState(
     val hasData: Boolean = false,
     val mode: BodyVisualMode = BodyVisualMode.Base,
+    val selectedBodyPart: BodyMeasurementRegion = BodyMeasurementRegion.FullBody,
     val scanOptions: List<VisualScanOption> = emptyList(),
     val leftScanTimestamp: Long? = null,
     val rightScanTimestamp: Long? = null,
