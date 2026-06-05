@@ -43,7 +43,10 @@ fun AppTimePicker(
         periodSelectorUnselectedContentColor = MaterialTheme.colorScheme.onBackground,
     )
 
-    AppDialog(hasCloseButton = false) {
+    AppDialog(
+        hasCloseButton = false,
+        onDismiss = onDismissRequest,
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()

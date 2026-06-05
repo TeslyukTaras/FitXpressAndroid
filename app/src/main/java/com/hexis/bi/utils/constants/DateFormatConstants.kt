@@ -24,6 +24,7 @@ object DateFormatConstants {
 
     const val SHORT_MONTH_DAY_YEAR = "MMM d, yyyy"
     const val HOUR_MINUTE_24 = "HH:mm"
+    const val HOUR_AM_PM = "h a"
 
     /** Short day-of-week initials, e.g. "Mo", "Tu". */
     const val DAY_NAME_SHORT = "EEEE"

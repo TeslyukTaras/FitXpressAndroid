@@ -18,6 +18,7 @@
     <string name="action_signup">Sign Up</string>
     <string name="action_forgot_password">Forgot Password?</string>
     <string name="action_got_it">Got it</string>
+    <string name="action_reset">Reset</string>
 
     <!-- Auth screens -->
     <string name="login_title">Log In</string>
@@ -267,12 +268,11 @@
     <string name="unit_kg">kg</string>
     <string name="unit_lb">lb</string>
     <string name="scan_history_title">Scan History</string>
-    <string name="scan_history_top_change_prefix">Top change: </string>
+    <string name="scan_history_top_change_prefix">Top change:</string>
     <string name="scan_history_top_change_dash">—</string>
     <string name="cd_scan_history_calendar">Pick date range</string>
-    <string name="cd_scan_history_thumbnail">Scan preview</string>
-    <string name="scan_history_date_range_same_year">%1$s – %2$s, %3$d</string>
-    <string name="scan_history_date_range_cross_year">%1$s – %2$s</string>
+    <string name="scan_history_date_range_limit">Select a range of %1$d days or less.</string>
+    <string name="scan_history_empty_for_range">No scans in the selected date range.</string>
     <string name="cd_avatar">User avatar</string>
     <string name="cd_notification">Notifications</string>
     <string name="cd_settings">Settings</string>

@@ -2,6 +2,8 @@ package com.hexis.bi.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +16,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -57,10 +60,21 @@ fun AppDialog(
     onDismiss: (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
+    val backdropInteractionSource = remember { MutableInteractionSource() }
+    val cardInteractionSource = remember { MutableInteractionSource() }
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.scrim)
+            .then(
+                if (onDismiss != null) {
+                    Modifier.clickable(
+                        interactionSource = backdropInteractionSource,
+                        indication = null,
+                        onClick = onDismiss,
+                    )
+                } else Modifier
+            )
             .imePadding(),
         contentAlignment = Alignment.Center,
     ) {
@@ -74,7 +88,12 @@ fun AppDialog(
             ),
             modifier = modifier
                 .fillMaxWidth()
-                .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+                .padding(horizontal = dimensionResource(R.dimen.padding_medium))
+                .clickable(
+                    interactionSource = cardInteractionSource,
+                    indication = null,
+                    onClick = {},
+                ),
         ) {
             Box {
                 content()

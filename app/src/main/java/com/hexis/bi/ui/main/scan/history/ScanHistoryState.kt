@@ -5,7 +5,10 @@ import com.hexis.bi.data.scan.TopChangeVsPrevious
 data class ScanHistoryState(
     val isLoading: Boolean = true,
     val error: String? = null,
-    val dateRangeText: String? = null,
+    val showDateRangePicker: Boolean = false,
+    val selectedStartDateMillis: Long? = null,
+    val selectedEndDateMillis: Long? = null,
+    val isMetric: Boolean = true,
     val items: List<ScanHistoryListItem> = emptyList(),
 )
 
@@ -14,6 +17,4 @@ data class ScanHistoryListItem(
     val dateLabel: String,
     val timeLabel: String,
     val topChange: TopChangeVsPrevious?,
-    /** Optional cached list thumbnail from Firestore (LIST_SUMMARY projection). */
-    val modelPreviewPngBase64: String? = null,
 )

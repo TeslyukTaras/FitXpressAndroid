@@ -50,7 +50,13 @@ class TerraCallbackHandler(
                     ),
                 )
                 result.fold(
-                    onSuccess = { Outcome.Success(resource) },
+                    onSuccess = {
+                        // REST/widget providers have no SDK pull, so advance the cache generation
+                        // and ping screens — otherwise repos keep serving the stale pre-connect
+                        // cache and the new source shows no data until the TTL expires.
+                        TerraSdkSync.invalidateCachesAndNotify()
+                        Outcome.Success(resource)
+                    },
                     onFailure = { Outcome.SaveFailed(it.message) },
                 )
             }

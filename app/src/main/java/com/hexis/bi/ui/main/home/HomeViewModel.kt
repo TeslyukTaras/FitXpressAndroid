@@ -156,6 +156,10 @@ class HomeViewModel(
      */
     private suspend fun reloadOverview() {
         try {
+            // Force a fresh Terra pull on every Home reload (RESUME / sync / just-connected device)
+            // so a newly connected source shows up immediately instead of a stale cached read.
+            // Bumps the cache generation once; parallel reads within this reload still dedupe.
+            TerraSdkSync.invalidateCaches()
             coroutineScope {
                 val today = LocalDate.now()
                 val window = longevityScoreWindow(today)
