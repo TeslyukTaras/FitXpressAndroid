@@ -36,6 +36,7 @@ internal object BodyVisualConstants {
         1f - BODY_PART_SELECTOR_HORIZONTAL_SCROLL_SPEED
     const val BODY_PART_SELECTOR_EDGE_UNLOCK_ITEMS = 2.5f
     const val BODY_PART_SELECTOR_SNAP_EPSILON_PX = 1f
+    const val BODY_PART_SELECTOR_SNAP_SEARCH_ITERATIONS = 18
 
     val FULL_BODY_MEASUREMENT_ROWS = listOf(
         BodyVisualMeasurementDisplayRow(BodyMeasurementRegion.Neck, R.string.body_part_neck),
