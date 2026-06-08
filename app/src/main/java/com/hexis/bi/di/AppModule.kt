@@ -168,7 +168,7 @@ val appModule = module {
     viewModel { ScanViewModel(androidApplication(), get()) }
     viewModel { StartScanViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { ResultsViewModel(androidApplication(), get(), get(), get(), get()) }
-    viewModel { ScanHistoryViewModel(androidApplication(), get()) }
+    viewModel { ScanHistoryViewModel(androidApplication(), get(), get()) }
     viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get()) }
     viewModel { OnboardingViewModel(androidApplication(), get(), get()) }
 }

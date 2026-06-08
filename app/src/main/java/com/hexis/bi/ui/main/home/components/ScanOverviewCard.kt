@@ -18,6 +18,7 @@ import androidx.compose.ui.text.withStyle
 import com.hexis.bi.R
 import com.hexis.bi.ui.dark.BodyGlassCard
 import com.hexis.bi.ui.main.home.ScanOverview
+import com.hexis.bi.ui.theme.Green
 
 @Composable
 internal fun ScanOverviewCard(
@@ -44,7 +45,7 @@ internal fun ScanOverviewCard(
                 val unitStyle = MaterialTheme.typography.bodyMedium.toSpanStyle()
                     .copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 val labelColor = when (data.changePositive) {
-                    true -> MaterialTheme.colorScheme.primary
+                    true -> Green
                     false -> MaterialTheme.colorScheme.error
                     null -> MaterialTheme.colorScheme.onSurfaceVariant
                 }

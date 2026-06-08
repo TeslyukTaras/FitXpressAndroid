@@ -36,7 +36,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -56,6 +55,7 @@ import com.hexis.bi.ui.theme.Red100
 import com.hexis.bi.utils.cmToFeetAndInches
 import com.hexis.bi.utils.cmToInches
 import com.hexis.bi.utils.constants.MeasurementConstants.RESULTS_PREVIEW_EXIT_FADE_MS
+import com.hexis.bi.utils.constants.ScanResultsConstants
 import com.hexis.bi.utils.constants.MeasurementConstants.RESULTS_PREVIEW_EXIT_SETTLE_MS
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
@@ -139,8 +139,6 @@ fun ResultsScreen(
                 colorAnalysisEnabled = state.colorAnalysisEnabled,
                 colorAnalysis = state.colorAnalysis,
                 onModelInteractionChanged = { isModelInteracting = it },
-                measurements = state.measurements,
-                isMetric = state.isMetric,
                 modifier = Modifier.graphicsLayer { alpha = previewAlpha },
             )
 
@@ -181,28 +179,8 @@ private fun ScanResultsPreviewSection(
     colorAnalysisEnabled: Boolean,
     colorAnalysis: ColorAnalysisUiState,
     onModelInteractionChanged: (Boolean) -> Unit,
-    measurements: List<MeasurementRow>,
-    isMetric: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    var visualTransform by remember { mutableStateOf<VisualAvatarTransform?>(null) }
-
-    var avatarMeshReady by remember(model3dUrl, useModelVertexColors) { mutableStateOf(false) }
-
-    var measurementGuide by remember(model3dUrl, useModelVertexColors) { mutableStateOf<MetricAvatarMeasurementGuide?>(null) }
-
-    LaunchedEffect(model3dUrl, useModelVertexColors) {
-        measurementGuide = null
-        visualTransform = null
-        avatarMeshReady = false
-    }
-
-    LaunchedEffect(selectedTab, isPreviewSectionLoading) {
-        if (selectedTab != ResultsTab.Visual || isPreviewSectionLoading) {
-            visualTransform = null
-        }
-    }
-
     val previewModifier = Modifier
         .fillMaxWidth()
         .height(dimensionResource(R.dimen.scan_results_preview_height))
@@ -264,10 +242,9 @@ private fun ScanResultsPreviewSection(
                                 onInteractionChanged = onModelInteractionChanged,
                                 modifier = Modifier.fillMaxSize(),
                                 useGradientBackground = false,
+                                baseDistanceScale = ScanResultsConstants.MODEL_DISTANCE_SCALE,
                                 initialYawDegrees = profileYaw,
                                 leaderSegments = null,
-                                onMeasurementGuideLoaded = { measurementGuide = it },
-                                onAvatarReady = { avatarMeshReady = true },
                                 loadingMessageRes = if (
                                     selectedTab == ResultsTab.Visual &&
                                     colorAnalysisEnabled &&
@@ -277,32 +254,7 @@ private fun ScanResultsPreviewSection(
                                 } else {
                                     R.string.scan_results_avatar_loading
                                 },
-                                onVisualTransformChanged =
-                                    if (selectedTab == ResultsTab.Visual) {
-                                        { yaw, pitch, w, h ->
-                                            visualTransform =
-                                                VisualAvatarTransform(yaw, pitch, w, h)
-                                        }
-                                    } else {
-                                        null
-                                    },
                             )
-                            if (selectedTab == ResultsTab.Visual &&
-                                !isPreviewSectionLoading &&
-                                visualTransform != null &&
-                                avatarMeshReady
-                            ) {
-                                MeasurementLeaderOverlay(
-                                    measurements = measurements,
-                                    isMetric = isMetric,
-                                    transform = visualTransform,
-                                    measurementGuide = measurementGuide,
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .pointerInteropFilter(onTouchEvent = { false }),
-                                )
-                            }
-
                         }
                     } else {
                         GradientCenteredLabel(messageRes = R.string.scan_results_preview_unavailable)
@@ -347,6 +299,7 @@ private fun CompareModelsPanel(
                                         onInteractionChanged = onInteractionChanged,
                                         modifier = Modifier.fillMaxSize(),
                                         useGradientBackground = false,
+                                        baseDistanceScale = ScanResultsConstants.MODEL_DISTANCE_SCALE,
                                         compareRotationLink = compareRotationLink,
                                     )
                                 }
@@ -383,6 +336,7 @@ private fun CompareModelsPanel(
                                         onInteractionChanged = onInteractionChanged,
                                         modifier = Modifier.fillMaxSize(),
                                         useGradientBackground = false,
+                                        baseDistanceScale = ScanResultsConstants.MODEL_DISTANCE_SCALE,
                                         compareRotationLink = compareRotationLink,
                                     )
                                 }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -89,31 +90,37 @@ internal fun MeasurementValueBlock(
     isMetric: Boolean,
     modifier: Modifier = Modifier,
     decreaseIsPositive: Boolean = false,
+    hideValue: Boolean = false,
 ) {
     val missing = stringResource(R.string.body_visual_value_missing)
     val unit = stringResource(if (isMetric) R.string.unit_cm else R.string.unit_in)
     val displayValue = valueCm?.let { if (isMetric) it else it.cmToInches() }
     val valueNumber = displayValue?.let { MEASUREMENT_VALUE_FORMAT.format(it) }
 
-    Column(modifier = modifier) {
-        if (valueNumber == null) {
-            Text(
-                text = missing,
-                style = MeasurementValueStyle,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-        } else {
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(MeasurementValueStyle.toSpanStyle()) {
-                        append(valueNumber)
-                    }
-                    append(" ")
-                    append(unit)
-                },
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
+    Column(
+        modifier = modifier,
+        horizontalAlignment = if (hideValue) Alignment.CenterHorizontally else Alignment.Start,
+    ) {
+        if (!hideValue) {
+            if (valueNumber == null) {
+                Text(
+                    text = missing,
+                    style = MeasurementValueStyle,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+            } else {
+                Text(
+                    text = buildAnnotatedString {
+                        withStyle(MeasurementValueStyle.toSpanStyle()) {
+                            append(valueNumber)
+                        }
+                        append(" ")
+                        append(unit)
+                    },
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+            }
         }
         if (deltaCm != null) {
             val displayDelta = if (isMetric) deltaCm else deltaCm.cmToInches()
@@ -125,14 +132,20 @@ internal fun MeasurementValueBlock(
                 MEASUREMENT_VALUE_FORMAT.format(abs(displayDelta)),
                 unit,
             )
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
+            if (!hideValue) Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
             Text(
                 text = deltaText,
-                style = MaterialTheme.typography.bodyMedium,
+                style = if (hideValue) MaterialTheme.typography.labelLarge
+                else MaterialTheme.typography.bodyMedium,
                 color = when {
                     deltaCm == 0f -> MaterialTheme.colorScheme.onSurfaceVariant
                     isPositiveChange -> DarkTheme.extendedColors.positive
                     else -> DarkTheme.extendedColors.negative
+                },
+                modifier = if (hideValue) {
+                    Modifier.padding(vertical = dimensionResource(R.dimen.spacer_xxs))
+                } else {
+                    Modifier
                 },
             )
         }

@@ -1,40 +1,30 @@
 package com.hexis.bi.ui.main.scan.history
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.util.Base64
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -48,17 +38,17 @@ import com.hexis.bi.R
 import com.hexis.bi.data.scan.TopChangeVsPrevious
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
+import com.hexis.bi.ui.components.AppDatePicker
+import com.hexis.bi.ui.dark.AppHorizontalGradientDivider
+import com.hexis.bi.ui.dark.LightStatusBarIcons
+import com.hexis.bi.ui.dark.darkScreenBackground
 import com.hexis.bi.ui.main.scan.results.MeasurementChange
-import com.hexis.bi.ui.theme.GrayText
 import com.hexis.bi.ui.theme.Green
-import com.hexis.bi.ui.theme.HistoryCardBackground
-import com.hexis.bi.ui.theme.Red100
-import kotlin.math.max
-import kotlin.math.roundToInt
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.utils.cmToInches
 import org.koin.androidx.compose.koinViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScanHistoryScreen(
     onBack: () -> Unit,
@@ -68,72 +58,106 @@ fun ScanHistoryScreen(
     viewModel: ScanHistoryViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val dateRangeText = state.dateRangeText
-    val background = MaterialTheme.colorScheme.background
 
-    BaseScreen(
-        modifier = modifier,
-        containerColor = background,
-        isLoading = state.isLoading,
-        error = state.error,
-        onDismissError = viewModel::clearStateError,
-        topBar = {
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .background(background),
+    LightStatusBarIcons()
+
+    DarkTheme {
+        Box(modifier = modifier.fillMaxSize()) {
+            BaseScreen(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(
+                        if (state.showDateRangePicker)
+                            Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
+                        else Modifier
+                    )
+                    .darkScreenBackground(),
+                containerColor = Color.Transparent,
+                isLoading = state.isLoading,
+                error = state.error,
+                onDismissError = viewModel::clearStateError,
+                topBar = {
+                    BaseTopBar(
+                        title = stringResource(R.string.scan_history_title),
+                        background = Color.Transparent,
+                        onBack = onBack,
+                        actions = {
+                            IconButton(onClick = {
+                                onCalendarClick()
+                                viewModel.showDateRangePicker()
+                            }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_calendar),
+                                    contentDescription = stringResource(R.string.cd_scan_history_calendar),
+                                    tint = MaterialTheme.colorScheme.onBackground,
+                                    modifier = Modifier.size(dimensionResource(R.dimen.icon_medium_small)),
+                                )
+                            }
+                        },
+                    )
+                },
             ) {
-                BaseTopBar(
-                    title = stringResource(R.string.scan_history_title),
-                    onBack = onBack,
-                    actions = {
-                        IconButton(onClick = onCalendarClick) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_calendar),
-                                contentDescription = stringResource(R.string.cd_scan_history_calendar),
-                                tint = MaterialTheme.colorScheme.onBackground,
-                            )
-                        }
-                    },
-                )
-                if (dateRangeText != null) Text(
-                    text = dateRangeText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = GrayText,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = dimensionResource(R.dimen.padding_small)),
-                    textAlign = TextAlign.Center,
-                )
-            }
-        },
-    ) {
 
-        if (!state.isLoading && state.items.isEmpty()) Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = stringResource(R.string.body_scan_history_empty),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
-            )
-        }
-        else LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(
-                    top = dimensionResource(R.dimen.padding_medium),
-                    start = dimensionResource(R.dimen.padding_medium),
-                    end = dimensionResource(R.dimen.padding_medium)
-                ),
-            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_s)),
-        ) {
-            items(state.items, key = { it.scanId }) { item ->
-                ScanHistoryCard(
-                    item = item,
-                    onClick = { onOpenScan(item.scanId) },
+                if (!state.isLoading && state.items.isEmpty()) Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    val hasDateFilter = state.selectedStartDateMillis != null ||
+                            state.selectedEndDateMillis != null
+                    Text(
+                        text = stringResource(
+                            if (hasDateFilter) R.string.scan_history_empty_for_range
+                            else R.string.body_scan_history_empty
+                        ),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
+                        textAlign = TextAlign.Center,
+                    )
+                } else LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        top = dimensionResource(R.dimen.spacer_s),
+                        bottom = dimensionResource(R.dimen.spacer_3xl),
+                    ),
+                    verticalArrangement = Arrangement.Top,
+                ) {
+                    itemsIndexed(state.items, key = { _, item -> item.scanId }) { index, item ->
+                        ScanHistoryRow(
+                            item = item,
+                            isMetric = state.isMetric,
+                            showDivider = index < state.items.lastIndex,
+                            onClick = { onOpenScan(item.scanId) },
+                        )
+                    }
+                }
+            }
+
+            if (state.showDateRangePicker) {
+                val pickerState = rememberDateRangePickerState(
+                    initialSelectedStartDateMillis = state.selectedStartDateMillis,
+                    initialSelectedEndDateMillis = state.selectedEndDateMillis,
+                )
+                val isWithinLimit = isScanHistoryRangeWithinLimit(
+                    pickerState.selectedStartDateMillis,
+                    pickerState.selectedEndDateMillis,
+                )
+                AppDatePicker(
+                    state = pickerState,
+                    onDismissRequest = viewModel::hideDateRangePicker,
+                    onReset = viewModel::resetDateRange,
+                    onSelect = { startDateMillis, endDateMillis ->
+                        viewModel.applyDateRange(
+                            startDateMillis,
+                            endDateMillis,
+                        )
+                    },
+                    modifier = Modifier.widthIn(max = dimensionResource(R.dimen.app_date_picker_dialog_max_width)),
+                    isRangeValid = isWithinLimit,
+                    rangeErrorText = stringResource(
+                        R.string.scan_history_date_range_limit,
+                        SCAN_HISTORY_MAX_RANGE_DAYS,
+                    ),
                 )
             }
         }
@@ -141,133 +165,79 @@ fun ScanHistoryScreen(
 }
 
 @Composable
-private fun ScanHistoryCard(
+private fun ScanHistoryRow(
     item: ScanHistoryListItem,
+    isMetric: Boolean,
+    showDivider: Boolean,
     onClick: () -> Unit,
 ) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
-            .background(HistoryCardBackground)
             .clickable(onClick = onClick)
-            .padding(dimensionResource(R.dimen.spacer_m)),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
+        Column(
             modifier = Modifier
-                .fillMaxHeight()
-                .width(dimensionResource(R.dimen.scan_history_thumb_width))
-                .clip(MaterialTheme.shapes.extraSmall),
-            contentAlignment = Alignment.Center,
+                .fillMaxWidth()
+                .padding(
+                    horizontal = dimensionResource(R.dimen.padding_medium),
+                    vertical = dimensionResource(R.dimen.spacer_m)
+                ),
+            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_m))
         ) {
-            ScanHistoryCardThumbnail(modelPreviewPngBase64 = item.modelPreviewPngBase64)
+            Text(
+                text = "${item.dateLabel}, ${item.timeLabel}",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_m))
+            ) {
+                if (item.topChange != null) {
+                    Text(
+                        text = stringResource(R.string.scan_history_top_change_prefix),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = topChangeAnnotated(item.topChange, isMetric),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                } else Text(
+                    text = stringResource(R.string.scan_history_top_change_dash),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
-        Spacer(Modifier.size(dimensionResource(R.dimen.spacer_m)))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = item.dateLabel,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxs)))
-            Text(
-                text = item.timeLabel,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
-            Text(
-                text = topChangeAnnotated(item.topChange),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
+        if (showDivider) AppHorizontalGradientDivider()
     }
 }
 
 @Composable
-private fun ScanHistoryCardThumbnail(
-    modelPreviewPngBase64: String?,
-    modifier: Modifier = Modifier,
-) {
-    var bitmap by remember { mutableStateOf<Bitmap?>(null) }
-    LaunchedEffect(modelPreviewPngBase64) {
-        bitmap = null
-        val encoded = modelPreviewPngBase64
-        if (encoded.isNullOrBlank()) return@LaunchedEffect
-        bitmap = withContext(Dispatchers.Default) {
-            decodeScanHistoryPreviewBitmap(encoded)
-        }
-    }
-    Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        val b = bitmap
-        if (b != null) {
-            Image(
-                bitmap = b.asImageBitmap(),
-                contentDescription = stringResource(R.string.cd_scan_history_thumbnail),
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-            )
-        } else {
-            Icon(
-                painter = painterResource(R.drawable.ic_body_filled),
-                contentDescription = null,
-                modifier = Modifier.size(dimensionResource(R.dimen.icon_normalized)),
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-    }
-}
-
-private const val SCAN_HISTORY_PREVIEW_DECODE_MAX_PX = 256
-
-private fun decodeScanHistoryPreviewBitmap(base64: String?): Bitmap? {
-    if (base64.isNullOrBlank()) return null
-    val payload = base64.trim()
-        .removePrefix("data:image/png;base64,")
-        .removePrefix("data:image/jpeg;base64,")
-    val decoded = runCatching {
-        Base64.decode(payload, Base64.DEFAULT)
-    }.getOrNull() ?: return null
-    val bmp = BitmapFactory.decodeByteArray(decoded, 0, decoded.size) ?: return null
-    val maxPx = SCAN_HISTORY_PREVIEW_DECODE_MAX_PX
-    if (bmp.width <= maxPx && bmp.height <= maxPx) return bmp
-    val scale = maxPx.toFloat() / max(bmp.width, bmp.height).toFloat()
-    val nw = (bmp.width * scale).roundToInt().coerceAtLeast(1)
-    val nh = (bmp.height * scale).roundToInt().coerceAtLeast(1)
-    return Bitmap.createScaledBitmap(bmp, nw, nh, true)
-}
-
-@Composable
-private fun topChangeAnnotated(topChange: TopChangeVsPrevious?): AnnotatedString {
-    val labelColor = MaterialTheme.colorScheme.secondary
-    val nameColor = MaterialTheme.colorScheme.onSurface
+private fun topChangeAnnotated(
+    topChange: TopChangeVsPrevious,
+    isMetric: Boolean
+): AnnotatedString {
     return buildAnnotatedString {
-        withStyle(SpanStyle(color = labelColor)) {
-            append(stringResource(R.string.scan_history_top_change_prefix))
-            append(" ")
-        }
-        if (topChange == null) {
-            withStyle(SpanStyle(color = nameColor)) { append(stringResource(R.string.scan_history_top_change_dash)) }
-            return@buildAnnotatedString
-        }
-        withStyle(SpanStyle(color = nameColor)) {
-            append(stringResource(topChange.bodyPartRes))
-            append(" ")
-        }
+        append(stringResource(topChange.bodyPartRes))
+        append(" ")
         val valueColor = when (topChange.change) {
             MeasurementChange.Positive -> Green
-            MeasurementChange.Negative -> Red100
+            MeasurementChange.Negative -> MaterialTheme.colorScheme.error
             null -> MaterialTheme.colorScheme.onSurface
         }
+        val deltaStringRes = when {
+            topChange.deltaCm > 0f -> R.string.format_delta_up
+            topChange.deltaCm < 0f -> R.string.format_delta_down
+            else -> R.string.format_delta_neutral
+        }
+        val deltaValue = if (isMetric) topChange.deltaCm else topChange.deltaCm.cmToInches()
+        val unit = stringResource(if (isMetric) R.string.unit_cm else R.string.unit_in)
         withStyle(SpanStyle(color = valueColor)) {
-            append(
-                stringResource(
-                    R.string.format_delta_neutral,
-                    topChange.deltaCm,
-                    stringResource(R.string.unit_cm),
-                ),
-            )
+            append(stringResource(deltaStringRes, deltaValue, unit))
         }
     }
 }

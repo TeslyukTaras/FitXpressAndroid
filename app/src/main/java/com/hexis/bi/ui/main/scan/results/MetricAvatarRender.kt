@@ -125,6 +125,14 @@ internal class CompareRotationLink {
     @Volatile
     var panY: Float = 0f
 
+    // Animated reset of user yaw-spin / zoom / pan back to defaults when the framed part changes.
+    private var resetAnimating = false
+    private var resetStartMs = 0L
+    private var fromYaw = 0f
+    private var fromZoom = MetricAvatarCamera.MIN_USER_ZOOM
+    private var fromPanX = 0f
+    private var fromPanY = 0f
+
     private val invalidateCallbacks = CopyOnWriteArrayList<() -> Unit>()
 
     fun addInvalidateCallback(callback: () -> Unit) {
@@ -137,6 +145,7 @@ internal class CompareRotationLink {
 
     fun applyZoomFactor(factor: Float) {
         synchronized(this) {
+            resetAnimating = false
             zoom = (zoom * factor).coerceIn(
                 MetricAvatarCamera.MIN_USER_ZOOM,
                 MetricAvatarCamera.MAX_USER_ZOOM,
@@ -147,6 +156,7 @@ internal class CompareRotationLink {
 
     fun applyPanDelta(dxWorld: Float, dyWorld: Float, maxX: Float, maxY: Float) {
         synchronized(this) {
+            resetAnimating = false
             panX = (panX + dxWorld).coerceIn(-maxX, maxX)
             panY = (panY + dyWorld).coerceIn(-maxY, maxY)
         }
@@ -161,8 +171,73 @@ internal class CompareRotationLink {
         invalidateCallbacks.forEach { it() }
     }
 
+    /**
+     * Animate the user's yaw-spin / zoom / pan back to defaults (used when the framed part changes).
+     * Safe to call from both linked models for the same transition — only the first snapshots the
+     * starting values; the [displayYaw]/[displayZoom]/[displayPan] getters interpolate to default.
+     */
+    fun beginResetAnimation() {
+        synchronized(this) {
+            val now = SystemClock.uptimeMillis()
+            if (!resetAnimating || now - resetStartMs >= FRAME_ANIMATION_DURATION_MS) {
+                fromYaw = yaw
+                fromZoom = zoom
+                fromPanX = panX
+                fromPanY = panY
+                resetStartMs = now
+                resetAnimating = true
+            }
+            yaw = 0f
+            pitch = INITIAL_PITCH_DEG
+            zoom = MetricAvatarCamera.MIN_USER_ZOOM
+            panX = 0f
+            panY = 0f
+        }
+        invalidateCallbacks.forEach { it() }
+    }
+
+    fun resetAdjustmentsImmediate() {
+        synchronized(this) {
+            resetAnimating = false
+            yaw = 0f
+            pitch = INITIAL_PITCH_DEG
+            zoom = MetricAvatarCamera.MIN_USER_ZOOM
+            panX = 0f
+            panY = 0f
+        }
+        invalidateCallbacks.forEach { it() }
+    }
+
+    /** Eased reset progress in [0,1]; clears the animation flag once complete. */
+    private fun resetProgress(): Float {
+        if (!resetAnimating) return 1f
+        val linear = (SystemClock.uptimeMillis() - resetStartMs).toFloat() / FRAME_ANIMATION_DURATION_MS
+        if (linear >= 1f) {
+            resetAnimating = false
+            return 1f
+        }
+        return easeInOutSine(linear)
+    }
+
+    fun displayYaw(): Float = synchronized(this) {
+        if (!resetAnimating) yaw else lerpAngleDegrees(fromYaw, yaw, resetProgress())
+    }
+
+    fun displayZoom(): Float = synchronized(this) {
+        if (!resetAnimating) zoom else lerp(fromZoom, zoom, resetProgress())
+    }
+
+    fun displayPanX(): Float = synchronized(this) {
+        if (!resetAnimating) panX else lerp(fromPanX, panX, resetProgress())
+    }
+
+    fun displayPanY(): Float = synchronized(this) {
+        if (!resetAnimating) panY else lerp(fromPanY, panY, resetProgress())
+    }
+
     fun applyRotationDelta(dyaw: Float, dpitch: Float) {
         synchronized(this) {
+            resetAnimating = false
             yaw += dyaw
             pitch = (pitch + dpitch).coerceIn(MIN_PITCH_DEG, MAX_PITCH_DEG)
         }
@@ -208,6 +283,8 @@ internal fun MetricAvatarPreview(
     onAvatarReady: (() -> Unit)? = null,
     /** Visual tab: model-space auto-framing region. Null keeps the default camera/orientation behavior. */
     framingRegion: BodyMeasurementRegion? = null,
+    /** When true, framing keeps the figure horizontally centered (Compare) instead of right-shifted (Visual). */
+    centerFraming: Boolean = false,
     @StringRes loadingMessageRes: Int = R.string.scan_results_avatar_loading,
 ) {
     val context = LocalContext.current
@@ -241,6 +318,7 @@ internal fun MetricAvatarPreview(
     }
     LaunchedEffect(renderHost, meshGlow) { renderHost.setMeshGlow(meshGlow) }
     LaunchedEffect(renderHost, framingRegion) { renderHost.setFramingRegion(framingRegion) }
+    LaunchedEffect(renderHost, centerFraming) { renderHost.setCenterFraming(centerFraming) }
 
     DisposableEffect(renderHost) {
         renderHost.setRenderFailureListener { latestRenderFailure() }
@@ -476,6 +554,7 @@ private interface MetricAvatarRenderHost {
     fun setLeaderSegments(segments: List<ModelLeaderSegment>?)
     fun setBaseOrientation(yawDeg: Float, pitchDeg: Float)
     fun setFramingRegion(region: BodyMeasurementRegion?)
+    fun setCenterFraming(enabled: Boolean)
     fun setRenderFailureListener(listener: (() -> Unit)?)
     fun setOnFirstFrameRendered(listener: (() -> Unit)?)
 }
@@ -886,6 +965,13 @@ private class MetricAvatarTextureView(
         }
     }
 
+    override fun setCenterFraming(enabled: Boolean) {
+        queueRenderEvent {
+            avatarRenderer.setCenterFraming(enabled)
+            drawFrame()
+        }
+    }
+
     override fun setRenderFailureListener(listener: (() -> Unit)?) {
         renderFailureListener = listener
     }
@@ -1237,7 +1323,11 @@ private object MetricAvatarFrameSolver {
     fun buildFrames(
         guide: MetricAvatarMeasurementGuide,
         fullBodyBounds: ModelBounds,
+        centered: Boolean = false,
     ): Map<BodyMeasurementRegion, AvatarFrame> {
+        // Visual frames push the figure to the right to clear the left selector ruler;
+        // centered framing (Compare) keeps the figure horizontally centered instead.
+        val windowCenterX = if (centered) 0f else RIGHT_WINDOW_CENTER_X
         fun frame(
             region: BodyMeasurementRegion,
             yaw: Float,
@@ -1266,7 +1356,7 @@ private object MetricAvatarFrameSolver {
                 yawDeg = yaw,
                 pitchDeg = INITIAL_PITCH_DEG,
                 distanceScale = distanceScale,
-                translateX = (RIGHT_WINDOW_CENTER_X + extraPanX) * distanceScale - rotatedCenterX,
+                translateX = (windowCenterX + extraPanX) * distanceScale - rotatedCenterX,
                 translateY = (FRAME_CENTER_Y + extraPanY) * distanceScale - rotatedCenterY,
                 eyeHeight = eyeHeight,
             )
@@ -1277,7 +1367,8 @@ private object MetricAvatarFrameSolver {
             yawDeg = 0f,
             pitchDeg = INITIAL_PITCH_DEG,
             distanceScale = FULL_BODY_DISTANCE_SCALE,
-            translateX = FULL_BODY_RIGHT_EDGE_X - fullBodyBounds.maxX,
+            translateX = if (centered) -fullBodyBounds.centerX
+            else FULL_BODY_RIGHT_EDGE_X - fullBodyBounds.maxX,
             translateY = FRAME_CENTER_Y - fullBodyBounds.centerY,
             eyeHeight = MetricAvatarCamera.EYE_HEIGHT,
         )
@@ -2158,6 +2249,9 @@ private class MetricAvatarRenderer {
     private var viewDistance = MetricAvatarCamera.INITIAL_VIEW_DISTANCE
     private var framingRegion: BodyMeasurementRegion? = null
 
+    /** When true, framing keeps the figure horizontally centered (Compare) instead of right-shifted (Visual). */
+    private var centerFraming = false
+
     /** User drag-rotation applied on top of the active frame's yaw; reset when the part changes. */
     private var framingYawOffsetDeg = 0f
 
@@ -2379,6 +2473,7 @@ private class MetricAvatarRenderer {
         resetUserView()
         val targetFrame = targetAvatarFrame()
         if (startFrame == null || targetFrame == null) {
+            rotationLink?.resetAdjustmentsImmediate()
             animatedFrame = targetFrame
             frameAnimationStart = null
             frameAnimationTarget = null
@@ -2386,10 +2481,17 @@ private class MetricAvatarRenderer {
             return
         }
 
+        rotationLink?.beginResetAnimation()
         animatedFrame = startFrame
         frameAnimationStart = startFrame
         frameAnimationTarget = targetFrame
         frameAnimationStartTimeMs = SystemClock.uptimeMillis()
+    }
+
+    fun setCenterFraming(enabled: Boolean) {
+        if (centerFraming == enabled) return
+        centerFraming = enabled
+        rebuildFrameCache()
     }
 
     fun setShowSkinAreas(show: Boolean) {
@@ -2466,7 +2568,16 @@ private class MetricAvatarRenderer {
 
     private fun modelYaw(): Float {
         val link = rotationLink
-        return if (link != null) synchronized(link) { link.yaw } else yaw
+        return if (link != null) link.displayYaw() else yaw
+    }
+
+    /**
+     * Yaw spin applied on top of the active framing frame. Compare links rotate via the shared
+     * link (so both models spin together); the unlinked Visual tab uses the local offset.
+     */
+    private fun framingSpinYaw(): Float {
+        val link = rotationLink
+        return if (link != null) link.displayYaw() else framingYawOffsetDeg
     }
 
     private fun modelPitch(): Float {
@@ -2476,17 +2587,17 @@ private class MetricAvatarRenderer {
 
     private fun modelZoom(): Float {
         val link = rotationLink
-        return if (link != null) synchronized(link) { link.zoom } else userZoom
+        return if (link != null) link.displayZoom() else userZoom
     }
 
     private fun modelPanX(): Float {
         val link = rotationLink
-        return if (link != null) synchronized(link) { link.panX } else userPanX
+        return if (link != null) link.displayPanX() else userPanX
     }
 
     private fun modelPanY(): Float {
         val link = rotationLink
-        return if (link != null) synchronized(link) { link.panY } else userPanY
+        return if (link != null) link.displayPanY() else userPanY
     }
 
     private fun rebuildFrameCache() {
@@ -2503,7 +2614,7 @@ private class MetricAvatarRenderer {
             return
         }
 
-        frameCache = buildFrames(mesh.measurementGuide, mesh.bounds)
+        frameCache = buildFrames(mesh.measurementGuide, mesh.bounds, centered = centerFraming)
         animatedFrame = targetAvatarFrame()
         frameAnimationStart = null
         frameAnimationTarget = null
@@ -2648,7 +2759,7 @@ private class MetricAvatarRenderer {
     }
 
     private fun updateAvatarMatrices(frame: AvatarFrame?) {
-        val drawYaw = if (frame != null) frame.yawDeg + framingYawOffsetDeg else modelYaw()
+        val drawYaw = if (frame != null) frame.yawDeg + framingSpinYaw() else modelYaw()
         val drawPitch = frame?.pitchDeg ?: modelPitch()
         val drawDistance = viewDistance * (frame?.distanceScale ?: baseDistanceScale) / modelZoom()
         val drawTranslateX = (frame?.translateX ?: 0f) + modelPanX()

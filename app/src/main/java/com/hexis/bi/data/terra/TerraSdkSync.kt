@@ -43,6 +43,27 @@ object TerraSdkSync {
     val syncGeneration: Long get() = generation.get()
 
     /**
+     * Invalidate every [TtlCache] and ping open screens to refetch after a REST/widget connection
+     * change (Oura, Whoop, Garmin, …). These providers have no SDK pull pipeline — Terra serves them
+     * on demand over REST (`to_webhook=false`) — so [syncLinkedConnections] skips them entirely.
+     * Without advancing the generation here, freshly-connected sources keep serving the stale
+     * pre-connect (often empty) cache until the TTL expires.
+     */
+    fun invalidateCachesAndNotify() {
+        invalidateCaches()
+        _dataSynced.tryEmit(Unit)
+    }
+
+    /**
+     * Advance the cache generation so the next [TtlCache] read refetches, without pinging screens.
+     * Use to force a fresh read (e.g. a Home reload) — emitting [dataSynced] here would re-trigger
+     * the reload that called it.
+     */
+    fun invalidateCaches() {
+        generation.incrementAndGet()
+    }
+
+    /**
      * @param force skips the foreground debounce (e.g. right after a successful `initConnection`).
      * @return true when a pull actually ran; false when there was nothing to sync or it was debounced.
      */

@@ -29,7 +29,6 @@ import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_HEIGHT
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_ID
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_LEAN_BODY_MASS
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_MODEL_3D_URL
-import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_MODEL_PREVIEW_PNG_BASE64
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_SAVED_AT
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_STATUS
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_URL
@@ -75,8 +74,6 @@ data class ScanRecord(
     val measurementId: String? = null,
     val timestamp: Long = 0L,
     val model3dUrl: String? = null,
-    /** Low-res PNG of the 3D preview (base64), for history thumbnails; optional on older scans. */
-    val modelPreviewPngBase64: String? = null,
     val measurements: Map<String, Float> = emptyMap(),
     /** Front-view linear / ANFA-style params (from API `front_linear_params`). */
     val frontLinearParams: Map<String, Float> = emptyMap(),
@@ -271,7 +268,6 @@ class ScanHistoryRepository(
                         ScanFetchProjection.LIST_SUMMARY -> ScanRecord(
                             id = doc.id,
                             timestamp = doc.savedAtMillis(),
-                            modelPreviewPngBase64 = doc.getString(FIELD_MODEL_PREVIEW_PNG_BASE64),
                             measurements = loadSubNumericParams(doc, SUB_CIRCUMFERENCE_PARAMS),
                             weightKg = doc.numericField(FIELD_WEIGHT, FIELD_ESTIMATED_WEIGHT),
                             fatPercentage = doc.numericField(FIELD_FAT_PERCENTAGE),
@@ -314,7 +310,6 @@ class ScanHistoryRepository(
             measurementId = doc.getString(FIELD_ID),
             timestamp = doc.savedAtMillis(),
             model3dUrl = doc.getString(FIELD_MODEL_3D_URL),
-            modelPreviewPngBase64 = doc.getString(FIELD_MODEL_PREVIEW_PNG_BASE64),
             measurements = measurements,
             frontLinearParams = frontLinearParams,
             sideLinearParams = sideLinearParams,

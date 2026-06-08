@@ -140,6 +140,7 @@ fun BodyScreen(
                         onSelectLeftScan = viewModel::selectCompareLeftScan,
                         onSelectRightScan = viewModel::selectCompareRightScan,
                         onModeSelected = viewModel::selectMode,
+                        onBodyPartSelected = viewModel::selectCompareBodyPart,
                         modifier = Modifier.weight(1f),
                     )
 

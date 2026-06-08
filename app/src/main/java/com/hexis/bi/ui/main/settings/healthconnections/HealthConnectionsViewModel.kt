@@ -268,6 +268,7 @@ class HealthConnectionsViewModel(
                     Timber.w(it, "deactivateConnection failed for %s", id)
                 }
             }
+            TerraSdkSync.invalidateCachesAndNotify()
             setMessage(R.string.msg_wearable_disconnected, providerName)
         }
 
@@ -354,6 +355,7 @@ class HealthConnectionsViewModel(
         terraManagerHolder.clearLocalManager()
         terraManagerHolder.init(activity, uid)
             .onFailure { Timber.e(it, "Terra init after disconnect failed") }
+        TerraSdkSync.invalidateCachesAndNotify()
         if (provider.equals(TerraProviders.HEALTH_CONNECT, ignoreCase = true)) {
             setMessage(R.string.msg_health_connect_disconnected)
         } else {

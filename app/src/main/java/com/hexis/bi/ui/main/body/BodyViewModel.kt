@@ -90,6 +90,10 @@ class BodyViewModel(
         _state.update { it.copy(visual = it.visual.copy(selectedBodyPart = region)) }
     }
 
+    fun selectCompareBodyPart(region: BodyMeasurementRegion) {
+        _state.update { it.copy(compare = it.compare.copy(selectedBodyPart = region)) }
+    }
+
     fun setModelCardHeight(px: Int) {
         if (_state.value.modelCardHeightPx != px) {
             _state.update { it.copy(modelCardHeightPx = px) }

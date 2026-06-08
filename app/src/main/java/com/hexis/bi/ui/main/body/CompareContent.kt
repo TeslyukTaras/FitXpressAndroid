@@ -40,6 +40,7 @@ import com.hexis.bi.domain.body.BodyMeasurementRegion
 import com.hexis.bi.ui.dark.AppHorizontalGradientDivider
 import com.hexis.bi.ui.dark.AppVerticalGradientDivider
 import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.main.body.components.BodyPartHorizontalScrollList
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleChip
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleTrack
 import com.hexis.bi.ui.main.body.components.MeasurementDateHeader
@@ -68,6 +69,7 @@ internal fun CompareContent(
     onSelectLeftScan: (Long) -> Unit,
     onSelectRightScan: (Long) -> Unit,
     onModeSelected: (BodyVisualMode) -> Unit,
+    onBodyPartSelected: (BodyMeasurementRegion) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val horizontalPadding = dimensionResource(R.dimen.padding_medium)
@@ -97,8 +99,9 @@ internal fun CompareContent(
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val density = LocalDensity.current
         val cardHeight = with(density) { cardHeightPx.toDp() }
+        val selectorHeight = dimensionResource(R.dimen.body_part_selector_horizontal_height)
         val cardTop = maxHeight - navClearance - cardHeight
-        val modelAreaHeight = cardTop.coerceAtLeast(0.dp)
+        val modelAreaHeight = (cardTop - selectorHeight).coerceAtLeast(0.dp)
 
         Column(
             modifier = Modifier
@@ -115,6 +118,13 @@ internal fun CompareContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(modelAreaHeight),
+            )
+            BodyPartHorizontalScrollList(
+                selected = state.selectedBodyPart,
+                onSelect = onBodyPartSelected,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(selectorHeight),
             )
             CompareSummaryCard(
                 state = state,
@@ -143,6 +153,7 @@ private fun CompareTopArea(
         Box(modifier = modifier) {
             CompareModelsPanel(
                 state = state,
+                framingRegion = state.selectedBodyPart,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(modelAreaHeight)
@@ -193,6 +204,7 @@ private fun CompareTopArea(
 @Composable
 private fun CompareModelsPanel(
     state: CompareState,
+    framingRegion: BodyMeasurementRegion,
     modifier: Modifier = Modifier,
 ) {
     val rotationLink =
@@ -207,6 +219,7 @@ private fun CompareModelsPanel(
             colorModel = state.leftColorModel,
             mode = state.mode,
             rotationLink = rotationLink,
+            framingRegion = framingRegion,
             meshGlow = if (leftIsCurrent) BodyVisualConstants.CURRENT_SCAN_MESH_GLOW else 0f,
             modifier = Modifier
                 .weight(1f)
@@ -223,6 +236,7 @@ private fun CompareModelsPanel(
             colorModel = state.rightColorModel,
             mode = state.mode,
             rotationLink = rotationLink,
+            framingRegion = framingRegion,
             meshGlow = if (rightIsCurrent) BodyVisualConstants.CURRENT_SCAN_MESH_GLOW else 0f,
             modifier = Modifier
                 .weight(1f)
@@ -237,6 +251,7 @@ private fun CompareModelColumn(
     colorModel: BodyVisualColorModel,
     mode: BodyVisualMode,
     rotationLink: CompareRotationLink,
+    framingRegion: BodyMeasurementRegion,
     meshGlow: Float,
     modifier: Modifier = Modifier,
 ) {
@@ -289,6 +304,8 @@ private fun CompareModelColumn(
                     useGradientBackground = false,
                     compareRotationLink = rotationLink,
                     zoomPanEnabled = true,
+                    framingRegion = framingRegion,
+                    centerFraming = true,
                     baseDistanceScale = BodyVisualConstants.COMPARE_MODEL_DISTANCE_SCALE,
                     meshGlow = meshGlow,
                     loadingMessageRes = if (showColor) R.string.body_visual_color_loading
@@ -323,7 +340,7 @@ private fun CompareSummaryCard(
             )
             Spacer(Modifier.width(dimensionResource(R.dimen.spacer_xs)))
             Text(
-                text = stringResource(R.string.body_part_full_body),
+                text = stringResource(BodyVisualConstants.visualHeaderLabelRes(state.selectedBodyPart)),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.weight(1f),
@@ -370,7 +387,12 @@ private fun CompareSummaryCard(
             rightDate = state.rightScanTimestamp?.let { shortDateFormatter.format(Date(it)) },
         )
 
-        FULL_BODY_MEASUREMENT_ROWS.forEachIndexed { index, row ->
+        val rows = if (state.selectedBodyPart == BodyMeasurementRegion.FullBody) {
+            FULL_BODY_MEASUREMENT_ROWS
+        } else {
+            FULL_BODY_MEASUREMENT_ROWS.filter { it.region == state.selectedBodyPart }
+        }
+        rows.forEachIndexed { index, row ->
             if (index > 0) AppHorizontalGradientDivider(
                 modifier = Modifier.padding(vertical = dimensionResource(R.dimen.spacer_m)),
             )
@@ -432,6 +454,7 @@ private fun CompareMeasurementRow(
                 isMetric = isMetric,
                 decreaseIsPositive = region.decreaseIsPositive,
                 modifier = Modifier.weight(1f),
+                hideValue = true,
             )
 
             Spacer(Modifier.width(dimensionResource(R.dimen.spacer_l)))
@@ -444,6 +467,7 @@ private fun CompareMeasurementRow(
                 isMetric = isMetric,
                 decreaseIsPositive = region.decreaseIsPositive,
                 modifier = Modifier.weight(1f),
+                hideValue = true,
             )
         }
     }
