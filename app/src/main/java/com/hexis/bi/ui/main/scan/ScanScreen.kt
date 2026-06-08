@@ -14,6 +14,7 @@ fun ScanScreen(
     onScanComplete: () -> Unit,
     onConnectSuit: () -> Unit,
     onBuySuit: () -> Unit,
+    onShowHowToScan: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ScanViewModel = koinViewModel(),
 ) {
@@ -22,6 +23,7 @@ fun ScanScreen(
     if (state.suitConnected) StartScanScreen(
         onBack = onBack,
         onScanComplete = onScanComplete,
+        onShowHowToScan = onShowHowToScan,
         modifier = modifier,
     )
     else ScanErrorScreen(

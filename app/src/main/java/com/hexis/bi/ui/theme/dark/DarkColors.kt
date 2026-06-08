@@ -40,6 +40,9 @@ internal val GreenSoft = Color(0xFF1C2A23)
 internal val Positive = Color(0xFF1DC473)
 internal val Negative = Color(0xFFE62020)
 
+// Inactive step-indicator / progress track (#79797938 from design, RRGGBBAA).
+internal val StepIndicatorTrack = Color(0x38797979)
+
 // Recovery gauge gradient (Figma): red (low) → yellow (recovering) → green (ready), 0.74 alpha.
 internal val GaugeLow = Color(0xBDD0462E)
 internal val GaugeMid = Color(0xBDECF162)
