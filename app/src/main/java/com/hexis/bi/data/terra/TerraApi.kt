@@ -84,6 +84,32 @@ class TerraApi(private val client: OkHttpClient) {
         }
     }
 
+    /**
+     * `GET /v2/userInfo?user_id=…` — the authentication state for a Terra user id. Used to
+     * confirm a connection on return to the app instead of relying on the OAuth redirect.
+     */
+    suspend fun getUserInfo(terraUserId: String): Result<TerraUserInfoResponse> =
+        withContext(Dispatchers.IO) {
+            try {
+                val url = "$TERRA_BASE_URL${TerraApiConstants.Path.USER_INFO}".toHttpUrl()
+                    .newBuilder()
+                    .addQueryParameter(TerraApiConstants.Query.USER_ID, terraUserId)
+                    .build()
+                client.newCall(terraRequest(url.toString()).get().build()).execute().use { response ->
+                    val body = response.body.string()
+                    if (!response.isSuccessful) {
+                        error("Terra ${TerraApiConstants.Path.USER_INFO} ${response.code}: $body")
+                    }
+                    Result.success(
+                        terraJson.decodeFromString(TerraUserInfoResponse.serializer(), body),
+                    )
+                }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                Result.failure(e)
+            }
+        }
+
     /** `DELETE /v2/auth/deauthenticateUser?user_id=…` — revokes Terra’s access for that user id. */
     suspend fun deauthenticateUser(terraUserId: String): Result<Unit> =
         withContext(Dispatchers.IO) {
@@ -128,6 +154,7 @@ private object TerraApiConstants {
     object Path {
         const val DAILY = "/daily"
         const val SLEEP = "/sleep"
+        const val USER_INFO = "/userInfo"
         const val DEAUTHENTICATE_USER = "/auth/deauthenticateUser"
     }
 
@@ -151,4 +178,25 @@ data class TerraDataListResponse(
     val type: String? = null,
     val data: List<JsonElement> = emptyList(),
     val message: String? = null,
+)
+
+@Serializable
+data class TerraUserInfoResponse(
+    val status: String? = null,
+    val message: String? = null,
+    // Top-level flag Terra returns from /userInfo; true only once the OAuth actually completed,
+    // so it cleanly distinguishes a finished connection from a cancelled/abandoned attempt.
+    val is_authenticated: Boolean? = null,
+    val user: TerraUserInfo? = null,
+) {
+    /** Whether this user id represents a live, authorized connection. */
+    val isConnected: Boolean
+        get() = status?.equals("success", ignoreCase = true) == true &&
+            is_authenticated == true &&
+            !user?.provider.isNullOrBlank()
+}
+
+@Serializable
+data class TerraUserInfo(
+    val provider: String? = null,
 )

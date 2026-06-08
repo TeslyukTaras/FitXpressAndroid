@@ -18,4 +18,6 @@ data class HealthConnectionsState(
     val sdkProviders: List<TerraProviderUi> = emptyList(),
     val wearableProviders: List<TerraProviderUi> = emptyList(),
     val otherProviders: List<TerraProviderUi> = emptyList(),
+    val pendingAuthUserId: String? = null,
+    val pendingAuthProvider: String? = null,
 )

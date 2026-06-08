@@ -22,6 +22,8 @@ import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.data.terra.TerraWidgetApi
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.constants.TerraProviders
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -32,6 +34,9 @@ import timber.log.Timber
 
 /** Set false to show all Terra rows again (including those still on [R.drawable.ic_connect]). */
 private const val HIDE_PROVIDERS_WITHOUT_BRANDED_ICON = true
+
+private const val VERIFY_MAX_ATTEMPTS = 5
+private const val VERIFY_RETRY_DELAY_MS = 2_000L
 
 class HealthConnectionsViewModel(
     application: Application,
@@ -46,6 +51,8 @@ class HealthConnectionsViewModel(
 
     private val _state = MutableStateFlow(HealthConnectionsState())
     val state = _state.asStateFlow()
+
+    private var verifyJob: Job? = null
 
     private fun buildSdkProviders(): List<TerraProviderUi> = listOf(
         TerraProviderUi(
@@ -286,8 +293,61 @@ class HealthConnectionsViewModel(
         }
 
         terraWidgetApi.authenticateUser(referenceId = uid, resource = resource)
-            .onSuccess { url -> _state.update { it.copy(widgetUrl = url) } }
+            .onSuccess { session ->
+                _state.update {
+                    it.copy(
+                        widgetUrl = session.authUrl,
+                        pendingAuthUserId = session.userId,
+                        pendingAuthProvider = resource,
+                    )
+                }
+            }
             .onFailure { setError(R.string.error_wearable_start_failed) }
+    }
+
+    /**
+     * On return from the OAuth Custom Tab, confirm the pending connection with Terra and persist
+     * it — the redirect can't be relied on to reopen the app. Polls a few times since Terra may
+     * lag a moment behind the completed OAuth.
+     */
+    fun onScreenResumed() {
+        val userId = _state.value.pendingAuthUserId ?: return
+        val provider = _state.value.pendingAuthProvider ?: return
+        if (verifyJob?.isActive == true) return
+        verifyJob = launch(showLoading = false, onError = { clearPendingAuth() }) {
+            repeat(VERIFY_MAX_ATTEMPTS) {
+                val info = terraApi.getUserInfo(userId).getOrNull()
+                if (info?.isConnected == true) {
+                    persistVerifiedConnection(userId, info.user?.provider ?: provider)
+                    clearPendingAuth()
+                    return@launch
+                }
+                delay(VERIFY_RETRY_DELAY_MS)
+            }
+            // No connection after retries — the user likely cancelled; drop it silently.
+            clearPendingAuth()
+        }
+    }
+
+    private suspend fun persistVerifiedConnection(userId: String, provider: String) {
+        healthConnectionsRepository.upsertConnection(
+            HealthConnection(
+                terraUserId = userId,
+                provider = provider.uppercase(),
+                source = HealthConnection.SOURCE_API,
+                connectedAt = Timestamp.now(),
+                active = true,
+            ),
+        ).onSuccess {
+            TerraSdkSync.invalidateCachesAndNotify()
+            setMessage(R.string.msg_wearable_connected, provider.replaceFirstChar { it.titlecase() })
+        }.onFailure {
+            setError(R.string.error_connection_save_failed)
+        }
+    }
+
+    private fun clearPendingAuth() {
+        _state.update { it.copy(pendingAuthUserId = null, pendingAuthProvider = null) }
     }
 
     private fun startWidgetSession(providers: String) = launch(
