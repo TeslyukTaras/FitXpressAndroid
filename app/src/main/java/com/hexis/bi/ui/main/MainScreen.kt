@@ -45,6 +45,7 @@ import com.hexis.bi.ui.main.home.sleep.SleepScreen
 import com.hexis.bi.ui.main.notifications.NotificationsScreen
 import com.hexis.bi.ui.main.scan.ScanScreen
 import com.hexis.bi.ui.main.scan.history.ScanHistoryScreen
+import com.hexis.bi.ui.main.scan.howtoscan.HowToScanScreen
 import com.hexis.bi.ui.main.scan.results.ResultsScreen
 import com.hexis.bi.ui.main.settings.SettingsScreen
 import com.hexis.bi.ui.main.settings.editprofile.EditProfileScreen
@@ -143,6 +144,7 @@ fun MainScreen(
                     },
                     onConnectSuit = { navController.navigate(Route.Main.MY_SUIT) },
                     onBuySuit = {},
+                    onShowHowToScan = { navController.navigate(Route.Main.HOW_TO_SCAN) },
                 )
             }
             composable(Route.Main.SCAN_RESULTS) {
@@ -192,7 +194,11 @@ fun MainScreen(
                     onNavigateToHealthConnections = { navController.navigate(Route.Main.HEALTH_CONNECTIONS) },
                     onNavigateToScanPreferences = { navController.navigate(Route.Main.SCAN_PREFERENCES) },
                     onNavigateToMySuit = { navController.navigate(Route.Main.MY_SUIT) },
+                    onNavigateToHowToScan = { navController.navigate(Route.Main.HOW_TO_SCAN) },
                 )
+            }
+            composable(Route.Main.HOW_TO_SCAN) {
+                HowToScanScreen(onBack = { navController.popBackStackOnce() })
             }
             composable(Route.Main.EDIT_PROFILE) {
                 EditProfileScreen(onBack = { navController.popBackStackOnce() })

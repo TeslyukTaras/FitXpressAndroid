@@ -60,6 +60,7 @@ import timber.log.Timber
 fun StartScanScreen(
     onBack: () -> Unit,
     onScanComplete: () -> Unit,
+    onShowHowToScan: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: StartScanViewModel = koinViewModel(),
 ) {
@@ -111,7 +112,7 @@ fun StartScanScreen(
                 title = stringResource(R.string.scan_title),
                 onBack = onBack,
                 actions = {
-                    IconButton(onClick = {}) {
+                    IconButton(onClick = onShowHowToScan) {
                         Icon(
                             painter = painterResource(R.drawable.ic_info),
                             contentDescription = stringResource(R.string.cd_info),

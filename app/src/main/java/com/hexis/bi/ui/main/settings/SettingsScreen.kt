@@ -70,6 +70,7 @@ fun SettingsScreen(
     onNavigateToHealthConnections: () -> Unit = {},
     onNavigateToScanPreferences: () -> Unit = {},
     onNavigateToMySuit: () -> Unit = {},
+    onNavigateToHowToScan: () -> Unit = {},
     viewModel: DeleteAccountViewModel = koinViewModel(),
 ) {
     val context = LocalContext.current
@@ -99,6 +100,7 @@ fun SettingsScreen(
             onNavigateToHealthConnections = onNavigateToHealthConnections,
             onNavigateToMySuit = onNavigateToMySuit,
             onNavigateToScanPreferences = onNavigateToScanPreferences,
+            onNavigateToHowToScan = onNavigateToHowToScan,
             onShowDeleteDialog = viewModel::showDialog,
             onLogout = onLogout,
         )
@@ -209,6 +211,7 @@ private fun buildSettingsGroups(
     onNavigateToHealthConnections: () -> Unit,
     onNavigateToMySuit: () -> Unit,
     onNavigateToScanPreferences: () -> Unit,
+    onNavigateToHowToScan: () -> Unit,
     onShowDeleteDialog: () -> Unit,
     onLogout: () -> Unit,
 ): List<SettingsGroup> {
@@ -233,7 +236,7 @@ private fun buildSettingsGroups(
         SettingsGroup(
             titleRes = R.string.settings_group_support_about,
             items = listOf(
-                SettingsRow(R.drawable.ic_info, R.string.settings_how_scanning_works),
+                SettingsRow(R.drawable.ic_info, R.string.settings_how_scanning_works, onClick = onNavigateToHowToScan),
                 SettingsRow(R.drawable.ic_help, R.string.settings_help),
                 SettingsRow(R.drawable.ic_lock, R.string.settings_terms_privacy),
                 SettingsRow(R.drawable.ic_warning, R.string.settings_report_problem),
