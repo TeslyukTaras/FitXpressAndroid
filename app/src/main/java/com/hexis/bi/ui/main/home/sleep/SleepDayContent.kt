@@ -18,6 +18,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
+import com.hexis.bi.ui.components.AppDateNavigator
 import com.hexis.bi.ui.main.home.sleep.components.SleepMetricsCard
 import com.hexis.bi.ui.main.home.sleep.components.SleepRecoveryBanner
 import com.hexis.bi.ui.main.home.sleep.components.SleepStatusCard
@@ -27,9 +28,19 @@ import com.hexis.bi.ui.main.home.sleep.components.SleepTimelineCard
 fun SleepDayContent(
     state: SleepState,
     onInfoClick: () -> Unit,
+    onPreviousDay: () -> Unit,
+    onNextDay: () -> Unit,
     onRetry: () -> Unit = {},
 ) {
-    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
+    AppDateNavigator(
+        modifier = Modifier,
+        label = state.dayLabel,
+        onPrevious = onPreviousDay,
+        onNext = onNextDay,
+        canGoNext = state.canGoNextDay,
+    )
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxs)))
 
     when (state.dayLoadState) {
         SleepLoadState.Loading -> SleepLoadPlaceholder {
@@ -60,22 +71,12 @@ fun SleepDayContent(
 @Composable
 private fun SleepDayReady(state: SleepState, onInfoClick: () -> Unit) {
     SleepStatusCard(
-        quality = state.sleepQuality,
         totalSleepMinutes = state.totalSleepMinutes,
         sleepGoalHours = state.sleepGoalHours,
         stages = state.stages,
     )
 
-    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
-
-    SleepMetricsCard(
-        restfulness = state.restfulness,
-        restfulnessMax = state.restfulnessMax,
-        hrv = state.hrv,
-        restingHeartRate = state.restingHeartRate,
-    )
-
-    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
     SleepTimelineCard(
         totalSleepMinutes = state.totalSleepMinutes,
@@ -84,7 +85,18 @@ private fun SleepDayReady(state: SleepState, onInfoClick: () -> Unit) {
         segments = state.timelineSegments,
     )
 
-    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+    SleepMetricsCard(
+        hrv = state.hrv,
+        restingHeartRate = state.restingHeartRate,
+        hrvSeries = state.hrvSeries,
+        rhrSeries = state.rhrSeries,
+        timeStartHour = state.timelineStartHour,
+        timeEndHour = state.timelineEndHour,
+    )
+
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
     SleepRecoveryBanner(
         insightText = stringResource(state.insightRes),

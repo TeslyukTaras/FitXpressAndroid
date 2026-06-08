@@ -1,57 +1,69 @@
 package com.hexis.bi.ui.main.home.sleep.components
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.hexis.bi.R
 import com.hexis.bi.data.sleep.SleepStage
+import com.hexis.bi.ui.dark.BodyGlassCard
 import com.hexis.bi.ui.main.home.sleep.TimelineSegment
 import com.hexis.bi.ui.main.home.sleep.nameRes
-import com.hexis.bi.ui.theme.Blue300
-import com.hexis.bi.ui.theme.BlueFadedIndicator100
-import com.hexis.bi.ui.theme.BlueFadedIndicator200
-import com.hexis.bi.ui.theme.BlueFadedIndicator300
-import com.hexis.bi.utils.constants.SleepConstants
+import com.hexis.bi.ui.theme.Gray200
+import com.hexis.bi.ui.theme.SleepStageAwake
+import com.hexis.bi.ui.theme.SleepStageDeep
+import com.hexis.bi.ui.theme.SleepStageLight
+import com.hexis.bi.ui.theme.SleepStageRem
 import com.hexis.bi.utils.formatHour
-import com.hexis.bi.utils.formatSleepDuration
 
-private val stageYIndex = mapOf(
-    SleepStage.Deep to 3,
-    SleepStage.REM to 2,
-    SleepStage.Light to 1,
-    SleepStage.Awake to 0,
-)
+private const val SHADOW_ALPHA = 0.5f
+private const val LINE_ALPHA = 0.6f
+
+/** Stage rows top-to-bottom; the grid line sits at the bottom of each row. */
+private val STAGE_ORDER =
+    listOf(SleepStage.Awake, SleepStage.REM, SleepStage.Light, SleepStage.Deep)
 
 private fun stageColor(stage: SleepStage): Color = when (stage) {
-    SleepStage.Awake -> BlueFadedIndicator100
-    SleepStage.Light -> BlueFadedIndicator200
-    SleepStage.REM -> BlueFadedIndicator300
-    SleepStage.Deep -> Blue300
+    SleepStage.Awake -> SleepStageAwake
+    SleepStage.Light -> SleepStageLight
+    SleepStage.REM -> SleepStageRem
+    SleepStage.Deep -> SleepStageDeep
 }
+
+/** Awake/REM plateaus sit above their grid line (mid-row) and cast their shadow downward. */
+private fun SleepStage.shadowGoesDown(): Boolean =
+    this == SleepStage.Awake || this == SleepStage.REM
 
 @Composable
 fun SleepTimelineCard(
@@ -61,10 +73,23 @@ fun SleepTimelineCard(
     segments: List<TimelineSegment>,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = dimensionResource(R.dimen.padding_medium)),
+    val stageHeight = dimensionResource(R.dimen.sleep_timeline_stage_height)
+    val labelStyle = MaterialTheme.typography.labelSmall.copy(color = Gray200.copy(alpha = 0.4f))
+    val measurer = rememberTextMeasurer()
+    val labelTexts = STAGE_ORDER.map { stringResource(it.nameRes()) }
+    // Plot starts 16dp past the widest stage label; grid lines still span the full width.
+    val longestLabel = with(LocalDensity.current) {
+        labelTexts.maxOf { measurer.measure(it, labelStyle).size.width }.toDp()
+    }
+    val plotStartX = longestLabel + dimensionResource(R.dimen.spacer_l)
+    BodyGlassCard(
+        modifier = modifier,
+        contentPadding = PaddingValues(
+            start = dimensionResource(R.dimen.spacer_m),
+            top = dimensionResource(R.dimen.spacer_l),
+            end = dimensionResource(R.dimen.spacer_m),
+            bottom = dimensionResource(R.dimen.spacer_l)
+        )
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -76,138 +101,202 @@ fun SleepTimelineCard(
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
-            Text(
-                text = formatSleepDuration(totalSleepMinutes),
-                style = MaterialTheme.typography.headlineSmall,
-                color = Blue300,
-            )
+            Text(text = timelineDurationValue(totalSleepMinutes))
         }
 
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = formatHour(timeStartHour),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.secondary,
-            )
-            Text(
-                text = formatHour(timeEndHour),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.secondary,
-            )
-        }
-
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
-
-        TimelineChart(
-            segments = segments,
-            cornerRadius = dimensionResource(R.dimen.sleep_timeline_corner_radius),
-            connectorWidth = dimensionResource(R.dimen.sleep_timeline_connector_width),
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(dimensionResource(R.dimen.sleep_timeline_chart_height)),
+                .height(stageHeight * STAGE_ORDER.size),
+        ) {
+            TimelineChart(
+                segments = segments,
+                stageHeight = stageHeight,
+                plotStartX = plotStartX,
+                modifier = Modifier.fillMaxSize(),
+            )
+            TimelineStageLabels(
+                stageHeight = stageHeight,
+                labelStyle = labelStyle,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+
+        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
+
+        TimelineTimeLabels(
+            timeStartHour = timeStartHour,
+            timeEndHour = timeEndHour,
+            modifier = Modifier.padding(start = plotStartX),
         )
+    }
+}
 
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+/** Total sleep header value: white bodyLarge numbers with muted bodyMedium h/m units (matches Sleep Stages). */
+@Composable
+private fun timelineDurationValue(totalMinutes: Int): AnnotatedString {
+    val hours = totalMinutes / 60
+    val minutes = totalMinutes % 60
+    val numberStyle = MaterialTheme.typography.bodyLarge.toSpanStyle().copy(color = Color.White)
+    val unitStyle =
+        MaterialTheme.typography.bodyMedium.toSpanStyle().copy(color = Gray200.copy(alpha = 0.4f))
+    val hourUnit = stringResource(R.string.unit_hours_short)
+    val minuteUnit = stringResource(R.string.unit_minutes_short)
+    return buildAnnotatedString {
+        withStyle(numberStyle) { append(hours.toString()) }
+        withStyle(unitStyle) { append(" $hourUnit") }
+        withStyle(numberStyle) { append(" ${minutes.toString().padStart(2, '0')}") }
+        withStyle(unitStyle) { append(" $minuteUnit") }
+    }
+}
 
-        TimelineLegend()
+@Composable
+private fun TimelineStageLabels(
+    stageHeight: Dp,
+    labelStyle: TextStyle,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        STAGE_ORDER.forEach { stage ->
+            // Grid line sits at the row bottom; label rides 8dp above it, line passing underneath.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(stageHeight),
+                contentAlignment = Alignment.BottomStart,
+            ) {
+                Text(
+                    text = stringResource(stage.nameRes()),
+                    style = labelStyle,
+                    modifier = Modifier.padding(bottom = dimensionResource(R.dimen.spacer_xs)),
+                )
+            }
+        }
     }
 }
 
 @Composable
 private fun TimelineChart(
     segments: List<TimelineSegment>,
-    cornerRadius: Dp,
-    connectorWidth: Dp,
+    stageHeight: Dp,
+    plotStartX: Dp,
     modifier: Modifier = Modifier,
 ) {
-    val gridLineColor = MaterialTheme.colorScheme.outline
-    Canvas(modifier = modifier) {
-        val trackHeight = size.height / SleepConstants.SLEEP_STAGE_COUNT
-        val cornerRadiusPx = cornerRadius.toPx()
-        val connectorWidthPx = connectorWidth.toPx()
-        val cornerRadiusObj = CornerRadius(cornerRadiusPx)
+    val gridLineColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)
+    val lineWidth = dimensionResource(R.dimen.sleep_timeline_line_width)
+    val shadowHeight = dimensionResource(R.dimen.sleep_timeline_shadow_height)
+    val plateauOffset = dimensionResource(R.dimen.sleep_timeline_plateau_grid_offset)
+    val cornerRadius = dimensionResource(R.dimen.sleep_timeline_corner_radius)
 
-        // Subtle horizontal grid lines between tracks
-        for (i in 0 until SleepConstants.SLEEP_STAGE_COUNT + 1) {
-            drawLine(
-                color = gridLineColor,
-                start = Offset(0f, i * trackHeight),
-                end = Offset(size.width, i * trackHeight),
-                strokeWidth = connectorWidthPx,
-            )
+    Canvas(modifier = modifier) {
+        val stageHeightPx = stageHeight.toPx()
+        val lineWidthPx = lineWidth.toPx()
+        val shadowHeightPx = shadowHeight.toPx()
+        val plateauOffsetPx = plateauOffset.toPx()
+        val cornerRadiusPx = cornerRadius.toPx()
+        val plotStartXPx = plotStartX.toPx()
+        val plotWidth = size.width - plotStartXPx
+        fun plotX(fraction: Float) = plotStartXPx + fraction.coerceIn(0f, 1f) * plotWidth
+
+        // Grid line at the bottom of each stage's row; plateaus sit above it.
+        fun gridY(stage: SleepStage) = (STAGE_ORDER.indexOf(stage) + 1) * stageHeightPx
+        fun plateauY(stage: SleepStage): Float =
+            if (stage.shadowGoesDown()) gridY(stage) - stageHeightPx / 2f
+            else gridY(stage) - plateauOffsetPx
+
+        // Four full-width grid lines, one per stage.
+        STAGE_ORDER.forEach { stage ->
+            val y = gridY(stage)
+            drawLine(gridLineColor, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
         }
 
-        // Segments — each drawn in its stage's horizontal track
+        // Translucent vertical gradient shared by the whole hypnogram line (Figma border image).
+        // Anchored to the plateau band so each stage's line shows its own colour (orange included).
+        val lineBrush = Brush.verticalGradient(
+            0f to SleepStageAwake.copy(alpha = LINE_ALPHA),
+            0.33f to SleepStageRem.copy(alpha = LINE_ALPHA),
+            0.66f to SleepStageLight.copy(alpha = LINE_ALPHA),
+            1f to SleepStageDeep.copy(alpha = LINE_ALPHA),
+            startY = plateauY(SleepStage.Awake),
+            endY = plateauY(SleepStage.Deep),
+        )
+        val linePath = Path()
+
         segments.forEachIndexed { index, segment ->
-            val yIndex = stageYIndex[segment.stage] ?: 0
-            val left = segment.startFraction * size.width
-            val right = segment.endFraction * size.width
-            val top = yIndex * trackHeight
-            val bottom = (yIndex + 1) * trackHeight
+            val x0 = plotX(segment.startFraction)
+            val x1 = plotX(segment.endFraction)
+            val py = plateauY(segment.stage)
+            val color = stageColor(segment.stage)
 
-            drawRoundRect(
-                color = stageColor(segment.stage),
-                topLeft = Offset(left, top),
-                size = Size(right - left, bottom - top),
-                cornerRadius = cornerRadiusObj,
-            )
-
-            // Gradient connector when transitioning to a different sleep stage
-            val next = segments.getOrNull(index + 1) ?: return@forEachIndexed
-            val nextYIndex = stageYIndex[next.stage] ?: 0
-            if (nextYIndex != yIndex) {
-                val goingDown = nextYIndex > yIndex
-                val fromY = if (goingDown) bottom - cornerRadiusPx else top + cornerRadiusPx
-                val toY = if (goingDown) nextYIndex * trackHeight + cornerRadiusPx
-                else (nextYIndex + 1) * trackHeight - cornerRadiusPx
-
-                val brush = Brush.verticalGradient(
-                    colors = if (goingDown)
-                        listOf(stageColor(segment.stage), stageColor(next.stage))
-                    else
-                        listOf(stageColor(next.stage), stageColor(segment.stage)),
-                    startY = minOf(fromY, toY),
-                    endY = maxOf(fromY, toY),
+            // Colorful shadow: downward for Awake/REM, upward for Light/Deep.
+            if (segment.stage.shadowGoesDown()) {
+                val end = py + shadowHeightPx
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(color.copy(alpha = SHADOW_ALPHA), Color.Transparent),
+                        startY = py,
+                        endY = end,
+                    ),
+                    topLeft = Offset(x0, py),
+                    size = Size(x1 - x0, (end.coerceAtMost(size.height)) - py),
                 )
-                drawLine(
-                    brush = brush,
-                    start = Offset(right - (connectorWidthPx / 2), fromY),
-                    end = Offset(right + (connectorWidthPx / 2), toY),
-                    strokeWidth = connectorWidthPx,
-                    cap = StrokeCap.Round,
+            } else {
+                val start = (py - shadowHeightPx).coerceAtLeast(0f)
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(Color.Transparent, color.copy(alpha = SHADOW_ALPHA)),
+                        startY = py - shadowHeightPx,
+                        endY = py,
+                    ),
+                    topLeft = Offset(x0, start),
+                    size = Size(x1 - x0, py - start),
                 )
             }
+
+            // Build the continuous step line: vertical into this plateau (x0 == previous x1), then across.
+            if (index == 0) linePath.moveTo(x0, py) else linePath.lineTo(x0, py)
+            linePath.lineTo(x1, py)
         }
+
+        // One translucent, color-shifting line with 2dp rounded corners.
+        drawPath(
+            path = linePath,
+            brush = lineBrush,
+            style = Stroke(
+                width = lineWidthPx,
+                cap = StrokeCap.Round,
+                join = StrokeJoin.Round,
+                pathEffect = PathEffect.cornerPathEffect(cornerRadiusPx),
+            ),
+        )
     }
 }
 
 @Composable
-private fun TimelineLegend() {
-    val stages = listOf(SleepStage.Deep, SleepStage.REM, SleepStage.Light, SleepStage.Awake)
-    Row(modifier = Modifier.fillMaxWidth()) {
-        stages.forEach { stage ->
-            Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(dimensionResource(R.dimen.size_indicator_bigger))
-                        .clip(CircleShape)
-                        .background(stageColor(stage))
-                )
-                Spacer(Modifier.size(dimensionResource(R.dimen.spacer_xxs)))
-                Text(
-                    text = stringResource(stage.nameRes()),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary,
-                )
-            }
+private fun TimelineTimeLabels(
+    timeStartHour: Int,
+    timeEndHour: Int,
+    modifier: Modifier = Modifier,
+) {
+    val labels = timelineLabelHours(timeStartHour, timeEndHour)
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        labels.forEach { hour ->
+            Text(
+                text = formatHour(hour),
+                style = MaterialTheme.typography.labelSmall,
+                color = Gray200,
+            )
         }
+    }
+}
+
+private fun timelineLabelHours(startHour: Int, endHour: Int): List<Int> {
+    val normalizedEnd = if (endHour <= startHour) endHour + 24 else endHour
+    val span = (normalizedEnd - startHour).coerceAtLeast(1)
+    return List(5) { index ->
+        (startHour + span * index / 4) % 24
     }
 }

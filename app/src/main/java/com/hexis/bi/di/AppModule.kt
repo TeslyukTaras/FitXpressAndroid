@@ -22,6 +22,8 @@ import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.scan.ThreeDLookRepository
 import com.hexis.bi.data.scan.api.ThreeDLookApi
+import com.hexis.bi.BuildConfig
+import com.hexis.bi.data.sleep.FakeTerraSleepRepository
 import com.hexis.bi.data.sleep.SleepRepository
 import com.hexis.bi.data.sleep.TerraApiSleepRepository
 import com.hexis.bi.data.store.AppPreferencesDataStore
@@ -119,7 +121,10 @@ val appModule = module {
     single { TerraCallbackHandler(get()) }
     single { TerraWidgetApi(get()) }
     single { TerraConnector(get(), get()) }
-    single<SleepRepository> { TerraApiSleepRepository(api = get(), sourceResolver = get()) }
+    single<SleepRepository> {
+        if (BuildConfig.FAKE_SLEEP_DATA) FakeTerraSleepRepository()
+        else TerraApiSleepRepository(api = get(), sourceResolver = get())
+    }
     single<ActivityRepository> { TerraApiActivityRepository(api = get(), sourceResolver = get()) }
     single<RecoveryRepository> {
         TerraDerivedRecoveryRepository(sleepRepository = get(), activityRepository = get())

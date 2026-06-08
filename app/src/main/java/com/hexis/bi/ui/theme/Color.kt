@@ -51,6 +51,12 @@ val LightBlueBackground = Color(0xFFE6E6E6)
 val Green = Color(0xFF0E8716)
 val Yellow = Color(0xFFF2B705)
 
+// Sleep stage colors
+val SleepStageAwake = Color(0xFFF8AE4C)
+val SleepStageRem = Color(0xFF1DC473)
+val SleepStageDeep = Color(0xFF1DC4B3)
+val SleepStageLight = Color(0xFF5C93ED)
+
 // Subtitle/description text (blue-purple muted — onSurfaceVariant)
 val SubtitleBlue = Color(0xFF7272A8)
 
