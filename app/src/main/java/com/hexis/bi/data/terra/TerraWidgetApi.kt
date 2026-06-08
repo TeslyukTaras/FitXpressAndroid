@@ -8,6 +8,8 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 
+data class TerraAuthSession(val authUrl: String, val userId: String?)
+
 /** Produces a Terra auth URL for web-based providers (Oura, Garmin, …). */
 class TerraWidgetApi(private val client: OkHttpClient) {
 
@@ -44,7 +46,7 @@ class TerraWidgetApi(private val client: OkHttpClient) {
      * @param referenceId Firebase UID — Terra echoes it back via webhook/redirect.
      * @param resource Single Terra provider code (e.g. `OURA`).
      */
-    suspend fun authenticateUser(referenceId: String, resource: String): Result<String> =
+    suspend fun authenticateUser(referenceId: String, resource: String): Result<TerraAuthSession> =
         withContext(Dispatchers.IO) {
             try {
                 val url = "$TERRA_BASE_URL${Path.AUTHENTICATE_USER}".toHttpUrl().newBuilder()
@@ -65,7 +67,7 @@ class TerraWidgetApi(private val client: OkHttpClient) {
                     val parsed = terraJson.decodeFromString(AuthenticateUserResponse.serializer(), body)
                     val authUrl = parsed.auth_url
                         ?: error("Terra authenticateUser returned no auth_url: $body")
-                    Result.success(authUrl)
+                    Result.success(TerraAuthSession(authUrl = authUrl, userId = parsed.user_id))
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e

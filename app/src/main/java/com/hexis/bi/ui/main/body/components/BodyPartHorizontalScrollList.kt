@@ -330,7 +330,7 @@ private fun selectorScrollPxForCenter(
     if (maxScrollPx <= 0f) return 0f
     var low = 0f
     var high = maxScrollPx
-    repeat(18) {
+    repeat(BodyVisualConstants.BODY_PART_SELECTOR_SNAP_SEARCH_ITERATIONS) {
         val mid = (low + high) / 2f
         val focalContent = mid + selectorFocalPoint(
             scrollPx = mid,

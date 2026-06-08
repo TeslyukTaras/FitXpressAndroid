@@ -298,7 +298,7 @@ private fun bodyPartSelectorScrollPxForIndex(
     var low = 0f
     var high = maxScrollPx
 
-    repeat(18) {
+    repeat(BodyVisualConstants.BODY_PART_SELECTOR_SNAP_SEARCH_ITERATIONS) {
         val mid = (low + high) / 2f
         val focalContentY = mid + bodyPartSelectorFocalY(
             scrollPx = mid,
