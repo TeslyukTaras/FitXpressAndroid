@@ -15,11 +15,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
@@ -35,6 +32,7 @@ import com.hexis.bi.ui.components.AppDialog
 import com.hexis.bi.ui.dark.DarkTabSelector
 import com.hexis.bi.ui.dark.LightStatusBarIcons
 import com.hexis.bi.ui.dark.darkScreenBackground
+import com.hexis.bi.ui.main.home.sleep.components.SleepRecoverySheetBody
 import com.hexis.bi.ui.main.home.sleep.components.SleepSettingsDialogContent
 import com.hexis.bi.ui.theme.dark.DarkTheme
 import org.koin.androidx.compose.koinViewModel
@@ -136,46 +134,11 @@ fun SleepScreen(
 
             if (state.showRecoverySheet) {
                 BaseBottomSheet(
-                    title = stringResource(R.string.sleep_recovery_title),
+                    title = stringResource(R.string.sleep_recovery_sheet_title),
                     onDismiss = viewModel::dismissRecoverySheet,
-                    modifier = modifier.fillMaxHeight(0.75f),
+                    modifier = modifier.fillMaxHeight(0.8f),
                 ) {
-                    Text(
-                        text = stringResource(R.string.sleep_recovery_sheet_heading_1),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
-                    Text(
-                        text = stringResource(R.string.sleep_recovery_sheet_body_1),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-                    Text(
-                        text = stringResource(R.string.sleep_recovery_sheet_heading_2),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
-                    Text(
-                        text = stringResource(R.string.sleep_recovery_sheet_body_3),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                    Spacer(Modifier.weight(1f))
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
-
-                    TextButton(
-                        onClick = viewModel::dismissRecoverySheet,
-                        modifier = Modifier.align(Alignment.End)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.action_got_it),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
+                    SleepRecoverySheetBody(onDismiss = viewModel::dismissRecoverySheet)
                 }
             }
         }

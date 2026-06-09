@@ -60,9 +60,6 @@ android {
             buildConfigField("String", "ENVIRONMENT", "\"dev\"")
             buildConfigField("String", "API_BASE_URL", "\"https://api.dev.hexis.bi/\"")
             buildConfigField("boolean", "TERRA_INCLUDE_DUMMY_PROVIDER", "true")
-            // Serves locally generated, Terra-shaped sleep data so the screen can be
-            // previewed without a connected wearable. Dev only.
-            buildConfigField("boolean", "FAKE_SLEEP_DATA", "true")
         }
         create("stage") {
             dimension = "env"
@@ -72,7 +69,6 @@ android {
             buildConfigField("String", "ENVIRONMENT", "\"stage\"")
             buildConfigField("String", "API_BASE_URL", "\"https://api.stage.hexis.bi/\"")
             buildConfigField("boolean", "TERRA_INCLUDE_DUMMY_PROVIDER", "false")
-            buildConfigField("boolean", "FAKE_SLEEP_DATA", "false")
         }
         create("prod") {
             dimension = "env"
@@ -80,7 +76,6 @@ android {
             buildConfigField("String", "ENVIRONMENT", "\"prod\"")
             buildConfigField("String", "API_BASE_URL", "\"https://api.hexis.bi/\"")
             buildConfigField("boolean", "TERRA_INCLUDE_DUMMY_PROVIDER", "false")
-            buildConfigField("boolean", "FAKE_SLEEP_DATA", "false")
         }
     }
 

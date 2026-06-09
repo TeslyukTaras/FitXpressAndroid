@@ -3,6 +3,7 @@ package com.hexis.bi.utils
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
+import com.hexis.bi.domain.enums.WeekDay
 import com.hexis.bi.utils.constants.DateFormatConstants
 import com.hexis.bi.utils.constants.ProfileConstants
 import com.hexis.bi.utils.constants.SleepConstants
@@ -43,6 +44,16 @@ fun shortMonthDayFormatter(locale: Locale = Locale.getDefault()): SimpleDateForm
 fun shortMonthDayYearFormatter(locale: Locale = Locale.getDefault()): SimpleDateFormat =
     SimpleDateFormat(DateFormatConstants.SHORT_MONTH_DAY_YEAR, locale)
 
+/** "Apr 14, 2026" label from an epoch-millis timestamp. Locale-aware. */
+fun Long.millisToShortMonthDayYear(): String =
+    shortMonthDayYearFormatter().format(Date(this))
+
+/** Lowercase hour with am/pm from an epoch-millis timestamp, e.g. "9 am". Locale-aware. */
+fun Long.millisToHourAmPm(): String =
+    SimpleDateFormat(DateFormatConstants.HOUR_AM_PM, Locale.getDefault())
+        .format(Date(this))
+        .lowercase(Locale.getDefault())
+
 /** Full "April 14" label used on day-based detail screens. Locale-aware. */
 fun LocalDate.formatFullMonthDay(): String =
     format(DateTimeFormatter.ofPattern(DateFormatConstants.FULL_MONTH_DAY, Locale.getDefault()))
@@ -66,6 +77,18 @@ fun LocalDate.formatFullMonthYear(): String =
 /** Four-digit year label, e.g. "2026". */
 fun LocalDate.formatYear(): String =
     format(DateTimeFormatter.ofPattern(DateFormatConstants.YEAR, Locale.getDefault()))
+
+/** "Apr 14, 2026" label used for last-synced timestamps. Locale-aware. */
+fun LocalDate.formatShortMonthDayYear(): String =
+    format(DateTimeFormatter.ofPattern(DateFormatConstants.SHORT_MONTH_DAY_YEAR, Locale.getDefault()))
+
+/** Compact "Apr 14 - Apr 20" range using short month-day labels. */
+fun formatShortDateRange(start: LocalDate, end: LocalDate): String =
+    "${start.formatShortMonthDay()} - ${end.formatShortMonthDay()}"
+
+/** Two-letter weekday initials for [this] date, e.g. "Mo", "Tu". */
+fun LocalDate.weekDayAbbreviation(): String =
+    WeekDay.entries[dayOfWeek.value - 1].abbreviation
 
 /** Sortable timestamp used as the Firestore document ID for a saved scan. */
 fun Date.formatAsScanDocId(): String =

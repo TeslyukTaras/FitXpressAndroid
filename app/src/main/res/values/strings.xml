@@ -315,8 +315,8 @@
     <string name="sleep_metric_value_unit">%1$d %2$s</string>
     <string name="sleep_metric_resting_heart_rate">Resting heart rate</string>
     <string name="sleep_timeline_title">Sleep Timeline</string>
-    <string name="sleep_recovery_title">Sleep and body recovery</string>
-    <string name="sleep_recovery_subtitle">Better sleep consistency often improves recovery.</string>
+    <string name="sleep_recovery_title">Sleep &amp; Body Recovery</string>
+    <string name="sleep_recovery_subtitle">Better sleep consistency may support improved recovery over time.</string>
     <string name="sleep_insight_good">Solid sleep score — your body got the recovery it needed last night.</string>
     <string name="sleep_insight_fair">Decent rest. Slightly longer or more consistent sleep would boost recovery.</string>
     <string name="sleep_insight_poor">Short or fragmented sleep detected. Prioritize a longer, steadier night to support recovery.</string>
@@ -325,16 +325,25 @@
     <string name="sleep_settings_title">Sleep settings</string>
     <string name="sleep_settings_goal">Sleep goal</string>
     <string name="sleep_settings_data_source">Data source</string>
-    <string name="sleep_summary_total_sleep">Total sleep</string>
     <string name="sleep_summary_last_7_days">Last 7 days</string>
-    <string name="sleep_summary_avg">Avg: %1$s</string>
-    <string name="sleep_weekly_stages_title">Sleep stages</string>
-    <string name="sleep_summary_trend_note">Arrows show change vs previous week.</string>
-    <string name="sleep_duration_hours_only">%1$dh</string>
-    <string name="sleep_recovery_sheet_heading_1">1. Lorem ipsum dolor</string>
-    <string name="sleep_recovery_sheet_body_1">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\nDuis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident.</string>
-    <string name="sleep_recovery_sheet_heading_2">2. Lorem ipsum</string>
-    <string name="sleep_recovery_sheet_body_3">Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae.\n\nNemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit.</string>
+    <string name="sleep_summary_trend_note">Arrows indicate changes compared to the previous week.</string>
+    <string name="sleep_structure_title">Sleep Structure</string>
+    <string name="sleep_recovery_sheet_title">Sleep and Recovery</string>
+    <string name="sleep_recovery_sheet_intro">Sleep affects how your body restores, recovers, and adapts. Consistent sleep may support better recovery, HRV, and resting heart rate.</string>
+    <string name="sleep_recovery_sheet_heading_status">1. Sleep Status</string>
+    <string name="sleep_recovery_sheet_body_status">Shows your total sleep time and time spent in each sleep stage.</string>
+    <string name="sleep_recovery_sheet_heading_timeline">2. Sleep Timeline</string>
+    <string name="sleep_recovery_sheet_body_timeline">Visualizes how your sleep stages changed through the night.</string>
+    <string name="sleep_recovery_sheet_heading_stages">3. Sleep Stages</string>
+    <string name="sleep_recovery_sheet_body_stages">Deep sleep - supports physical recovery and restoration.\nLight sleep - supports relaxation and recovery balance.\nREM - supports cognitive and emotional recovery.\nAwake - shows brief interruptions during sleep.</string>
+    <string name="sleep_recovery_sheet_heading_metrics">4. Sleep Metrics</string>
+    <string name="sleep_recovery_sheet_body_metrics">Key recovery signals including restfulness, HRV, and resting heart rate.</string>
+    <string name="sleep_recovery_sheet_heading_hrv">5. HRV</string>
+    <string name="sleep_recovery_sheet_body_hrv">Heart Rate Variability reflects how well your body is recovering and adapting to stress and activity</string>
+    <string name="sleep_recovery_sheet_heading_rhr">6. RHR</string>
+    <string name="sleep_recovery_sheet_body_rhr">Resting Heart Rate reflects how calm your body is during rest. Lower values are often linked to better recovery and cardiovascular fitness.</string>
+    <string name="sleep_recovery_sheet_heading_weekly">7. Weekly Summary</string>
+    <string name="sleep_recovery_sheet_body_weekly">Highlights your sleep and recovery trends over time.</string>
 
     <!-- Forgot password screen -->
     <string name="forgot_password_title">Forgot password?</string>

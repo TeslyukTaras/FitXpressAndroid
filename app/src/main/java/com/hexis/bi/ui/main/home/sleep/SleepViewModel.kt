@@ -11,12 +11,14 @@ import com.hexis.bi.data.sleep.SleepStage
 import com.hexis.bi.data.sleep.SleepStageInterval
 import com.hexis.bi.data.user.FirestoreSchema
 import com.hexis.bi.data.user.UserRepository
-import com.hexis.bi.domain.enums.WeekDay
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.theme.SleepStageAwake
 import com.hexis.bi.ui.theme.SleepStageDeep
 import com.hexis.bi.ui.theme.SleepStageLight
 import com.hexis.bi.ui.theme.SleepStageRem
+import com.hexis.bi.utils.formatFullMonthDay
+import com.hexis.bi.utils.formatShortDateRange
+import com.hexis.bi.utils.weekDayAbbreviation
 import com.hexis.bi.utils.constants.SleepConstants
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,11 +29,8 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.launch
-import java.time.DayOfWeek
 import java.time.Duration
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.temporal.TemporalAdjusters
 import kotlin.math.roundToInt
 import timber.log.Timber
 
@@ -139,7 +138,7 @@ class SleepViewModel(
 
     private fun loadDaySession(offset: Int) {
         val targetDay = LocalDate.now().plusDays(offset.toLong())
-        val dateLabel = targetDay.format(DAY_LABEL_FORMATTER)
+        val dateLabel = targetDay.formatFullMonthDay()
         _state.update {
             it.copy(
                 dayLoadState = SleepLoadState.Loading,
@@ -342,14 +341,12 @@ class SleepViewModel(
     }
 
     private fun loadWeekData(offset: Int) {
-        val monday = LocalDate.now()
-            .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-            .plusWeeks(offset.toLong())
-        val sunday = monday.plusDays(6)
-        val previousMonday = monday.minusWeeks(1)
-        val previousSunday = sunday.minusWeeks(1)
-        val fmt = DateTimeFormatter.ofPattern("MMM d")
-        val label = "${monday.format(fmt)} - ${sunday.format(fmt)}"
+        // Rolling 7-day windows anchored to today: offset 0 = last 7 days, -1 = previous 7, …
+        val end = LocalDate.now().plusDays(offset.toLong() * DAYS_PER_WEEK)
+        val start = end.minusDays(DAYS_PER_WEEK - 1)
+        val previousEnd = start.minusDays(1)
+        val previousStart = previousEnd.minusDays(DAYS_PER_WEEK - 1)
+        val label = formatShortDateRange(start, end)
 
         _state.update {
             it.copy(
@@ -362,18 +359,18 @@ class SleepViewModel(
 
         viewModelScope.launch {
             sleepRepository
-                .getSessionsForRange(previousMonday.minusDays(1), sunday)
+                .getSessionsForRange(previousStart, end)
                 .fold(
                     onSuccess = { sessions ->
                         val current = sessions.filter { session ->
                             val wakeDay = session.wakeTime.toLocalDate()
-                            !wakeDay.isBefore(monday) && !wakeDay.isAfter(sunday)
+                            !wakeDay.isBefore(start) && !wakeDay.isAfter(end)
                         }
                         val previous = sessions.filter { session ->
                             val wakeDay = session.wakeTime.toLocalDate()
-                            !wakeDay.isBefore(previousMonday) && !wakeDay.isAfter(previousSunday)
+                            !wakeDay.isBefore(previousStart) && !wakeDay.isAfter(previousEnd)
                         }
-                        val entries = buildWeekEntries(monday, current)
+                        val structure = buildWeekStructure(start, current)
                         val stages = buildWeeklyStages(current, previous)
 
                         loadedTabs.add(SleepTab.Summary)
@@ -381,9 +378,8 @@ class SleepViewModel(
                             it.copy(
                                 summaryLoadState = SleepLoadState.Ready,
                                 summaryErrorMessage = null,
-                                weeklyEntries = entries,
+                                weeklyStructure = structure,
                                 weeklyStages = stages,
-                                avgSleepMinutes = avgMinutes(entries),
                             )
                         }
                     },
@@ -399,17 +395,25 @@ class SleepViewModel(
         }
     }
 
-    private fun buildWeekEntries(
-        monday: LocalDate,
+    private fun buildWeekStructure(
+        start: LocalDate,
         sessions: List<SleepSession>,
-    ): List<DailySleepEntry> {
+    ): List<DailyStructure> {
         val today = LocalDate.now()
         val byDate = sessions.groupBy { it.wakeTime.toLocalDate() }
-        return WeekDay.entries.mapIndexed { index, weekDay ->
-            val day = monday.plusDays(index.toLong())
-            val minutes = if (day.isAfter(today)) 0
-            else byDate[day]?.sumOf { it.durationMinutes } ?: 0
-            DailySleepEntry(weekDay.abbreviation, minutes, isHighlighted = day == today)
+        return (0 until DAYS_PER_WEEK).map { index ->
+            val day = start.plusDays(index.toLong())
+            val daySessions = if (day.isAfter(today)) emptyList() else byDate[day].orEmpty()
+            val stageMinutes = SleepStage.entries.associateWith { stage ->
+                daySessions.sumOf { session ->
+                    session.stages.filter { it.stage == stage }.sumOf { it.durationMinutes }
+                }
+            }
+            DailyStructure(
+                dayLabel = day.weekDayAbbreviation(),
+                isHighlighted = day == today,
+                stageMinutes = stageMinutes,
+            )
         }
     }
 
@@ -450,11 +454,6 @@ class SleepViewModel(
         WeeklyStageData(SleepStage.Awake, 0),
     )
 
-    private fun avgMinutes(entries: List<DailySleepEntry>): Int {
-        val nonEmpty = entries.filter { it.durationMinutes > 0 }
-        return if (nonEmpty.isEmpty()) 0 else nonEmpty.sumOf { it.durationMinutes } / nonEmpty.size
-    }
-
     private suspend fun loadBestSessionFromNeighborRange(targetDay: LocalDate) {
         val rangeResult = withTimeoutOrNull(DAY_LOAD_TIMEOUT_MS) {
             sleepRepository.getSessionsForRange(
@@ -486,8 +485,8 @@ class SleepViewModel(
         private const val DAY_LOAD_TIMEOUT_MS = 12_000L
         private const val SLEEP_DAY_FALLBACK_RANGE_DAYS = 1L
         private const val MAX_CHART_POINTS = 96
+        private const val DAYS_PER_WEEK = 7L
         private val STAGE_DISPLAY_ORDER =
             listOf(SleepStage.Deep, SleepStage.REM, SleepStage.Light, SleepStage.Awake)
-        private val DAY_LABEL_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("MMMM d")
     }
 }

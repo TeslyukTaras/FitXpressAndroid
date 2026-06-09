@@ -30,7 +30,6 @@ import com.hexis.bi.ui.main.scan.results.MeasurementChange
 import com.hexis.bi.utils.calculateAge
 import com.hexis.bi.utils.cmToInches
 import com.hexis.bi.utils.constants.ActivityConstants
-import com.hexis.bi.utils.constants.DateFormatConstants
 import com.hexis.bi.utils.constants.SleepConstants
 import com.hexis.bi.utils.inchesToFeetAndInches
 import com.hexis.bi.utils.isMetricUnitSystem
@@ -47,10 +46,9 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
-import java.text.SimpleDateFormat
+import com.hexis.bi.utils.millisToShortMonthDay
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
-import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
 
@@ -263,10 +261,7 @@ class HomeViewModel(
     }
 
     private fun publishScanOverview(scans: List<ScanRecord>?, isMetric: Boolean) {
-        val scanDate = scans?.firstOrNull()?.let {
-            SimpleDateFormat(DateFormatConstants.SHORT_MONTH_DAY, Locale.getDefault())
-                .format(Date(it.timestamp))
-        }
+        val scanDate = scans?.firstOrNull()?.timestamp?.millisToShortMonthDay()
         _state.update {
             it.copy(
                 scan = buildScanOverview(scans, isMetric),
@@ -280,8 +275,7 @@ class HomeViewModel(
             value = appContext.getString(R.string.stat_unknown),
             subtitle = appContext.getString(R.string.home_scan_no_data),
         )
-        val dateLabel = SimpleDateFormat(DateFormatConstants.SHORT_MONTH_DAY, Locale.getDefault())
-            .format(Date(latest.timestamp))
+        val dateLabel = latest.timestamp.millisToShortMonthDay()
         val topChange = MeasurementMapper.topChangeVsPreviousScan(latest, scans.getOrNull(1))
             ?: return ScanOverview(
                 value = dateLabel,

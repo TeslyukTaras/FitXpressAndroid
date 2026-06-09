@@ -29,9 +29,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import com.hexis.bi.utils.formatShortDateRange
+import com.hexis.bi.utils.formatShortMonthDay
+import com.hexis.bi.utils.formatShortMonthDayYear
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
 
 /**
@@ -142,7 +144,7 @@ class LongevityViewModel(
             dayScore(day)?.toFloat()?.also { lastKnownScore = it } ?: lastKnownScore
         }
         val weeklyLabels = days.map { it.dayOfMonth.toString() }
-        val weekRangeLabel = "${days.first().format(MONTH_DAY)} - ${days.last().format(MONTH_DAY)}"
+        val weekRangeLabel = formatShortDateRange(days.first(), days.last())
 
         val score = currentLongevityScore(days, recovery, activity, latestScan, heightCm)
 
@@ -180,7 +182,7 @@ class LongevityViewModel(
         _state.update {
             it.copy(
                 score = score,
-                syncedDate = today.format(SYNCED_FMT),
+                syncedDate = today.formatShortMonthDayYear(),
                 daily = LongevityTrendData(
                     points = dailyPoints,
                     axisLabels = listOf(
@@ -189,7 +191,7 @@ class LongevityViewModel(
                     ),
                     currentLabelIndex = -1,
                     xAxisSpanCount = HOURS_PER_DAY,
-                    dateLabel = today.format(MONTH_DAY),
+                    dateLabel = today.formatShortMonthDay(),
                     trend = trendFor(dailyPoints),
                 ),
                 weekly = LongevityTrendData(
@@ -296,7 +298,5 @@ class LongevityViewModel(
     private companion object {
         const val DAYS_PER_WEEK = 7
         const val HOURS_PER_DAY = 24
-        val SYNCED_FMT: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
-        val MONTH_DAY: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d")
     }
 }

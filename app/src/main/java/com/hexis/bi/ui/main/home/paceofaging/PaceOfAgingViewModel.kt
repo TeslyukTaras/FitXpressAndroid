@@ -28,8 +28,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.hexis.bi.utils.formatShortMonthDayYear
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -98,7 +98,7 @@ class PaceOfAgingViewModel(
         val waistTrend = waistTrend(latestScan, previousScan, heightCm)
         val bodyFat = latestScan?.fatPercentage?.takeIf { it > 0f }
             ?.let { String.format(Locale.US, "%.1f%%", it) }
-        val syncedDate = today.format(SYNCED_FMT)
+        val syncedDate = today.formatShortMonthDayYear()
 
         if (result == null) {
             _state.update {
@@ -204,6 +204,5 @@ class PaceOfAgingViewModel(
     private companion object {
         const val PACE_FORMAT = "%.2fx"
         const val NEUTRAL_FRACTION = 0.5f
-        val SYNCED_FMT: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
     }
 }

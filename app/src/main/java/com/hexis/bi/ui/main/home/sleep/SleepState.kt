@@ -60,11 +60,14 @@ data class ChartPoint(
     val value: Int,
 )
 
-data class DailySleepEntry(
+/** One day's per-stage minutes, used to draw a stacked bar in the weekly Sleep Structure chart. */
+data class DailyStructure(
     val dayLabel: String,
-    val durationMinutes: Int,
     val isHighlighted: Boolean = false,
-)
+    val stageMinutes: Map<SleepStage, Int> = emptyMap(),
+) {
+    val totalMinutes: Int get() = stageMinutes.values.sum()
+}
 
 data class WeeklyStageData(
     val stage: SleepStage,
@@ -106,8 +109,7 @@ data class SleepState(
 
     // Summary tab
     val weekLabel: String = "",
-    val weeklyEntries: List<DailySleepEntry> = emptyList(),
-    val avgSleepMinutes: Int = 0,
+    val weeklyStructure: List<DailyStructure> = emptyList(),
     val weeklyStages: List<WeeklyStageData> = emptyList(),
     val canGoNextWeek: Boolean = false,
 

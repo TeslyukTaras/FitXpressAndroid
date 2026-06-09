@@ -7,20 +7,18 @@ import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanRecord
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.base.BaseViewModel
-import com.hexis.bi.utils.constants.DateFormatConstants
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.SCAN_HISTORY_MAX_SCANS
 import com.hexis.bi.utils.isMetricUnitSystem
+import com.hexis.bi.utils.millisToHourAmPm
+import com.hexis.bi.utils.millisToShortMonthDay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
-import java.util.Date
-import java.util.Locale
 
 private const val MILLIS_PER_DAY = 24L * 60L * 60L * 1000L
 const val SCAN_HISTORY_MAX_RANGE_DAYS = 60
@@ -154,14 +152,9 @@ class ScanHistoryViewModel(
     private fun pickedLocalDate(utcMidnightMs: Long): LocalDate =
         Instant.ofEpochMilli(utcMidnightMs).atZone(ZoneOffset.UTC).toLocalDate()
 
-    private fun formatDate(ms: Long): String =
-        SimpleDateFormat(DateFormatConstants.SHORT_MONTH_DAY, Locale.getDefault())
-            .format(Date(ms))
+    private fun formatDate(ms: Long): String = ms.millisToShortMonthDay()
 
-    private fun formatTime(ms: Long): String =
-        SimpleDateFormat(DateFormatConstants.HOUR_AM_PM, Locale.getDefault())
-            .format(Date(ms))
-            .lowercase(Locale.getDefault())
+    private fun formatTime(ms: Long): String = ms.millisToHourAmPm()
 }
 
 fun isScanHistoryRangeWithinLimit(startDateMillis: Long?, endDateMillis: Long?): Boolean {

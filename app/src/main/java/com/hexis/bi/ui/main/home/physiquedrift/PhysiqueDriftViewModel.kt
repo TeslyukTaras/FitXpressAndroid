@@ -16,8 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
+import com.hexis.bi.utils.millisToShortMonthDayYear
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -162,7 +161,7 @@ class PhysiqueDriftViewModel(
     )
 
     private fun formatScanDate(scan: ScanRecord): String =
-        SimpleDateFormat(DATE_FORMAT, Locale.getDefault()).format(Date(scan.timestamp))
+        scan.timestamp.millisToShortMonthDayYear()
 
     private fun deltaPercent(latest: Float?, previous: Float?): Float? {
         latest ?: return null
@@ -174,7 +173,6 @@ class PhysiqueDriftViewModel(
         const val SCORE_FORMAT = "%.1f"
         const val PERCENT_FORMAT = "%.1f%%"
         const val RATIO_FORMAT = "%.2f"
-        const val DATE_FORMAT = "MMM d, yyyy"
         const val HIGH_COMPONENT_SCORE = 7.5f
         const val MID_COMPONENT_SCORE = 5f
         const val MAX_SCORE = 10f
