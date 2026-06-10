@@ -7,7 +7,6 @@ import com.hexis.bi.data.activity.ActivitySummary
 import com.hexis.bi.data.terra.TerraRestSourceResolver
 import com.hexis.bi.data.user.FirestoreSchema
 import com.hexis.bi.data.user.UserRepository
-import com.hexis.bi.domain.enums.HealthProvider
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.caloriesGoal
 import com.hexis.bi.utils.constants.ActivityConstants
@@ -22,6 +21,7 @@ import com.hexis.bi.utils.formatMonthShort
 import com.hexis.bi.utils.formatShortMonthDay
 import com.hexis.bi.utils.formatYear
 import com.hexis.bi.utils.isMetricUnitSystem
+import com.hexis.bi.utils.weekDayAbbreviation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,11 +31,13 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.Month
+import java.time.format.TextStyle
 import java.time.temporal.TemporalAdjusters
+import java.time.temporal.WeekFields
+import java.util.Locale
 import kotlin.math.abs
 
 class ActivityViewModel(
@@ -71,7 +73,7 @@ class ActivityViewModel(
 
                 val stepsGoal = settings.stepsGoal ?: ActivityConstants.DEFAULT_STEP_GOAL
                 val showActiveCalories = settings.showActiveCalories ?: true
-                val settingsDataSource = settings.activityDataSource.toHealthProviderOrNull()
+                val settingsDataSource = settings.activityDataSource
                 val (distGoalKm, calGoal) = deriveGoals(stepsGoal)
 
                 _state.update { curr ->
@@ -136,14 +138,31 @@ class ActivityViewModel(
 
     fun previousWeek() {
         weekOffset--
+        clearWeekDaySelection()
         loadWeekData(weekOffset)
     }
 
     fun nextWeek() {
         if (weekOffset < 0) {
             weekOffset++
+            clearWeekDaySelection()
             loadWeekData(weekOffset)
         }
+    }
+
+    fun selectWeekDay(index: Int) {
+        _state.update {
+            val resolved = when {
+                index !in it.weekDays.indices -> -1
+                index == it.selectedWeekDayIndex -> -1 // tap selected day again to clear
+                else -> index
+            }
+            it.copy(selectedWeekDayIndex = resolved)
+        }
+    }
+
+    fun clearWeekDaySelection() {
+        _state.update { it.copy(selectedWeekDayIndex = -1) }
     }
 
     fun previousMonth() {
@@ -217,7 +236,7 @@ class ActivityViewModel(
                 mapOf(
                     FirestoreSchema.UserSettingsFields.STEPS_GOAL to newStepsGoal,
                     FirestoreSchema.UserSettingsFields.SHOW_ACTIVE_CALORIES to _state.value.showActiveCaloriesDraft,
-                    FirestoreSchema.UserSettingsFields.ACTIVITY_DATA_SOURCE to _state.value.dataSource.toStorageValue(),
+                    FirestoreSchema.UserSettingsFields.ACTIVITY_DATA_SOURCE to _state.value.dataSource,
                 )
             ).onFailure { setError(it.message) }
         }
@@ -256,8 +275,9 @@ class ActivityViewModel(
     }
 
     private fun loadWeekData(offset: Int) {
+        val weekStartDay = WeekFields.of(Locale.getDefault()).firstDayOfWeek
         val weekStart = LocalDate.now()
-            .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+            .with(TemporalAdjusters.previousOrSame(weekStartDay))
             .plusWeeks(offset.toLong())
         val weekEnd = weekStart.plusDays(6)
         val previousStart = weekStart.minusWeeks(1)
@@ -288,6 +308,7 @@ class ActivityViewModel(
                                     label = "${weekStart.formatShortMonthDay()} - ${weekEnd.formatShortMonthDay()}",
                                     includeTrend = true,
                                 ),
+                                weekDays = buildWeekDays(weekStart, rows),
                             )
                         }
                     },
@@ -434,11 +455,16 @@ class ActivityViewModel(
         }
 
         val totalSteps = bars.sumOf { it.value.toInt() }
-        val daysWithData = rows.map { it.date }.distinct().size
-        val avgPerDay = if (daysWithData > 0) totalSteps / daysWithData else 0
-        val previousSteps = previousRows.sumOf { it.steps }
-        val trendPct = if (!includeTrend || previousSteps <= 0) null
-        else (((totalSteps - previousSteps).toFloat() / previousSteps) * 100f).toInt()
+        val activeDays = rows.filter { it.steps > 0 }.map { it.date }.distinct().size
+        val avgPerDay = if (activeDays > 0) totalSteps / activeDays else 0
+        val avgPerDayForTrend = if (activeDays > 0) totalSteps.toFloat() / activeDays else 0f
+        // Per-day averages so an in-progress period isn't compared against a full one.
+        val previousActiveDays = previousRows.filter { it.steps > 0 }.map { it.date }.distinct().size
+        val previousAvgPerDayForTrend =
+            if (previousActiveDays > 0) previousRows.sumOf { it.steps }.toFloat() / previousActiveDays
+            else 0f
+        val trendPct = if (!includeTrend || previousAvgPerDayForTrend <= 0f) null
+        else (((avgPerDayForTrend - previousAvgPerDayForTrend) / previousAvgPerDayForTrend) * 100f).toInt()
         val trendComparison = when {
             !includeTrend || trendPct == null -> TrendComparison.NONE
             abs(trendPct) <= ActivityConstants.TREND_FLAT_THRESHOLD -> TrendComparison.FLAT
@@ -446,7 +472,8 @@ class ActivityViewModel(
             else -> TrendComparison.DOWN
         }
         val distanceKm = rows.sumOf { it.distanceKm.toDouble() }.toFloat()
-        val calories = rows.sumOf { it.activeCalories }
+        val calories = rows.sumOf { it.activeCaloriesOrEstimate() }
+        val durationSeconds = rows.sumOf { it.activeDurationSeconds }
 
         return PeriodSummary(
             periodLabel = label,
@@ -457,15 +484,53 @@ class ActivityViewModel(
             trendComparison = trendComparison,
             totalDistanceKm = distanceKm,
             totalCalories = calories,
+            totalActiveDurationSeconds = durationSeconds,
             canGoNext = canGoNext,
         )
+    }
+
+    private fun buildWeekDays(
+        weekStart: LocalDate,
+        rows: List<ActivitySummary>,
+    ): List<WeekDayData> {
+        val byDate = rows.associateBy { it.date }
+        val today = LocalDate.now()
+        return (0 until ActivityConstants.DAYS_IN_WEEK).map { i ->
+            val date = weekStart.plusDays(i.toLong())
+            val summary = byDate[date]?.takeUnless { date.isAfter(today) }
+            val steps = summary?.steps ?: 0
+            val dayName = date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault())
+            WeekDayData(
+                dayLabel = date.weekDayAbbreviation(),
+                selectedDateLabel = "$dayName · ${date.formatShortMonthDay()}",
+                steps = steps,
+                distanceKm = summary?.distanceKm ?: 0f,
+                calories = summary?.activeCaloriesOrEstimate() ?: 0,
+                durationSeconds = summary?.activeDurationSeconds ?: 0,
+                hourlyBars = buildDayBars(date, summary),
+                isToday = date == today,
+            )
+        }
+    }
+
+    /**
+     * Active calories reported by the provider, or an estimate from distance when they're
+     * missing. Some sources (e.g. Health Connect) only return total burned calories with no
+     * active/BMR split, which would otherwise leave the metric stuck at 0. The estimate uses
+     * the same distance × weight model as the calorie goal, so it stays consistent with the ring.
+     */
+    private fun ActivitySummary.activeCaloriesOrEstimate(): Int = when {
+        activeCalories > 0 -> activeCalories
+        weightKg > 0f && distanceKm > 0f -> caloriesGoal(distanceKm, weightKg)
+        else -> 0
     }
 
     private fun applyDaySummary(day: LocalDate, summary: ActivitySummary?) {
         val hourlyBars = buildDayBars(day, summary)
         val totalSteps = summary?.steps ?: 0
         val distanceKm = summary?.distanceKm ?: 0f
-        val calories = summary?.activeCalories ?: 0
+        val calories = summary?.activeCaloriesOrEstimate() ?: 0
+        val durationSeconds = summary?.activeDurationSeconds ?: 0
         loadedTabs.add(ActivityTab.Day)
         _state.update {
             it.copy(
@@ -475,6 +540,7 @@ class ActivityViewModel(
                 currentSteps = totalSteps,
                 calories = calories,
                 distanceKm = distanceKm,
+                activeDurationSeconds = durationSeconds,
                 hourlyBars = hourlyBars,
                 canGoNextDay = dayOffset < 0,
             )
@@ -506,28 +572,17 @@ class ActivityViewModel(
                 .getOrDefault(emptyList())
                 .firstOrNull()
                 ?.provider
-                .toHealthProvider()
-            _state.update { it.copy(dataSource = provider) }
+                ?: TerraProviders.HEALTH_CONNECT
+            _state.update {
+                it.copy(
+                    dataSource = provider,
+                )
+            }
             userRepository.updateUserSettings(
-                mapOf(FirestoreSchema.UserSettingsFields.ACTIVITY_DATA_SOURCE to provider.toStorageValue())
+                mapOf(FirestoreSchema.UserSettingsFields.ACTIVITY_DATA_SOURCE to provider)
             ).onFailure { setError(it.message) }
         }
     }
-
-    private fun String?.toHealthProvider(): HealthProvider =
-        if (this.equals(TerraProviders.HEALTH_CONNECT, ignoreCase = true)) {
-            HealthProvider.GoogleHealth
-        } else {
-            HealthProvider.AppleHealth
-        }
-
-    private fun String?.toHealthProviderOrNull(): HealthProvider? = when (this) {
-        HealthProvider.GoogleHealth.name -> HealthProvider.GoogleHealth
-        HealthProvider.AppleHealth.name -> HealthProvider.AppleHealth
-        else -> null
-    }
-
-    private fun HealthProvider.toStorageValue(): String = name
 
     private fun List<ActivitySummary>.filterByDateRange(
         start: LocalDate,

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -21,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -30,8 +32,11 @@ import com.hexis.bi.ui.base.BaseBottomSheet
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppDialog
-import com.hexis.bi.ui.components.AppTabSelector
+import com.hexis.bi.ui.dark.DarkTabSelector
+import com.hexis.bi.ui.dark.LightStatusBarIcons
+import com.hexis.bi.ui.dark.darkScreenBackground
 import com.hexis.bi.ui.main.home.activity.components.ActivitySettingsDialogContent
+import com.hexis.bi.ui.theme.dark.DarkTheme
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,14 +50,19 @@ fun ActivityScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
 
-    Box(modifier = modifier) {
+    LightStatusBarIcons()
+
+    DarkTheme {
+        Box(modifier = modifier) {
         BaseScreen(
-            modifier = Modifier.then(
-                if (state.showInfoSheet || state.showSettingsDialog)
-                    Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
-                else Modifier
-            ),
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier
+                .then(
+                    if (state.showInfoSheet || state.showSettingsDialog)
+                        Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
+                    else Modifier
+                )
+                .darkScreenBackground(),
+            containerColor = Color.Transparent,
             isLoading = isLoading,
             error = error,
             onDismissError = viewModel::clearError,
@@ -60,7 +70,7 @@ fun ActivityScreen(
                 BaseTopBar(
                     title = stringResource(R.string.activity_screen_title),
                     onBack = onBack,
-                    background = MaterialTheme.colorScheme.surfaceVariant,
+                    background = Color.Transparent,
                     actions = {
                         IconButton(onClick = viewModel::showSettingsDialog) {
                             Icon(
@@ -82,11 +92,12 @@ fun ActivityScreen(
             ) {
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
 
-                AppTabSelector(
+                DarkTabSelector(
                     tabs = ActivityTab.entries,
                     selectedTab = state.selectedTab,
                     onTabSelected = viewModel::selectTab,
                     tabLabel = { stringResource(it.labelRes) },
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 when (state.selectedTab) {
@@ -102,6 +113,9 @@ fun ActivityScreen(
                         state = state,
                         onPreviousWeek = viewModel::previousWeek,
                         onNextWeek = viewModel::nextWeek,
+                        onSelectWeekDay = viewModel::selectWeekDay,
+                        onClearWeekDay = viewModel::clearWeekDaySelection,
+                        onInfoClick = viewModel::showInfoSheet,
                         onRetry = viewModel::retryWeekLoad,
                     )
 
@@ -129,7 +143,7 @@ fun ActivityScreen(
                 ActivitySettingsDialogContent(
                     stepsGoal = state.stepsGoalDraft,
                     showActiveCalories = state.showActiveCaloriesDraft,
-                    dataSource = state.dataSource,
+                    dataSource = state.dataSourceName,
                     onStepsGoalChange = viewModel::updateStepsGoalDraft,
                     onShowActiveCaloriesChange = viewModel::updateActiveCaloriesDraft,
                     onCancel = viewModel::dismissSettingsDialog,
@@ -153,7 +167,7 @@ fun ActivityScreen(
                 Text(
                     text = stringResource(R.string.activity_info_body_1),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
@@ -166,7 +180,7 @@ fun ActivityScreen(
                 Text(
                     text = stringResource(R.string.activity_info_body_2),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
@@ -179,7 +193,7 @@ fun ActivityScreen(
                 Text(
                     text = stringResource(R.string.activity_info_body_3),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
@@ -192,7 +206,7 @@ fun ActivityScreen(
                 Text(
                     text = stringResource(R.string.activity_info_body_4),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 Spacer(Modifier.weight(1f))
@@ -209,6 +223,7 @@ fun ActivityScreen(
                     )
                 }
             }
+        }
         }
     }
 }

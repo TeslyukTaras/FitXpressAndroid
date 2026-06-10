@@ -68,8 +68,9 @@ private fun ActivityMonthReady(
     ActivityPeriodContent(
         state = state,
         period = state.month,
-        totalsTitle = stringResource(R.string.activity_period_totals),
+        trendTitle = stringResource(R.string.activity_trend_label_month),
         trendDescription = trendDescription,
+        separateInsightGlass = false,
         onPrevious = onPreviousMonth,
         onNext = onNextMonth,
     ) {
@@ -79,8 +80,10 @@ private fun ActivityMonthReady(
             baseYMax = ActivityConstants.PERIOD_STEP_GRID_MAX,
             yGridStep = ActivityConstants.PERIOD_STEP_GRID_STEP,
             title = stringResource(R.string.activity_total_steps),
-            barGap = dimensionResource(R.dimen.spacer_xxs),
-            yAxisWidth = dimensionResource(R.dimen.activity_period_y_axis_width),
+            barGap = dimensionResource(R.dimen.activity_chart_bar_gap_compact),
+            chartStartPadding = dimensionResource(R.dimen.activity_chart_start_padding_compact),
+            chartEndPadding = dimensionResource(R.dimen.activity_chart_end_padding),
+            showVerticalGridLines = true,
         )
     }
 }

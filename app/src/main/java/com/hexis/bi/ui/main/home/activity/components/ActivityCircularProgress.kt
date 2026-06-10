@@ -15,7 +15,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.Bg
 import com.hexis.bi.utils.constants.ActivityConstants
 
 @Composable
@@ -57,7 +56,7 @@ fun ActivityCircularProgress(
 
                 // Gray track
                 drawArc(
-                    color = Bg,
+                    color = ActivityConstants.RING_TRACK_COLOR,
                     startAngle = ActivityConstants.CIRCLE_START_ANGLE,
                     sweepAngle = ActivityConstants.CIRCLE_FULL_SWEEP,
                     useCenter = false,

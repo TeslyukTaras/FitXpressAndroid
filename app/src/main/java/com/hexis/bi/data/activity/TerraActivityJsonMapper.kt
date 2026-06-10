@@ -43,6 +43,20 @@ private object TerraActivityJsonKeys {
         const val ACTIVITY_DATA = "activity_data"
         const val CALORIES_DATA = "calories_data"
         const val OXYGEN_DATA = "oxygen_data"
+        const val ACTIVE_DURATIONS_DATA = "active_durations_data"
+    }
+
+    object Duration {
+        const val ACTIVITY_SECONDS = "activity_seconds"
+        const val ACTIVE_SECONDS = "active_seconds"
+        const val ACTIVE_DURATION_SECONDS = "active_duration_seconds"
+        const val DURATION_SECONDS = "duration_seconds"
+        val CANDIDATES = listOf(
+            ACTIVITY_SECONDS,
+            ACTIVE_SECONDS,
+            ACTIVE_DURATION_SECONDS,
+            DURATION_SECONDS,
+        )
     }
 
     object Vo2 {
@@ -96,12 +110,14 @@ object TerraActivityJsonMapper {
         val steps = root.extractSteps().coerceAtLeast(0)
         val distanceKm = (root.extractDistanceKm()).coerceAtLeast(0f)
         val calories = root.extractActiveCalories().coerceAtLeast(0)
+        val durationSeconds = root.extractActiveDurationSeconds().coerceAtLeast(0)
         val hourlySteps = root.extractHourlySteps(date)
         return ActivitySummary(
             date = date,
             steps = steps,
             distanceKm = distanceKm,
             activeCalories = calories,
+            activeDurationSeconds = durationSeconds,
             hourlySteps = hourlySteps,
             vo2MaxMlPerMinPerKg = root.extractVo2Max(),
         )
@@ -170,6 +186,14 @@ private fun JsonObject.extractDistanceKm(): Float {
     if (miles != null) return (miles * 1.60934f).coerceAtLeast(0f)
 
     return 0f
+}
+
+private fun JsonObject.extractActiveDurationSeconds(): Int {
+    val activeDurations = this[TerraActivityJsonKeys.Nodes.ACTIVE_DURATIONS_DATA]?.jsonObject
+    val activityData = this[TerraActivityJsonKeys.Nodes.ACTIVITY_DATA]?.jsonObject
+    val seconds = activeDurations.firstFloatByKeysDeep(TerraActivityJsonKeys.Duration.CANDIDATES)
+        ?: activityData.firstFloatByKeysDeep(TerraActivityJsonKeys.Duration.CANDIDATES)
+    return seconds?.coerceAtLeast(0f)?.roundToInt() ?: 0
 }
 
 private fun JsonObject.extractActiveCalories(): Int {
