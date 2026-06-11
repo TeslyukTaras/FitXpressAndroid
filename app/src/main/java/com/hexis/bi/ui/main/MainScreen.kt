@@ -19,6 +19,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -29,10 +30,10 @@ import androidx.navigation.compose.rememberNavController
 import com.hexis.bi.R
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.user.UserRepository
-import com.hexis.bi.ui.components.AppButton
 import com.hexis.bi.ui.components.AppDialog
-import com.hexis.bi.ui.components.AppOutlinedButton
 import com.hexis.bi.ui.dark.DarkMainNavBottomBar
+import com.hexis.bi.ui.dark.DarkOutlinedButton
+import com.hexis.bi.ui.dark.DarkPrimaryButton
 import com.hexis.bi.ui.main.body.BodyScreen
 import com.hexis.bi.ui.main.body.PhysiqueBalanceScreen
 import com.hexis.bi.ui.main.home.HomeScreen
@@ -95,150 +96,160 @@ fun MainScreen(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
-        NavHost(
-            modifier = Modifier.fillMaxSize(),
-            navController = navController,
-            startDestination = Route.Main.HOME,
-        ) {
-            composable(Route.Main.HOME) {
-                HomeScreen(
-                    onLogout = onLogout,
-                    onNotificationClick = { navController.navigate(Route.Main.NOTIFICATIONS) },
-                    onSettingsClick = { navController.navigate(Route.Main.SETTINGS) },
-                    onSleepClick = { navController.navigate(Route.Main.SLEEP) },
-                    onRecoveryClick = { navController.navigate(Route.Main.RECOVERY) },
-                    onLongevityClick = { navController.navigate(Route.Main.LONGEVITY) },
-                    onPhysiqueDriftClick = { navController.navigate(Route.Main.PHYSIQUE_DRIFT) },
-                    onPaceOfAgingClick = { navController.navigate(Route.Main.PACE_OF_AGING) },
-                    onActivityClick = { navController.navigate(Route.Main.ACTIVITY) },
-                    onScanClick = launchScan,
-                )
-            }
-            composable(Route.Main.SLEEP) {
-                SleepScreen(onBack = { navController.popBackStackOnce() })
-            }
-            composable(Route.Main.RECOVERY) {
-                RecoveryScreen(onBack = { navController.popBackStackOnce() })
-            }
-            composable(Route.Main.LONGEVITY) {
-                LongevityScreen(onBack = { navController.popBackStackOnce() })
-            }
-            composable(Route.Main.PHYSIQUE_DRIFT) {
-                PhysiqueDriftScreen(onBack = { navController.popBackStackOnce() })
-            }
-            composable(Route.Main.PACE_OF_AGING) {
-                PaceOfAgingScreen(onBack = { navController.popBackStackOnce() })
-            }
-            composable(Route.Main.ACTIVITY) {
-                ActivityScreen(onBack = { navController.popBackStackOnce() })
-            }
-            composable(Route.Main.SCAN) {
-                ScanScreen(
-                    onBack = { navController.popBackStackOnce() },
-                    onScanComplete = {
-                        scanResultRepository.selectedScanId = null
-                        navController.navigate(Route.Main.SCAN_RESULTS) {
-                            popUpTo(Route.Main.SCAN) { inclusive = true }
-                        }
-                    },
-                    onConnectSuit = { navController.navigate(Route.Main.MY_SUIT) },
-                    onBuySuit = {},
-                    onShowHowToScan = { navController.navigate(Route.Main.HOW_TO_SCAN) },
-                )
-            }
-            composable(Route.Main.SCAN_RESULTS) {
-                ResultsScreen(
-                    onBack = {
-                        scanResultRepository.selectedScanId = null
-                        navController.popBackStackOnce()
-                    },
-                )
-            }
-            composable(Route.Main.SCAN_HISTORY) {
-                ScanHistoryScreen(
-                    onBack = { navController.popBackStackOnce() },
-                    onOpenScan = { scanId ->
-                        scanResultRepository.selectedScanId = scanId
-                        navController.navigate(Route.Main.SCAN_RESULTS)
-                    },
-                )
-            }
-            composable(Route.Main.BODY) {
-                BodyScreen(
-                    onHistoryClick = { navController.navigate(Route.Main.SCAN_HISTORY) },
-                    onPhysiqueBalanceClick = {
-                        navController.navigate(Route.Main.PHYSIQUE_BALANCE)
-                    },
-                )
-            }
-            composable(Route.Main.PHYSIQUE_BALANCE) {
-                // Reuse the Body screen's ViewModel so the loaded scans and the
-                // selected time range carry over instead of refetching.
-                val bodyEntry = remember(it) { navController.getBackStackEntry(Route.Main.BODY) }
-                PhysiqueBalanceScreen(
-                    onBack = { navController.popBackStackOnce() },
-                    viewModel = koinViewModel(viewModelStoreOwner = bodyEntry),
-                )
-            }
-            composable(Route.Main.NOTIFICATIONS) {
-                NotificationsScreen(onBack = { navController.popBackStackOnce() })
-            }
-            composable(Route.Main.SETTINGS) {
-                SettingsScreen(
-                    onBack = { navController.popBackStackOnce() },
-                    onLogout = onLogout,
-                    onDeleteAccount = onDeleteAccount,
-                    onNavigateToEditProfile = { navController.navigate(Route.Main.EDIT_PROFILE) },
-                    onNavigateToNotificationSettings = { navController.navigate(Route.Main.NOTIFICATION_SETTINGS) },
-                    onNavigateToHealthConnections = { navController.navigate(Route.Main.HEALTH_CONNECTIONS) },
-                    onNavigateToScanPreferences = { navController.navigate(Route.Main.SCAN_PREFERENCES) },
-                    onNavigateToMySuit = { navController.navigate(Route.Main.MY_SUIT) },
-                    onNavigateToHowToScan = { navController.navigate(Route.Main.HOW_TO_SCAN) },
-                )
-            }
-            composable(Route.Main.HOW_TO_SCAN) {
-                HowToScanScreen(onBack = { navController.popBackStackOnce() })
-            }
-            composable(Route.Main.EDIT_PROFILE) {
-                EditProfileScreen(onBack = { navController.popBackStackOnce() })
-            }
-            composable(Route.Main.NOTIFICATION_SETTINGS) {
-                NotificationsSettingsScreen(onBack = { navController.popBackStackOnce() })
-            }
-            composable(Route.Main.HEALTH_CONNECTIONS) {
-                HealthConnectionsScreen(onBack = { navController.popBackStackOnce() })
-            }
-            composable(Route.Main.SCAN_PREFERENCES) {
-                ScanPreferencesScreen(onBack = { navController.popBackStackOnce() })
-            }
-            composable(Route.Main.MY_SUIT) {
-                MySuitScreen(onBack = { navController.popBackStackOnce() })
-            }
-        }
-
-        if (showBottomBar) {
-            val isHomeSelected = currentRoute == Route.Main.HOME
-            val isBodySelected = currentRoute == Route.Main.BODY
-            val onHomeClick: () -> Unit = {
-                navController.navigate(Route.Main.HOME) {
-                    launchSingleTop = true
-                    popUpTo(Route.Main.HOME) { inclusive = false }
+    DarkTheme {
+        Box(modifier = modifier.fillMaxSize()) {
+            val dialogBlurModifier =
+                if (showProfileIncompleteDialog) {
+                    Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
+                } else {
+                    Modifier
                 }
-            }
-            val onBodyClick: () -> Unit = {
-                navController.navigate(Route.Main.BODY) {
-                    launchSingleTop = true
-                    popUpTo(Route.Main.HOME) { inclusive = false }
-                }
-            }
 
-            Box(
+            NavHost(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth(),
+                    .fillMaxSize()
+                    .then(dialogBlurModifier),
+                navController = navController,
+                startDestination = Route.Main.HOME,
             ) {
-                DarkTheme {
+                composable(Route.Main.HOME) {
+                    HomeScreen(
+                        onLogout = onLogout,
+                        onNotificationClick = { navController.navigate(Route.Main.NOTIFICATIONS) },
+                        onSettingsClick = { navController.navigate(Route.Main.SETTINGS) },
+                        onSleepClick = { navController.navigate(Route.Main.SLEEP) },
+                        onRecoveryClick = { navController.navigate(Route.Main.RECOVERY) },
+                        onLongevityClick = { navController.navigate(Route.Main.LONGEVITY) },
+                        onPhysiqueDriftClick = { navController.navigate(Route.Main.PHYSIQUE_DRIFT) },
+                        onPaceOfAgingClick = { navController.navigate(Route.Main.PACE_OF_AGING) },
+                        onActivityClick = { navController.navigate(Route.Main.ACTIVITY) },
+                        onScanClick = launchScan,
+                    )
+                }
+                composable(Route.Main.SLEEP) {
+                    SleepScreen(onBack = { navController.popBackStackOnce() })
+                }
+                composable(Route.Main.RECOVERY) {
+                    RecoveryScreen(onBack = { navController.popBackStackOnce() })
+                }
+                composable(Route.Main.LONGEVITY) {
+                    LongevityScreen(onBack = { navController.popBackStackOnce() })
+                }
+                composable(Route.Main.PHYSIQUE_DRIFT) {
+                    PhysiqueDriftScreen(onBack = { navController.popBackStackOnce() })
+                }
+                composable(Route.Main.PACE_OF_AGING) {
+                    PaceOfAgingScreen(onBack = { navController.popBackStackOnce() })
+                }
+                composable(Route.Main.ACTIVITY) {
+                    ActivityScreen(onBack = { navController.popBackStackOnce() })
+                }
+                composable(Route.Main.SCAN) {
+                    ScanScreen(
+                        onBack = { navController.popBackStackOnce() },
+                        onScanComplete = {
+                            scanResultRepository.selectedScanId = null
+                            navController.navigate(Route.Main.SCAN_RESULTS) {
+                                popUpTo(Route.Main.SCAN) { inclusive = true }
+                            }
+                        },
+                        onConnectSuit = { navController.navigate(Route.Main.MY_SUIT) },
+                        onBuySuit = {},
+                        onShowHowToScan = { navController.navigate(Route.Main.HOW_TO_SCAN) },
+                    )
+                }
+                composable(Route.Main.SCAN_RESULTS) {
+                    ResultsScreen(
+                        onBack = {
+                            scanResultRepository.selectedScanId = null
+                            navController.popBackStackOnce()
+                        },
+                    )
+                }
+                composable(Route.Main.SCAN_HISTORY) {
+                    ScanHistoryScreen(
+                        onBack = { navController.popBackStackOnce() },
+                        onOpenScan = { scanId ->
+                            scanResultRepository.selectedScanId = scanId
+                            navController.navigate(Route.Main.SCAN_RESULTS)
+                        },
+                    )
+                }
+                composable(Route.Main.BODY) {
+                    BodyScreen(
+                        onHistoryClick = { navController.navigate(Route.Main.SCAN_HISTORY) },
+                        onPhysiqueBalanceClick = {
+                            navController.navigate(Route.Main.PHYSIQUE_BALANCE)
+                        },
+                    )
+                }
+                composable(Route.Main.PHYSIQUE_BALANCE) {
+                    // Reuse the Body screen's ViewModel so the loaded scans and the
+                    // selected time range carry over instead of refetching.
+                    val bodyEntry = remember(it) { navController.getBackStackEntry(Route.Main.BODY) }
+                    PhysiqueBalanceScreen(
+                        onBack = { navController.popBackStackOnce() },
+                        viewModel = koinViewModel(viewModelStoreOwner = bodyEntry),
+                    )
+                }
+                composable(Route.Main.NOTIFICATIONS) {
+                    NotificationsScreen(onBack = { navController.popBackStackOnce() })
+                }
+                composable(Route.Main.SETTINGS) {
+                    SettingsScreen(
+                        onBack = { navController.popBackStackOnce() },
+                        onLogout = onLogout,
+                        onDeleteAccount = onDeleteAccount,
+                        onNavigateToEditProfile = { navController.navigate(Route.Main.EDIT_PROFILE) },
+                        onNavigateToNotificationSettings = { navController.navigate(Route.Main.NOTIFICATION_SETTINGS) },
+                        onNavigateToHealthConnections = { navController.navigate(Route.Main.HEALTH_CONNECTIONS) },
+                        onNavigateToScanPreferences = { navController.navigate(Route.Main.SCAN_PREFERENCES) },
+                        onNavigateToMySuit = { navController.navigate(Route.Main.MY_SUIT) },
+                        onNavigateToHowToScan = { navController.navigate(Route.Main.HOW_TO_SCAN) },
+                    )
+                }
+                composable(Route.Main.HOW_TO_SCAN) {
+                    HowToScanScreen(onBack = { navController.popBackStackOnce() })
+                }
+                composable(Route.Main.EDIT_PROFILE) {
+                    EditProfileScreen(onBack = { navController.popBackStackOnce() })
+                }
+                composable(Route.Main.NOTIFICATION_SETTINGS) {
+                    NotificationsSettingsScreen(onBack = { navController.popBackStackOnce() })
+                }
+                composable(Route.Main.HEALTH_CONNECTIONS) {
+                    HealthConnectionsScreen(onBack = { navController.popBackStackOnce() })
+                }
+                composable(Route.Main.SCAN_PREFERENCES) {
+                    ScanPreferencesScreen(onBack = { navController.popBackStackOnce() })
+                }
+                composable(Route.Main.MY_SUIT) {
+                    MySuitScreen(onBack = { navController.popBackStackOnce() })
+                }
+            }
+
+            if (showBottomBar) {
+                val isHomeSelected = currentRoute == Route.Main.HOME
+                val isBodySelected = currentRoute == Route.Main.BODY
+                val onHomeClick: () -> Unit = {
+                    navController.navigate(Route.Main.HOME) {
+                        launchSingleTop = true
+                        popUpTo(Route.Main.HOME) { inclusive = false }
+                    }
+                }
+                val onBodyClick: () -> Unit = {
+                    navController.navigate(Route.Main.BODY) {
+                        launchSingleTop = true
+                        popUpTo(Route.Main.HOME) { inclusive = false }
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .then(dialogBlurModifier),
+                ) {
                     DarkMainNavBottomBar(
                         isHomeSelected = isHomeSelected,
                         isBodySelected = isBodySelected,
@@ -249,18 +260,18 @@ fun MainScreen(
                     )
                 }
             }
-        }
 
-        if (showProfileIncompleteDialog) {
-            ProfileIncompleteDialog(
-                onDismiss = { showProfileIncompleteDialog = false },
-                onGoToProfile = {
-                    showProfileIncompleteDialog = false
-                    navController.navigate(Route.Main.EDIT_PROFILE) {
-                        launchSingleTop = true
-                    }
-                },
-            )
+            if (showProfileIncompleteDialog) {
+                ProfileIncompleteDialog(
+                    onDismiss = { showProfileIncompleteDialog = false },
+                    onGoToProfile = {
+                        showProfileIncompleteDialog = false
+                        navController.navigate(Route.Main.EDIT_PROFILE) {
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
         }
     }
 }
@@ -274,37 +285,44 @@ private fun ProfileIncompleteDialog(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(dimensionResource(R.dimen.padding_large)),
+                .padding(
+                    vertical = dimensionResource(R.dimen.padding_large),
+                    horizontal = dimensionResource(R.dimen.padding_medium),
+                ),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
+                modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_small)),
                 text = stringResource(R.string.profile_incomplete_dialog_title),
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center,
             )
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
             Text(
+                modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_small)),
                 text = stringResource(R.string.profile_incomplete_dialog_body),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.secondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = dimensionResource(R.dimen.padding_small)),
                 horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_xs)),
             ) {
-                AppOutlinedButton(
+                DarkOutlinedButton(
                     text = stringResource(R.string.action_cancel),
                     onClick = onDismiss,
                     modifier = Modifier.weight(1f),
                 )
-                AppButton(
+                DarkPrimaryButton(
                     text = stringResource(R.string.profile_incomplete_dialog_action),
                     onClick = onGoToProfile,
                     modifier = Modifier.weight(1f),

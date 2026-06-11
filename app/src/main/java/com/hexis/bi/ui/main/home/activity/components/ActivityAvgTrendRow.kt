@@ -43,11 +43,12 @@ fun ActivityAvgTrendRow(
     val trendText = trendPercent?.let {
         stringResource(R.string.activity_trend_percent_signed, it)
     } ?: stringResource(R.string.activity_trend_none_symbol)
-    val trendColor = when (trendComparison) {
-        TrendComparison.UP -> Positive
-        TrendComparison.DOWN -> Negative
-        TrendComparison.FLAT -> MaterialTheme.colorScheme.onSurfaceVariant
-        TrendComparison.NONE -> MaterialTheme.colorScheme.onSurfaceVariant
+    val trendColor = when {
+        trendPercent != null && trendPercent > 0 -> Positive
+        trendPercent != null && trendPercent < 0 -> Negative
+        trendComparison == TrendComparison.UP -> Positive
+        trendComparison == TrendComparison.DOWN -> Negative
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Row(

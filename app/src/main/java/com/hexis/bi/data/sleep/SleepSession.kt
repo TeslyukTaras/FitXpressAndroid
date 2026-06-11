@@ -31,6 +31,7 @@ data class SleepSession(
     /** Average HRV as SDNN, in milliseconds. */
     val sdnnMs: Int,
     val stages: List<SleepStageInterval>,
+    val isNap: Boolean = false,
     /** Intra-night heart-rate readings (bpm), if the provider reports detailed samples. */
     val heartRateSamples: List<SleepSample> = emptyList(),
     /** Intra-night HRV readings (RMSSD, ms), if the provider reports detailed samples. */

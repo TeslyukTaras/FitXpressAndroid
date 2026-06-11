@@ -104,7 +104,13 @@ internal suspend fun <T> TerraRestSourceResolver.fetchMergedFromAllSources(
             lastError = it
             continue
         }
-        perSource.add(parse(rows))
+        val parsed = runCatching { parse(rows) }
+            .onFailure {
+                Timber.w(it, "Terra row parse failed for provider %s; skipping source", id.provider)
+                lastError = it
+            }
+            .getOrNull() ?: continue
+        perSource.add(parsed)
     }
     if (perSource.isEmpty() && lastError != null) return Result.failure(lastError)
     return Result.success(merge(perSource))
