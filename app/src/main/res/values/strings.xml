@@ -120,6 +120,10 @@
     <string name="my_suit_reconnect_dialog_note">Your progress and scan history\nwill stay saved.</string>
     <string name="action_reconnect">Reconnect</string>
     <string name="cd_suit_connected">Suit connected</string>
+    <string name="buy_suit_dialog_title">Get Your Scan Suit</string>
+    <string name="buy_suit_dialog_body">Start a size scan and we’ll recommend\nyour best fit.</string>
+    <string name="buy_suit_dialog_note">After delivery, enter your Suit ID\nto activate the suit.</string>
+    <string name="action_buy_suit_title_case">Buy Suit</string>
 
     <!-- Settings screen -->
     <string name="screen_settings">Settings</string>

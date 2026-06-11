@@ -53,6 +53,7 @@ fun HomeScreen(
     onPhysiqueDriftClick: () -> Unit = {},
     onPaceOfAgingClick: () -> Unit = {},
     onScanClick: () -> Unit = {},
+    onBuySuitClick: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -125,7 +126,7 @@ fun HomeScreen(
 
                 if (!state.isSuitConnected) {
                     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
-                    PromoBanner(onBuyClick = { /* TODO */ })
+                    PromoBanner(onBuyClick = onBuySuitClick)
                 }
 
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))

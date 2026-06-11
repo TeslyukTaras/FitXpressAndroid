@@ -59,7 +59,9 @@ import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppDatePicker
+import com.hexis.bi.ui.components.AppDialog
 import com.hexis.bi.ui.components.AppLogo
+import com.hexis.bi.ui.components.my_suit.BuySuitDialogContent
 import com.hexis.bi.ui.components.my_suit.SuitCareSheet
 import com.hexis.bi.ui.components.my_suit.SuitConnectedBanner
 import com.hexis.bi.ui.components.my_suit.SuitInfoRow
@@ -96,6 +98,7 @@ fun OnboardingScreen(
 
     val pagerState = rememberPagerState { PAGE_COUNT }
     val scope = rememberCoroutineScope()
+    var showBuySuitDialog by remember { mutableStateOf(false) }
     val isLastPage = pagerState.currentPage == PAGE_COUNT - 1
     val goToPage: (Int) -> Unit = { page ->
         scope.launch {
@@ -126,7 +129,7 @@ fun OnboardingScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .then(
-                        if (state.showDatePicker)
+                        if (state.showDatePicker || showBuySuitDialog)
                             Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
                         else Modifier
                     )
@@ -176,7 +179,11 @@ fun OnboardingScreen(
                     ) { page ->
                         when (page) {
                             0 -> PersonalInfoPage(state = state, viewModel = viewModel)
-                            1 -> MySuitPage(state = state, viewModel = viewModel)
+                            1 -> MySuitPage(
+                                state = state,
+                                viewModel = viewModel,
+                                onBuyOne = { showBuySuitDialog = true },
+                            )
                         }
                     }
                 }
@@ -194,6 +201,10 @@ fun OnboardingScreen(
                 onContinue = viewModel::dismissSuitCareSheet,
                 onDismiss = viewModel::dismissSuitCareSheet,
             )
+
+            if (showBuySuitDialog) AppDialog(onDismiss = { showBuySuitDialog = false }) {
+                BuySuitDialogContent(onBuySuit = { showBuySuitDialog = false })
+            }
         }
     }
 }
@@ -540,6 +551,7 @@ private fun MeasurementSlider(
 private fun MySuitPage(
     state: OnboardingState,
     viewModel: OnboardingViewModel,
+    onBuyOne: () -> Unit,
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val frameHeight = maxHeight
@@ -566,6 +578,7 @@ private fun MySuitPage(
                     suitIdInput = state.suitIdInput,
                     onSuitIdChange = viewModel::updateSuitIdInput,
                     onConnect = viewModel::connectSuit,
+                    onBuyOne = onBuyOne,
                 )
             }
         }
@@ -621,6 +634,7 @@ private fun ColumnScope.SuitDisconnectedContent(
     suitIdInput: String,
     onSuitIdChange: (String) -> Unit,
     onConnect: () -> Unit,
+    onBuyOne: () -> Unit,
 ) {
     Text(
         text = stringResource(R.string.onboarding_suit_connect_title),
@@ -692,6 +706,7 @@ private fun ColumnScope.SuitDisconnectedContent(
         text = noSuitText,
         style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Normal),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.clickable(onClick = onBuyOne),
     )
     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 }

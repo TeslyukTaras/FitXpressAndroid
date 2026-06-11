@@ -31,6 +31,7 @@ import com.hexis.bi.R
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.components.AppDialog
+import com.hexis.bi.ui.components.my_suit.BuySuitDialogContent
 import com.hexis.bi.ui.dark.DarkMainNavBottomBar
 import com.hexis.bi.ui.dark.DarkOutlinedButton
 import com.hexis.bi.ui.dark.DarkPrimaryButton
@@ -76,6 +77,7 @@ fun MainScreen(
     val scanResultRepository: ScanResultRepository = koinInject()
     val scope = rememberCoroutineScope()
     var showProfileIncompleteDialog by remember { mutableStateOf(false) }
+    var showBuySuitDialog by remember { mutableStateOf(false) }
 
     // Starts a scan only when the profile is complete; otherwise prompts to finish the profile.
     // Shared by the bottom-nav scan button and the Home "Scan" tile.
@@ -99,7 +101,7 @@ fun MainScreen(
     DarkTheme {
         Box(modifier = modifier.fillMaxSize()) {
             val dialogBlurModifier =
-                if (showProfileIncompleteDialog) {
+                if (showProfileIncompleteDialog || showBuySuitDialog) {
                     Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
                 } else {
                     Modifier
@@ -124,6 +126,7 @@ fun MainScreen(
                         onPaceOfAgingClick = { navController.navigate(Route.Main.PACE_OF_AGING) },
                         onActivityClick = { navController.navigate(Route.Main.ACTIVITY) },
                         onScanClick = launchScan,
+                        onBuySuitClick = { showBuySuitDialog = true },
                     )
                 }
                 composable(Route.Main.SLEEP) {
@@ -154,7 +157,7 @@ fun MainScreen(
                             }
                         },
                         onConnectSuit = { navController.navigate(Route.Main.MY_SUIT) },
-                        onBuySuit = {},
+                        onBuySuit = { showBuySuitDialog = true },
                         onShowHowToScan = { navController.navigate(Route.Main.HOW_TO_SCAN) },
                     )
                 }
@@ -224,7 +227,10 @@ fun MainScreen(
                     ScanPreferencesScreen(onBack = { navController.popBackStackOnce() })
                 }
                 composable(Route.Main.MY_SUIT) {
-                    MySuitScreen(onBack = { navController.popBackStackOnce() })
+                    MySuitScreen(
+                        onBack = { navController.popBackStackOnce() },
+                        onBuyOne = { showBuySuitDialog = true },
+                    )
                 }
             }
 
@@ -272,7 +278,24 @@ fun MainScreen(
                     },
                 )
             }
+
+            if (showBuySuitDialog) {
+                BuySuitDialog(
+                    onDismiss = { showBuySuitDialog = false },
+                    onBuySuit = { showBuySuitDialog = false },
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun BuySuitDialog(
+    onDismiss: () -> Unit,
+    onBuySuit: () -> Unit,
+) {
+    AppDialog(onDismiss = onDismiss) {
+        BuySuitDialogContent(onBuySuit = onBuySuit)
     }
 }
 
