@@ -1,37 +1,101 @@
 package com.hexis.bi.ui.main.home.activity
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.AppDateNavigator
+import com.hexis.bi.ui.dark.BodyGlassCard
 import com.hexis.bi.ui.main.home.activity.components.ActivityAvgTrendRow
-import com.hexis.bi.ui.main.home.activity.components.ActivitySummaryCard
-import com.hexis.bi.ui.main.home.activity.components.SummaryRow
+import com.hexis.bi.ui.main.home.activity.components.ActivityGridCell
+import com.hexis.bi.ui.main.home.activity.components.ActivityMetricsGrid
+import com.hexis.bi.ui.main.home.activity.components.MetricSegment
+import com.hexis.bi.ui.main.home.activity.components.rememberDurationSegments
 
 @Composable
 fun ActivityPeriodContent(
     state: ActivityState,
     period: PeriodSummary,
-    totalsTitle: String,
+    trendTitle: String,
     trendDescription: String,
+    separateInsightGlass: Boolean,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
+    belowNavigator: (@Composable () -> Unit)? = null,
     chart: @Composable () -> Unit,
 ) {
+
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
+
     AppDateNavigator(
-        modifier = Modifier.padding(vertical = dimensionResource(R.dimen.spacer_xxs)),
         label = period.periodLabel,
         onPrevious = onPrevious,
         onNext = onNext,
         canGoNext = period.canGoNext,
     )
 
-    chart()
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxs)))
+
+    if (belowNavigator != null) {
+        belowNavigator()
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+    }
+
+    BodyGlassCard(
+        contentPadding = PaddingValues(
+            start = dimensionResource(R.dimen.spacer_m),
+            top = dimensionResource(R.dimen.spacer_l),
+            end = dimensionResource(R.dimen.spacer_m),
+            bottom = dimensionResource(R.dimen.spacer_l),
+        ),
+    ) {
+        chart()
+
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+
+        ActivityMetricsGrid(
+            cells = listOfNotNull(
+                ActivityGridCell(
+                    label = stringResource(R.string.activity_summary_steps),
+                    segments = listOf(
+                        MetricSegment(
+                            "%,d".format(period.totalSteps),
+                            stringResource(R.string.activity_unit_steps_full),
+                        ),
+                    ),
+                ),
+                ActivityGridCell(
+                    label = stringResource(R.string.activity_summary_distance),
+                    segments = listOf(
+                        MetricSegment(
+                            "%.1f".format(period.totalDistanceKmDisplay(state.isMetric)),
+                            stringResource(state.distanceUnitRes),
+                        ),
+                    ),
+                ),
+                if (state.showActiveCalories) ActivityGridCell(
+                    label = stringResource(R.string.activity_metric_calories),
+                    segments = listOf(
+                        MetricSegment(
+                            "%,d".format(period.totalCalories),
+                            stringResource(R.string.activity_unit_cal),
+                        ),
+                    ),
+                ) else null,
+                ActivityGridCell(
+                    label = stringResource(R.string.activity_metric_duration),
+                    segments = rememberDurationSegments(
+                        totalSeconds = period.totalActiveDurationSeconds,
+                        includeSeconds = false,
+                    ),
+                ),
+            ),
+        )
+    }
 
     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
@@ -39,30 +103,9 @@ fun ActivityPeriodContent(
         avgStepsPerDay = period.avgStepsPerDay,
         trendPercent = period.trendPercent,
         trendComparison = period.trendComparison,
+        trendTitle = trendTitle,
         trendDescription = trendDescription,
-    )
-
-    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
-
-    ActivitySummaryCard(
-        title = totalsTitle,
-        rows = listOfNotNull(
-            SummaryRow(
-                label = stringResource(R.string.activity_summary_steps),
-                value = "%,d".format(period.totalSteps),
-                unit = stringResource(R.string.activity_unit_steps),
-            ),
-            SummaryRow(
-                label = stringResource(R.string.activity_summary_distance),
-                value = "%.1f".format(period.totalDistanceKmDisplay(state.isMetric)),
-                unit = stringResource(state.distanceUnitRes),
-            ),
-            if (state.showActiveCalories) SummaryRow(
-                label = stringResource(R.string.activity_summary_active_calories),
-                value = "%,d".format(period.totalCalories),
-                unit = stringResource(R.string.activity_unit_kcal),
-            ) else null,
-        ),
+        separateInsightGlass = separateInsightGlass,
     )
 }
 

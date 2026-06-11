@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -14,8 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -29,8 +28,8 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
+import com.hexis.bi.ui.dark.BodyGlassCard
 import com.hexis.bi.ui.main.home.activity.ActivityMetric
-import com.hexis.bi.ui.theme.Blue300
 import com.hexis.bi.utils.constants.ActivityConstants
 
 @Composable
@@ -49,19 +48,15 @@ fun ActivityProgressCard(
     } else {
         ActivityConstants.RING_COLORS.asReversed().drop(1)
     }
+    val fallbackIndicatorColor = MaterialTheme.colorScheme.primary
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
-        elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(R.dimen.elevation_none)),
+    BodyGlassCard(
+        modifier = modifier,
+        contentPadding = PaddingValues(
+            top = dimensionResource(R.dimen.spacer_xxs),
+            bottom = dimensionResource(R.dimen.spacer_m),
+        ),
     ) {
-        Column(
-            modifier = Modifier.padding(
-                top = dimensionResource(R.dimen.spacer_xxs),
-                bottom = dimensionResource(R.dimen.spacer_m)
-            )
-        ) {
             // Header
             Row(
                 modifier = Modifier
@@ -110,7 +105,7 @@ fun ActivityProgressCard(
 
                 VerticalDivider(
                     modifier = Modifier.fillMaxHeight(),
-                    color = MaterialTheme.colorScheme.secondaryFixed,
+                    color = MaterialTheme.colorScheme.outlineVariant,
                 )
 
                 Spacer(Modifier.width(dimensionResource(R.dimen.spacer_l)))
@@ -122,13 +117,14 @@ fun ActivityProgressCard(
                     metrics.forEachIndexed { index, metric ->
                         MetricRow(
                             metric = metric,
-                            indicatorColor = indicatorColors.getOrElse(index) { Blue300 },
+                            indicatorColor = indicatorColors.getOrElse(index) {
+                                fallbackIndicatorColor
+                            },
                         )
                     }
                 }
             }
         }
-    }
 }
 
 @Composable

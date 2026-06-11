@@ -1,9 +1,10 @@
 package com.hexis.bi.utils.constants
 
 import androidx.compose.ui.graphics.Color
-import com.hexis.bi.ui.theme.Blue300
-import com.hexis.bi.ui.theme.BlueFadedIndicator200
-import com.hexis.bi.ui.theme.BlueFadedIndicator300
+import com.hexis.bi.ui.theme.AccentBlue
+import com.hexis.bi.ui.theme.ActivityDistanceProgress
+import com.hexis.bi.ui.theme.ActivityProgressTrack
+import com.hexis.bi.ui.theme.ActivityStepsProgress
 
 internal object ActivityConstants {
     const val HOURS_IN_DAY = 24
@@ -27,13 +28,22 @@ internal object ActivityConstants {
     const val DEFAULT_CALORIES_GOAL = 500
 
     // Circular progress & metric indicators (ordered inner→outer: steps, distance, calories)
-    val RING_COLORS: List<Color> = listOf(BlueFadedIndicator200, BlueFadedIndicator300, Blue300)
+    val RING_TRACK_COLOR = ActivityProgressTrack
+    val RING_COLORS: List<Color> = listOf(
+        ActivityStepsProgress,
+        ActivityDistanceProgress,
+        AccentBlue,
+    )
     const val CIRCLE_FULL_SWEEP = 360f
     const val CIRCLE_START_ANGLE = 0f
+    const val GAUGE_START_ANGLE = 180f
+    const val GAUGE_FULL_SWEEP = 180f
 
     // Day chart grid (hourly steps) — base max grows dynamically in steps of STEP_GRID_STEP
     const val STEP_GRID_MAX = 600f
     const val STEP_GRID_STEP = 200f
+    const val Y_AXIS_HEADROOM_FRACTION = 0.08f
+    const val Y_AXIS_MIN_GRID_STEP = 10f
 
     // Week/Month chart grid (daily totals)
     const val PERIOD_STEP_GRID_MAX = 6000f

@@ -68,14 +68,24 @@
 
     <!-- Activity -->
     <dimen name="activity_arc_size">130dp</dimen>
-    <dimen name="activity_arc_stroke_width">8dp</dimen>
-    <dimen name="activity_arc_ring_gap">4dp</dimen>
+    <dimen name="activity_arc_stroke_width">6dp</dimen>
+    <dimen name="activity_arc_ring_gap">6dp</dimen>
+    <dimen name="activity_chart_vgrid_dash">1.7dp</dimen>
+    <dimen name="activity_chart_vgrid_width">0.5dp</dimen>
+    <dimen name="activity_day_gauge_width">35dp</dimen>
+    <dimen name="activity_day_gauge_height">20dp</dimen>
+    <dimen name="activity_day_gauge_stroke">3dp</dimen>
     <dimen name="activity_steps_chart_height">180dp</dimen>
-    <dimen name="activity_period_y_axis_width">30dp</dimen>
-    <dimen name="activity_year_y_axis_width">40dp</dimen>
-    <dimen name="activity_year_bar_width">32dp</dimen>
+    <dimen name="activity_year_bar_width">20dp</dimen>
     <dimen name="activity_trend_padding">34dp</dimen>
     <dimen name="activity_chart_pointer_vertical_padding">5dp</dimen>
+    <dimen name="activity_chart_bar_gap_compact">6dp</dimen>
+    <dimen name="activity_chart_bar_gap_expanded">20dp</dimen>
+    <dimen name="activity_chart_start_padding_compact">8dp</dimen>
+    <dimen name="activity_chart_start_padding_expanded">16dp</dimen>
+    <dimen name="activity_chart_end_padding">4dp</dimen>
+    <dimen name="activity_chart_tooltip_padding_vertical">6dp</dimen>
+    <dimen name="activity_chart_tooltip_padding_horizontal">12dp</dimen>
     <dimen name="chart_bar_min_height">1dp</dimen>
 
     <!-- Scan -->

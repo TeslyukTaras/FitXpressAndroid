@@ -14,15 +14,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
-import com.hexis.bi.domain.enums.HealthProvider
-import com.hexis.bi.ui.components.AppButton
-import com.hexis.bi.ui.components.AppOutlinedButton
-import com.hexis.bi.ui.components.AppSlider
-import com.hexis.bi.ui.components.AppSwitch
-import com.hexis.bi.ui.main.home.sleep.nameRes
+import com.hexis.bi.ui.dark.DarkOutlinedButton
+import com.hexis.bi.ui.dark.DarkPrimaryButton
+import com.hexis.bi.ui.dark.DarkSlider
+import com.hexis.bi.ui.dark.DarkSwitch
+import com.hexis.bi.ui.theme.Gray200
 import com.hexis.bi.utils.constants.ActivityConstants
 import java.text.NumberFormat
 import java.util.Locale
@@ -31,7 +32,7 @@ import java.util.Locale
 fun ActivitySettingsDialogContent(
     stepsGoal: Int,
     showActiveCalories: Boolean,
-    dataSource: HealthProvider,
+    dataSource: String,
     onStepsGoalChange: (Int) -> Unit,
     onShowActiveCaloriesChange: (Boolean) -> Unit,
     onCancel: () -> Unit,
@@ -67,46 +68,14 @@ fun ActivitySettingsDialogContent(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = stringResource(R.string.activity_settings_steps_goal),
+                text = stringResource(R.string.activity_settings_data_source),
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Normal),
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
-                text = fmt.format(stepsGoal),
-                style = MaterialTheme.typography.bodyLarge,
+                text = dataSource,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground,
-            )
-        }
-
-        AppSlider(
-            value = stepsGoal.toFloat(),
-            onValueChange = { raw ->
-                val step = ActivityConstants.STEPS_GOAL_SLIDER_STEP
-                val snapped = (raw / step).toInt() * step
-                onStepsGoalChange(snapped)
-            },
-            valueRange = ActivityConstants.STEPS_GOAL_MIN.toFloat()..
-                    ActivityConstants.STEPS_GOAL_MAX.toFloat(),
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xs)))
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = dimensionResource(R.dimen.padding_small)),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = stringResource(R.string.activity_settings_show_active_calories),
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Normal),
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            AppSwitch(
-                checked = showActiveCalories,
-                onCheckedChange = onShowActiveCaloriesChange,
             )
         }
 
@@ -120,14 +89,58 @@ fun ActivitySettingsDialogContent(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = stringResource(R.string.activity_settings_data_source),
+                text = stringResource(R.string.activity_settings_steps_goal),
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Normal),
                 color = MaterialTheme.colorScheme.onBackground,
             )
+            val unitText = stringResource(R.string.activity_unit_steps_full)
+            val stepsText = stringResource(R.string.activity_settings_steps_goal_value, fmt.format(stepsGoal))
             Text(
-                text = stringResource(dataSource.nameRes()),
-                style = MaterialTheme.typography.bodyMedium,
+                text = buildAnnotatedString {
+                    append(stepsText)
+                    val unitIndex = stepsText.indexOf(unitText)
+                    if (unitIndex >= 0) {
+                        addStyle(
+                            SpanStyle(color = Gray200),
+                            unitIndex,
+                            stepsText.length,
+                        )
+                    }
+                },
+                style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground,
+            )
+        }
+
+        DarkSlider(
+            value = stepsGoal.toFloat(),
+            onValueChange = { raw ->
+                val step = ActivityConstants.STEPS_GOAL_SLIDER_STEP
+                val snapped = (raw / step).toInt() * step
+                onStepsGoalChange(snapped)
+            },
+            valueRange = ActivityConstants.STEPS_GOAL_MIN.toFloat()..
+                    ActivityConstants.STEPS_GOAL_MAX.toFloat(),
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxs)))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = dimensionResource(R.dimen.padding_small)),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.activity_settings_show_active_calories),
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Normal),
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            DarkSwitch(
+                checked = showActiveCalories,
+                onCheckedChange = onShowActiveCaloriesChange,
             )
         }
 
@@ -139,12 +152,12 @@ fun ActivitySettingsDialogContent(
                 .padding(horizontal = dimensionResource(R.dimen.padding_small)),
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_xs)),
         ) {
-            AppOutlinedButton(
+            DarkOutlinedButton(
                 text = stringResource(R.string.action_cancel),
                 onClick = onCancel,
                 modifier = Modifier.weight(1f),
             )
-            AppButton(
+            DarkPrimaryButton(
                 text = stringResource(R.string.action_save),
                 onClick = onSave,
                 modifier = Modifier.weight(1f),

@@ -278,6 +278,7 @@
     <string name="cd_settings">Settings</string>
     <string name="cd_scan_action">Scan</string>
     <string name="cd_info">Info</string>
+    <string name="cd_clear_selection">Clear selection</string>
 
     <!-- Sleep screen -->
     <string name="sleep_placeholder">-</string>
@@ -592,42 +593,43 @@
     <string name="activity_tab_week">Week</string>
     <string name="activity_tab_month">Month</string>
     <string name="activity_tab_year">Year</string>
-    <string name="activity_goal_label">Goal:</string>
+    <string name="activity_goal_value_suffix"> / %1$s</string>
     <string name="activity_progress_title">Activity progress</string>
     <string name="activity_metric_calories">Calories</string>
     <string name="activity_metric_distance">Distance</string>
     <string name="activity_metric_steps">Step</string>
+    <string name="activity_metric_duration">Duration</string>
     <string name="activity_unit_cal">cal</string>
     <string name="activity_unit_km">km</string>
     <string name="activity_unit_mi">mi</string>
     <string name="activity_unit_steps">st</string>
+    <string name="activity_unit_steps_full">steps</string>
+    <string name="activity_unit_hours_short">h</string>
+    <string name="activity_unit_minutes_short">m</string>
+    <string name="activity_unit_seconds_short">s</string>
     <string name="activity_steps_timeline">Steps timeline</string>
     <string name="activity_time_start">12 am</string>
     <string name="activity_time_end">11:59 pm</string>
-    <string name="activity_info_sheet_title">Activity progress score</string>
-    <string name="activity_info_heading_1">1. What this score means</string>
+    <string name="activity_info_sheet_title">Activity Progress Score</string>
+    <string name="activity_info_heading_1">1. What This Score Means</string>
     <string name="activity_info_body_1">Activity progress shows how close you are to your daily steps goal.</string>
-    <string name="activity_info_heading_2">2. What you see on this screen</string>
+    <string name="activity_info_heading_2">2. What You See On The Screen</string>
     <string name="activity_info_body_2">Along with steps, we also show distance and active calories to give more context for your day.</string>
-    <string name="activity_info_heading_3">3. Why it may differ</string>
+    <string name="activity_info_heading_3">3. Why It May Differ</string>
     <string name="activity_info_body_3">Numbers can vary depending on which device tracked your activity and whether it was carried during the day.</string>
-    <string name="activity_info_heading_4">4. Why daily activity matters</string>
+    <string name="activity_info_heading_4">4. Why Daily Activity Matters</string>
     <string name="activity_info_body_4">Regular movement supports energy levels, recovery, and long-term health. Over time, it can also contribute to changes in body composition.</string>
 
     <!-- Activity period tabs (Week/Month/Year) -->
     <string name="activity_total_steps">Total steps</string>
-    <string name="activity_avg_steps_per_day">Avg steps/day</string>
+    <string name="activity_avg_steps_per_day">Average Daily Steps</string>
     <string name="activity_trend_label">Trend:</string>
-    <string name="activity_weekly_totals">Weekly totals</string>
-    <string name="activity_period_totals">Period totals</string>
-    <string name="activity_yearly_totals">Yearly totals</string>
+    <string name="activity_trend_label_week">Activity Trend</string>
+    <string name="activity_trend_label_month">Monthly Trend</string>
+    <string name="activity_trend_label_year">Yearly Trend</string>
     <string name="activity_summary_steps">Steps</string>
     <string name="activity_summary_distance">Distance</string>
-    <string name="activity_summary_active_calories">Active calories</string>
-    <string name="activity_unit_kcal">kcal</string>
-    <string name="activity_trend_up_week">This week you walked more than last week.</string>
-    <string name="activity_trend_down_week">This week you walked less than last week.</string>
-    <string name="activity_trend_flat_week">This week you walked about the same as last week.</string>
+    <string name="activity_trend_insight_week">Consistent activity may positively support Physique Drift over time.</string>
     <string name="activity_trend_none_week">Not enough data to compare with last week yet.</string>
     <string name="activity_trend_up_month">This month you walked more than last month.</string>
     <string name="activity_trend_down_month">This month you walked less than last month.</string>
@@ -639,13 +641,13 @@
     <string name="activity_trend_none_year">Not enough data to compare with last year yet.</string>
     <string name="activity_trend_percent_signed">%1$+d%%</string>
     <string name="activity_trend_none_symbol">—</string>
-    <string name="activity_axis_thousands_short">%1$dk</string>
 
     <!-- Activity settings dialog -->
-    <string name="activity_settings_title">Activity settings</string>
-    <string name="activity_settings_steps_goal">Steps goal</string>
-    <string name="activity_settings_show_active_calories">Show active calories</string>
-    <string name="activity_settings_data_source">Data source</string>
+    <string name="activity_settings_title">Activity Settings</string>
+    <string name="activity_settings_steps_goal">Steps Goal</string>
+    <string name="activity_settings_steps_goal_value">%1$s steps</string>
+    <string name="activity_settings_show_active_calories">Show Active Calories</string>
+    <string name="activity_settings_data_source">Data Source</string>
 
     <!-- Scan screen -->
     <string name="scan_title">Scan</string>

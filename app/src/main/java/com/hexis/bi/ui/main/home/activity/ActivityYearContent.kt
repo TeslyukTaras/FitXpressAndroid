@@ -68,8 +68,9 @@ private fun ActivityYearReady(
     ActivityPeriodContent(
         state = state,
         period = state.year,
-        totalsTitle = stringResource(R.string.activity_yearly_totals),
+        trendTitle = stringResource(R.string.activity_trend_label_year),
         trendDescription = trendDescription,
+        separateInsightGlass = false,
         onPrevious = onPreviousYear,
         onNext = onNextYear,
     ) {
@@ -80,9 +81,9 @@ private fun ActivityYearReady(
             yGridStep = ActivityConstants.YEAR_STEP_GRID_STEP,
             title = stringResource(R.string.activity_total_steps),
             barWidth = dimensionResource(R.dimen.activity_year_bar_width),
-            barGap = dimensionResource(R.dimen.spacer_s),
-            yAxisWidth = dimensionResource(R.dimen.activity_year_y_axis_width),
-            isLastHighlighted = !state.year.canGoNext,
+            barGap = dimensionResource(R.dimen.activity_chart_bar_gap_expanded),
+            chartStartPadding = dimensionResource(R.dimen.activity_chart_start_padding_expanded),
+            chartEndPadding = dimensionResource(R.dimen.activity_chart_end_padding),
             scrollAlignIndex = state.year.bars.indexOfLast { it.value > 0f }
                 .takeIf { it >= 0 } ?: state.year.bars.lastIndex,
         )
