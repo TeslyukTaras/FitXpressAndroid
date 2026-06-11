@@ -12,6 +12,7 @@ import kotlinx.serialization.json.JsonElement
 import timber.log.Timber
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
+import kotlin.math.abs
 
 private object SleepRepositoryConstants {
     const val DAY_LOOKBACK_DAYS = 1L
@@ -32,11 +33,7 @@ class TerraApiSleepRepository(
         getSessionsForRange(
             date.minusDays(SleepRepositoryConstants.DAY_LOOKBACK_DAYS),
             date.plusDays(SleepRepositoryConstants.DAY_LOOKAHEAD_DAYS),
-        ).map { sessions ->
-            sessions.minByOrNull {
-                kotlin.math.abs(ChronoUnit.DAYS.between(it.wakeTime.toLocalDate(), date))
-            }
-        }
+        ).map { sessions -> selectSessionForNight(sessions, date) }
 
     override suspend fun getSessionsForRange(
         start: LocalDate,
@@ -77,11 +74,70 @@ class TerraApiSleepRepository(
     private fun mergeGapFillByWakeDay(perSource: List<List<SleepSession>>): List<SleepSession> {
         val byWakeDay = LinkedHashMap<LocalDate, SleepSession>()
         for (sessions in perSource) {
-            for (session in sessions.sortedByDescending { it.wakeTime }) {
-                val day = session.wakeTime.toLocalDate()
-                if (day !in byWakeDay) byWakeDay[day] = session
+            val aggregatedByWakeDay = sessions
+                .groupBy { it.wakeTime.toLocalDate() }
+                .mapValues { (_, daySessions) -> aggregateSleepSessionsForWakeDay(daySessions) }
+
+            for ((day, session) in aggregatedByWakeDay.toSortedMap()) {
+                if (day !in byWakeDay && session != null) byWakeDay[day] = session
             }
         }
         return byWakeDay.values.sortedBy { it.wakeTime }
     }
 }
+
+/**
+ * Picks the session shown for [date]: nearest wake day, never a nap when a real
+ * night is available, and on equidistant ties the night that started on [date].
+ */
+internal fun selectSessionForNight(sessions: List<SleepSession>, date: LocalDate): SleepSession? {
+    val candidates = sessions.filterNot { it.isNap }.ifEmpty { sessions }
+    return candidates.minWithOrNull(
+        compareBy<SleepSession> { abs(ChronoUnit.DAYS.between(it.wakeTime.toLocalDate(), date)) }
+            .thenBy { it.bedtime.toLocalDate() != date }
+            .thenByDescending { it.wakeTime },
+    )
+}
+
+internal fun aggregateSleepSessionsForWakeDay(sessions: List<SleepSession>): SleepSession? {
+    val primary = sessions.primarySleepSessionForWakeDay() ?: return null
+    return primary.copy(
+        durationMinutes = sessions.sumOf { it.durationMinutes },
+        efficiencyPercent = weightedAverageFloat(sessions) { it.efficiencyPercent }
+            ?: primary.efficiencyPercent,
+        restingHeartRateBpm = weightedAverageInt(sessions) { it.restingHeartRateBpm }
+            ?: primary.restingHeartRateBpm,
+        hrvMs = weightedAverageInt(sessions) { it.hrvMs }
+            ?: primary.hrvMs,
+        sdnnMs = weightedAverageInt(sessions) { it.sdnnMs }
+            ?: primary.sdnnMs,
+        isNap = sessions.all { it.isNap },
+    )
+}
+
+private fun List<SleepSession>.primarySleepSessionForWakeDay(): SleepSession? =
+    maxWithOrNull(
+        compareBy<SleepSession> { !it.isNap }
+            .thenBy { it.durationMinutes }
+            .thenBy { it.wakeTime },
+    )
+
+/**
+ * Duration-weighted average over the sessions that actually report the metric;
+ * sessions with a missing (non-positive) value must not dilute the average.
+ */
+private inline fun weightedAverageFloat(
+    sessions: List<SleepSession>,
+    value: (SleepSession) -> Float,
+): Float? {
+    val measured = sessions.filter { value(it) > 0f && it.durationMinutes > 0 }
+    val totalDurationMinutes = measured.sumOf { it.durationMinutes }
+    if (totalDurationMinutes <= 0) return null
+    val weightedTotal = measured.sumOf { value(it).toDouble() * it.durationMinutes }
+    return (weightedTotal / totalDurationMinutes).toFloat()
+}
+
+private inline fun weightedAverageInt(
+    sessions: List<SleepSession>,
+    crossinline value: (SleepSession) -> Int,
+): Int? = weightedAverageFloat(sessions) { value(it).toFloat() }?.toInt()
