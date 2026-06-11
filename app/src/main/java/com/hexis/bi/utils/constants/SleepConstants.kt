@@ -18,4 +18,7 @@ internal object SleepConstants {
     const val QUALITY_FAIR_MIN = 40
 
     const val DEFAULT_SLEEP_GOAL_HOURS = 8
+
+    // Sleep timeline x-axis: number of evenly spaced hour labels.
+    const val TIMELINE_LABEL_COUNT = 5
 }

@@ -45,6 +45,8 @@ import com.hexis.bi.ui.theme.SleepStageAwake
 import com.hexis.bi.ui.theme.SleepStageDeep
 import com.hexis.bi.ui.theme.SleepStageLight
 import com.hexis.bi.ui.theme.SleepStageRem
+import com.hexis.bi.utils.constants.SleepConstants
+import com.hexis.bi.utils.constants.TimeConstants
 import com.hexis.bi.utils.formatHour
 
 private const val SHADOW_ALPHA = 0.5f
@@ -135,8 +137,8 @@ fun SleepTimelineCard(
 /** Total sleep header value: white bodyLarge numbers with muted bodyMedium h/m units (matches Sleep Stages). */
 @Composable
 private fun timelineDurationValue(totalMinutes: Int): AnnotatedString {
-    val hours = totalMinutes / 60
-    val minutes = totalMinutes % 60
+    val hours = totalMinutes / SleepConstants.MINUTES_PER_HOUR
+    val minutes = totalMinutes % SleepConstants.MINUTES_PER_HOUR
     val numberStyle = MaterialTheme.typography.bodyLarge.toSpanStyle().copy(color = Color.White)
     val unitStyle =
         MaterialTheme.typography.bodyMedium.toSpanStyle().copy(color = Gray200.copy(alpha = 0.4f))
@@ -294,9 +296,11 @@ private fun TimelineTimeLabels(
 }
 
 private fun timelineLabelHours(startHour: Int, endHour: Int): List<Int> {
-    val normalizedEnd = if (endHour <= startHour) endHour + 24 else endHour
+    val normalizedEnd =
+        if (endHour <= startHour) endHour + TimeConstants.HOURS_IN_DAY else endHour
     val span = (normalizedEnd - startHour).coerceAtLeast(1)
-    return List(5) { index ->
-        (startHour + span * index / 4) % 24
+    val intervals = SleepConstants.TIMELINE_LABEL_COUNT - 1
+    return List(SleepConstants.TIMELINE_LABEL_COUNT) { index ->
+        (startHour + span * index / intervals) % TimeConstants.HOURS_IN_DAY
     }
 }

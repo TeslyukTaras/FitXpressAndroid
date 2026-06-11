@@ -78,6 +78,7 @@ import kotlin.math.abs
 import kotlin.math.ceil
 
 private const val STRUCTURE_AXIS_TICKS = 3 // labels = 0, max/3, 2·max/3, max
+private const val STRUCTURE_STATS_COLUMNS = 2 // stage stats laid out two per row
 private const val STRUCTURE_FILL_FADE_STOP = 0.2f
 private const val STRUCTURE_FILL_TOP_ALPHA = 0.65f
 private const val STRUCTURE_FILL_BOTTOM_ALPHA = 0.45f
@@ -413,7 +414,7 @@ private fun StructureLegend() {
 
 @Composable
 private fun StructureStatsGrid(stages: List<WeeklyStageData>) {
-    stages.chunked(2).forEachIndexed { rowIndex, row ->
+    stages.chunked(STRUCTURE_STATS_COLUMNS).forEachIndexed { rowIndex, row ->
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -427,9 +428,9 @@ private fun StructureStatsGrid(stages: List<WeeklyStageData>) {
                     Spacer(Modifier.width(dimensionResource(R.dimen.spacer_l)))
                 }
             }
-            if (row.size < 2) Spacer(Modifier.weight(1f))
+            if (row.size < STRUCTURE_STATS_COLUMNS) Spacer(Modifier.weight(1f))
         }
-        if (rowIndex < stages.size / 2 - 1) {
+        if (rowIndex < stages.size / STRUCTURE_STATS_COLUMNS - 1) {
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
             AppHorizontalGradientDivider()
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))

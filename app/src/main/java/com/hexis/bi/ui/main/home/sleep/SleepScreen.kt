@@ -37,6 +37,9 @@ import com.hexis.bi.ui.main.home.sleep.components.SleepSettingsDialogContent
 import com.hexis.bi.ui.theme.dark.DarkTheme
 import org.koin.androidx.compose.koinViewModel
 
+/** Fraction of the screen height occupied by the "Sleep and Recovery" info sheet. */
+private const val RECOVERY_SHEET_HEIGHT_FRACTION = 0.8f
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SleepScreen(
@@ -136,7 +139,7 @@ fun SleepScreen(
                 BaseBottomSheet(
                     title = stringResource(R.string.sleep_recovery_sheet_title),
                     onDismiss = viewModel::dismissRecoverySheet,
-                    modifier = modifier.fillMaxHeight(0.8f),
+                    modifier = modifier.fillMaxHeight(RECOVERY_SHEET_HEIGHT_FRACTION),
                 ) {
                     SleepRecoverySheetBody(onDismiss = viewModel::dismissRecoverySheet)
                 }
