@@ -42,6 +42,10 @@ data class SleepStageData(
     val stage: SleepStage,
     val durationMinutes: Int,
     val color: Color,
+    /** Average HRV (RMSSD, ms) during this stage; falls back to the night average. */
+    val hrv: Int = 0,
+    /** Average heart rate (bpm) during this stage; falls back to the night resting rate. */
+    val rhr: Int = 0,
 )
 
 data class TimelineSegment(
@@ -50,11 +54,20 @@ data class TimelineSegment(
     val endFraction: Float,
 )
 
-data class DailySleepEntry(
-    val dayLabel: String,
-    val durationMinutes: Int,
-    val isHighlighted: Boolean = false,
+/** A single charted point: [fraction] across the night (0..1) and its [value]. */
+data class ChartPoint(
+    val fraction: Float,
+    val value: Int,
 )
+
+/** One day's per-stage minutes, used to draw a stacked bar in the weekly Sleep Structure chart. */
+data class DailyStructure(
+    val dayLabel: String,
+    val isHighlighted: Boolean = false,
+    val stageMinutes: Map<SleepStage, Int> = emptyMap(),
+) {
+    val totalMinutes: Int get() = stageMinutes.values.sum()
+}
 
 data class WeeklyStageData(
     val stage: SleepStage,
@@ -68,6 +81,8 @@ data class SleepState(
     // Day tab — load status
     val dayLoadState: SleepLoadState = SleepLoadState.Loading,
     val errorMessage: String? = null,
+    val dayLabel: String = "",
+    val canGoNextDay: Boolean = false,
 
     // Summary tab — load status
     val summaryLoadState: SleepLoadState = SleepLoadState.Loading,
@@ -75,15 +90,14 @@ data class SleepState(
 
     // Day tab — sleep status
     val totalSleepMinutes: Int = 0,
-    val sleepQuality: SleepQuality = SleepQuality.Fair,
     val sleepGoalHours: Int = SleepConstants.DEFAULT_SLEEP_GOAL_HOURS,
     val stages: List<SleepStageData> = emptyList(),
 
     // Day tab — sleep metrics
-    val restfulness: Int = 0,
-    val restfulnessMax: Int = 100,
     val hrv: Int = 0,
     val restingHeartRate: Int = 0,
+    val hrvSeries: List<ChartPoint> = emptyList(),
+    val rhrSeries: List<ChartPoint> = emptyList(),
 
     // Day tab — timeline
     val timelineStartHour: Int = 23,
@@ -95,8 +109,7 @@ data class SleepState(
 
     // Summary tab
     val weekLabel: String = "",
-    val weeklyEntries: List<DailySleepEntry> = emptyList(),
-    val avgSleepMinutes: Int = 0,
+    val weeklyStructure: List<DailyStructure> = emptyList(),
     val weeklyStages: List<WeeklyStageData> = emptyList(),
     val canGoNextWeek: Boolean = false,
 

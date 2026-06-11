@@ -32,20 +32,33 @@
     <dimen name="padding_auth_vertical">40dp</dimen>
     <dimen name="padding_forgot_password_bottom_button">94dp</dimen>
 
-    <!-- Sleep arc chart -->
-    <dimen name="sleep_arc_width">145dp</dimen>
-    <dimen name="sleep_arc_height">118dp</dimen>
-    <dimen name="sleep_arc_stroke_width">10dp</dimen>
-    <dimen name="sleep_arc_text_offset">12dp</dimen>
-    <dimen name="sleep_timeline_chart_height">155dp</dimen>
+    <dimen name="sleep_timeline_stage_height">48dp</dimen>
+    <dimen name="sleep_stage_line_height">3dp</dimen>
+    <dimen name="sleep_stage_dash_stroke">0.5dp</dimen>
+    <dimen name="sleep_stage_dash_segment">5dp</dimen>
+    <dimen name="sleep_stage_dist_light">56dp</dimen>
+    <dimen name="sleep_stage_dist_deep">32dp</dimen>
+    <dimen name="sleep_stage_dist_rem">76dp</dimen>
+    <dimen name="sleep_stage_dist_awake">38dp</dimen>
+    <dimen name="sleep_heart_chart_height">220dp</dimen>
+    <dimen name="sleep_heart_line_width">2dp</dimen>
+    <dimen name="sleep_heart_line_corner">4dp</dimen>
+    <dimen name="sleep_heart_grid_width">0.5dp</dimen>
+    <dimen name="sleep_heart_grid_dash">3dp</dimen>
     <dimen name="sleep_bar_chart_height">200dp</dimen>
-    <dimen name="sleep_bar_horizontal_padding">8dp</dimen>
-    <dimen name="sleep_bar_label_padding_bottom">8dp</dimen>
+    <dimen name="sleep_structure_bar_corner">4dp</dimen>
+    <dimen name="sleep_structure_bar_gap">10dp</dimen>
+    <dimen name="sleep_structure_bar_inset">16dp</dimen>
+    <dimen name="sleep_structure_grid_width">0.5dp</dimen>
+    <dimen name="sleep_structure_selection_border">0.5dp</dimen>
+    <dimen name="sleep_structure_grid_dash">5dp</dimen>
+    <dimen name="sleep_legend_dot">8dp</dimen>
     <dimen name="sleep_bar_stripe_width">1dp</dimen>
-    <dimen name="sleep_bar_stripe_spacing">12dp</dimen>
 
-    <dimen name="sleep_timeline_corner_radius">4dp</dimen>
-    <dimen name="sleep_timeline_connector_width">1dp</dimen>
+    <dimen name="sleep_timeline_line_width">1dp</dimen>
+    <dimen name="sleep_timeline_shadow_height">24dp</dimen>
+    <dimen name="sleep_timeline_plateau_grid_offset">2dp</dimen>
+    <dimen name="sleep_timeline_corner_radius">2dp</dimen>
 
     <!-- Recovery -->
     <dimen name="recovery_arc_width">130dp</dimen>

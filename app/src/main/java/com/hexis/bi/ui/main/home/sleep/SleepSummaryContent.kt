@@ -2,7 +2,6 @@ package com.hexis.bi.ui.main.home.sleep
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -14,26 +13,27 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.AppDateNavigator
-import com.hexis.bi.ui.main.home.sleep.components.SleepBarChartCard
 import com.hexis.bi.ui.main.home.sleep.components.SleepRecoveryBanner
-import com.hexis.bi.ui.main.home.sleep.components.SleepStagesWeeklyCard
+import com.hexis.bi.ui.main.home.sleep.components.SleepStructureCard
 
 @Composable
 fun SleepSummaryContent(
-    modifier: Modifier = Modifier,
     state: SleepState,
     onInfoClick: () -> Unit,
     onPreviousWeek: () -> Unit,
     onNextWeek: () -> Unit,
     onRetry: () -> Unit = {},
 ) {
+
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
     AppDateNavigator(
-        modifier = Modifier.padding(vertical = dimensionResource(R.dimen.spacer_xxs)),
+        modifier = Modifier,
         label = state.weekLabel,
         onPrevious = onPreviousWeek,
         onNext = onNextWeek,
         canGoNext = state.canGoNextWeek,
     )
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxs)))
 
     when (state.summaryLoadState) {
         SleepLoadState.Loading -> SleepLoadPlaceholder {
@@ -66,16 +66,12 @@ private fun SleepSummaryReady(
     state: SleepState,
     onInfoClick: () -> Unit,
 ) {
-    SleepBarChartCard(entries = state.weeklyEntries)
-
-    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxl)))
-
-    SleepStagesWeeklyCard(
+    SleepStructureCard(
+        structure = state.weeklyStructure,
         stages = state.weeklyStages,
-        avgSleepMinutes = state.avgSleepMinutes,
     )
 
-    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
     SleepRecoveryBanner(onInfoClick = onInfoClick)
 }

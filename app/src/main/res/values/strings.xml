@@ -30,18 +30,18 @@
     <string name="label_email">Email</string>
     <string name="label_password">Password</string>
     <string name="label_confirm_password">Confirm Password</string>
-    <string name="placeholder_first_name">Your first name</string>
-    <string name="placeholder_last_name">Your last name</string>
-    <string name="placeholder_email">Your email</string>
-    <string name="placeholder_password">Your password</string>
-    <string name="placeholder_confirm_password">Confirm your password</string>
+    <string name="placeholder_first_name">Your First Name</string>
+    <string name="placeholder_last_name">Your Last Name</string>
+    <string name="placeholder_email">Your Email</string>
+    <string name="placeholder_password">Your Password</string>
+    <string name="placeholder_confirm_password">Confirm Your Password</string>
     <string name="or_continue_with">Or Continue with</string>
-    <string name="terms_text">I agree with the </string>
+    <string name="terms_text">I agree with the</string>
     <string name="terms_link">Terms</string>
-    <string name="terms_and"> and </string>
+    <string name="terms_and">and</string>
     <string name="privacy_link">Privacy Policy</string>
-    <string name="no_account">Don\'t have an account? </string>
-    <string name="have_account">Already have an account? </string>
+    <string name="no_account">Don\'t have an account?</string>
+    <string name="have_account">Already have an account?</string>
     <string name="cd_toggle_password">Toggle password visibility</string>
     <string name="cd_google_signin">Sign in with Google</string>
 
@@ -158,7 +158,7 @@
     <string name="intelligence_recovery">Recovery</string>
     <string name="intelligence_physique_drift">Physique Drift</string>
     <string name="intelligence_longevity">Longevity</string>
-    <string name="intelligence_pace_of_aging">Pace Of Aging</string>
+    <string name="intelligence_pace_of_aging">Pace of Aging</string>
     <string name="intelligence_coming">Coming</string>
     <string name="home_card_sleep">Sleep</string>
     <string name="home_card_activity">Activity</string>
@@ -283,6 +283,7 @@
     <string name="sleep_placeholder">-</string>
     <string name="sleep_screen_title">Sleep</string>
     <string name="sleep_status_title">Sleep status</string>
+    <string name="sleep_stages_title">Sleep Stages</string>
     <string name="sleep_stage_deep">Deep</string>
     <string name="sleep_stage_rem">REM</string>
     <string name="sleep_stage_light">Light</string>
@@ -290,9 +291,10 @@
     <string name="sleep_quality_good">Good</string>
     <string name="sleep_quality_fair">Fair</string>
     <string name="sleep_quality_poor">Poor</string>
-    <string name="sleep_duration_hours_minutes">%1$dh %2$02dm</string>
-    <string name="sleep_duration_minutes">%1$dm</string>
+    <string name="sleep_duration_hours_minutes">%1$d h %2$02d m</string>
+    <string name="sleep_duration_minutes">%1$02d m</string>
     <string name="sleep_goal_hours">Goal: %1$d h</string>
+    <string name="sleep_stage_header_goal"> / %1$d h</string>
     <string name="sleep_time_am">%1$d am</string>
     <string name="sleep_time_pm">%1$d pm</string>
     <string name="health_provider_google_health">Google Health</string>
@@ -303,12 +305,18 @@
     <string name="unit_ms">ms</string>
     <string name="unit_bpm">bpm</string>
     <string name="sleep_metrics_title">Sleep metrics</string>
+    <string name="sleep_heart_metrics_title">Heart Metrics</string>
+    <string name="sleep_last_night">Last Night</string>
     <string name="sleep_metric_restfulness">Restfulness</string>
     <string name="sleep_metric_hrv">HRV</string>
+    <string name="sleep_metric_hrv_unit">HRV (ms)</string>
+    <string name="sleep_metric_rhr_short">RHR</string>
+    <string name="sleep_metric_rhr_unit">RHR (bpm)</string>
+    <string name="sleep_metric_value_unit">%1$d %2$s</string>
     <string name="sleep_metric_resting_heart_rate">Resting heart rate</string>
-    <string name="sleep_timeline_title">Sleep timeline</string>
-    <string name="sleep_recovery_title">Sleep and body recovery</string>
-    <string name="sleep_recovery_subtitle">Better sleep consistency often improves recovery.</string>
+    <string name="sleep_timeline_title">Sleep Timeline</string>
+    <string name="sleep_recovery_title">Sleep &amp; Body Recovery</string>
+    <string name="sleep_recovery_subtitle">Better sleep consistency may support improved recovery over time.</string>
     <string name="sleep_insight_good">Solid sleep score — your body got the recovery it needed last night.</string>
     <string name="sleep_insight_fair">Decent rest. Slightly longer or more consistent sleep would boost recovery.</string>
     <string name="sleep_insight_poor">Short or fragmented sleep detected. Prioritize a longer, steadier night to support recovery.</string>
@@ -317,16 +325,25 @@
     <string name="sleep_settings_title">Sleep settings</string>
     <string name="sleep_settings_goal">Sleep goal</string>
     <string name="sleep_settings_data_source">Data source</string>
-    <string name="sleep_summary_total_sleep">Total sleep</string>
     <string name="sleep_summary_last_7_days">Last 7 days</string>
-    <string name="sleep_summary_avg">Avg: %1$s</string>
-    <string name="sleep_weekly_stages_title">Sleep stages</string>
-    <string name="sleep_summary_trend_note">Arrows show change vs previous week.</string>
-    <string name="sleep_duration_hours_only">%1$dh</string>
-    <string name="sleep_recovery_sheet_heading_1">1. Lorem ipsum dolor</string>
-    <string name="sleep_recovery_sheet_body_1">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\nDuis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident.</string>
-    <string name="sleep_recovery_sheet_heading_2">2. Lorem ipsum</string>
-    <string name="sleep_recovery_sheet_body_3">Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae.\n\nNemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit.</string>
+    <string name="sleep_summary_trend_note">Arrows indicate changes compared to the previous week.</string>
+    <string name="sleep_structure_title">Sleep Structure</string>
+    <string name="sleep_recovery_sheet_title">Sleep and Recovery</string>
+    <string name="sleep_recovery_sheet_intro">Sleep affects how your body restores, recovers, and adapts. Consistent sleep may support better recovery, HRV, and resting heart rate.</string>
+    <string name="sleep_recovery_sheet_heading_status">1. Sleep Status</string>
+    <string name="sleep_recovery_sheet_body_status">Shows your total sleep time and time spent in each sleep stage.</string>
+    <string name="sleep_recovery_sheet_heading_timeline">2. Sleep Timeline</string>
+    <string name="sleep_recovery_sheet_body_timeline">Visualizes how your sleep stages changed through the night.</string>
+    <string name="sleep_recovery_sheet_heading_stages">3. Sleep Stages</string>
+    <string name="sleep_recovery_sheet_body_stages">Deep sleep - supports physical recovery and restoration.\nLight sleep - supports relaxation and recovery balance.\nREM - supports cognitive and emotional recovery.\nAwake - shows brief interruptions during sleep.</string>
+    <string name="sleep_recovery_sheet_heading_metrics">4. Sleep Metrics</string>
+    <string name="sleep_recovery_sheet_body_metrics">Key recovery signals including restfulness, HRV, and resting heart rate.</string>
+    <string name="sleep_recovery_sheet_heading_hrv">5. HRV</string>
+    <string name="sleep_recovery_sheet_body_hrv">Heart Rate Variability reflects how well your body is recovering and adapting to stress and activity</string>
+    <string name="sleep_recovery_sheet_heading_rhr">6. RHR</string>
+    <string name="sleep_recovery_sheet_body_rhr">Resting Heart Rate reflects how calm your body is during rest. Lower values are often linked to better recovery and cardiovascular fitness.</string>
+    <string name="sleep_recovery_sheet_heading_weekly">7. Weekly Summary</string>
+    <string name="sleep_recovery_sheet_body_weekly">Highlights your sleep and recovery trends over time.</string>
 
     <!-- Forgot password screen -->
     <string name="forgot_password_title">Forgot password?</string>
@@ -776,10 +793,10 @@
     <string name="physique_drift_info_heading_4">4. Proportions</string>
     <string name="physique_drift_info_body_4">Shoulder-to-waist ratio, symmetry, and overall shape help define the final result.</string>
     <string name="physique_drift_info_heading_5">5. Total Score</string>
-    <string name="physique_drift_info_body_5">Body fat contributes 50%%, lean body 25%%, waist shape 15%%, and proportions 10%%. 8-10 means lean / athletic, 5-7 means average / improving, and below 5 suggests more room for body composition improvement.</string>
+    <string name="physique_drift_info_body_5">8-10 means lean / athletic, 5-7 means average / improving, and below 5 suggests more room for body composition improvement.</string>
 
     <!-- Pace of Aging screen -->
-    <string name="pace_of_aging_screen_title">Pace Of Aging</string>
+    <string name="pace_of_aging_screen_title">Pace of Aging</string>
     <string name="pace_of_aging_trend_title">Aging Trend</string>
     <string name="pace_of_aging_than_average">than average</string>
     <string name="pace_of_aging_slower_format">%1$d%% slower</string>

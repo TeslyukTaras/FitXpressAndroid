@@ -1,20 +1,24 @@
 package com.hexis.bi.ui.main.home.sleep
 
 import android.app.Application
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewModelScope
 import com.hexis.bi.R
 import com.hexis.bi.data.sleep.SleepRepository
+import com.hexis.bi.data.sleep.SleepSample
 import com.hexis.bi.data.sleep.SleepSession
 import com.hexis.bi.data.sleep.SleepStage
 import com.hexis.bi.data.sleep.SleepStageInterval
 import com.hexis.bi.data.user.FirestoreSchema
 import com.hexis.bi.data.user.UserRepository
-import com.hexis.bi.domain.enums.WeekDay
 import com.hexis.bi.ui.base.BaseViewModel
-import com.hexis.bi.ui.theme.Blue300
-import com.hexis.bi.ui.theme.BlueFadedIndicator100
-import com.hexis.bi.ui.theme.BlueFadedIndicator200
-import com.hexis.bi.ui.theme.BlueFadedIndicator300
+import com.hexis.bi.ui.theme.SleepStageAwake
+import com.hexis.bi.ui.theme.SleepStageDeep
+import com.hexis.bi.ui.theme.SleepStageLight
+import com.hexis.bi.ui.theme.SleepStageRem
+import com.hexis.bi.utils.formatFullMonthDay
+import com.hexis.bi.utils.formatShortDateRange
+import com.hexis.bi.utils.weekDayAbbreviation
 import com.hexis.bi.utils.constants.SleepConstants
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,11 +29,8 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.launch
-import java.time.DayOfWeek
 import java.time.Duration
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.temporal.TemporalAdjusters
 import kotlin.math.roundToInt
 import timber.log.Timber
 
@@ -43,6 +44,7 @@ class SleepViewModel(
     val state: StateFlow<SleepState> = _state.asStateFlow()
 
     private var weekOffset = 0
+    private var dayOffset = 0
     private val loadedTabs = mutableSetOf<SleepTab>()
 
     init {
@@ -70,7 +72,7 @@ class SleepViewModel(
 
     private fun loadDataForTab(tab: SleepTab) {
         when (tab) {
-            SleepTab.Day -> loadTodaySession()
+            SleepTab.Day -> loadDaySession(dayOffset)
             SleepTab.Summary -> loadWeekData(weekOffset)
         }
     }
@@ -98,9 +100,21 @@ class SleepViewModel(
         if (SleepTab.Summary in loadedTabs) loadWeekData(weekOffset)
     }
 
-    fun retryLoad() = loadTodaySession()
+    fun retryLoad() = loadDaySession(dayOffset)
 
     fun retrySummaryLoad() = loadWeekData(weekOffset)
+
+    fun previousDay() {
+        dayOffset--
+        loadDaySession(dayOffset)
+    }
+
+    fun nextDay() {
+        if (dayOffset < 0) {
+            dayOffset++
+            loadDaySession(dayOffset)
+        }
+    }
 
     fun previousWeek() {
         weekOffset--
@@ -122,19 +136,28 @@ class SleepViewModel(
         _state.update { it.copy(showRecoverySheet = false) }
     }
 
-    private fun loadTodaySession() {
-        val targetDay = LocalDate.now()
-        _state.update { it.copy(dayLoadState = SleepLoadState.Loading, errorMessage = null) }
+    private fun loadDaySession(offset: Int) {
+        val targetDay = LocalDate.now().plusDays(offset.toLong())
+        val dateLabel = targetDay.formatFullMonthDay()
+        _state.update {
+            it.copy(
+                dayLoadState = SleepLoadState.Loading,
+                errorMessage = null,
+                dayLabel = dateLabel,
+                canGoNextDay = offset < 0,
+            )
+        }
         viewModelScope.launch {
             val result = withTimeoutOrNull(DAY_LOAD_TIMEOUT_MS) {
                 sleepRepository.getSessionForNight(targetDay)
             }
+            if (offset != dayOffset) return@launch
             (result ?: Result.success(null)).fold(
                 onSuccess = { session ->
                     if (session.hasAnySleepData()) {
                         applySession(session!!)
                     } else {
-                        loadBestSessionFromNeighborRange(targetDay)
+                        if (offset == 0) loadBestSessionFromNeighborRange(targetDay) else applyEmptySession()
                     }
                 },
                 onFailure = { err ->
@@ -152,12 +175,11 @@ class SleepViewModel(
                 dayLoadState = SleepLoadState.Ready,
                 errorMessage = null,
                 totalSleepMinutes = 0,
-                sleepQuality = SleepQuality.Fair,
-                stages = aggregateStages(emptyList()),
-                restfulness = 0,
-                restfulnessMax = 100,
+                stages = emptyStageData(),
                 hrv = 0,
                 restingHeartRate = 0,
+                hrvSeries = emptyList(),
+                rhrSeries = emptyList(),
                 timelineStartHour = 23,
                 timelineEndHour = 6,
                 timelineSegments = emptyList(),
@@ -177,12 +199,11 @@ class SleepViewModel(
                 dayLoadState = SleepLoadState.Ready,
                 errorMessage = null,
                 totalSleepMinutes = session.durationMinutes,
-                sleepQuality = quality,
-                stages = aggregateStages(session.stages),
-                restfulness = score,
-                restfulnessMax = 100,
+                stages = buildStageData(session),
                 hrv = session.hrvMs,
                 restingHeartRate = session.restingHeartRateBpm,
+                hrvSeries = buildSeries(session.hrvSamples, session),
+                rhrSeries = buildSeries(session.heartRateSamples, session),
                 timelineStartHour = session.bedtime.hour,
                 timelineEndHour = session.wakeTime.hour,
                 timelineSegments = buildTimelineSegments(session),
@@ -233,15 +254,75 @@ class SleepViewModel(
         SleepQuality.Poor -> R.string.sleep_insight_poor
     }
 
-    private fun aggregateStages(intervals: List<SleepStageInterval>): List<SleepStageData> {
-        val sums = intervals.groupBy { it.stage }
-            .mapValues { (_, list) -> list.sumOf { it.durationMinutes } }
-        return listOf(
-            SleepStageData(SleepStage.Deep, sums[SleepStage.Deep] ?: 0, Blue300),
-            SleepStageData(SleepStage.REM, sums[SleepStage.REM] ?: 0, BlueFadedIndicator300),
-            SleepStageData(SleepStage.Light, sums[SleepStage.Light] ?: 0, BlueFadedIndicator200),
-            SleepStageData(SleepStage.Awake, sums[SleepStage.Awake] ?: 0, BlueFadedIndicator100),
-        )
+    private fun buildStageData(session: SleepSession): List<SleepStageData> {
+        val byStage = session.stages.groupBy { it.stage }
+        return STAGE_DISPLAY_ORDER.map { stage ->
+            val intervals = byStage[stage].orEmpty()
+            SleepStageData(
+                stage = stage,
+                durationMinutes = intervals.sumOf { it.durationMinutes },
+                color = stageColor(stage),
+                hrv = averageInIntervals(session.hrvSamples, intervals) ?: session.hrvMs,
+                rhr = averageInIntervals(session.heartRateSamples, intervals)
+                    ?: session.restingHeartRateBpm,
+            )
+        }
+    }
+
+    private fun emptyStageData(): List<SleepStageData> =
+        STAGE_DISPLAY_ORDER.map { SleepStageData(it, durationMinutes = 0, color = stageColor(it)) }
+
+    private fun stageColor(stage: SleepStage): Color = when (stage) {
+        SleepStage.Deep -> SleepStageDeep
+        SleepStage.REM -> SleepStageRem
+        SleepStage.Light -> SleepStageLight
+        SleepStage.Awake -> SleepStageAwake
+    }
+
+    /** Average value of [samples] whose timestamp falls inside any of [intervals], or null if none. */
+    private fun averageInIntervals(
+        samples: List<SleepSample>,
+        intervals: List<SleepStageInterval>,
+    ): Int? {
+        if (samples.isEmpty() || intervals.isEmpty()) return null
+        val values = samples
+            .filter { sample ->
+                intervals.any { !sample.time.isBefore(it.start) && sample.time.isBefore(it.end) }
+            }
+            .map { it.value }
+        return if (values.isEmpty()) null else values.average().roundToInt()
+    }
+
+    /**
+     * Maps real intra-night [samples] to chart points positioned by their fraction of the night.
+     * Dense series are bucket-averaged down to [MAX_CHART_POINTS]; returns empty when the provider
+     * reports no detailed samples, so the chart simply omits that line.
+     */
+    private fun buildSeries(
+        samples: List<SleepSample>,
+        session: SleepSession,
+    ): List<ChartPoint> {
+        val totalMinutes = Duration.between(session.bedtime, session.wakeTime).toMinutes()
+            .toFloat()
+            .coerceAtLeast(1f)
+        val points = samples
+            .map { sample ->
+                val offset = Duration.between(session.bedtime, sample.time).toMinutes().toFloat()
+                ChartPoint(fraction = (offset / totalMinutes).coerceIn(0f, 1f), value = sample.value)
+            }
+            .sortedBy { it.fraction }
+
+        if (points.size <= MAX_CHART_POINTS) return points
+
+        return points
+            .groupBy { (it.fraction * MAX_CHART_POINTS).toInt().coerceAtMost(MAX_CHART_POINTS - 1) }
+            .toSortedMap()
+            .map { (_, bucket) ->
+                ChartPoint(
+                    fraction = bucket.map { it.fraction }.average().toFloat(),
+                    value = bucket.map { it.value }.average().roundToInt(),
+                )
+            }
     }
 
     private fun buildTimelineSegments(session: SleepSession): List<TimelineSegment> {
@@ -260,14 +341,12 @@ class SleepViewModel(
     }
 
     private fun loadWeekData(offset: Int) {
-        val monday = LocalDate.now()
-            .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-            .plusWeeks(offset.toLong())
-        val sunday = monday.plusDays(6)
-        val previousMonday = monday.minusWeeks(1)
-        val previousSunday = sunday.minusWeeks(1)
-        val fmt = DateTimeFormatter.ofPattern("MMM d")
-        val label = "${monday.format(fmt)} - ${sunday.format(fmt)}"
+        // Rolling 7-day windows anchored to today: offset 0 = last 7 days, -1 = previous 7, …
+        val end = LocalDate.now().plusDays(offset.toLong() * DAYS_PER_WEEK)
+        val start = end.minusDays(DAYS_PER_WEEK - 1)
+        val previousEnd = start.minusDays(1)
+        val previousStart = previousEnd.minusDays(DAYS_PER_WEEK - 1)
+        val label = formatShortDateRange(start, end)
 
         _state.update {
             it.copy(
@@ -280,18 +359,18 @@ class SleepViewModel(
 
         viewModelScope.launch {
             sleepRepository
-                .getSessionsForRange(previousMonday.minusDays(1), sunday)
+                .getSessionsForRange(previousStart, end)
                 .fold(
                     onSuccess = { sessions ->
                         val current = sessions.filter { session ->
                             val wakeDay = session.wakeTime.toLocalDate()
-                            !wakeDay.isBefore(monday) && !wakeDay.isAfter(sunday)
+                            !wakeDay.isBefore(start) && !wakeDay.isAfter(end)
                         }
                         val previous = sessions.filter { session ->
                             val wakeDay = session.wakeTime.toLocalDate()
-                            !wakeDay.isBefore(previousMonday) && !wakeDay.isAfter(previousSunday)
+                            !wakeDay.isBefore(previousStart) && !wakeDay.isAfter(previousEnd)
                         }
-                        val entries = buildWeekEntries(monday, current)
+                        val structure = buildWeekStructure(start, current)
                         val stages = buildWeeklyStages(current, previous)
 
                         loadedTabs.add(SleepTab.Summary)
@@ -299,9 +378,8 @@ class SleepViewModel(
                             it.copy(
                                 summaryLoadState = SleepLoadState.Ready,
                                 summaryErrorMessage = null,
-                                weeklyEntries = entries,
+                                weeklyStructure = structure,
                                 weeklyStages = stages,
-                                avgSleepMinutes = avgMinutes(entries),
                             )
                         }
                     },
@@ -317,17 +395,25 @@ class SleepViewModel(
         }
     }
 
-    private fun buildWeekEntries(
-        monday: LocalDate,
+    private fun buildWeekStructure(
+        start: LocalDate,
         sessions: List<SleepSession>,
-    ): List<DailySleepEntry> {
+    ): List<DailyStructure> {
         val today = LocalDate.now()
         val byDate = sessions.groupBy { it.wakeTime.toLocalDate() }
-        return WeekDay.entries.mapIndexed { index, weekDay ->
-            val day = monday.plusDays(index.toLong())
-            val minutes = if (day.isAfter(today)) 0
-            else byDate[day]?.sumOf { it.durationMinutes } ?: 0
-            DailySleepEntry(weekDay.abbreviation, minutes, isHighlighted = day == today)
+        return (0 until DAYS_PER_WEEK).map { index ->
+            val day = start.plusDays(index.toLong())
+            val daySessions = if (day.isAfter(today)) emptyList() else byDate[day].orEmpty()
+            val stageMinutes = SleepStage.entries.associateWith { stage ->
+                daySessions.sumOf { session ->
+                    session.stages.filter { it.stage == stage }.sumOf { it.durationMinutes }
+                }
+            }
+            DailyStructure(
+                dayLabel = day.weekDayAbbreviation(),
+                isHighlighted = day == today,
+                stageMinutes = stageMinutes,
+            )
         }
     }
 
@@ -368,11 +454,6 @@ class SleepViewModel(
         WeeklyStageData(SleepStage.Awake, 0),
     )
 
-    private fun avgMinutes(entries: List<DailySleepEntry>): Int {
-        val nonEmpty = entries.filter { it.durationMinutes > 0 }
-        return if (nonEmpty.isEmpty()) 0 else nonEmpty.sumOf { it.durationMinutes } / nonEmpty.size
-    }
-
     private suspend fun loadBestSessionFromNeighborRange(targetDay: LocalDate) {
         val rangeResult = withTimeoutOrNull(DAY_LOAD_TIMEOUT_MS) {
             sleepRepository.getSessionsForRange(
@@ -384,6 +465,7 @@ class SleepViewModel(
             ?.getOrNull()
             .orEmpty()
             .bestForTargetDay(targetDay)
+        if (targetDay != LocalDate.now().plusDays(dayOffset.toLong())) return
         if (fallback.hasAnySleepData()) applySession(fallback!!) else applyEmptySession()
     }
 
@@ -402,5 +484,9 @@ class SleepViewModel(
     private companion object {
         private const val DAY_LOAD_TIMEOUT_MS = 12_000L
         private const val SLEEP_DAY_FALLBACK_RANGE_DAYS = 1L
+        private const val MAX_CHART_POINTS = 96
+        private const val DAYS_PER_WEEK = 7L
+        private val STAGE_DISPLAY_ORDER =
+            listOf(SleepStage.Deep, SleepStage.REM, SleepStage.Light, SleepStage.Awake)
     }
 }

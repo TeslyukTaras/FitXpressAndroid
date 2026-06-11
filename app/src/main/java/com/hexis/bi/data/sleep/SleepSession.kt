@@ -14,6 +14,12 @@ data class SleepStageInterval(
         get() = Duration.between(start, end).toMinutes().toInt()
 }
 
+/** A single timestamped reading from the night, e.g. a heart-rate or HRV sample. */
+data class SleepSample(
+    val time: LocalDateTime,
+    val value: Int,
+)
+
 data class SleepSession(
     val bedtime: LocalDateTime,
     val wakeTime: LocalDateTime,
@@ -25,4 +31,8 @@ data class SleepSession(
     /** Average HRV as SDNN, in milliseconds. */
     val sdnnMs: Int,
     val stages: List<SleepStageInterval>,
+    /** Intra-night heart-rate readings (bpm), if the provider reports detailed samples. */
+    val heartRateSamples: List<SleepSample> = emptyList(),
+    /** Intra-night HRV readings (RMSSD, ms), if the provider reports detailed samples. */
+    val hrvSamples: List<SleepSample> = emptyList(),
 )

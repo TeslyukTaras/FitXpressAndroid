@@ -41,6 +41,14 @@ private object TerraSleepJsonKeys {
         const val AVG_HR_BPM = "avg_hr_bpm"
         const val AVG_HRV_RMSSD = "avg_hrv_rmssd"
         const val AVG_HRV_SDNN = "avg_hrv_sdnn"
+
+        const val DETAILED = "detailed"
+        const val HR_SAMPLES = "hr_samples"
+        const val HRV_RMSSD_SAMPLES = "hrv_samples_rmssd"
+        const val SAMPLE_BPM = "bpm"
+        const val SAMPLE_HRV_RMSSD = "hrv_rmssd"
+        const val SAMPLE_TIMESTAMP = "timestamp"
+        const val SAMPLE_TIMESTAMP_LOCAL = "timestamp_local"
     }
 
     object Stages {
@@ -96,13 +104,23 @@ internal object TerraSleepJsonMapper {
             ?: obj[TerraSleepJsonKeys.Efficiency.NODE]?.jsonObject?.float(TerraSleepJsonKeys.SLEEP_EFFICIENCY)
             ?: 0f
 
-        val heartRate = obj[TerraSleepJsonKeys.HeartRate.NODE]?.jsonObject
-            ?.get(TerraSleepJsonKeys.HeartRate.SUMMARY)?.jsonObject
+        val heartRateNode = obj[TerraSleepJsonKeys.HeartRate.NODE]?.jsonObject
+        val heartRate = heartRateNode?.get(TerraSleepJsonKeys.HeartRate.SUMMARY)?.jsonObject
         val restingHr = heartRate?.int(TerraSleepJsonKeys.HeartRate.RESTING_HR_BPM)
             ?: heartRate?.int(TerraSleepJsonKeys.HeartRate.AVG_HR_BPM)
             ?: 0
         val hrvMs = heartRate?.float(TerraSleepJsonKeys.HeartRate.AVG_HRV_RMSSD)?.toInt() ?: 0
         val sdnnMs = heartRate?.float(TerraSleepJsonKeys.HeartRate.AVG_HRV_SDNN)?.toInt() ?: 0
+
+        val detailed = heartRateNode?.get(TerraSleepJsonKeys.HeartRate.DETAILED)?.jsonObject
+        val heartRateSamples = detailed.parseSamples(
+            TerraSleepJsonKeys.HeartRate.HR_SAMPLES,
+            TerraSleepJsonKeys.HeartRate.SAMPLE_BPM,
+        )
+        val hrvSamples = detailed.parseSamples(
+            TerraSleepJsonKeys.HeartRate.HRV_RMSSD_SAMPLES,
+            TerraSleepJsonKeys.HeartRate.SAMPLE_HRV_RMSSD,
+        )
 
         return SleepSession(
             bedtime = bedtime,
@@ -113,7 +131,22 @@ internal object TerraSleepJsonMapper {
             hrvMs = hrvMs,
             sdnnMs = sdnnMs,
             stages = parseStages(obj),
+            heartRateSamples = heartRateSamples,
+            hrvSamples = hrvSamples,
         )
+    }
+
+    /** Maps a Terra detailed sample array (`[{ timestamp, <valueField> }, …]`) to sorted samples. */
+    private fun JsonObject?.parseSamples(arrayField: String, valueField: String): List<SleepSample> {
+        val arr = this?.get(arrayField)?.jsonArray ?: return emptyList()
+        return arr.mapNotNull { el ->
+            val o = el as? JsonObject ?: return@mapNotNull null
+            val time = o.parseTerraDateTimeField(TerraSleepJsonKeys.HeartRate.SAMPLE_TIMESTAMP)
+                ?: o.parseTerraDateTimeField(TerraSleepJsonKeys.HeartRate.SAMPLE_TIMESTAMP_LOCAL)
+                ?: return@mapNotNull null
+            val value = o.float(valueField)?.toInt() ?: return@mapNotNull null
+            SleepSample(time = time, value = value)
+        }.sortedBy { it.time }
     }
 
     private fun parseStages(root: JsonObject): List<SleepStageInterval> {

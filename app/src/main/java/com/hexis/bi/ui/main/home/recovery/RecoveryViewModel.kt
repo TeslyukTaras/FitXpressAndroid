@@ -15,8 +15,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import com.hexis.bi.utils.formatFullMonthDay
+import com.hexis.bi.utils.formatShortDateRange
+import com.hexis.bi.utils.formatShortMonthDay
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import kotlin.math.abs
 
 class RecoveryViewModel(
@@ -83,7 +85,7 @@ class RecoveryViewModel(
             it.copy(
                 dayLoadState = RecoveryLoadState.Loading,
                 dayErrorMessage = null,
-                dateLabel = today.format(DAY_FMT),
+                dateLabel = today.formatFullMonthDay(),
                 canGoNextDay = false,
                 summaryLoadState = RecoveryLoadState.Loading,
                 summaryErrorMessage = null,
@@ -130,7 +132,7 @@ class RecoveryViewModel(
 
     private fun loadDayData(offset: Int) {
         val day = LocalDate.now().plusDays(offset.toLong())
-        val dateLabel = day.format(DAY_FMT)
+        val dateLabel = day.formatFullMonthDay()
         _state.update {
             it.copy(
                 dayLoadState = RecoveryLoadState.Loading,
@@ -215,7 +217,7 @@ class RecoveryViewModel(
                 dayLabel = day.dayOfMonth.toString(),
                 score = byDate[day]?.score ?: 0,
                 isHighlighted = day == today,
-                tooltipLabel = day.format(WEEK_FMT),
+                tooltipLabel = day.formatShortMonthDay(),
             )
         }
         val avg = entries.filter { it.score > 0 }
@@ -247,7 +249,7 @@ class RecoveryViewModel(
             end = end,
             previousStart = previousStart,
             previousEnd = previousEnd,
-            label = "${start.format(WEEK_FMT)} - ${end.format(WEEK_FMT)}",
+            label = formatShortDateRange(start, end),
         )
     }
 
@@ -301,8 +303,6 @@ class RecoveryViewModel(
     }
 
     private companion object {
-        private val DAY_FMT: DateTimeFormatter = DateTimeFormatter.ofPattern("MMMM d")
-        private val WEEK_FMT: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d")
         private const val SUMMARY_WINDOW_DAYS = 7L
         private const val TREND_FLAT_THRESHOLD = 3
     }
