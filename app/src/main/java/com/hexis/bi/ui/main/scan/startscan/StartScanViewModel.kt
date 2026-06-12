@@ -12,6 +12,7 @@ import com.hexis.bi.data.notification.NotificationInboxRepository
 import com.hexis.bi.data.reminder.ScanReminderScheduler
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.base.BaseViewModel
+import com.hexis.bi.ui.main.scan.ScanPurpose
 import com.hexis.bi.utils.calculateAge
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,6 +32,28 @@ class StartScanViewModel(
 
     private val _state = MutableStateFlow(StartScanState())
     val state: StateFlow<StartScanState> = _state.asStateFlow()
+    private var scanPurpose: ScanPurpose = ScanPurpose.BodyScan
+
+    fun prepareForScan(purpose: ScanPurpose) {
+        scanPurpose = purpose
+    }
+
+    fun startCamera() {
+        _state.update { state ->
+            if (state.isProcessing) {
+                state
+            } else {
+                state.copy(
+                    isComplete = false,
+                    scanProgress = null,
+                    scanErrorMessage = null,
+                    shouldLaunchCamera = true,
+                    shouldNavigateBack = false,
+                    retakeOnErrorDismiss = false,
+                )
+            }
+        }
+    }
 
     fun updateVolume(volume: Float) {
         _state.update { it.copy(voiceVolume = volume) }
@@ -112,7 +135,23 @@ class StartScanViewModel(
         }
     }
 
-    private fun submitPhotos(frontUri: Uri, sideUri: Uri) = launch {
+    private fun submitPhotos(frontUri: Uri, sideUri: Uri) = launch(
+        showLoading = scanPurpose == ScanPurpose.BodyScan,
+        onError = { throwable ->
+            val message = throwable.message ?: appContext.getString(R.string.scan_error_processing_failed)
+            if (scanPurpose == ScanPurpose.SuitSizeScan) {
+                _state.update {
+                    it.copy(
+                        scanProgress = null,
+                        scanErrorMessage = message,
+                        retakeOnErrorDismiss = false,
+                    )
+                }
+            } else {
+                setError(message)
+            }
+        },
+    ) {
         Timber.d("submitPhotos: loading user profile")
         val profile = userRepository.getUser().getOrElse {
             Timber.e(it, "submitPhotos: failed to load profile")
@@ -127,9 +166,11 @@ class StartScanViewModel(
                 appContext.getString(R.string.scan_error_missing_height),
             )
         val weightKg = profile.weightKg?.toFloat()
-            ?: return@launch failWithMissingProfileField(
+        if (scanPurpose == ScanPurpose.BodyScan && weightKg == null) {
+            return@launch failWithMissingProfileField(
                 appContext.getString(R.string.scan_error_missing_weight),
             )
+        }
         val gender = profile.gender?.lowercase()
             ?: return@launch failWithMissingProfileField(
                 appContext.getString(R.string.scan_error_missing_gender),
@@ -164,19 +205,32 @@ class StartScanViewModel(
                         response = progress.response,
                     )
 
-                    scanHistoryRepository.saveScan(progress.response)
-                    scanReminderScheduler.onNotificationSettingsOrScanChanged()
-                    notificationInbox.appendInbox(
-                        R.string.notif_body_scan_done_title,
-                        R.string.notif_body_scan_done_body,
-                    )
+                    if (scanPurpose == ScanPurpose.BodyScan) {
+                        scanHistoryRepository.saveScan(progress.response)
+                        scanReminderScheduler.onNotificationSettingsOrScanChanged()
+                        notificationInbox.appendInbox(
+                            R.string.notif_body_scan_done_title,
+                            R.string.notif_body_scan_done_body,
+                        )
+                    }
 
                     _state.update { it.copy(isComplete = true) }
                 }
 
                 is ScanProgress.Failed -> {
-                    _state.update { it.copy(retakeOnErrorDismiss = true) }
-                    setError(resolveFailureMessage(progress))
+                    val message = resolveFailureMessage(progress)
+                    if (scanPurpose == ScanPurpose.SuitSizeScan) {
+                        _state.update {
+                            it.copy(
+                                scanProgress = null,
+                                scanErrorMessage = message,
+                                retakeOnErrorDismiss = false,
+                            )
+                        }
+                    } else {
+                        _state.update { it.copy(retakeOnErrorDismiss = true) }
+                        setError(message)
+                    }
                 }
 
                 else -> {} // Submitting, Processing — UI shows progress
@@ -189,8 +243,18 @@ class StartScanViewModel(
      * the snackbar should leave the screen rather than relaunch the camera.
      */
     private fun failWithMissingProfileField(message: String) {
-        _state.update { it.copy(retakeOnErrorDismiss = false) }
-        setError(message)
+        if (scanPurpose == ScanPurpose.SuitSizeScan) {
+            _state.update {
+                it.copy(
+                    scanProgress = null,
+                    scanErrorMessage = message,
+                    retakeOnErrorDismiss = false,
+                )
+            }
+        } else {
+            _state.update { it.copy(retakeOnErrorDismiss = false) }
+            setError(message)
+        }
     }
 
     private fun resolveFailureMessage(failure: ScanProgress.Failed): String {

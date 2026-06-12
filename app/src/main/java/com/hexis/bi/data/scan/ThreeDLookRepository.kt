@@ -41,7 +41,7 @@ class ThreeDLookRepository(
         frontPhoto: Uri,
         sidePhoto: Uri,
         heightCm: Float,
-        weightKg: Float,
+        weightKg: Float?,
         gender: String,
         age: Int,
     ): Flow<ScanProgress> = flow {

@@ -90,6 +90,7 @@ private const val PAGE_SCROLL_DURATION_MS = 350
 fun OnboardingScreen(
     onFinish: () -> Unit,
     modifier: Modifier = Modifier,
+    onBuySuitScanRequested: () -> Unit = {},
     viewModel: OnboardingViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -203,7 +204,13 @@ fun OnboardingScreen(
             )
 
             if (showBuySuitDialog) AppDialog(onDismiss = { showBuySuitDialog = false }) {
-                BuySuitDialogContent(onBuySuit = { showBuySuitDialog = false })
+                BuySuitDialogContent(
+                    onBuySuit = {
+                        showBuySuitDialog = false
+                        onBuySuitScanRequested()
+                        viewModel.finish()
+                    },
+                )
             }
         }
     }

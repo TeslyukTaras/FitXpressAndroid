@@ -45,10 +45,12 @@ import com.hexis.bi.ui.main.home.physiquedrift.PhysiqueDriftScreen
 import com.hexis.bi.ui.main.home.recovery.RecoveryScreen
 import com.hexis.bi.ui.main.home.sleep.SleepScreen
 import com.hexis.bi.ui.main.notifications.NotificationsScreen
+import com.hexis.bi.ui.main.scan.ScanPurpose
 import com.hexis.bi.ui.main.scan.ScanScreen
 import com.hexis.bi.ui.main.scan.history.ScanHistoryScreen
 import com.hexis.bi.ui.main.scan.howtoscan.HowToScanScreen
 import com.hexis.bi.ui.main.scan.results.ResultsScreen
+import com.hexis.bi.ui.main.scan.suitsize.SuitSizeResultsScreen
 import com.hexis.bi.ui.main.settings.SettingsScreen
 import com.hexis.bi.ui.main.settings.editprofile.EditProfileScreen
 import com.hexis.bi.ui.main.settings.healthconnections.HealthConnectionsScreen
@@ -67,6 +69,7 @@ fun MainScreen(
     onLogout: () -> Unit,
     onDeleteAccount: () -> Unit,
     modifier: Modifier = Modifier,
+    startDestination: String = Route.Main.HOME,
 ) {
     val navController = rememberNavController()
     val currentBackStack by navController.currentBackStackEntryAsState()
@@ -78,6 +81,23 @@ fun MainScreen(
     val scope = rememberCoroutineScope()
     var showProfileIncompleteDialog by remember { mutableStateOf(false) }
     var showBuySuitDialog by remember { mutableStateOf(false) }
+    val startSuitSizeScan: () -> Unit = {
+        scope.launch {
+            val profile = userRepository.getUser().getOrNull()
+            val isComplete = profile != null
+                    && profile.heightCm != null
+                    && profile.gender != null
+                    && profile.dateOfBirth != null
+            showBuySuitDialog = false
+            if (isComplete) {
+                navController.navigate(Route.Main.SUIT_SIZE_SCAN) {
+                    launchSingleTop = true
+                }
+            } else {
+                showProfileIncompleteDialog = true
+            }
+        }
+    }
 
     // Starts a scan only when the profile is complete; otherwise prompts to finish the profile.
     // Shared by the bottom-nav scan button and the Home "Scan" tile.
@@ -87,6 +107,7 @@ fun MainScreen(
             val isComplete = profile != null
                     && profile.heightCm != null
                     && profile.weightKg != null
+                    && profile.gender != null
                     && profile.dateOfBirth != null
             if (isComplete) {
                 navController.navigate(Route.Main.SCAN) {
@@ -112,7 +133,7 @@ fun MainScreen(
                     .fillMaxSize()
                     .then(dialogBlurModifier),
                 navController = navController,
-                startDestination = Route.Main.HOME,
+                startDestination = startDestination,
             ) {
                 composable(Route.Main.HOME) {
                     HomeScreen(
@@ -161,12 +182,33 @@ fun MainScreen(
                         onShowHowToScan = { navController.navigate(Route.Main.HOW_TO_SCAN) },
                     )
                 }
+                composable(Route.Main.SUIT_SIZE_SCAN) {
+                    ScanScreen(
+                        onBack = { navController.popBackStackOnce() },
+                        onScanComplete = {
+                            navController.navigate(Route.Main.SUIT_SIZE_RESULTS) {
+                                popUpTo(Route.Main.SUIT_SIZE_SCAN) { inclusive = true }
+                            }
+                        },
+                        onConnectSuit = { navController.navigate(Route.Main.MY_SUIT) },
+                        onBuySuit = { showBuySuitDialog = true },
+                        onShowHowToScan = { navController.navigate(Route.Main.HOW_TO_SCAN) },
+                        scanPurpose = ScanPurpose.SuitSizeScan,
+                        requireConnectedSuit = false,
+                    )
+                }
                 composable(Route.Main.SCAN_RESULTS) {
                     ResultsScreen(
                         onBack = {
                             scanResultRepository.selectedScanId = null
                             navController.popBackStackOnce()
                         },
+                    )
+                }
+                composable(Route.Main.SUIT_SIZE_RESULTS) {
+                    SuitSizeResultsScreen(
+                        onBack = { navController.popBackStackOnce() },
+                        onProceedToOrder = { /* Shipping details flow will be wired next. */ },
                     )
                 }
                 composable(Route.Main.SCAN_HISTORY) {
@@ -282,7 +324,7 @@ fun MainScreen(
             if (showBuySuitDialog) {
                 BuySuitDialog(
                     onDismiss = { showBuySuitDialog = false },
-                    onBuySuit = { showBuySuitDialog = false },
+                    onBuySuit = startSuitSizeScan,
                 )
             }
         }

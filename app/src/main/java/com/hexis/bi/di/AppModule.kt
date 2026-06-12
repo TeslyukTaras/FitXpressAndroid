@@ -54,6 +54,7 @@ import com.hexis.bi.ui.main.scan.ScanViewModel
 import com.hexis.bi.ui.main.scan.history.ScanHistoryViewModel
 import com.hexis.bi.ui.main.scan.results.ResultsViewModel
 import com.hexis.bi.ui.main.scan.startscan.StartScanViewModel
+import com.hexis.bi.ui.main.scan.suitsize.SuitSizeResultsViewModel
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountViewModel
 import com.hexis.bi.ui.main.settings.editprofile.EditProfileViewModel
 import com.hexis.bi.ui.main.settings.healthconnections.HealthConnectionsViewModel
@@ -168,6 +169,7 @@ val appModule = module {
     viewModel { ScanViewModel(androidApplication(), get()) }
     viewModel { StartScanViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { ResultsViewModel(androidApplication(), get(), get(), get(), get()) }
+    viewModel { SuitSizeResultsViewModel(androidApplication(), get(), get(), get()) }
     viewModel { ScanHistoryViewModel(androidApplication(), get(), get()) }
     viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get()) }
     viewModel { OnboardingViewModel(androidApplication(), get(), get()) }

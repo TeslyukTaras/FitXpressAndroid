@@ -38,6 +38,7 @@
     <dimen name="sleep_stage_dash_segment">5dp</dimen>
     <dimen name="sleep_stage_dist_light">56dp</dimen>
     <dimen name="sleep_stage_dist_deep">32dp</dimen>
+    <dimen name="suit_size_image_height">275dp</dimen>
     <dimen name="sleep_stage_dist_rem">76dp</dimen>
     <dimen name="sleep_stage_dist_awake">38dp</dimen>
     <dimen name="sleep_heart_chart_height">220dp</dimen>

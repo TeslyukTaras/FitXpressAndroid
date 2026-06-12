@@ -26,6 +26,8 @@ internal object Route {
         const val PACE_OF_AGING = "main/pace_of_aging"
         const val ACTIVITY = "main/activity"
         const val SCAN = "main/scan"
+        const val SUIT_SIZE_SCAN = "main/scan/suit_size"
+        const val SUIT_SIZE_RESULTS = "main/scan/suit_size/results"
         const val SCAN_RESULTS = "main/scan/results"
         const val SCAN_HISTORY = "main/scan/history"
         const val HOW_TO_SCAN = "main/scan/how_to"

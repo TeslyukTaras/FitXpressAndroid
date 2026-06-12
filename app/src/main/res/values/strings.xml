@@ -655,6 +655,28 @@
 
     <!-- Scan screen -->
     <string name="scan_title">Scan</string>
+    <string name="scan_size_title">Find your size</string>
+    <string name="scan_size_results_title">Your size results</string>
+    <string name="scan_size_subtitle">Scan your body to get a size recommendation in seconds.</string>
+    <string name="scan_size_complete_title">Scan complete</string>
+    <string name="scan_size_complete_body">Your scan was successful.\nWe’re generating your results now.</string>
+    <string name="scan_size_error_title">Scan failed</string>
+    <string name="scan_checklist_title">Before you scan</string>
+    <string name="scan_checklist_body">Follow these steps for the most accurate size recommendation.</string>
+    <string name="scan_checklist_label">Checklist:</string>
+    <string name="scan_checklist_fitted_clothing">Wear fitted clothing</string>
+    <string name="scan_checklist_good_lighting">Use good lighting</string>
+    <string name="scan_checklist_clean_background">Stand in front of a clean background</string>
+    <string name="scan_checklist_volume_on">Turn volume on</string>
+    <string name="scan_checklist_voice_guidance">Follow voice guidance</string>
+    <string name="scan_checklist_front_left_photos">Take front and left-side photos</string>
+    <string name="scan_checklist_footer">You can find these tips again from the info icon.</string>
+    <string name="suit_size_units">Units</string>
+    <string name="suit_size_confirm_body">Please confirm your height and weight. Accurate values improve your suit size recommendation.</string>
+    <string name="suit_size_feature_lightweight">Lightweight second-skin comfort</string>
+    <string name="suit_size_feature_tracking">Designed for precision body tracking</string>
+    <string name="suit_size_label">HEXIS-BI Suit Size:</string>
+    <string name="suit_size_proceed_to_order">Proceed to Order</string>
     <string name="scan_results_title">Results</string>
     <string name="scan_suit_not_detected_title">Suit is not detected</string>
     <string name="scan_suit_not_detected_body">You’re not wearing the suit right now. Put it on to continue, or switch to Regular Scan.</string>
@@ -670,6 +692,8 @@
     <string name="scan_step_3_b">Hold still while your body scan is being captured.</string>
     <string name="scan_progress_submitting">Submitting your photos…</string>
     <string name="scan_progress_processing">Processing your scan…</string>
+    <string name="action_results">Results</string>
+    <string name="action_rescan">Rescan</string>
 
     <!-- How to scan (Prepare Your Scan) flow -->
     <string name="how_to_scan_title">Prepare Your Scan</string>
