@@ -12,6 +12,8 @@ import com.hexis.bi.data.healthconnections.FirestoreHealthConnectionsRepository
 import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
 import com.hexis.bi.data.network.httpLoggingInterceptor
 import com.hexis.bi.data.notification.NotificationInboxRepository
+import com.hexis.bi.data.order.FirestoreOrderRepository
+import com.hexis.bi.data.order.OrderDraftHolder
 import com.hexis.bi.data.preferences.UserPreferencesRepository
 import com.hexis.bi.data.recovery.RecoveryRepository
 import com.hexis.bi.data.recovery.TerraDerivedRecoveryRepository
@@ -35,6 +37,7 @@ import com.hexis.bi.data.terra.TerraRestSourceResolver
 import com.hexis.bi.data.terra.TerraWidgetApi
 import com.hexis.bi.data.user.FirestoreUserRepository
 import com.hexis.bi.data.user.UserRepository
+import com.hexis.bi.domain.order.OrderRepository
 import com.hexis.bi.domain.suit.SuitRepository
 import com.hexis.bi.ui.MainViewModel
 import com.hexis.bi.ui.auth.forgotpassword.ForgotPasswordViewModel
@@ -42,6 +45,8 @@ import com.hexis.bi.ui.auth.login.LoginViewModel
 import com.hexis.bi.ui.auth.onboarding.OnboardingViewModel
 import com.hexis.bi.ui.auth.signup.SignUpViewModel
 import com.hexis.bi.ui.main.body.BodyViewModel
+import com.hexis.bi.ui.main.buysuit.shipping.ShippingDetailsViewModel
+import com.hexis.bi.ui.main.buysuit.suitsize.SuitSizeResultsViewModel
 import com.hexis.bi.ui.main.home.HomeViewModel
 import com.hexis.bi.ui.main.home.activity.ActivityViewModel
 import com.hexis.bi.ui.main.home.longevity.LongevityViewModel
@@ -54,7 +59,6 @@ import com.hexis.bi.ui.main.scan.ScanViewModel
 import com.hexis.bi.ui.main.scan.history.ScanHistoryViewModel
 import com.hexis.bi.ui.main.scan.results.ResultsViewModel
 import com.hexis.bi.ui.main.scan.startscan.StartScanViewModel
-import com.hexis.bi.ui.main.scan.suitsize.SuitSizeResultsViewModel
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountViewModel
 import com.hexis.bi.ui.main.settings.editprofile.EditProfileViewModel
 import com.hexis.bi.ui.main.settings.healthconnections.HealthConnectionsViewModel
@@ -106,6 +110,8 @@ val appModule = module {
     single { ThreeDLookRepository(get(), get()) }
     single { ScanResultRepository() }
     single { ScanHistoryRepository(get(), get()) }
+    single { OrderDraftHolder() }
+    single<OrderRepository> { FirestoreOrderRepository(get(), get()) }
     single { TerraAuthApi(get()) }
     single { TerraApi(get()) }
     single<HealthConnectionsRepository> {
@@ -169,7 +175,8 @@ val appModule = module {
     viewModel { ScanViewModel(androidApplication(), get()) }
     viewModel { StartScanViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { ResultsViewModel(androidApplication(), get(), get(), get(), get()) }
-    viewModel { SuitSizeResultsViewModel(androidApplication(), get(), get(), get()) }
+    viewModel { SuitSizeResultsViewModel(androidApplication(), get(), get(), get(), get()) }
+    viewModel { ShippingDetailsViewModel(androidApplication(), get(), get(), get()) }
     viewModel { ScanHistoryViewModel(androidApplication(), get(), get()) }
     viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get()) }
     viewModel { OnboardingViewModel(androidApplication(), get(), get()) }

@@ -37,6 +37,8 @@ import com.hexis.bi.ui.dark.DarkOutlinedButton
 import com.hexis.bi.ui.dark.DarkPrimaryButton
 import com.hexis.bi.ui.main.body.BodyScreen
 import com.hexis.bi.ui.main.body.PhysiqueBalanceScreen
+import com.hexis.bi.ui.main.buysuit.shipping.ShippingDetailsScreen
+import com.hexis.bi.ui.main.buysuit.suitsize.SuitSizeResultsScreen
 import com.hexis.bi.ui.main.home.HomeScreen
 import com.hexis.bi.ui.main.home.activity.ActivityScreen
 import com.hexis.bi.ui.main.home.longevity.LongevityScreen
@@ -50,7 +52,6 @@ import com.hexis.bi.ui.main.scan.ScanScreen
 import com.hexis.bi.ui.main.scan.history.ScanHistoryScreen
 import com.hexis.bi.ui.main.scan.howtoscan.HowToScanScreen
 import com.hexis.bi.ui.main.scan.results.ResultsScreen
-import com.hexis.bi.ui.main.scan.suitsize.SuitSizeResultsScreen
 import com.hexis.bi.ui.main.settings.SettingsScreen
 import com.hexis.bi.ui.main.settings.editprofile.EditProfileScreen
 import com.hexis.bi.ui.main.settings.healthconnections.HealthConnectionsScreen
@@ -208,7 +209,13 @@ fun MainScreen(
                 composable(Route.Main.SUIT_SIZE_RESULTS) {
                     SuitSizeResultsScreen(
                         onBack = { navController.popBackStackOnce() },
-                        onProceedToOrder = { /* Shipping details flow will be wired next. */ },
+                        onProceedToOrder = { navController.navigate(Route.Main.SHIPPING_DETAILS) },
+                    )
+                }
+                composable(Route.Main.SHIPPING_DETAILS) {
+                    ShippingDetailsScreen(
+                        onBack = { navController.popBackStackOnce() },
+                        onClose = { navController.popBackStack(Route.Main.HOME, inclusive = false) },
                     )
                 }
                 composable(Route.Main.SCAN_HISTORY) {

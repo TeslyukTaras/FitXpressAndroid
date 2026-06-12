@@ -1,4 +1,4 @@
-package com.hexis.bi.ui.main.scan.suitsize
+package com.hexis.bi.ui.main.buysuit.suitsize
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -96,7 +96,10 @@ fun SuitSizeResultsScreen(
                 onSelectImperial = viewModel::selectImperial,
                 onHeightChange = viewModel::updateHeight,
                 onWeightChange = viewModel::updateWeight,
-                onProceedToOrder = onProceedToOrder,
+                onProceedToOrder = {
+                    viewModel.confirmSelection()
+                    onProceedToOrder()
+                },
             )
         }
     }

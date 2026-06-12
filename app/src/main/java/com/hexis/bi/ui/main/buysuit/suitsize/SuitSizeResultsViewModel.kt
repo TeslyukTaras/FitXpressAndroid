@@ -1,10 +1,12 @@
-package com.hexis.bi.ui.main.scan.suitsize
+package com.hexis.bi.ui.main.buysuit.suitsize
 
 import android.app.Application
+import com.hexis.bi.data.order.OrderDraftHolder
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanRecord
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.user.UserRepository
+import com.hexis.bi.domain.order.OrderSizing
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.isMetricUnitSystem
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +19,7 @@ class SuitSizeResultsViewModel(
     private val userRepository: UserRepository,
     private val scanResultRepository: ScanResultRepository,
     private val scanHistoryRepository: ScanHistoryRepository,
+    private val orderDraftHolder: OrderDraftHolder,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(SuitSizeResultsState())
@@ -47,8 +50,20 @@ class SuitSizeResultsViewModel(
                 heightCm = heightCm,
                 weightKg = weightKg,
                 suitSize = recommendSuitSize(heightCm, weightKg, latestScan),
+                scanId = latestScan?.id,
             )
         }
+    }
+
+    /** Snapshots the confirmed selection for the shipping screen; call before navigating to order. */
+    fun confirmSelection() {
+        val s = _state.value
+        orderDraftHolder.sizing = OrderSizing(
+            scanId = s.scanId,
+            suitSize = s.suitSize,
+            heightCm = s.heightCm,
+            weightKg = s.weightKg,
+        )
     }
 
     fun updateHeight(heightCm: Float) {

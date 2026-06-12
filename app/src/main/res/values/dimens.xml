@@ -23,6 +23,7 @@
     <dimen name="icon_medium">24dp</dimen>
     <dimen name="icon_large">32dp</dimen>
     <dimen name="icon_normalized">40dp</dimen>
+    <dimen name="flag_circle_small">22dp</dimen>
 
     <!-- Padding -->
     <dimen name="padding_small">8dp</dimen>
