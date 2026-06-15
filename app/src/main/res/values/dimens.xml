@@ -24,6 +24,9 @@
     <dimen name="icon_large">32dp</dimen>
     <dimen name="icon_normalized">40dp</dimen>
     <dimen name="flag_circle_small">22dp</dimen>
+    <dimen name="timeline_dot_size">16dp</dimen>
+    <dimen name="timeline_connector_width">0.5dp</dimen>
+    <dimen name="timeline_dash">1.66dp</dimen>
 
     <!-- Padding -->
     <dimen name="padding_small">8dp</dimen>

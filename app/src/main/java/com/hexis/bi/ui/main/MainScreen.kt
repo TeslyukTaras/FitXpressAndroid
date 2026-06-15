@@ -23,10 +23,12 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.hexis.bi.R
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.user.UserRepository
@@ -37,6 +39,7 @@ import com.hexis.bi.ui.dark.DarkOutlinedButton
 import com.hexis.bi.ui.dark.DarkPrimaryButton
 import com.hexis.bi.ui.main.body.BodyScreen
 import com.hexis.bi.ui.main.body.PhysiqueBalanceScreen
+import com.hexis.bi.ui.main.buysuit.editaddress.EditAddressScreen
 import com.hexis.bi.ui.main.buysuit.shipping.ShippingDetailsScreen
 import com.hexis.bi.ui.main.buysuit.suitsize.SuitSizeResultsScreen
 import com.hexis.bi.ui.main.home.HomeScreen
@@ -149,6 +152,9 @@ fun MainScreen(
                         onActivityClick = { navController.navigate(Route.Main.ACTIVITY) },
                         onScanClick = launchScan,
                         onBuySuitClick = { showBuySuitDialog = true },
+                        onEditOrderAddress = { orderId ->
+                            navController.navigate(Route.Main.editOrderAddress(orderId))
+                        },
                     )
                 }
                 composable(Route.Main.SLEEP) {
@@ -216,6 +222,19 @@ fun MainScreen(
                     ShippingDetailsScreen(
                         onBack = { navController.popBackStackOnce() },
                         onClose = { navController.popBackStack(Route.Main.HOME, inclusive = false) },
+                    )
+                }
+                composable(
+                    Route.Main.EDIT_ORDER_ADDRESS,
+                    arguments = listOf(
+                        navArgument(Route.Main.ARG_ORDER_ID) { type = NavType.StringType },
+                    ),
+                ) { backStackEntry ->
+                    val orderId = backStackEntry.arguments?.getString(Route.Main.ARG_ORDER_ID).orEmpty()
+                    EditAddressScreen(
+                        orderId = orderId,
+                        onBack = { navController.popBackStackOnce() },
+                        onSaved = { navController.popBackStackOnce() },
                     )
                 }
                 composable(Route.Main.SCAN_HISTORY) {

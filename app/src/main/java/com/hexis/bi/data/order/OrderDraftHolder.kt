@@ -9,4 +9,7 @@ import com.hexis.bi.domain.order.OrderSizing
  */
 class OrderDraftHolder {
     var sizing: OrderSizing? = null
+    fun clear() {
+        sizing = null
+    }
 }

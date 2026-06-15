@@ -8,6 +8,7 @@ import com.hexis.bi.data.activity.ActivityRepository
 import com.hexis.bi.data.activity.TerraApiActivityRepository
 import com.hexis.bi.data.auth.AuthRepository
 import com.hexis.bi.data.auth.FirebaseAuthRepository
+import com.hexis.bi.data.auth.SessionCleaner
 import com.hexis.bi.data.healthconnections.FirestoreHealthConnectionsRepository
 import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
 import com.hexis.bi.data.network.httpLoggingInterceptor
@@ -45,6 +46,7 @@ import com.hexis.bi.ui.auth.login.LoginViewModel
 import com.hexis.bi.ui.auth.onboarding.OnboardingViewModel
 import com.hexis.bi.ui.auth.signup.SignUpViewModel
 import com.hexis.bi.ui.main.body.BodyViewModel
+import com.hexis.bi.ui.main.buysuit.editaddress.EditAddressViewModel
 import com.hexis.bi.ui.main.buysuit.shipping.ShippingDetailsViewModel
 import com.hexis.bi.ui.main.buysuit.suitsize.SuitSizeResultsViewModel
 import com.hexis.bi.ui.main.home.HomeViewModel
@@ -96,6 +98,7 @@ val appModule = module {
     single<ScanReminderScheduler> { ScanReminderSchedulerImpl(androidContext(), get(), get()) }
     single { NotificationPermissionCoordinator(androidContext(), get(), get(), get(), get()) }
     single<AuthRepository> { FirebaseAuthRepository(get(), get(), androidContext()) }
+    single { SessionCleaner(get(), get(), get(), get(), get()) }
     single<SuitRepository> { MockSuitRepository(get()) }
     single<UserRepository> { FirestoreUserRepository(get(), get(), androidContext()) }
     single {
@@ -103,7 +106,7 @@ val appModule = module {
             .connectTimeout(HTTP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .readTimeout(HTTP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .writeTimeout(HTTP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .apply { addInterceptor(httpLoggingInterceptor()) }
+            .apply { httpLoggingInterceptor()?.let { addInterceptor(it) } }
             .build()
     }
     single { ThreeDLookApi(get(), androidContext()) }
@@ -144,6 +147,7 @@ val appModule = module {
             get(),
             get(),
             get(),
+            get(),
             get()
         )
     }
@@ -177,7 +181,8 @@ val appModule = module {
     viewModel { ResultsViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { SuitSizeResultsViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { ShippingDetailsViewModel(androidApplication(), get(), get(), get()) }
+    viewModel { (orderId: String) -> EditAddressViewModel(androidApplication(), get(), orderId) }
     viewModel { ScanHistoryViewModel(androidApplication(), get(), get()) }
-    viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get()) }
+    viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { OnboardingViewModel(androidApplication(), get(), get()) }
 }

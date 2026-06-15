@@ -20,9 +20,15 @@ import com.hexis.bi.domain.body.physiqueScore
 import com.hexis.bi.domain.longevity.PaceOfAgingInputs
 import com.hexis.bi.domain.longevity.agingScore
 import com.hexis.bi.domain.longevity.computePaceOfAging
+import com.hexis.bi.domain.order.Order
+import com.hexis.bi.domain.order.OrderRepository
+import com.hexis.bi.domain.order.OrderShippingAddress
+import com.hexis.bi.domain.order.OrderStatus
 import com.hexis.bi.domain.suit.SuitRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.base.UiEvent
+import com.hexis.bi.ui.main.buysuit.orderdetails.OrderDetailsUi
+import com.hexis.bi.ui.main.buysuit.orderdetails.OrderTimelineStepUi
 import com.hexis.bi.ui.main.home.longevity.currentLongevityScore
 import com.hexis.bi.ui.main.home.longevity.longevityScoreWindow
 import com.hexis.bi.ui.main.home.longevity.waistToHeightRatio
@@ -30,6 +36,7 @@ import com.hexis.bi.ui.main.scan.results.MeasurementChange
 import com.hexis.bi.utils.calculateAge
 import com.hexis.bi.utils.cmToInches
 import com.hexis.bi.utils.constants.ActivityConstants
+import com.hexis.bi.utils.constants.OrderConstants
 import com.hexis.bi.utils.constants.SleepConstants
 import com.hexis.bi.utils.inchesToFeetAndInches
 import com.hexis.bi.utils.isMetricUnitSystem
@@ -46,6 +53,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import com.hexis.bi.utils.millisToOrderTimelineTimestamp
 import com.hexis.bi.utils.millisToShortMonthDay
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
@@ -66,6 +74,7 @@ class HomeViewModel(
     private val scanHistoryRepository: ScanHistoryRepository,
     private val terraManagerHolder: TerraManagerHolder,
     notificationInbox: NotificationInboxRepository,
+    private val orderRepository: OrderRepository,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(HomeState())
@@ -140,6 +149,89 @@ class HomeViewModel(
         merge(refreshTrigger, TerraSdkSync.dataSynced)
             .onEach { reloadOverview() }
             .launchIn(viewModelScope)
+
+        refreshTrigger
+            .onEach { loadSuitOrder() }
+            .launchIn(viewModelScope)
+    }
+
+    private suspend fun loadSuitOrder() {
+        val order = orderRepository.getLatestActiveOrder().getOrNull()?.takeIf { it.isShownOnHome }
+        _state.update { current ->
+            current.copy(
+                suitOrder = order?.toOverview(),
+                orderDetails = order?.toDetailsUi(),
+                suitSectionResolved = true,
+                showOrderDetails = current.showOrderDetails && order != null,
+            )
+        }
+    }
+
+    fun showOrderDetails() =
+        _state.update { it.copy(showOrderDetails = it.orderDetails != null) }
+
+    fun dismissOrderDetails() =
+        _state.update { it.copy(showOrderDetails = false) }
+
+    /** The card tracks the order until the delivered suit is activated (linked via suitId). */
+    private val Order.isShownOnHome: Boolean
+        get() = status != OrderStatus.CANCELLED &&
+                (status != OrderStatus.DELIVERED || suitId == null)
+
+    private fun Order.toOverview(): SuitOrderOverview {
+        val hasTracking = trackingNumber != null
+        return SuitOrderOverview(
+            status = appContext.getString(status.displayRes()),
+            referenceLabel = appContext.getString(
+                if (hasTracking) R.string.home_suit_order_tracking_label
+                else R.string.home_suit_order_number_label
+            ),
+            referenceValue = maskReference(trackingNumber ?: orderNumber),
+            eta = estimatedDeliveryMillis?.millisToShortMonthDay(),
+        )
+    }
+
+    private fun Order.toDetailsUi(): OrderDetailsUi =
+        OrderDetailsUi(
+            orderId = id,
+            reference = trackingNumber ?: orderNumber,
+            referenceIsTracking = trackingNumber != null,
+            eta = estimatedDeliveryMillis?.millisToShortMonthDay(),
+            // The remote statusHistory already carries every ladder step in order; render it as-is.
+            // A reached step shows its actual time; a pending one shows the admin estimate, if set.
+            steps = statusHistory.map { event ->
+                OrderTimelineStepUi(
+                    label = appContext.getString(event.status.displayRes()),
+                    timestamp = (event.atMillis ?: event.estimatedAtMillis)
+                        ?.millisToOrderTimelineTimestamp(),
+                    reached = event.atMillis != null,
+                )
+            },
+            address = effectiveShippingAddress.toSingleLine(),
+            canEditAddress = isAddressEditable,
+            addressChangePending = hasPendingAddressChange,
+        )
+
+    private fun OrderShippingAddress.toSingleLine(): String =
+        listOf(addressLine, apartment, city, region, postalCode, countryName)
+            .filter { it.isNotBlank() }
+            .joinToString(", ")
+
+    private fun OrderStatus.displayRes(): Int = when (this) {
+        OrderStatus.PLACED -> R.string.order_status_placed
+        OrderStatus.CONFIRMED -> R.string.order_status_confirmed
+        OrderStatus.IN_PRODUCTION -> R.string.order_status_in_production
+        OrderStatus.SHIPPED -> R.string.order_status_shipped
+        OrderStatus.DELIVERED -> R.string.order_status_delivered
+        OrderStatus.CANCELLED -> R.string.order_status_cancelled
+    }
+
+    private fun maskReference(reference: String): String {
+        val visible = OrderConstants.REFERENCE_MASK_PREFIX_CHARS + OrderConstants.REFERENCE_MASK_SUFFIX_CHARS
+        if (reference.length <= visible) return reference
+        return reference.take(OrderConstants.REFERENCE_MASK_PREFIX_CHARS) +
+                OrderConstants.REFERENCE_MASK +
+                reference.takeLast(OrderConstants.REFERENCE_MASK_SUFFIX_CHARS)
     }
 
     /** Re-derives every overview card. Called on each Home RESUME; Terra syncs also trigger it. */

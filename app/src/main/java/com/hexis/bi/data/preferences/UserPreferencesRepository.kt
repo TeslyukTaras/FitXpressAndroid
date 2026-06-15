@@ -102,4 +102,12 @@ class UserPreferencesRepository(
             prefs[k.bodyVisualMode] = mode
         }
     }
+
+    suspend fun clearAccountData() {
+        store.edit { prefs ->
+            val keepOnboarding = prefs[k.onboardingShown] == true
+            prefs.clear()
+            if (keepOnboarding) prefs[k.onboardingShown] = true
+        }
+    }
 }

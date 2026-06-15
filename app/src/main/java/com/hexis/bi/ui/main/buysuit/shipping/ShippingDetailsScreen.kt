@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,10 +18,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -34,9 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -50,10 +44,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
-import com.hexis.bi.ui.base.BaseBottomSheet
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppDialog
@@ -62,7 +54,6 @@ import com.hexis.bi.ui.dark.DarkPrimaryButton
 import com.hexis.bi.ui.dark.darkScreenBackground
 import com.hexis.bi.ui.theme.dark.DarkTheme
 import com.hexis.bi.utils.constants.GlassConstants
-import com.hexis.bi.utils.constants.ShippingConstants
 import com.hexis.bi.utils.glass
 import org.koin.androidx.compose.koinViewModel
 
@@ -121,13 +112,14 @@ fun ShippingDetailsScreen(
         }
 
         if (state.showOrderConfirmation) {
-            AppDialog(onDismiss = viewModel::dismissOrderConfirmation) {
-                OrderConfirmationDialog(
-                    onDismiss = {
-                        viewModel.dismissOrderConfirmation()
-                        onClose()
-                    },
-                )
+            // Order is already placed at this point, so every dismiss path (Ok, X,
+            // backdrop) must leave the form — staying would invite a duplicate order.
+            val closeConfirmation = {
+                viewModel.dismissOrderConfirmation()
+                onClose()
+            }
+            AppDialog(onDismiss = closeConfirmation) {
+                OrderConfirmationDialog(onDismiss = closeConfirmation)
             }
         }
 
@@ -289,68 +281,6 @@ private fun ShippingDetailsContent(
 }
 
 @Composable
-private fun requiredLabel(label: String, isRequired: Boolean): String =
-    if (isRequired) label else stringResource(R.string.shipping_optional_label, label)
-
-@Composable
-private fun ShippingField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    modifier: Modifier = Modifier,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    error: String? = null,
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        DarkOutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            label = label,
-            error = error,
-            keyboardOptions = keyboardOptions,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
-    }
-}
-
-@Composable
-private fun CountryPickerField(
-    country: ShippingCountry,
-    label: String,
-    onClick: () -> Unit,
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Box {
-            DarkOutlinedTextField(
-                value = country.name,
-                onValueChange = {},
-                label = label,
-                readOnly = true,
-                trailingIcon = {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_arrow),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
-                            .size(dimensionResource(R.dimen.icon_medium))
-                            .rotate(90f),
-                    )
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .clip(MaterialTheme.shapes.small)
-                    .clickable(onClick = onClick),
-            )
-        }
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
-    }
-}
-
-@Composable
 private fun PhoneNumberField(
     country: ShippingCountry,
     onCountryClick: () -> Unit,
@@ -474,124 +404,6 @@ private fun PhoneNumberField(
 }
 
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
-private fun CountryPickerSheet(
-    countries: List<ShippingCountry>,
-    selectedCountry: ShippingCountry,
-    showDialCode: Boolean,
-    onCountrySelected: (ShippingCountry) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    var query by remember { mutableStateOf("") }
-    val filtered = remember(query, countries) {
-        val trimmed = query.trim()
-        if (trimmed.isBlank()) {
-            countries
-        } else {
-            countries.filter { country ->
-                country.name.contains(trimmed, ignoreCase = true) ||
-                        country.dialCode.contains(trimmed) ||
-                        country.isoCode.contains(trimmed, ignoreCase = true)
-            }
-        }
-    }
-
-    BaseBottomSheet(
-        title = stringResource(R.string.shipping_select_country),
-        onDismiss = onDismiss,
-        modifier = Modifier.fillMaxHeight(ShippingConstants.COUNTRY_SHEET_HEIGHT_FRACTION),
-    ) {
-        DarkOutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            placeholder = stringResource(R.string.shipping_search_country),
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
-
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-        ) {
-            items(filtered, key = { it.isoCode }) { country ->
-                CountryRow(
-                    country = country,
-                    selected = country.isoCode == selectedCountry.isoCode,
-                    showDialCode = showDialCode,
-                    onClick = { onCountrySelected(country) },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun CountryRow(
-    country: ShippingCountry,
-    selected: Boolean,
-    showDialCode: Boolean,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.small)
-            .background(
-                if (selected) MaterialTheme.colorScheme.primary.copy(alpha = GlassConstants.SELECTION_HIGHLIGHT_ALPHA)
-                else Color.Transparent,
-            )
-            .clickable(onClick = onClick)
-            .padding(
-                horizontal = dimensionResource(R.dimen.spacer_m),
-                vertical = dimensionResource(R.dimen.spacer_s),
-            ),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        CountryFlagCircle(country = country, size = dimensionResource(R.dimen.icon_large))
-        Spacer(Modifier.width(dimensionResource(R.dimen.spacer_m)))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = country.name,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Text(
-                text = country.isoCode,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        if (showDialCode) {
-            Text(
-                text = country.dialCode,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun CountryFlagCircle(
-    country: ShippingCountry,
-    size: Dp,
-) {
-    Box(
-        modifier = Modifier
-            .size(size)
-            .clip(CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = country.flag,
-            style = MaterialTheme.typography.bodyLarge,
-        )
-    }
-}
-
-@Composable
 private fun OrderConfirmationDialog(
     onDismiss: () -> Unit,
 ) {
@@ -604,10 +416,13 @@ private fun OrderConfirmationDialog(
             ),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        val textPadding = Modifier.padding(horizontal = dimensionResource(R.dimen.spacer_m))
+
         Text(
             text = stringResource(R.string.shipping_thanks_title),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground,
+            modifier = textPadding,
         )
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
@@ -616,6 +431,8 @@ private fun OrderConfirmationDialog(
             text = stringResource(R.string.shipping_thanks_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
+            modifier = textPadding,
         )
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
@@ -625,6 +442,7 @@ private fun OrderConfirmationDialog(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
+            modifier = textPadding,
         )
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))

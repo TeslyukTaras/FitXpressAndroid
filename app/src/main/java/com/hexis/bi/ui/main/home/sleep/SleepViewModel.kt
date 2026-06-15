@@ -402,7 +402,7 @@ class SleepViewModel(
         val today = LocalDate.now()
         val byDate = sessions.groupBy { it.wakeTime.toLocalDate() }
         return (0 until DAYS_PER_WEEK).map { index ->
-            val day = start.plusDays(index.toLong())
+            val day = start.plusDays(index)
             val daySessions = if (day.isAfter(today)) emptyList() else byDate[day].orEmpty()
             val stageMinutes = SleepStage.entries.associateWith { stage ->
                 daySessions.sumOf { session ->

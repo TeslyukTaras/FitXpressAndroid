@@ -35,6 +35,10 @@ object ShippingCountryProvider {
             ?: countries.first()
     }
 
+    /** Resolves a stored ISO code back to a [ShippingCountry], falling back to [defaultCountry]. */
+    fun countryForIso(isoCode: String): ShippingCountry =
+        countries.firstOrNull { it.isoCode.equals(isoCode, ignoreCase = true) } ?: defaultCountry
+
     fun examplePhoneNumber(isoCode: String): String? =
         phoneNumberUtil.getExampleNumberForType(isoCode, PhoneNumberUtil.PhoneNumberType.MOBILE)
             ?.let { phoneNumberUtil.format(it, PhoneNumberUtil.PhoneNumberFormat.NATIONAL) }

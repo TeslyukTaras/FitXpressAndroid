@@ -198,8 +198,8 @@ private fun shortRelativeTimeLabel(epochMillis: Long): String {
         diff < DateUtils.HOUR_IN_MILLIS -> "${diff / DateUtils.MINUTE_IN_MILLIS}m"
         diff < DateUtils.DAY_IN_MILLIS -> "${diff / DateUtils.HOUR_IN_MILLIS}h"
         diff < DateUtils.WEEK_IN_MILLIS -> "${diff / DateUtils.DAY_IN_MILLIS}d"
-        diff < DateUtils.YEAR_IN_MILLIS -> "${diff / DateUtils.WEEK_IN_MILLIS}w"
-        else -> "${diff / DateUtils.YEAR_IN_MILLIS}y"
+        diff < DateUtils.DAY_IN_MILLIS * 365 -> "${diff / DateUtils.WEEK_IN_MILLIS}w"
+        else -> "${diff / (DateUtils.DAY_IN_MILLIS * 365)}y"
     }
     return stringResource(R.string.notifications_time_ago, short)
 }

@@ -54,6 +54,12 @@ fun Long.millisToHourAmPm(): String =
         .format(Date(this))
         .lowercase(Locale.getDefault())
 
+/** "12.06.2026 09:41 am" timestamp for the order details timeline. Locale-aware. */
+fun Long.millisToOrderTimelineTimestamp(): String =
+    SimpleDateFormat(DateFormatConstants.ORDER_TIMELINE_TIMESTAMP, Locale.getDefault())
+        .format(Date(this))
+        .lowercase(Locale.getDefault())
+
 /** Full "April 14" label used on day-based detail screens. Locale-aware. */
 fun LocalDate.formatFullMonthDay(): String =
     format(DateTimeFormatter.ofPattern(DateFormatConstants.FULL_MONTH_DAY, Locale.getDefault()))

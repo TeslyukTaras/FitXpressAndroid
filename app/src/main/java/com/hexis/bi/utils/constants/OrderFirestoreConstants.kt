@@ -4,12 +4,15 @@ package com.hexis.bi.utils.constants
  * Firestore schema for suit orders.
  *
  * ```
- * users/{uid}/orders/{orderId}
+ * orders/{orderId}                            // top-level: shared by buyer + fulfillment/admin
+ *   userId: string                            // owner uid; scopes per-user reads & security rules
  *   orderNumber: string                       // human-readable, copyable on Order Details
- *   status: string                            // OrderStatus enum name
- *   statusHistory: [{ status: string, at: Timestamp }]
+ *   status: string                            // OrderStatus enum name (current step)
+ *   statusHistory: [{ status: string, estimated: Timestamp?, at: Timestamp? }]
+ *                                             // one record per ladder step, all written at
+ *                                             // creation; `estimated` = admin ETA for that step,
+ *                                             // `at` = when actually reached (null while pending)
  *   createdAt / updatedAt: Timestamp
- *   eta: Timestamp?                           // set when known (production/shipping)
  *   trackingNumber: string?                   // set when shipped
  *   carrier: string?
  *   suitId: string?                           // set at post-delivery activation
@@ -19,24 +22,33 @@ package com.hexis.bi.utils.constants
  *   contact: { firstName, lastName, email, phoneCountryIso, phoneDialCode, phoneNumber }
  *   shippingAddress: { countryIso, countryName, company, addressLine, apartment,
  *                      city, region, postalCode, note }
+ *   addressChangeRequest: {                   // customer-submitted change, admin-applied
+ *     address: { ...same shape as shippingAddress... },
+ *     requestedAt: Timestamp,
+ *     status: string                          // OrderAddressChangeStatus: REQUESTED | APPLIED
+ *   }?
  * ```
  *
- * Contact and address are snapshots taken at order time (not references to the
- * profile), so later profile edits never rewrite past orders. A separate
- * top-level registry of valid suit IDs is planned for activation validation;
- * it is not part of this schema yet.
+ * Top-level (not a user subcollection) so the fulfillment/admin side can query
+ * across all orders without collection-group queries; per-user reads filter on
+ * `userId`, which also backs the security rules. Contact and address are
+ * snapshots taken at order time (not references to the profile), so later
+ * profile edits never rewrite past orders. A separate top-level registry of
+ * valid suit IDs is planned for activation validation; it is not part of this
+ * schema yet.
  */
 object OrderFirestoreConstants {
     const val COLLECTION_ORDERS = "orders"
 
+    const val FIELD_USER_ID = "userId"
     const val FIELD_ORDER_NUMBER = "orderNumber"
     const val FIELD_STATUS = "status"
     const val FIELD_STATUS_HISTORY = "statusHistory"
     const val FIELD_STATUS_EVENT_STATUS = "status"
+    const val FIELD_STATUS_EVENT_ESTIMATED = "estimated"
     const val FIELD_STATUS_EVENT_AT = "at"
     const val FIELD_CREATED_AT = "createdAt"
     const val FIELD_UPDATED_AT = "updatedAt"
-    const val FIELD_ETA = "eta"
     const val FIELD_TRACKING_NUMBER = "trackingNumber"
     const val FIELD_CARRIER = "carrier"
     const val FIELD_SUIT_ID = "suitId"
@@ -63,6 +75,11 @@ object OrderFirestoreConstants {
     const val FIELD_REGION = "region"
     const val FIELD_POSTAL_CODE = "postalCode"
     const val FIELD_NOTE = "note"
+
+    const val FIELD_ADDRESS_CHANGE_REQUEST = "addressChangeRequest"
+    const val FIELD_ADDRESS_CHANGE_ADDRESS = "address"
+    const val FIELD_ADDRESS_CHANGE_REQUESTED_AT = "requestedAt"
+    const val FIELD_ADDRESS_CHANGE_STATUS = "status"
 
     const val ORDER_NUMBER_PREFIX = "HX-"
     const val ORDER_NUMBER_ID_LENGTH = 8

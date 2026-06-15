@@ -47,12 +47,13 @@ class StartScanViewModel(
                     isComplete = false,
                     scanProgress = null,
                     scanErrorMessage = null,
-                    shouldLaunchCamera = true,
+                    shouldLaunchCamera = false,
                     shouldNavigateBack = false,
                     retakeOnErrorDismiss = false,
                 )
             }
         }
+        _state.update { it.copy(shouldLaunchCamera = true) }
     }
 
     fun updateVolume(volume: Float) {
@@ -205,13 +206,23 @@ class StartScanViewModel(
                         response = progress.response,
                     )
 
-                    if (scanPurpose == ScanPurpose.BodyScan) {
-                        scanHistoryRepository.saveScan(progress.response)
-                        scanReminderScheduler.onNotificationSettingsOrScanChanged()
-                        notificationInbox.appendInbox(
+                    // Every scan is a real body scan and is persisted, so the suit-size flow sizes
+                    // off the just-taken scan (and the order's scanId references it). A scan just
+                    // happened, so the next-scan reminder is rescheduled regardless of purpose.
+                    val savedScanId = scanHistoryRepository.saveScan(progress.response).getOrNull()
+                    scanReminderScheduler.onNotificationSettingsOrScanChanged()
+
+                    when (scanPurpose) {
+                        // The "body scan done" inbox message belongs to the standalone body-scan
+                        // flow; its Results screen uses the fresh in-memory result, so selectedScanId
+                        // stays cleared (see MainScreen).
+                        ScanPurpose.BodyScan -> notificationInbox.appendInbox(
                             R.string.notif_body_scan_done_title,
                             R.string.notif_body_scan_done_body,
                         )
+                        // Point the suit-size results at the scan we just saved, not a stale one.
+                        ScanPurpose.SuitSizeScan ->
+                            scanResultRepository.selectedScanId = savedScanId
                     }
 
                     _state.update { it.copy(isComplete = true) }
@@ -262,5 +273,4 @@ class StartScanViewModel(
         val detail = failure.detail?.takeIf { it.isNotBlank() } ?: return base
         return appContext.getString(R.string.scan_error_with_detail, base, detail)
     }
-
 }

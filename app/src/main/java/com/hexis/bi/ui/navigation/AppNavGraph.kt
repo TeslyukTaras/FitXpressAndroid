@@ -14,6 +14,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.hexis.bi.data.auth.AuthRepository
+import com.hexis.bi.data.auth.SessionCleaner
 import com.hexis.bi.data.preferences.UserPreferencesRepository
 import com.hexis.bi.ui.auth.forgotpassword.ForgotPasswordScreen
 import com.hexis.bi.ui.auth.info.AppInfoScreen
@@ -32,6 +33,7 @@ private const val NAV_ANIM_DURATION_MS = 300
 fun AppNavGraph(modifier: Modifier = Modifier) {
     val preferencesRepository: UserPreferencesRepository = koinInject()
     val authRepository: AuthRepository = koinInject()
+    val sessionCleaner: SessionCleaner = koinInject()
 
     val startDestination by remember {
         combine(
@@ -116,7 +118,7 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
             MainScreen(
                 startDestination = mainStartDestination,
                 onLogout = {
-                    scope.launch { authRepository.signOut() }
+                    scope.launch { sessionCleaner.signOut() }
                     mainStartDestination = Route.Main.HOME
                     navController.navigate(Route.LOGIN) {
                         popUpTo(Route.MAIN) { inclusive = true }

@@ -2,6 +2,7 @@ package com.hexis.bi.ui.main.home
 
 import androidx.annotation.StringRes
 import com.hexis.bi.R
+import com.hexis.bi.ui.main.buysuit.orderdetails.OrderDetailsUi
 import com.hexis.bi.utils.constants.ActivityConstants
 import com.hexis.bi.utils.constants.IntelligenceConstants
 import com.hexis.bi.utils.constants.SleepConstants
@@ -22,6 +23,20 @@ data class SleepOverview(
             (durationMinutes / 60f / goalHours).coerceIn(0f, 1f)
         } else 0f
 }
+
+/**
+ * Home "Suit order" card; replaces the buy-a-suit promo banner while an order is in flight.
+ * All fields arrive display-ready from the ViewModel.
+ */
+data class SuitOrderOverview(
+    val status: String,
+    /** "Tracking:" once a tracking number exists, "Order:" before that. */
+    val referenceLabel: String,
+    /** Masked tracking / order number, e.g. "1Z***893". */
+    val referenceValue: String,
+    /** Short date like "Dec 29"; null until an ETA is known. */
+    val eta: String?,
+)
 
 /** Scan overview card: the headline key change plus a trend series for the sparkline. */
 data class ScanOverview(
@@ -53,6 +68,10 @@ data class HomeState(
     val height: String? = null,
     val age: String? = null,
     val isSuitConnected: Boolean = false,
+    val suitOrder: SuitOrderOverview? = null,
+    val orderDetails: OrderDetailsUi? = null,
+    val suitSectionResolved: Boolean = false,
+    val showOrderDetails: Boolean = false,
     val hasUnreadNotifications: Boolean = false,
     val sleepGoalHours: Int = SleepConstants.DEFAULT_SLEEP_GOAL_HOURS,
     val activityGoalSteps: Int = ActivityConstants.DEFAULT_STEP_GOAL,

@@ -7,6 +7,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.R
 import com.hexis.bi.data.auth.AuthRepository
 import com.hexis.bi.data.auth.FirebaseAuthProviders
+import com.hexis.bi.data.auth.SessionCleaner
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +19,7 @@ class DeleteAccountViewModel(
     private val firebaseAuth: FirebaseAuth,
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
+    private val sessionCleaner: SessionCleaner,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(DeleteAccountState())
@@ -63,7 +65,7 @@ class DeleteAccountViewModel(
             userRepository.deleteUser()
                 .onFailure { setError(it.message); return@launch }
             authRepository.deleteAccountWithPassword(password)
-                .onSuccess { emitEvent(DeleteAccountEvent.DeleteSuccess) }
+                .onSuccess { onAccountDeleted() }
                 .onFailure { setError(it.message) }
         }
     }
@@ -72,7 +74,7 @@ class DeleteAccountViewModel(
         userRepository.deleteUser()
             .onFailure { setError(it.message); return@launch }
         authRepository.deleteAccountWithGoogle(context)
-            .onSuccess { emitEvent(DeleteAccountEvent.DeleteSuccess) }
+            .onSuccess { onAccountDeleted() }
             .onFailure { setError(it.message) }
     }
 
@@ -80,7 +82,11 @@ class DeleteAccountViewModel(
         userRepository.deleteUser()
             .onFailure { setError(it.message); return@launch }
         authRepository.deleteAccountWithApple(activity)
-            .onSuccess { emitEvent(DeleteAccountEvent.DeleteSuccess) }
+            .onSuccess { onAccountDeleted() }
             .onFailure { setError(it.message) }
+    }
+    private suspend fun onAccountDeleted() {
+        sessionCleaner.clearLocalData()
+        emitEvent(DeleteAccountEvent.DeleteSuccess)
     }
 }
