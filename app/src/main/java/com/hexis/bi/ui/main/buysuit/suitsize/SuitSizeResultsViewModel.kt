@@ -1,12 +1,14 @@
 package com.hexis.bi.ui.main.buysuit.suitsize
 
 import android.app.Application
+import com.hexis.bi.R
 import com.hexis.bi.data.order.OrderDraftHolder
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanRecord
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.order.OrderSizing
+import com.hexis.bi.domain.order.SuitSize
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.isMetricUnitSystem
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,10 +44,11 @@ class SuitSizeResultsViewModel(
             ?: latestScan?.weightKg
             ?: _state.value.weightKg
 
+        if (latestScan == null) setError(R.string.suit_size_error_no_scan)
+
         _state.update {
             it.copy(
                 isLoading = false,
-                error = if (latestScan == null) "No scan found" else null,
                 isMetric = profile?.unitSystem.isMetricUnitSystem(),
                 heightCm = heightCm,
                 weightKg = weightKg,
@@ -60,7 +63,7 @@ class SuitSizeResultsViewModel(
         val s = _state.value
         orderDraftHolder.sizing = OrderSizing(
             scanId = s.scanId,
-            suitSize = s.suitSize,
+            suitSize = s.suitSize.name,
             heightCm = s.heightCm,
             weightKg = s.weightKg,
         )
@@ -92,7 +95,7 @@ class SuitSizeResultsViewModel(
         heightCm: Float,
         weightKg: Float,
         scan: ScanRecord?,
-    ): String {
+    ): SuitSize {
         val chest = scan?.measurements?.firstValue("chest", "chestCircumference", "bust")
         val waist = scan?.measurements?.firstValue("waist", "waistCircumference")
         val hips = scan?.measurements?.firstValue("hips", "hip", "hipCircumference")
@@ -104,12 +107,12 @@ class SuitSizeResultsViewModel(
         }
 
         return when {
-            score < -1.2f -> "X-Small"
-            score < -0.35f -> "Small"
-            score < 0.8f -> "Medium"
-            score < 1.8f -> "Large"
-            score < 2.8f -> "X-Large"
-            else -> "XX-Large"
+            score < -1.2f -> SuitSize.X_SMALL
+            score < -0.35f -> SuitSize.SMALL
+            score < 0.8f -> SuitSize.MEDIUM
+            score < 1.8f -> SuitSize.LARGE
+            score < 2.8f -> SuitSize.X_LARGE
+            else -> SuitSize.XX_LARGE
         }
     }
 

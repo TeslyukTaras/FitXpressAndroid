@@ -3,11 +3,11 @@ package com.hexis.bi.ui.main.buysuit.editaddress
 import android.app.Application
 import com.hexis.bi.R
 import com.hexis.bi.domain.order.OrderRepository
-import com.hexis.bi.domain.order.OrderShippingAddress
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.main.buysuit.shipping.ShippingCountry
 import com.hexis.bi.ui.main.buysuit.shipping.ShippingCountryProvider
-import com.hexis.bi.utils.constants.ShippingConstants
+import com.hexis.bi.ui.main.buysuit.shipping.toOrderShippingAddress
+import com.hexis.bi.ui.main.buysuit.shipping.validateAddress
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -76,51 +76,21 @@ class EditAddressViewModel(
     fun submit() {
         if (!validate()) return
         launch(onError = { setError(R.string.error_address_change_failed) }) {
-            orderRepository.requestAddressChange(orderId, _state.value.toAddress()).getOrThrow()
+            orderRepository.requestAddressChange(orderId, _state.value.toOrderShippingAddress()).getOrThrow()
             _state.update { it.copy(submitted = true) }
         }
     }
 
     private fun validate(): Boolean {
-        val s = _state.value
-        val addressError = if (s.address.isBlank()) appContext.getString(R.string.error_address_required) else null
-        val cityError = if (s.city.isBlank()) appContext.getString(R.string.error_city_required) else null
-        val rules = s.addressRules
-        val regionError = when {
-            rules.isRegionRequired && s.region.isBlank() ->
-                appContext.getString(R.string.error_field_required, appContext.getString(rules.regionLabelRes))
-            else -> null
-        }
-        val postalCodeError = when {
-            rules.isPostalCodeRequired && s.postalCode.isBlank() ->
-                appContext.getString(R.string.error_field_required, appContext.getString(rules.postalCodeLabelRes))
-            rules.isPostalCodeVisible && s.postalCode.isNotBlank() &&
-                    s.postalCode.trim().length < ShippingConstants.MIN_POSTAL_CODE_LENGTH ->
-                appContext.getString(R.string.error_postal_code_invalid)
-            else -> null
-        }
-
-        val hasError = listOf(addressError, cityError, regionError, postalCodeError).any { it != null }
+        val errors = _state.value.validateAddress(appContext)
         _state.update {
             it.copy(
-                addressError = addressError,
-                cityError = cityError,
-                regionError = regionError,
-                postalCodeError = postalCodeError,
+                addressError = errors.addressError,
+                cityError = errors.cityError,
+                regionError = errors.regionError,
+                postalCodeError = errors.postalCodeError,
             )
         }
-        return !hasError
+        return !errors.hasError
     }
-
-    private fun EditAddressState.toAddress() = OrderShippingAddress(
-        countryIso = shippingCountry.isoCode,
-        countryName = shippingCountry.name,
-        company = company.trim(),
-        addressLine = address.trim(),
-        apartment = apartment.trim(),
-        city = city.trim(),
-        region = region.trim(),
-        postalCode = postalCode.trim(),
-        note = note.trim(),
-    )
 }

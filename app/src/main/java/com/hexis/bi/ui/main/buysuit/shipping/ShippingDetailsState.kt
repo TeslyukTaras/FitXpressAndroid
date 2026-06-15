@@ -25,14 +25,14 @@ data class ShippingDetailsState(
     val email: String = "",
     val phoneCountry: ShippingCountry = ShippingCountryProvider.defaultCountry,
     val phoneNumber: String = "",
-    val shippingCountry: ShippingCountry = ShippingCountryProvider.defaultCountry,
-    val company: String = "",
-    val address: String = "",
-    val city: String = "",
-    val apartment: String = "",
-    val region: String = "",
-    val postalCode: String = "",
-    val note: String = "",
+    override val shippingCountry: ShippingCountry = ShippingCountryProvider.defaultCountry,
+    override val company: String = "",
+    override val address: String = "",
+    override val city: String = "",
+    override val apartment: String = "",
+    override val region: String = "",
+    override val postalCode: String = "",
+    override val note: String = "",
     val firstNameError: String? = null,
     val lastNameError: String? = null,
     val emailError: String? = null,
@@ -44,8 +44,8 @@ data class ShippingDetailsState(
     val showOrderConfirmation: Boolean = false,
     val showPhoneCountryPicker: Boolean = false,
     val showShippingCountryPicker: Boolean = false,
-) {
-    val addressRules: ShippingAddressRules
+) : AddressFormFields {
+    override val addressRules: ShippingAddressRules
         get() = ShippingAddressRulesProvider.rulesFor(shippingCountry.isoCode)
 }
 

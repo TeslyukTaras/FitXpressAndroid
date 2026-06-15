@@ -684,6 +684,13 @@
     <string name="suit_size_feature_tracking">Designed for precision body tracking</string>
     <string name="suit_size_label">HEXIS-BI Suit Size:</string>
     <string name="suit_size_proceed_to_order">Proceed to Order</string>
+    <string name="suit_size_x_small">X-Small</string>
+    <string name="suit_size_small">Small</string>
+    <string name="suit_size_medium">Medium</string>
+    <string name="suit_size_large">Large</string>
+    <string name="suit_size_x_large">X-Large</string>
+    <string name="suit_size_xx_large">XX-Large</string>
+    <string name="suit_size_error_no_scan">No scan found. Please complete a scan to get a size recommendation.</string>
     <string name="shipping_details_title">Shipping details</string>
     <string name="shipping_phone_number">Phone number</string>
     <string name="shipping_phone_placeholder">(00) 000 00 00</string>

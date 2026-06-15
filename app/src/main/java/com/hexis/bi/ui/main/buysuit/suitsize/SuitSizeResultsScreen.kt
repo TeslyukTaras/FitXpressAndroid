@@ -1,5 +1,6 @@
 package com.hexis.bi.ui.main.buysuit.suitsize
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +37,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
+import com.hexis.bi.domain.order.SuitSize
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.dark.AppHorizontalGradientDivider
@@ -63,10 +65,13 @@ fun SuitSizeResultsScreen(
     viewModel: SuitSizeResultsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
 
     BaseScreen(
         modifier = modifier.darkScreenBackground(),
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        error = error,
+        onDismissError = viewModel::clearError,
         topBar = {
             BaseTopBar(
                 title = stringResource(R.string.scan_size_results_title),
@@ -210,7 +215,7 @@ private fun SuitSizeResultsContent(
                 append(stringResource(R.string.suit_size_label))
                 append(" ")
                 withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                    append(state.suitSize)
+                    append(stringResource(state.suitSize.labelRes()))
                 }
             },
             style = MaterialTheme.typography.bodyLarge,
@@ -222,11 +227,22 @@ private fun SuitSizeResultsContent(
         DarkPrimaryButton(
             text = stringResource(R.string.suit_size_proceed_to_order),
             onClick = onProceedToOrder,
+            enabled = state.canProceedToOrder,
             modifier = Modifier.fillMaxWidth(),
         )
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
     }
+}
+
+@StringRes
+private fun SuitSize.labelRes(): Int = when (this) {
+    SuitSize.X_SMALL -> R.string.suit_size_x_small
+    SuitSize.SMALL -> R.string.suit_size_small
+    SuitSize.MEDIUM -> R.string.suit_size_medium
+    SuitSize.LARGE -> R.string.suit_size_large
+    SuitSize.X_LARGE -> R.string.suit_size_x_large
+    SuitSize.XX_LARGE -> R.string.suit_size_xx_large
 }
 
 @Composable

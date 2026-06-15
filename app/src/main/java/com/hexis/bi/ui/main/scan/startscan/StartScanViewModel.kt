@@ -216,16 +216,26 @@ class StartScanViewModel(
                         // The "body scan done" inbox message belongs to the standalone body-scan
                         // flow; its Results screen uses the fresh in-memory result, so selectedScanId
                         // stays cleared (see MainScreen).
-                        ScanPurpose.BodyScan -> notificationInbox.appendInbox(
-                            R.string.notif_body_scan_done_title,
-                            R.string.notif_body_scan_done_body,
-                        )
-                        // Point the suit-size results at the scan we just saved, not a stale one.
-                        ScanPurpose.SuitSizeScan ->
+                        ScanPurpose.BodyScan -> {
+                            notificationInbox.appendInbox(
+                                R.string.notif_body_scan_done_title,
+                                R.string.notif_body_scan_done_body,
+                            )
+                            _state.update { it.copy(isComplete = true) }
+                        }
+                        ScanPurpose.SuitSizeScan -> if (savedScanId != null) {
                             scanResultRepository.selectedScanId = savedScanId
+                            _state.update { it.copy(isComplete = true) }
+                        } else {
+                            _state.update {
+                                it.copy(
+                                    scanProgress = null,
+                                    scanErrorMessage = appContext.getString(R.string.scan_error_processing_failed),
+                                    retakeOnErrorDismiss = false,
+                                )
+                            }
+                        }
                     }
-
-                    _state.update { it.copy(isComplete = true) }
                 }
 
                 is ScanProgress.Failed -> {

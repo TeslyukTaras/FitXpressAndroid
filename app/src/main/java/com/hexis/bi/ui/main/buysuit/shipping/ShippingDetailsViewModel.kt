@@ -9,10 +9,8 @@ import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.order.OrderContact
 import com.hexis.bi.domain.order.OrderDraft
 import com.hexis.bi.domain.order.OrderRepository
-import com.hexis.bi.domain.order.OrderShippingAddress
 import com.hexis.bi.domain.order.OrderSizing
 import com.hexis.bi.ui.base.BaseViewModel
-import com.hexis.bi.utils.constants.ShippingConstants
 import com.hexis.bi.utils.isValidEmail
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -99,9 +97,12 @@ class ShippingDetailsViewModel(
 
     fun placeOrder() {
         if (!validate()) return
+        val sizing = orderDraftHolder.sizing
+        if (sizing == null) {
+            setError(R.string.error_place_order_failed)
+            return
+        }
         launch(onError = { setError(R.string.error_place_order_failed) }) {
-            val sizing = orderDraftHolder.sizing
-                ?: error("No suit size selection; Shipping details opened outside the size flow")
             orderRepository.placeOrder(_state.value.toOrderDraft(sizing)).getOrThrow()
             orderDraftHolder.sizing = null
             _state.update { it.copy(showOrderConfirmation = true) }
@@ -125,32 +126,17 @@ class ShippingDetailsViewModel(
             !isValidPhoneNumber(s.phoneNumber, s.phoneCountry.isoCode) -> appContext.getString(R.string.error_phone_invalid)
             else -> null
         }
-        val addressError = if (s.address.isBlank()) appContext.getString(R.string.error_address_required) else null
-        val cityError = if (s.city.isBlank()) appContext.getString(R.string.error_city_required) else null
-        val rules = s.addressRules
-        val regionError = when {
-            rules.isRegionRequired && s.region.isBlank() ->
-                appContext.getString(R.string.error_field_required, appContext.getString(rules.regionLabelRes))
-            else -> null
-        }
-        val postalCodeError = when {
-            rules.isPostalCodeRequired && s.postalCode.isBlank() ->
-                appContext.getString(R.string.error_field_required, appContext.getString(rules.postalCodeLabelRes))
-            rules.isPostalCodeVisible && s.postalCode.isNotBlank() &&
-                    s.postalCode.trim().length < ShippingConstants.MIN_POSTAL_CODE_LENGTH ->
-                appContext.getString(R.string.error_postal_code_invalid)
-            else -> null
-        }
+        val addressErrors = s.validateAddress(appContext)
 
         val hasError = listOf(
             firstNameError,
             lastNameError,
             emailError,
             phoneNumberError,
-            addressError,
-            cityError,
-            regionError,
-            postalCodeError,
+            addressErrors.addressError,
+            addressErrors.cityError,
+            addressErrors.regionError,
+            addressErrors.postalCodeError,
         ).any { it != null }
 
         _state.update {
@@ -159,10 +145,10 @@ class ShippingDetailsViewModel(
                 lastNameError = lastNameError,
                 emailError = emailError,
                 phoneNumberError = phoneNumberError,
-                addressError = addressError,
-                cityError = cityError,
-                regionError = regionError,
-                postalCodeError = postalCodeError,
+                addressError = addressErrors.addressError,
+                cityError = addressErrors.cityError,
+                regionError = addressErrors.regionError,
+                postalCodeError = addressErrors.postalCodeError,
             )
         }
 
@@ -178,17 +164,7 @@ class ShippingDetailsViewModel(
             phoneDialCode = phoneCountry.dialCode,
             phoneNumber = phoneNumber.trim(),
         ),
-        shippingAddress = OrderShippingAddress(
-            countryIso = shippingCountry.isoCode,
-            countryName = shippingCountry.name,
-            company = company.trim(),
-            addressLine = address.trim(),
-            apartment = apartment.trim(),
-            city = city.trim(),
-            region = region.trim(),
-            postalCode = postalCode.trim(),
-            note = note.trim(),
-        ),
+        shippingAddress = toOrderShippingAddress(),
         sizing = sizing,
     )
 
