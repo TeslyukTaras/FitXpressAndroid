@@ -82,8 +82,13 @@ import com.hexis.bi.utils.parseDob
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
+private const val PAGE_PERSONAL_INFO = 0
+private const val PAGE_MY_SUIT = 1
 private const val PAGE_COUNT = 2
 private const val PAGE_SCROLL_DURATION_MS = 350
+
+private const val DROPDOWN_ARROW_ROTATION_EXPANDED = 270f
+private const val DROPDOWN_ARROW_ROTATION_COLLAPSED = 90f
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -155,10 +160,10 @@ fun OnboardingScreen(
                     error = error,
                     onDismissError = viewModel::clearError,
                     topBar = {
-                        if (pagerState.currentPage != 0) BaseTopBar(
+                        if (pagerState.currentPage != PAGE_PERSONAL_INFO) BaseTopBar(
                             title = stringResource(R.string.my_suit_title),
                             background = Color.Transparent,
-                            onBack = { goToPage(0) },
+                            onBack = { goToPage(PAGE_PERSONAL_INFO) },
                         )
                     },
                     bottomBar = {
@@ -167,7 +172,7 @@ fun OnboardingScreen(
                             pageCount = PAGE_COUNT,
                             isLastPage = isLastPage,
                             onSkip = if (!isLastPage) ({ viewModel.skip() }) else null,
-                            onBack = if (isLastPage) ({ goToPage(0) }) else null,
+                            onBack = if (isLastPage) ({ goToPage(PAGE_PERSONAL_INFO) }) else null,
                             onNext = { goToPage(pagerState.currentPage + 1) },
                             onFinish = viewModel::finish,
                         )
@@ -179,8 +184,8 @@ fun OnboardingScreen(
                         userScrollEnabled = false,
                     ) { page ->
                         when (page) {
-                            0 -> PersonalInfoPage(state = state, viewModel = viewModel)
-                            1 -> MySuitPage(
+                            PAGE_PERSONAL_INFO -> PersonalInfoPage(state = state, viewModel = viewModel)
+                            PAGE_MY_SUIT -> MySuitPage(
                                 state = state,
                                 viewModel = viewModel,
                                 onBuyOne = { showBuySuitDialog = true },
@@ -397,7 +402,7 @@ private fun GenderField(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .size(dimensionResource(R.dimen.icon_medium))
-                        .rotate(if (expanded) 270f else 90f),
+                        .rotate(if (expanded) DROPDOWN_ARROW_ROTATION_EXPANDED else DROPDOWN_ARROW_ROTATION_COLLAPSED),
                 )
             },
             modifier = Modifier.fillMaxWidth(),
