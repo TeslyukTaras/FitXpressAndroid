@@ -4,6 +4,12 @@ import android.app.Activity
 import android.view.WindowManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -35,11 +41,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -48,9 +58,9 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
-import com.hexis.bi.data.scan.ScanProgress
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppSlider
@@ -58,6 +68,12 @@ import com.hexis.bi.ui.dark.BodyGlassCard
 import com.hexis.bi.ui.dark.DarkPrimaryButton
 import com.hexis.bi.ui.main.scan.ScanPurpose
 import com.hexis.bi.ui.main.scan.components.ScanChecklistSheet
+import com.hexis.bi.ui.main.scan.processing.ScanAnalyzingContent
+import com.hexis.bi.ui.main.scan.results.ResultsViewModel
+import com.hexis.bi.ui.main.scan.results.content.PersonalizeResultsDialog
+import com.hexis.bi.ui.main.scan.results.content.ScanResultsContent
+import com.hexis.bi.ui.main.scan.results.isDisplayable
+import com.hexis.bi.ui.main.scan.results.resultsActions
 import com.hexis.bi.ui.theme.Blue200
 import com.hexis.bi.ui.theme.Blue300
 import com.hexis.bi.ui.theme.Green
@@ -69,20 +85,46 @@ import com.look.camera.sdk.data.LaunchOption
 import org.koin.androidx.compose.koinViewModel
 import timber.log.Timber
 
+private const val BODY_SCAN_REVEAL_DURATION_MS = 300
+
+private enum class ScanMode {
+    Idle,
+    BodyRunning,
+    SuitAnalysis,
+    SuitIntro;
+
+    val isDark: Boolean get() = this != Idle
+    val showsCloseIcon: Boolean get() = this == BodyRunning || this == SuitAnalysis
+}
+
+private fun scanMode(scanPurpose: ScanPurpose, state: StartScanState): ScanMode = when {
+    scanPurpose == ScanPurpose.SuitSizeScan ->
+        if (state.isProcessing || state.isComplete || state.scanErrorMessage != null) {
+            ScanMode.SuitAnalysis
+        } else {
+            ScanMode.SuitIntro
+        }
+
+    state.isProcessing || state.isComplete -> ScanMode.BodyRunning
+    else -> ScanMode.Idle
+}
+
 @Composable
 fun StartScanScreen(
     onBack: () -> Unit,
     onScanComplete: () -> Unit,
     onShowHowToScan: () -> Unit,
+    onOpenScanPreferences: () -> Unit,
     modifier: Modifier = Modifier,
     scanPurpose: ScanPurpose = ScanPurpose.BodyScan,
     viewModel: StartScanViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val view = LocalView.current
+    var bodyResultsReady by remember { mutableStateOf(false) }
+    var bodyProgressComplete by remember { mutableStateOf(false) }
     var showChecklistSheet by remember(scanPurpose) {
         mutableStateOf(scanPurpose == ScanPurpose.SuitSizeScan)
     }
@@ -120,38 +162,51 @@ fun StartScanScreen(
     }
 
     LaunchedEffect(state.isComplete, scanPurpose) {
-        if (state.isComplete && scanPurpose == ScanPurpose.BodyScan) onScanComplete()
+        bodyResultsReady = false
+        bodyProgressComplete = false
     }
 
     LaunchedEffect(state.shouldNavigateBack) { if (state.shouldNavigateBack) onBack() }
 
-    val isSuitSizeScan = scanPurpose == ScanPurpose.SuitSizeScan
-    val showSuitSizeAnalysis = isSuitSizeScan &&
-            (state.isProcessing || state.isComplete || state.scanErrorMessage != null)
+    val mode = scanMode(scanPurpose, state)
+    val showBodyResults = mode == ScanMode.BodyRunning &&
+            state.isComplete && bodyProgressComplete && bodyResultsReady
+
+    LaunchedEffect(showBodyResults) {
+        if (showBodyResults) viewModel.onBodyResultsRevealed()
+    }
 
     BaseScreen(
-        modifier = modifier.then(if (isSuitSizeScan) Modifier.darkScreenBackground() else Modifier),
-        containerColor = if (isSuitSizeScan) Color.Transparent else MaterialTheme.colorScheme.background,
-        isLoading = isLoading,
+        modifier = modifier
+            .then(if (mode.isDark) Modifier.darkScreenBackground() else Modifier)
+            .then(
+                if (state.showPersonalizeResultsHint) {
+                    Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
+                } else {
+                    Modifier
+                }
+            ),
+        containerColor = if (mode.isDark) Color.Transparent else MaterialTheme.colorScheme.background,
         error = error,
         onDismissError = { viewModel.onErrorDismissed() },
         topBar = {
             BaseTopBar(
                 title = stringResource(
-                    when {
-                        showSuitSizeAnalysis -> R.string.scan_size_results_title
-                        isSuitSizeScan -> R.string.scan_size_title
-                        else -> R.string.scan_title
+                    when (mode) {
+                        ScanMode.BodyRunning -> R.string.scan_results_title
+                        ScanMode.SuitAnalysis -> R.string.scan_size_results_title
+                        ScanMode.SuitIntro -> R.string.scan_size_title
+                        ScanMode.Idle -> R.string.scan_title
                     }
                 ),
-                background = if (isSuitSizeScan) Color.Transparent else MaterialTheme.colorScheme.background,
+                background = if (mode.isDark) Color.Transparent else MaterialTheme.colorScheme.background,
                 onBack = onBack,
                 actions = {
-                    IconButton(onClick = if (showSuitSizeAnalysis) onBack else onShowHowToScan) {
+                    IconButton(onClick = if (mode.showsCloseIcon) onBack else onShowHowToScan) {
                         Icon(
-                            painter = painterResource(if (showSuitSizeAnalysis) R.drawable.ic_cross else R.drawable.ic_info),
+                            painter = painterResource(if (mode.showsCloseIcon) R.drawable.ic_cross else R.drawable.ic_info),
                             contentDescription = stringResource(
-                                if (showSuitSizeAnalysis) R.string.cd_close
+                                if (mode.showsCloseIcon) R.string.cd_close
                                 else R.string.cd_info,
                             ),
                             tint = MaterialTheme.colorScheme.onBackground,
@@ -161,22 +216,42 @@ fun StartScanScreen(
                 },
             )
         },
-        loadingContent = {
-            ScanProgressIndicator(progress = state.scanProgress)
-        },
     ) {
-        if (showSuitSizeAnalysis) {
-            SuitSizeScanAnalysisScreen(
+        when (mode) {
+            ScanMode.BodyRunning -> {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (state.isComplete) {
+                        CompletedBodyScanResults(
+                            onReadyChanged = { bodyResultsReady = it },
+                            revealed = showBodyResults,
+                        )
+                    }
+                    AnimatedVisibility(
+                        visible = !showBodyResults,
+                        enter = fadeIn(),
+                        exit = slideOutHorizontally(tween(BODY_SCAN_REVEAL_DURATION_MS)) { -it } +
+                                fadeOut(tween(BODY_SCAN_REVEAL_DURATION_MS)),
+                    ) {
+                        ScanAnalyzingContent(
+                            modifier = Modifier.fillMaxSize(),
+                            isComplete = state.isComplete,
+                            onProgressFinished = { bodyProgressComplete = true },
+                        )
+                    }
+                }
+            }
+
+            ScanMode.SuitAnalysis -> SuitSizeScanAnalysisScreen(
                 isProcessing = state.isProcessing,
                 isComplete = state.isComplete,
                 errorMessage = state.scanErrorMessage,
                 onResults = onScanComplete,
                 onRescan = viewModel::startCamera,
             )
-        } else if (isSuitSizeScan) {
-            SuitSizeScanHeaderSubtitle()
-        } else {
-            Box(modifier = Modifier.fillMaxSize())
+
+            ScanMode.SuitIntro -> SuitSizeScanHeaderSubtitle()
+
+            ScanMode.Idle -> Box(modifier = Modifier.fillMaxSize())
         }
     }
 
@@ -187,6 +262,49 @@ fun StartScanScreen(
                 viewModel.startCamera()
             },
             onDismiss = onBack,
+        )
+    }
+
+    if (state.showPersonalizeResultsHint) {
+        PersonalizeResultsDialog(
+            onDismiss = viewModel::onPersonalizeResultsHintDismissed,
+            onGoToSettings = {
+                viewModel.onPersonalizeResultsHintDismissed()
+                onOpenScanPreferences()
+            },
+        )
+    }
+}
+
+@Composable
+private fun CompletedBodyScanResults(
+    onReadyChanged: (Boolean) -> Unit,
+    revealed: Boolean,
+    viewModel: ResultsViewModel = koinViewModel(),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    var avatarReady by remember(state.visual.latestModel3dUrl) { mutableStateOf(false) }
+    val dataReady = state.isDisplayable
+    val needsAvatarFrame = !state.visual.latestModel3dUrl.isNullOrBlank()
+    val ready = dataReady && (!needsAvatarFrame || avatarReady)
+    LaunchedEffect(ready) {
+        onReadyChanged(ready)
+    }
+    // Offset (not alpha) keeps the avatar's GL surface rendering its first frame while hidden.
+    val slideDistancePx = with(LocalDensity.current) {
+        LocalConfiguration.current.screenWidthDp.dp.toPx()
+    }
+    val reveal by animateFloatAsState(
+        targetValue = if (revealed) 1f else 0f,
+        animationSpec = tween(BODY_SCAN_REVEAL_DURATION_MS),
+        label = "bodyResultsReveal",
+    )
+    if (dataReady) {
+        ScanResultsContent(
+            state = state,
+            actions = viewModel.resultsActions(),
+            onAvatarReady = { avatarReady = true },
+            modifier = Modifier.graphicsLayer { translationX = (1f - reveal) * slideDistancePx },
         )
     }
 }
@@ -302,31 +420,6 @@ private fun SuitSizeScanHeaderSubtitle() {
         Text(
             text = stringResource(R.string.scan_size_subtitle),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center,
-        )
-    }
-}
-
-@Composable
-private fun BoxScope.ScanProgressIndicator(
-    progress: ScanProgress?,
-) {
-    Column(
-        modifier = Modifier.align(Alignment.Center),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        CircularProgressIndicator(
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
-        Text(
-            text = when (progress) {
-                is ScanProgress.Submitting -> stringResource(R.string.scan_progress_submitting)
-                is ScanProgress.Processing -> stringResource(R.string.scan_progress_processing)
-                else -> ""
-            },
-            style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
         )

@@ -2,6 +2,7 @@ package com.hexis.bi.ui.main.scan.startscan
 
 import android.app.Application
 import android.net.Uri
+import androidx.lifecycle.viewModelScope
 import com.hexis.bi.R
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanProgress
@@ -9,15 +10,19 @@ import com.hexis.bi.data.scan.ScanResult
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.scan.ThreeDLookRepository
 import com.hexis.bi.data.notification.NotificationInboxRepository
+import com.hexis.bi.data.preferences.UserPreferencesRepository
 import com.hexis.bi.data.reminder.ScanReminderScheduler
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.main.scan.ScanPurpose
+import com.hexis.bi.ui.main.scan.results.prefetchMetricAvatarModel
 import com.hexis.bi.utils.calculateAge
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
 class StartScanViewModel(
@@ -28,14 +33,31 @@ class StartScanViewModel(
     private val scanHistoryRepository: ScanHistoryRepository,
     private val scanReminderScheduler: ScanReminderScheduler,
     private val notificationInbox: NotificationInboxRepository,
+    private val userPreferencesRepository: UserPreferencesRepository,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(StartScanState())
     val state: StateFlow<StartScanState> = _state.asStateFlow()
     private var scanPurpose: ScanPurpose = ScanPurpose.BodyScan
+    private var personalizeHintEvaluated = false
 
     fun prepareForScan(purpose: ScanPurpose) {
         scanPurpose = purpose
+    }
+
+    fun onBodyResultsRevealed() {
+        if (personalizeHintEvaluated) return
+        personalizeHintEvaluated = true
+        viewModelScope.launch {
+            if (!userPreferencesRepository.isPersonalizeResultsHintShown()) {
+                userPreferencesRepository.setPersonalizeResultsHintShown()
+                _state.update { it.copy(showPersonalizeResultsHint = true) }
+            }
+        }
+    }
+
+    fun onPersonalizeResultsHintDismissed() {
+        _state.update { it.copy(showPersonalizeResultsHint = false) }
     }
 
     fun startCamera() {
@@ -46,6 +68,7 @@ class StartScanViewModel(
                 state.copy(
                     isComplete = false,
                     scanProgress = null,
+                    isPreparingResults = false,
                     scanErrorMessage = null,
                     shouldLaunchCamera = false,
                     shouldNavigateBack = false,
@@ -130,6 +153,7 @@ class StartScanViewModel(
             it.copy(
                 retakeOnErrorDismiss = false,
                 scanProgress = null,
+                isPreparingResults = false,
                 shouldLaunchCamera = retake,
                 shouldNavigateBack = !retake,
             )
@@ -144,11 +168,18 @@ class StartScanViewModel(
                 _state.update {
                     it.copy(
                         scanProgress = null,
+                        isPreparingResults = false,
                         scanErrorMessage = message,
                         retakeOnErrorDismiss = false,
                     )
                 }
             } else {
+                _state.update {
+                    it.copy(
+                        scanProgress = null,
+                        isPreparingResults = false,
+                    )
+                }
                 setError(message)
             }
         },
@@ -197,43 +228,71 @@ class StartScanViewModel(
             age = age,
         ).collect { progress ->
             Timber.d("submitPhotos: progress=%s", progress)
-            _state.update { it.copy(scanProgress = progress) }
+            _state.update {
+                it.copy(
+                    scanProgress = progress,
+                    isPreparingResults = progress is ScanProgress.Success,
+                )
+            }
 
             when (progress) {
                 is ScanProgress.Success -> {
-                    scanResultRepository.latestResult = ScanResult(
-                        measurementId = progress.response.id,
-                        response = progress.response,
-                    )
+                    prewarmResultModelInBackground(progress.response.model3dUrl)
 
                     // Every scan is a real body scan and is persisted, so the suit-size flow sizes
                     // off the just-taken scan (and the order's scanId references it). A scan just
                     // happened, so the next-scan reminder is rescheduled regardless of purpose.
-                    val savedScanId = scanHistoryRepository.saveScan(progress.response).getOrNull()
+                    val savedAtMillis = System.currentTimeMillis()
+                    val savedScanId = scanHistoryRepository
+                        .saveScan(progress.response, savedAtMillis)
+                        .getOrNull()
+
+                    if (savedScanId == null) {
+                        val message = appContext.getString(R.string.scan_error_processing_failed)
+                        if (scanPurpose == ScanPurpose.SuitSizeScan) {
+                            _state.update {
+                                it.copy(
+                                    scanProgress = null,
+                                    isPreparingResults = false,
+                                    scanErrorMessage = message,
+                                    retakeOnErrorDismiss = false,
+                                )
+                            }
+                        } else {
+                            _state.update {
+                                it.copy(
+                                    scanProgress = null,
+                                    isPreparingResults = false,
+                                    retakeOnErrorDismiss = false,
+                                )
+                            }
+                            setError(message)
+                        }
+                        return@collect
+                    }
+
+                    scanResultRepository.latestResult = ScanResult(
+                        measurementId = progress.response.id,
+                        response = progress.response,
+                        scanId = savedScanId,
+                        savedAtMillis = savedAtMillis,
+                    )
+                    scanResultRepository.selectedScanId = savedScanId
                     scanReminderScheduler.onNotificationSettingsOrScanChanged()
 
                     when (scanPurpose) {
                         // The "body scan done" inbox message belongs to the standalone body-scan
-                        // flow; its Results screen uses the fresh in-memory result, so selectedScanId
-                        // stays cleared (see MainScreen).
+                        // flow; its Results screen uses the fresh in-memory result plus saved scan id
+                        // to avoid racing Firestore's latest-scan query after upload.
                         ScanPurpose.BodyScan -> {
                             notificationInbox.appendInbox(
                                 R.string.notif_body_scan_done_title,
                                 R.string.notif_body_scan_done_body,
                             )
-                            _state.update { it.copy(isComplete = true) }
+                            _state.update { it.copy(isComplete = true, isPreparingResults = false) }
                         }
-                        ScanPurpose.SuitSizeScan -> if (savedScanId != null) {
-                            scanResultRepository.selectedScanId = savedScanId
-                            _state.update { it.copy(isComplete = true) }
-                        } else {
-                            _state.update {
-                                it.copy(
-                                    scanProgress = null,
-                                    scanErrorMessage = appContext.getString(R.string.scan_error_processing_failed),
-                                    retakeOnErrorDismiss = false,
-                                )
-                            }
+                        ScanPurpose.SuitSizeScan -> {
+                            _state.update { it.copy(isComplete = true, isPreparingResults = false) }
                         }
                     }
                 }
@@ -244,12 +303,18 @@ class StartScanViewModel(
                         _state.update {
                             it.copy(
                                 scanProgress = null,
+                                isPreparingResults = false,
                                 scanErrorMessage = message,
                                 retakeOnErrorDismiss = false,
                             )
                         }
                     } else {
-                        _state.update { it.copy(retakeOnErrorDismiss = true) }
+                        _state.update {
+                            it.copy(
+                                isPreparingResults = false,
+                                retakeOnErrorDismiss = true,
+                            )
+                        }
                         setError(message)
                     }
                 }
@@ -268,12 +333,18 @@ class StartScanViewModel(
             _state.update {
                 it.copy(
                     scanProgress = null,
+                    isPreparingResults = false,
                     scanErrorMessage = message,
                     retakeOnErrorDismiss = false,
                 )
             }
         } else {
-            _state.update { it.copy(retakeOnErrorDismiss = false) }
+            _state.update {
+                it.copy(
+                    isPreparingResults = false,
+                    retakeOnErrorDismiss = false,
+                )
+            }
             setError(message)
         }
     }
@@ -282,5 +353,16 @@ class StartScanViewModel(
         val base = appContext.getString(failure.messageRes)
         val detail = failure.detail?.takeIf { it.isNotBlank() } ?: return base
         return appContext.getString(R.string.scan_error_with_detail, base, detail)
+    }
+
+    private fun prewarmResultModelInBackground(modelUrl: String?) {
+        val url = modelUrl?.takeUnless { it.isBlank() } ?: return
+        viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            runCatching {
+                prefetchMetricAvatarModel(appContext, url)
+            }.onFailure {
+                Timber.w(it, "Unable to prewarm completed scan model")
+            }
+        }
     }
 }

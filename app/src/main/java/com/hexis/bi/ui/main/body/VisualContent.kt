@@ -31,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.zIndex
 import androidx.core.os.ConfigurationCompat
 import com.hexis.bi.R
@@ -52,10 +53,14 @@ internal fun VisualContent(
     onModeSelected: (BodyVisualMode) -> Unit,
     onScanSelected: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    bottomClearance: Dp = Dp.Unspecified,
+    showScanSelector: Boolean = true,
+    onAvatarReady: () -> Unit = {},
 ) {
     val horizontalPadding = dimensionResource(R.dimen.padding_medium)
     val navClearance =
-        dimensionResource(R.dimen.size_bottom_nav_center) +
+        if (bottomClearance.isSpecified) bottomClearance
+        else dimensionResource(R.dimen.size_bottom_nav_center) +
                 dimensionResource(R.dimen.spacer_l) +
                 dimensionResource(R.dimen.spacer_l)
 
@@ -112,6 +117,8 @@ internal fun VisualContent(
                 modelAreaHeight = visualAreaHeight,
                 onBodyPartSelected = onBodyPartSelected,
                 onScanSelected = onScanSelected,
+                showScanSelector = showScanSelector,
+                onAvatarReady = onAvatarReady,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(visualAreaHeight),

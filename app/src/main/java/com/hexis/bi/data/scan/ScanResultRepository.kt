@@ -19,4 +19,6 @@ class ScanResultRepository {
 data class ScanResult(
     val measurementId: String,
     val response: MeasurementResponse,
+    val scanId: String? = null,
+    val savedAtMillis: Long? = null,
 )

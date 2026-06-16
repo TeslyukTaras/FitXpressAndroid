@@ -103,6 +103,15 @@ class UserPreferencesRepository(
         }
     }
 
+    suspend fun isPersonalizeResultsHintShown(): Boolean =
+        store.data.map { it[k.personalizeResultsHintShown] ?: false }.first()
+
+    suspend fun setPersonalizeResultsHintShown() {
+        store.edit { prefs ->
+            prefs[k.personalizeResultsHintShown] = true
+        }
+    }
+
     suspend fun clearAccountData() {
         store.edit { prefs ->
             val keepOnboarding = prefs[k.onboardingShown] == true

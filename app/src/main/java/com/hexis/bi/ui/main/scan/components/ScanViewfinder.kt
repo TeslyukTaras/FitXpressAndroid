@@ -5,6 +5,7 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -23,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -32,13 +34,16 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.ShadowColor
+import com.hexis.bi.ui.theme.ScannerShadowEnd
+import com.hexis.bi.ui.theme.ScannerShadowStart
 
 private const val SCAN_ANIMATION_DURATION_MS = 5000
 
 @Composable
 fun ScanViewfinder(
     modifier: Modifier = Modifier,
+    @DrawableRes image: Int = R.drawable.img_scan_preview,
+    color: Color = MaterialTheme.colorScheme.onBackground,
     onClick: (() -> Unit)? = null,
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "ScanTransition")
@@ -60,8 +65,9 @@ fun ScanViewfinder(
             .clip(MaterialTheme.shapes.small)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .drawScannerOverlay(
-                color = MaterialTheme.colorScheme.onBackground,
-                shadowColor = ShadowColor,
+                color = color,
+                shadowStartColor = ScannerShadowStart,
+                shadowEndColor = ScannerShadowEnd,
                 cornerLength = dimensionResource(R.dimen.scan_corner_length),
                 cornerStrokeWidth = cornerWidth,
                 scannerStrokeWidth = dimensionResource(R.dimen.scanner_line_stroke_width),
@@ -71,7 +77,7 @@ fun ScanViewfinder(
         contentAlignment = Alignment.Center
     ) {
         Image(
-            painter = painterResource(R.drawable.img_scan_preview),
+            painter = painterResource(image),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier
@@ -96,7 +102,8 @@ fun ScanViewfinder(
 
 private fun Modifier.drawScannerOverlay(
     color: Color,
-    shadowColor: Color,
+    shadowStartColor: Color,
+    shadowEndColor: Color,
     cornerLength: Dp,
     cornerStrokeWidth: Dp,
     scannerStrokeWidth: Dp,
@@ -155,7 +162,11 @@ private fun Modifier.drawScannerOverlay(
         val shadowTopY = lineY + scannerStrokePx
 
         drawRect(
-            color = shadowColor,
+            brush = Brush.verticalGradient(
+                colors = listOf(shadowStartColor, shadowEndColor),
+                startY = shadowTopY,
+                endY = height,
+            ),
             topLeft = Offset(x = 0f, y = shadowTopY),
             size = Size(width = width, height = maxOf(0f, height - shadowTopY))
         )

@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isSpecified
 import androidx.core.os.ConfigurationCompat
 import com.hexis.bi.R
 import com.hexis.bi.domain.body.BodyMeasurementRegion
@@ -71,10 +72,13 @@ internal fun CompareContent(
     onModeSelected: (BodyVisualMode) -> Unit,
     onBodyPartSelected: (BodyMeasurementRegion) -> Unit,
     modifier: Modifier = Modifier,
+    bottomClearance: Dp = Dp.Unspecified,
+    showScanSelector: Boolean = true,
 ) {
     val horizontalPadding = dimensionResource(R.dimen.padding_medium)
     val navClearance =
-        dimensionResource(R.dimen.size_bottom_nav_center) +
+        if (bottomClearance.isSpecified) bottomClearance
+        else dimensionResource(R.dimen.size_bottom_nav_center) +
                 dimensionResource(R.dimen.spacer_l) +
                 dimensionResource(R.dimen.spacer_l)
 
@@ -115,6 +119,7 @@ internal fun CompareContent(
                 dateFormatter = fullDateFormatter,
                 onSelectLeftScan = onSelectLeftScan,
                 onSelectRightScan = onSelectRightScan,
+                showScanSelector = showScanSelector,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(modelAreaHeight),
@@ -148,6 +153,7 @@ private fun CompareTopArea(
     onSelectLeftScan: (Long) -> Unit,
     onSelectRightScan: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    showScanSelector: Boolean = true,
 ) {
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Box(modifier = modifier) {
@@ -177,24 +183,26 @@ private fun CompareTopArea(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    VisualScanDateDropdown(
-                        label = "",
-                        selectedTimestamp = state.leftScanTimestamp,
-                        options = state.scanOptions,
-                        dateFormatter = dateFormatter,
-                        onScanSelected = onSelectLeftScan,
-                        modifier = Modifier.weight(1f),
-                    )
-                    VisualScanDateDropdown(
-                        label = "",
-                        selectedTimestamp = state.rightScanTimestamp,
-                        options = state.scanOptions,
-                        dateFormatter = dateFormatter,
-                        onScanSelected = onSelectRightScan,
-                        modifier = Modifier.weight(1f),
-                    )
+                if (showScanSelector) {
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        VisualScanDateDropdown(
+                            label = "",
+                            selectedTimestamp = state.leftScanTimestamp,
+                            options = state.scanOptions,
+                            dateFormatter = dateFormatter,
+                            onScanSelected = onSelectLeftScan,
+                            modifier = Modifier.weight(1f),
+                        )
+                        VisualScanDateDropdown(
+                            label = "",
+                            selectedTimestamp = state.rightScanTimestamp,
+                            options = state.scanOptions,
+                            dateFormatter = dateFormatter,
+                            onScanSelected = onSelectRightScan,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
             }
         }

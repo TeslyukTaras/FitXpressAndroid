@@ -33,6 +33,13 @@ val White = Color(0xFFFFFFFF)
 
 val ShadowColor = Color(0x33A7A7A7)
 
+// Scanner trailing shadow gradient (below the scan line): teal → near-transparent grey.
+val ScannerShadowStart = Color(0x3304EBF1) // rgba(4, 235, 241, 0.2)
+val ScannerShadowEnd = Color(0x13414141)   // rgba(65, 65, 65, 0.076)
+
+// Unfilled track of the scan-analyzing circular loader.
+val ScanLoaderTrack = Color(0x38797979) // rgba(121, 121, 121, 0.22)
+
 // Red
 val Red100 = Color(0xFFFF3A3A)   // vivid red — errors, delete actions
 

@@ -253,9 +253,6 @@ internal class CompareRotationLink {
     }
 }
 
-/** Initial yaw (degrees) for a side/profile view of the mesh on the Posture tab. */
-internal const val MetricAvatarSideProfileYawDegrees = 90f
-
 @Composable
 internal fun MetricAvatarPreview(
     modifier: Modifier = Modifier,
@@ -273,12 +270,6 @@ internal fun MetricAvatarPreview(
     initialYawDegrees: Float = 0f,
     initialPitchDegrees: Float = INITIAL_PITCH_DEG,
     compareRotationLink: CompareRotationLink? = null,
-    /** Invoked on the main thread when yaw/pitch or viewport size change (Visual overlay). Ignored when [compareRotationLink] is non-null. */
-    onVisualTransformChanged: ((yawDeg: Float, pitchDeg: Float, viewWidthPx: Int, viewHeightPx: Int) -> Unit)? = null,
-    /** 3D leader segments (depth-tested in GL). Null or empty clears. */
-    leaderSegments: List<ModelLeaderSegment>? = null,
-    /** Invoked on the main thread after OBJ parse (anchors + slice polylines for circumference labels). */
-    onMeasurementGuideLoaded: ((MetricAvatarMeasurementGuide) -> Unit)? = null,
     /** Invoked on the main thread when the mesh is loaded and the GL surface is visible (opaque). */
     onAvatarReady: (() -> Unit)? = null,
     /** Visual tab: model-space auto-framing region. Null keeps the default camera/orientation behavior. */
@@ -289,8 +280,6 @@ internal fun MetricAvatarPreview(
 ) {
     val context = LocalContext.current
     val latestOnInteraction by rememberUpdatedState(onInteractionChanged)
-    val latestTransform by rememberUpdatedState(onVisualTransformChanged)
-    val latestAnchors by rememberUpdatedState(onMeasurementGuideLoaded)
     val latestOnAvatarReady by rememberUpdatedState(onAvatarReady)
     val renderHost = remember(context) {
         MetricAvatarTextureView(context) { latestOnInteraction(it) }
@@ -331,26 +320,13 @@ internal fun MetricAvatarPreview(
         }
     }
 
-    LaunchedEffect(renderHost, leaderSegments, loadState, compareRotationLink) {
-        when {
-            loadState != MetricAvatarLoadState.Ready -> renderHost.setLeaderSegments(null)
-            compareRotationLink != null -> renderHost.setLeaderSegments(null)
-            else -> renderHost.setLeaderSegments(leaderSegments)
-        }
-    }
-
-    DisposableEffect(renderHost, latestTransform) {
-        renderHost.setVisualTransformListener(latestTransform)
-        onDispose { renderHost.setVisualTransformListener(null) }
-    }
-
     DisposableEffect(renderHost, compareRotationLink) {
         renderHost.setCompareRotationLink(compareRotationLink)
         onDispose { renderHost.setCompareRotationLink(null) }
     }
 
-    LaunchedEffect(loadState, modelUrl, useModelVertexColors, reloadKey) {
-        if (loadState == MetricAvatarLoadState.Ready) {
+    LaunchedEffect(firstFrameReady, modelUrl, useModelVertexColors, reloadKey) {
+        if (firstFrameReady) {
             latestOnAvatarReady?.invoke()
         }
     }
@@ -372,7 +348,6 @@ internal fun MetricAvatarPreview(
             } else {
                 renderHost.applyLoadedMesh(mesh, latestYawAtLoad, latestPitchAtLoad)
             }
-            latestAnchors?.invoke(mesh.measurementGuide)
             loadState = MetricAvatarLoadState.Ready
         } catch (e: CancellationException) {
             throw e
@@ -472,6 +447,16 @@ internal fun MetricAvatarStatusText(
     )
 }
 
+internal suspend fun prefetchMetricAvatarModel(
+    context: Context,
+    modelUrl: String,
+    includeVertexColors: Boolean = false,
+) {
+    withContext(Dispatchers.IO) {
+        ObjParser.parse(modelUrl, context.cacheDir, includeVertexColors)
+    }
+}
+
 @Composable
 private fun AvatarRetryButton(
     onClick: () -> Unit,
@@ -550,8 +535,6 @@ private interface MetricAvatarRenderHost {
     fun setTouchRotationEnabled(enabled: Boolean)
     fun setZoomPanEnabled(enabled: Boolean)
     fun setBaseDistanceScale(scale: Float)
-    fun setVisualTransformListener(listener: ((Float, Float, Int, Int) -> Unit)?)
-    fun setLeaderSegments(segments: List<ModelLeaderSegment>?)
     fun setBaseOrientation(yawDeg: Float, pitchDeg: Float)
     fun setFramingRegion(region: BodyMeasurementRegion?)
     fun setCenterFraming(enabled: Boolean)
@@ -587,6 +570,7 @@ private class MetricAvatarTextureView(
     private var renderFailureListener: (() -> Unit)? = null
     private var onFirstFrameRendered: (() -> Unit)? = null
     private var pendingFirstFrameNotify = false
+    private var awaitingRevealFrame = false
     private var animationFrameScheduled = false
     private val pendingEvents = mutableListOf<() -> Unit>()
     private val compareRenderNotify: () -> Unit = { requestRenderOnThread() }
@@ -670,9 +654,17 @@ private class MetricAvatarTextureView(
     }
 
     override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
-        if (pendingFirstFrameNotify) {
-            pendingFirstFrameNotify = false
-            onFirstFrameRendered?.invoke()
+        when {
+            pendingFirstFrameNotify -> {
+                pendingFirstFrameNotify = false
+                awaitingRevealFrame = true
+                requestRenderOnThread()
+            }
+
+            awaitingRevealFrame -> {
+                awaitingRevealFrame = false
+                onFirstFrameRendered?.invoke()
+            }
         }
     }
 
@@ -878,6 +870,7 @@ private class MetricAvatarTextureView(
 
     override fun applyLoadedMesh(mesh: ObjMesh, yawDeg: Float, pitchDeg: Float) {
         pendingFirstFrameNotify = true
+        awaitingRevealFrame = false
         queueRenderEvent {
             avatarRenderer.setRotationLink(null)
             avatarRenderer.setBaseOrientation(yawDeg, pitchDeg)
@@ -888,6 +881,7 @@ private class MetricAvatarTextureView(
 
     override fun applyLoadedMeshForCompare(mesh: ObjMesh) {
         pendingFirstFrameNotify = true
+        awaitingRevealFrame = false
         queueRenderEvent {
             avatarRenderer.setMesh(mesh)
             drawFrame()
@@ -933,20 +927,6 @@ private class MetricAvatarTextureView(
     override fun setBaseDistanceScale(scale: Float) {
         queueRenderEvent {
             avatarRenderer.setBaseDistanceScale(scale)
-            drawFrame()
-        }
-    }
-
-    override fun setVisualTransformListener(listener: ((Float, Float, Int, Int) -> Unit)?) {
-        queueRenderEvent {
-            avatarRenderer.setVisualTransformListener(listener)
-            drawFrame()
-        }
-    }
-
-    override fun setLeaderSegments(segments: List<ModelLeaderSegment>?) {
-        queueRenderEvent {
-            avatarRenderer.setLeaderSegments(segments)
             drawFrame()
         }
     }
@@ -2217,8 +2197,6 @@ private class MetricAvatarRenderer {
     private var leaderAPos = 0
     private var leaderUMvp = 0
     private var leaderUColor = 0
-    private var leaderLineBuffer: FloatBuffer? = null
-    private var leaderLineVertCount = 0
 
     private var gradientProgram = 0
     private var gradientAClip = 0
@@ -2269,10 +2247,6 @@ private class MetricAvatarRenderer {
 
     private var viewportWidth = 0
     private var viewportHeight = 0
-    private var visualTransformListener: ((Float, Float, Int, Int) -> Unit)? = null
-    private val mainHandler = Handler(Looper.getMainLooper())
-    private var lastPostedYaw = Float.NaN
-    private var lastPostedPitch = Float.NaN
 
     fun setPreviewGradientFromResources(context: Context) {
         val inner = ContextCompat.getColor(context, R.color.metric_avatar_preview_gradient_inner)
@@ -2285,64 +2259,8 @@ private class MetricAvatarRenderer {
         previewGradientOuterB = android.graphics.Color.blue(outer) / 255f
     }
 
-    fun setVisualTransformListener(listener: ((Float, Float, Int, Int) -> Unit)?) {
-        visualTransformListener = listener
-        if (listener == null) {
-            lastPostedYaw = Float.NaN
-            lastPostedPitch = Float.NaN
-        } else {
-            lastPostedYaw = Float.NaN
-            lastPostedPitch = Float.NaN
-        }
-    }
-
-    private fun scheduleVisualTransformNotify(force: Boolean) {
-        val listener = visualTransformListener ?: return
-        if (rotationLink != null) return
-        if (viewportWidth <= 0 || viewportHeight <= 0) return
-        val y = modelYaw()
-        val p = modelPitch()
-        if (!force &&
-            abs(y - lastPostedYaw) < VISUAL_TRANSFORM_POST_MIN_DELTA &&
-            abs(p - lastPostedPitch) < VISUAL_TRANSFORM_POST_MIN_DELTA
-        ) {
-            return
-        }
-        lastPostedYaw = y
-        lastPostedPitch = p
-        val w = viewportWidth
-        val h = viewportHeight
-        mainHandler.post { listener(y, p, w, h) }
-    }
-
-    fun setLeaderSegments(segments: List<ModelLeaderSegment>?) {
-        rebuildLeaderBuffers(segments)
-    }
-
     fun setDrawBackground(draw: Boolean) {
         drawBackground = draw
-    }
-
-    private fun rebuildLeaderBuffers(segments: List<ModelLeaderSegment>?) {
-        if (segments.isNullOrEmpty()) {
-            leaderLineBuffer = null
-            leaderLineVertCount = 0
-            return
-        }
-        val lineBb = ByteBuffer.allocateDirect(segments.size * 6 * BYTES_PER_FLOAT_GL)
-            .order(ByteOrder.nativeOrder())
-            .asFloatBuffer()
-        for (s in segments) {
-            lineBb.put(s.ax)
-            lineBb.put(s.ay)
-            lineBb.put(s.az)
-            lineBb.put(s.ex)
-            lineBb.put(s.ey)
-            lineBb.put(s.ez)
-        }
-        lineBb.position(0)
-        leaderLineBuffer = lineBb
-        leaderLineVertCount = segments.size * 2
     }
 
     private fun drawPreviewBackgroundGradient() {
@@ -2388,27 +2306,6 @@ private class MetricAvatarRenderer {
 
         GLES20.glDepthMask(true)
         GLES20.glEnable(GLES20.GL_DEPTH_TEST)
-    }
-
-    private fun drawLeaderOverlay() {
-        val prog = leaderProgram
-        if (prog == 0) return
-        val lines = leaderLineBuffer ?: return
-
-        GLES20.glUseProgram(prog)
-        GLES20.glUniformMatrix4fv(leaderUMvp, 1, false, mvp, 0)
-        GLES20.glUniform4f(leaderUColor, LEADER_LINE_R, LEADER_LINE_G, LEADER_LINE_B, LEADER_LINE_A)
-
-        GLES20.glDepthMask(false)
-
-        lines.position(0)
-        GLES20.glVertexAttribPointer(leaderAPos, 3, GLES20.GL_FLOAT, false, 0, lines)
-        GLES20.glEnableVertexAttribArray(leaderAPos)
-        GLES20.glLineWidth(LEADER_LINE_WIDTH_PX)
-        GLES20.glDrawArrays(GLES20.GL_LINES, 0, leaderLineVertCount)
-
-        GLES20.glDisableVertexAttribArray(leaderAPos)
-        GLES20.glDepthMask(true)
     }
 
     private fun drawMeshWireOverlay(m: ObjMesh) {
@@ -2703,7 +2600,6 @@ private class MetricAvatarRenderer {
             1f,
             0f,
         )
-        scheduleVisualTransformNotify(force = true)
     }
 
     fun onDrawFrame() {
@@ -2716,9 +2612,6 @@ private class MetricAvatarRenderer {
         bindAvatarUniforms()
         drawAvatarBody(m)
         drawRepairWireOverlay(m)
-        drawLeaderOverlay()
-
-        scheduleVisualTransformNotify(force = false)
     }
 
     private fun drawFrameBackground() {
@@ -2952,14 +2845,6 @@ private class MetricAvatarRenderer {
         private const val EDGE_MASK_FLOAT_OFFSET = FLOATS_PER_ATTRIB * 2
 
         private const val PREVIEW_CLEAR_ALPHA = 1f
-
-        private const val LEADER_LINE_R = 1f
-        private const val LEADER_LINE_G = 0.84f
-        private const val LEADER_LINE_B = 0.15f
-        private const val LEADER_LINE_A = 1f
-        private const val LEADER_LINE_WIDTH_PX = 2f
-
-        private const val VISUAL_TRANSFORM_POST_MIN_DELTA = 0.025f
 
         private const val CLIP_TRIANGLE_X0 = -1f
         private const val CLIP_TRIANGLE_Y0 = -1f

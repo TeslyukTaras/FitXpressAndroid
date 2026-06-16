@@ -1,7 +1,5 @@
 package com.hexis.bi.ui.main.scan.results
 
-import android.opengl.Matrix
-import androidx.compose.ui.geometry.Offset
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -49,14 +47,6 @@ internal object MetricAvatarCamera {
      * extremes (head / feet) sit comfortably in view rather than flush against the edge.
      */
     const val PAN_EDGE_KEEP_FRACTION = 0.5f
-
-    /** Reject [projectModelPointToViewPx] when NDC lands outside this padded box (numerical slack). */
-    const val PROJECTION_NDC_VALID_MIN = -1.5f
-    const val PROJECTION_NDC_VALID_MAX = 1.5f
-
-    /** Map NDC in [-1,1] to pixel span along each axis (matches GL clip → viewport convention). */
-    const val PROJECTION_NDC_AXIS_HALF = 1f
-    const val PROJECTION_NDC_TO_PIXEL_SCALE = 0.5f
 }
 
 /**
@@ -80,82 +70,6 @@ internal fun computeMetricAvatarViewDistance(viewWidth: Int, viewHeight: Int): F
     return max(distForHeight, distForWidth) *
             MetricAvatarCamera.VIEW_DISTANCE_SAFETY_MARGIN *
             MetricAvatarCamera.PREVIEW_DISTANCE_SCALE
-}
-
-/**
- * Projects a point in model space to view pixel coordinates (top-left origin, Y down),
- * using the same MVP chain as [MetricAvatarRenderer].
- *
- * Assumes the default camera with no Visual-tab framing translate applied. Leader
- * overlays must therefore not be combined with a non-null framing region, or the
- * projected anchors will drift from the rendered mesh.
- */
-internal fun projectModelPointToViewPx(
-    modelX: Float,
-    modelY: Float,
-    modelZ: Float,
-    viewWidth: Int,
-    viewHeight: Int,
-    yawDeg: Float,
-    pitchDeg: Float,
-): Offset? {
-    if (viewWidth <= 0 || viewHeight <= 0) return null
-
-    val projection = FloatArray(MetricAvatarCamera.MATRIX_SIZE)
-    val view = FloatArray(MetricAvatarCamera.MATRIX_SIZE)
-    val model = FloatArray(MetricAvatarCamera.MATRIX_SIZE)
-    val temp = FloatArray(MetricAvatarCamera.MATRIX_SIZE)
-    val mvp = FloatArray(MetricAvatarCamera.MATRIX_SIZE)
-    val vec = floatArrayOf(modelX, modelY, modelZ, 1f)
-    val clip = FloatArray(4)
-
-    val aspect = viewWidth.toFloat() / viewHeight.toFloat().coerceAtLeast(1f)
-    Matrix.perspectiveM(
-        projection,
-        0,
-        MetricAvatarCamera.FOV_DEG,
-        aspect,
-        MetricAvatarCamera.FRUSTUM_NEAR,
-        MetricAvatarCamera.FRUSTUM_FAR,
-    )
-    val viewDistance = computeMetricAvatarViewDistance(viewWidth, viewHeight)
-    Matrix.setLookAtM(
-        view,
-        0,
-        0f,
-        MetricAvatarCamera.EYE_HEIGHT,
-        viewDistance,
-        0f,
-        0f,
-        0f,
-        0f,
-        1f,
-        0f,
-    )
-
-    Matrix.setIdentityM(model, 0)
-    Matrix.rotateM(model, 0, pitchDeg, 1f, 0f, 0f)
-    Matrix.rotateM(model, 0, yawDeg, 0f, 1f, 0f)
-
-    Matrix.multiplyMM(temp, 0, view, 0, model, 0)
-    Matrix.multiplyMM(mvp, 0, projection, 0, temp, 0)
-    Matrix.multiplyMV(clip, 0, mvp, 0, vec, 0)
-
-    val w = clip[3]
-    if (w <= 0f) return null
-    val ndcX = clip[0] / w
-    val ndcY = clip[1] / w
-    if (ndcX !in MetricAvatarCamera.PROJECTION_NDC_VALID_MIN..MetricAvatarCamera.PROJECTION_NDC_VALID_MAX ||
-        ndcY !in MetricAvatarCamera.PROJECTION_NDC_VALID_MIN..MetricAvatarCamera.PROJECTION_NDC_VALID_MAX
-    ) {
-        return null
-    }
-
-    val half = MetricAvatarCamera.PROJECTION_NDC_AXIS_HALF
-    val scale = MetricAvatarCamera.PROJECTION_NDC_TO_PIXEL_SCALE
-    val px = (ndcX + half) * scale * viewWidth
-    val py = (half - ndcY) * scale * viewHeight
-    return Offset(px, py)
 }
 
 internal data class ModelLeaderSegment(
@@ -194,13 +108,6 @@ internal object MeasurementVisualAnchors {
     fun fallbackAnchorPosition(key: String): FloatArray? =
         segmentsByKey[key]?.let { floatArrayOf(it.ax, it.ay, it.az) }
 }
-
-internal data class VisualAvatarTransform(
-    val yawDeg: Float,
-    val pitchDeg: Float,
-    val widthPx: Int,
-    val heightPx: Int,
-)
 
 /** Keys where the UI draws a **mesh cross-section** slice (horizontal plane), not a single point. */
 internal val CircumferenceVisualKeys = setOf(
@@ -1677,91 +1584,4 @@ private fun packXYZ(points: List<FloatArray>): FloatArray {
         out[o++] = p[2]
     }
     return out
-}
-
-/** Projects packed model polyline to overlay space; skips points behind camera. */
-internal fun projectPackedPolylineToOverlay(
-    packed: FloatArray,
-    transform: VisualAvatarTransform,
-    scaleX: Float,
-    scaleY: Float,
-): List<Offset> {
-    val out = ArrayList<Offset>(packed.size / 3)
-    var i = 0
-    while (i + 2 < packed.size) {
-        val p = projectModelPointToViewPx(
-            packed[i],
-            packed[i + 1],
-            packed[i + 2],
-            transform.widthPx,
-            transform.heightPx,
-            transform.yawDeg,
-            transform.pitchDeg,
-        )
-        if (p != null) out.add(Offset(p.x * scaleX, p.y * scaleY))
-        i += 3
-    }
-    return out
-}
-
-internal fun distSq(a: Offset, b: Offset): Float {
-    val dx = a.x - b.x
-    val dy = a.y - b.y
-    return dx * dx + dy * dy
-}
-
-internal fun closestPointOnSegment(a: Offset, b: Offset, p: Offset): Offset {
-    val abx = b.x - a.x
-    val aby = b.y - a.y
-    val apx = p.x - a.x
-    val apy = p.y - a.y
-    val ab2 = abx * abx + aby * aby
-    val t = if (ab2 <= 1e-12f) 0f else ((apx * abx + apy * aby) / ab2).coerceIn(0f, 1f)
-    return Offset(a.x + abx * t, a.y + aby * t)
-}
-
-internal fun closestPointOnClosedPolyline(poly: List<Offset>, p: Offset): Offset {
-    if (poly.isEmpty()) return p
-    var best = poly[0]
-    var bestD = distSq(p, best)
-    for (i in poly.indices) {
-        val a = poly[i]
-        val b = poly[(i + 1) % poly.size]
-        val q = closestPointOnSegment(a, b, p)
-        val d = distSq(p, q)
-        if (d < bestD) {
-            bestD = d
-            best = q
-        }
-    }
-    return best
-}
-
-/**
- * Where the leader meets the slice: the **closest point** on the closed contour (screen space) to the
- * pill anchor — shortest straight segment from label to the drawn ring. Uses edge perpendiculars,
- * not a fixed mesh vertex.
- */
-internal fun leaderAttachPointForCircumferenceSlice(
-    poly: List<Offset>,
-    pillStart: Offset,
-): Offset = closestPointOnClosedPolyline(poly, pillStart)
-
-/** Leader meets the closer of several limb rings (screen space), e.g. left vs right biceps while rotating. */
-internal fun leaderAttachPointForCircumferenceSlices(
-    polylines: List<List<Offset>>,
-    pillStart: Offset,
-): Offset {
-    var best = pillStart
-    var bestD = Float.MAX_VALUE
-    for (poly in polylines) {
-        if (poly.size < MetricAvatarPackedGeometry.MIN_PROJECTED_POLYLINE_VERTICES) continue
-        val q = closestPointOnClosedPolyline(poly, pillStart)
-        val d = distSq(pillStart, q)
-        if (d < bestD) {
-            bestD = d
-            best = q
-        }
-    }
-    return best
 }

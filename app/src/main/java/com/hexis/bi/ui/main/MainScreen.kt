@@ -179,7 +179,6 @@ fun MainScreen(
                     ScanScreen(
                         onBack = { navController.popBackStackOnce() },
                         onScanComplete = {
-                            scanResultRepository.selectedScanId = null
                             navController.navigate(Route.Main.SCAN_RESULTS) {
                                 popUpTo(Route.Main.SCAN) { inclusive = true }
                             }
@@ -187,6 +186,7 @@ fun MainScreen(
                         onConnectSuit = { navController.navigate(Route.Main.MY_SUIT) },
                         onBuySuit = { showBuySuitDialog = true },
                         onShowHowToScan = { navController.navigate(Route.Main.HOW_TO_SCAN) },
+                        onOpenScanPreferences = { navController.navigate(Route.Main.SCAN_PREFERENCES) },
                     )
                 }
                 composable(Route.Main.SUIT_SIZE_SCAN) {
@@ -200,6 +200,7 @@ fun MainScreen(
                         onConnectSuit = { navController.navigate(Route.Main.MY_SUIT) },
                         onBuySuit = { showBuySuitDialog = true },
                         onShowHowToScan = { navController.navigate(Route.Main.HOW_TO_SCAN) },
+                        onOpenScanPreferences = { navController.navigate(Route.Main.SCAN_PREFERENCES) },
                         scanPurpose = ScanPurpose.SuitSizeScan,
                         requireConnectedSuit = false,
                     )
@@ -210,6 +211,7 @@ fun MainScreen(
                             scanResultRepository.selectedScanId = null
                             navController.popBackStackOnce()
                         },
+                        onOpenScanPreferences = { navController.navigate(Route.Main.SCAN_PREFERENCES) },
                     )
                 }
                 composable(Route.Main.SUIT_SIZE_RESULTS) {
