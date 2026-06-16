@@ -135,7 +135,7 @@ private fun ScanRecord.waistToHeightRatio(heightCm: Float?): Float? {
 
 private fun ScanRecord.shoulderToWaistRatio(): Float? {
     val shoulders = BodyMeasurementKeys.valueFor(measurements, BodyMeasurementRegion.Shoulders) ?: return null
-    val waist = BodyMeasurementKeys.valueFor(measurements, BodyMeasurementRegion.Waist) ?: return null
+    val waist = frontLinearParams[BodyMeasurementKeys.Waist] ?: return null
     if (waist <= 0f) return null
     return shoulders / waist
 }
