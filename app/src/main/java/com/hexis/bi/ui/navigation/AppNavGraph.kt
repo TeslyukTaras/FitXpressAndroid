@@ -4,14 +4,17 @@ import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.hexis.bi.data.auth.AuthRepository
+import com.hexis.bi.data.auth.SessionCleaner
 import com.hexis.bi.data.preferences.UserPreferencesRepository
 import com.hexis.bi.ui.auth.forgotpassword.ForgotPasswordScreen
 import com.hexis.bi.ui.auth.info.AppInfoScreen
@@ -30,6 +33,7 @@ private const val NAV_ANIM_DURATION_MS = 300
 fun AppNavGraph(modifier: Modifier = Modifier) {
     val preferencesRepository: UserPreferencesRepository = koinInject()
     val authRepository: AuthRepository = koinInject()
+    val sessionCleaner: SessionCleaner = koinInject()
 
     val startDestination by remember {
         combine(
@@ -48,6 +52,7 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
 
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
+    var mainStartDestination by remember { mutableStateOf(Route.Main.HOME) }
 
     NavHost(
         navController = navController,
@@ -71,6 +76,9 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
 
         composable(Route.PROFILE_ONBOARDING) {
             OnboardingScreen(
+                onBuySuitScanRequested = {
+                    mainStartDestination = Route.Main.SUIT_SIZE_SCAN
+                },
                 onFinish = {
                     navController.navigate(Route.MAIN) {
                         popUpTo(Route.PROFILE_ONBOARDING) { inclusive = true }
@@ -82,6 +90,7 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
             LoginScreen(
                 onNavigateToSignUp = { navController.navigate(Route.SIGN_UP) },
                 onLoginSuccess = {
+                    mainStartDestination = Route.Main.HOME
                     navController.navigate(Route.MAIN) {
                         popUpTo(Route.LOGIN) { inclusive = true }
                     }
@@ -98,6 +107,7 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
             SignUpScreen(
                 onNavigateToLogin = { navController.popBackStack() },
                 onSignUpSuccess = {
+                    mainStartDestination = Route.Main.HOME
                     navController.navigate(Route.PROFILE_ONBOARDING) {
                         popUpTo(Route.LOGIN) { inclusive = true }
                     }
@@ -106,8 +116,10 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
         }
         composable(Route.MAIN) {
             MainScreen(
+                startDestination = mainStartDestination,
                 onLogout = {
-                    scope.launch { authRepository.signOut() }
+                    scope.launch { sessionCleaner.signOut() }
+                    mainStartDestination = Route.Main.HOME
                     navController.navigate(Route.LOGIN) {
                         popUpTo(Route.MAIN) { inclusive = true }
                     }

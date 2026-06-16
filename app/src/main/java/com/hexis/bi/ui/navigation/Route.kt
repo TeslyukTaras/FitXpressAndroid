@@ -26,6 +26,14 @@ internal object Route {
         const val PACE_OF_AGING = "main/pace_of_aging"
         const val ACTIVITY = "main/activity"
         const val SCAN = "main/scan"
+        const val SUIT_SIZE_SCAN = "main/scan/suit_size"
+        const val SUIT_SIZE_RESULTS = "main/buy_suit/size_results"
+        const val SHIPPING_DETAILS = "main/buy_suit/shipping"
+
+        const val ARG_ORDER_ID = "orderId"
+        const val EDIT_ORDER_ADDRESS = "main/buy_suit/edit_address/{$ARG_ORDER_ID}"
+        fun editOrderAddress(orderId: String) = "main/buy_suit/edit_address/$orderId"
+
         const val SCAN_RESULTS = "main/scan/results"
         const val SCAN_HISTORY = "main/scan/history"
         const val HOW_TO_SCAN = "main/scan/how_to"

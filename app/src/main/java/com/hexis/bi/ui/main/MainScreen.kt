@@ -23,19 +23,25 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.hexis.bi.R
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.components.AppDialog
+import com.hexis.bi.ui.components.my_suit.BuySuitDialogContent
 import com.hexis.bi.ui.dark.DarkMainNavBottomBar
 import com.hexis.bi.ui.dark.DarkOutlinedButton
 import com.hexis.bi.ui.dark.DarkPrimaryButton
 import com.hexis.bi.ui.main.body.BodyScreen
 import com.hexis.bi.ui.main.body.PhysiqueBalanceScreen
+import com.hexis.bi.ui.main.buysuit.editaddress.EditAddressScreen
+import com.hexis.bi.ui.main.buysuit.shipping.ShippingDetailsScreen
+import com.hexis.bi.ui.main.buysuit.suitsize.SuitSizeResultsScreen
 import com.hexis.bi.ui.main.home.HomeScreen
 import com.hexis.bi.ui.main.home.activity.ActivityScreen
 import com.hexis.bi.ui.main.home.longevity.LongevityScreen
@@ -44,6 +50,7 @@ import com.hexis.bi.ui.main.home.physiquedrift.PhysiqueDriftScreen
 import com.hexis.bi.ui.main.home.recovery.RecoveryScreen
 import com.hexis.bi.ui.main.home.sleep.SleepScreen
 import com.hexis.bi.ui.main.notifications.NotificationsScreen
+import com.hexis.bi.ui.main.scan.ScanPurpose
 import com.hexis.bi.ui.main.scan.ScanScreen
 import com.hexis.bi.ui.main.scan.history.ScanHistoryScreen
 import com.hexis.bi.ui.main.scan.howtoscan.HowToScanScreen
@@ -66,6 +73,7 @@ fun MainScreen(
     onLogout: () -> Unit,
     onDeleteAccount: () -> Unit,
     modifier: Modifier = Modifier,
+    startDestination: String = Route.Main.HOME,
 ) {
     val navController = rememberNavController()
     val currentBackStack by navController.currentBackStackEntryAsState()
@@ -76,6 +84,24 @@ fun MainScreen(
     val scanResultRepository: ScanResultRepository = koinInject()
     val scope = rememberCoroutineScope()
     var showProfileIncompleteDialog by remember { mutableStateOf(false) }
+    var showBuySuitDialog by remember { mutableStateOf(false) }
+    val startSuitSizeScan: () -> Unit = {
+        scope.launch {
+            val profile = userRepository.getUser().getOrNull()
+            val isComplete = profile != null
+                    && profile.heightCm != null
+                    && profile.gender != null
+                    && profile.dateOfBirth != null
+            showBuySuitDialog = false
+            if (isComplete) {
+                navController.navigate(Route.Main.SUIT_SIZE_SCAN) {
+                    launchSingleTop = true
+                }
+            } else {
+                showProfileIncompleteDialog = true
+            }
+        }
+    }
 
     // Starts a scan only when the profile is complete; otherwise prompts to finish the profile.
     // Shared by the bottom-nav scan button and the Home "Scan" tile.
@@ -85,6 +111,7 @@ fun MainScreen(
             val isComplete = profile != null
                     && profile.heightCm != null
                     && profile.weightKg != null
+                    && profile.gender != null
                     && profile.dateOfBirth != null
             if (isComplete) {
                 navController.navigate(Route.Main.SCAN) {
@@ -99,7 +126,7 @@ fun MainScreen(
     DarkTheme {
         Box(modifier = modifier.fillMaxSize()) {
             val dialogBlurModifier =
-                if (showProfileIncompleteDialog) {
+                if (showProfileIncompleteDialog || showBuySuitDialog) {
                     Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
                 } else {
                     Modifier
@@ -110,7 +137,7 @@ fun MainScreen(
                     .fillMaxSize()
                     .then(dialogBlurModifier),
                 navController = navController,
-                startDestination = Route.Main.HOME,
+                startDestination = startDestination,
             ) {
                 composable(Route.Main.HOME) {
                     HomeScreen(
@@ -124,6 +151,10 @@ fun MainScreen(
                         onPaceOfAgingClick = { navController.navigate(Route.Main.PACE_OF_AGING) },
                         onActivityClick = { navController.navigate(Route.Main.ACTIVITY) },
                         onScanClick = launchScan,
+                        onBuySuitClick = { showBuySuitDialog = true },
+                        onEditOrderAddress = { orderId ->
+                            navController.navigate(Route.Main.editOrderAddress(orderId))
+                        },
                     )
                 }
                 composable(Route.Main.SLEEP) {
@@ -154,8 +185,23 @@ fun MainScreen(
                             }
                         },
                         onConnectSuit = { navController.navigate(Route.Main.MY_SUIT) },
-                        onBuySuit = {},
+                        onBuySuit = { showBuySuitDialog = true },
                         onShowHowToScan = { navController.navigate(Route.Main.HOW_TO_SCAN) },
+                    )
+                }
+                composable(Route.Main.SUIT_SIZE_SCAN) {
+                    ScanScreen(
+                        onBack = { navController.popBackStackOnce() },
+                        onScanComplete = {
+                            navController.navigate(Route.Main.SUIT_SIZE_RESULTS) {
+                                popUpTo(Route.Main.SUIT_SIZE_SCAN) { inclusive = true }
+                            }
+                        },
+                        onConnectSuit = { navController.navigate(Route.Main.MY_SUIT) },
+                        onBuySuit = { showBuySuitDialog = true },
+                        onShowHowToScan = { navController.navigate(Route.Main.HOW_TO_SCAN) },
+                        scanPurpose = ScanPurpose.SuitSizeScan,
+                        requireConnectedSuit = false,
                     )
                 }
                 composable(Route.Main.SCAN_RESULTS) {
@@ -164,6 +210,31 @@ fun MainScreen(
                             scanResultRepository.selectedScanId = null
                             navController.popBackStackOnce()
                         },
+                    )
+                }
+                composable(Route.Main.SUIT_SIZE_RESULTS) {
+                    SuitSizeResultsScreen(
+                        onBack = { navController.popBackStackOnce() },
+                        onProceedToOrder = { navController.navigate(Route.Main.SHIPPING_DETAILS) },
+                    )
+                }
+                composable(Route.Main.SHIPPING_DETAILS) {
+                    ShippingDetailsScreen(
+                        onBack = { navController.popBackStackOnce() },
+                        onClose = { navController.popBackStack(Route.Main.HOME, inclusive = false) },
+                    )
+                }
+                composable(
+                    Route.Main.EDIT_ORDER_ADDRESS,
+                    arguments = listOf(
+                        navArgument(Route.Main.ARG_ORDER_ID) { type = NavType.StringType },
+                    ),
+                ) { backStackEntry ->
+                    val orderId = backStackEntry.arguments?.getString(Route.Main.ARG_ORDER_ID).orEmpty()
+                    EditAddressScreen(
+                        orderId = orderId,
+                        onBack = { navController.popBackStackOnce() },
+                        onSaved = { navController.popBackStackOnce() },
                     )
                 }
                 composable(Route.Main.SCAN_HISTORY) {
@@ -224,7 +295,10 @@ fun MainScreen(
                     ScanPreferencesScreen(onBack = { navController.popBackStackOnce() })
                 }
                 composable(Route.Main.MY_SUIT) {
-                    MySuitScreen(onBack = { navController.popBackStackOnce() })
+                    MySuitScreen(
+                        onBack = { navController.popBackStackOnce() },
+                        onBuyOne = { showBuySuitDialog = true },
+                    )
                 }
             }
 
@@ -272,7 +346,24 @@ fun MainScreen(
                     },
                 )
             }
+
+            if (showBuySuitDialog) {
+                BuySuitDialog(
+                    onDismiss = { showBuySuitDialog = false },
+                    onBuySuit = startSuitSizeScan,
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun BuySuitDialog(
+    onDismiss: () -> Unit,
+    onBuySuit: () -> Unit,
+) {
+    AppDialog(onDismiss = onDismiss) {
+        BuySuitDialogContent(onBuySuit = onBuySuit)
     }
 }
 

@@ -120,6 +120,10 @@
     <string name="my_suit_reconnect_dialog_note">Your progress and scan history\nwill stay saved.</string>
     <string name="action_reconnect">Reconnect</string>
     <string name="cd_suit_connected">Suit connected</string>
+    <string name="buy_suit_dialog_title">Get Your Scan Suit</string>
+    <string name="buy_suit_dialog_body">Start a size scan and we’ll recommend\nyour best fit.</string>
+    <string name="buy_suit_dialog_note">After delivery, enter your Suit ID\nto activate the suit.</string>
+    <string name="action_buy_suit_title_case">Buy Suit</string>
 
     <!-- Settings screen -->
     <string name="screen_settings">Settings</string>
@@ -372,6 +376,13 @@
     <string name="error_confirm_password_required">Please confirm your password</string>
     <string name="error_passwords_do_not_match">Passwords do not match</string>
     <string name="error_terms_not_accepted">Please accept the Terms &amp; Privacy Policy to continue</string>
+    <string name="error_phone_required">Phone number is required</string>
+    <string name="error_phone_invalid">Enter a valid phone number</string>
+    <string name="error_address_required">Address is required</string>
+    <string name="error_city_required">City is required</string>
+    <string name="error_field_required">%1$s is required</string>
+    <string name="error_place_order_failed">Couldn’t place your order. Please try again.</string>
+    <string name="error_postal_code_invalid">Enter a valid postal code</string>
 
     <!-- Password strength errors -->
     <string name="error_password_too_short">Must be at least 8 characters</string>
@@ -651,6 +662,91 @@
 
     <!-- Scan screen -->
     <string name="scan_title">Scan</string>
+    <string name="scan_size_title">Find your size</string>
+    <string name="scan_size_results_title">Your size results</string>
+    <string name="scan_size_subtitle">Scan your body to get a size recommendation in seconds.</string>
+    <string name="scan_size_complete_title">Scan complete</string>
+    <string name="scan_size_complete_body">Your scan was successful.\nWe’re generating your results now.</string>
+    <string name="scan_size_error_title">Scan failed</string>
+    <string name="scan_checklist_title">Before you scan</string>
+    <string name="scan_checklist_body">Follow these steps for the most accurate size recommendation.</string>
+    <string name="scan_checklist_label">Checklist:</string>
+    <string name="scan_checklist_fitted_clothing">Wear fitted clothing</string>
+    <string name="scan_checklist_good_lighting">Use good lighting</string>
+    <string name="scan_checklist_clean_background">Stand in front of a clean background</string>
+    <string name="scan_checklist_volume_on">Turn volume on</string>
+    <string name="scan_checklist_voice_guidance">Follow voice guidance</string>
+    <string name="scan_checklist_front_left_photos">Take front and left-side photos</string>
+    <string name="scan_checklist_footer">You can find these tips again from the info icon.</string>
+    <string name="suit_size_units">Units</string>
+    <string name="suit_size_confirm_body">Please confirm your height and weight. Accurate values improve your suit size recommendation.</string>
+    <string name="suit_size_feature_lightweight">Lightweight second-skin comfort</string>
+    <string name="suit_size_feature_tracking">Designed for precision body tracking</string>
+    <string name="suit_size_label">HEXIS-BI Suit Size:</string>
+    <string name="suit_size_proceed_to_order">Proceed to Order</string>
+    <string name="suit_size_x_small">X-Small</string>
+    <string name="suit_size_small">Small</string>
+    <string name="suit_size_medium">Medium</string>
+    <string name="suit_size_large">Large</string>
+    <string name="suit_size_x_large">X-Large</string>
+    <string name="suit_size_xx_large">XX-Large</string>
+    <string name="suit_size_error_no_scan">No scan found. Please complete a scan to get a size recommendation.</string>
+    <string name="shipping_details_title">Shipping details</string>
+    <string name="shipping_phone_number">Phone number</string>
+    <string name="shipping_phone_placeholder">(00) 000 00 00</string>
+    <string name="shipping_optional_label">%1$s (optional)</string>
+    <string name="shipping_select_country">Select country</string>
+    <string name="shipping_search_country">Search country or code</string>
+    <string name="shipping_address_title">Address</string>
+    <string name="shipping_country_region">Country/region</string>
+    <string name="shipping_company">Company</string>
+    <string name="shipping_address">Address</string>
+    <string name="shipping_city">City</string>
+    <string name="shipping_apartment">Apartment, suite, etc</string>
+    <string name="shipping_note">Note</string>
+    <string name="shipping_region_generic">State / Province / Region</string>
+    <string name="shipping_region_province">Province</string>
+    <string name="shipping_region_state">State</string>
+    <string name="shipping_region_state_territory">State / Territory</string>
+    <string name="shipping_region_province_territory">Province / Territory</string>
+    <string name="shipping_region_prefecture">Prefecture</string>
+    <string name="shipping_region_region">Region</string>
+    <string name="shipping_region_emirate">Emirate</string>
+    <string name="shipping_region_department">Department</string>
+    <string name="shipping_region_county">County</string>
+    <string name="shipping_region_voivodeship">Voivodeship</string>
+    <string name="shipping_postal_generic">Postal code</string>
+    <string name="shipping_postal_zip">ZIP code</string>
+    <string name="shipping_postal_postcode">Postcode</string>
+    <string name="shipping_place_order">Place Order</string>
+    <string name="shipping_thanks_title">Thanks for your order!</string>
+    <string name="shipping_thanks_subtitle">Your HEXIS-BI Suit Is Being Prepared</string>
+    <string name="shipping_thanks_body">You’ll receive shipping and setup updates once your suit is ready.\nYou can also track your suit status in Orders.</string>
+    <string name="action_ok">Ok</string>
+    <string name="home_suit_order_title">Suit order</string>
+    <string name="home_suit_order_tracking_label">Tracking:</string>
+    <string name="home_suit_order_number_label">Order:</string>
+    <string name="home_suit_order_eta_label">ETA:</string>
+    <string name="home_suit_order_eta_estimating">Estimating</string>
+    <string name="order_status_placed">Placed</string>
+    <string name="order_status_confirmed">Confirmed</string>
+    <string name="order_status_in_production">In production</string>
+    <string name="order_status_shipped">Shipped</string>
+    <string name="order_status_delivered">Delivered</string>
+    <string name="order_status_cancelled">Cancelled</string>
+    <string name="order_details_title">Order Details</string>
+    <string name="order_details_number_label">Order number</string>
+    <string name="order_details_tracking_label">Tracking number</string>
+    <string name="order_details_address_label">Address:</string>
+    <string name="order_details_got_it">Got it</string>
+    <string name="order_details_address_change_pending">Change requested</string>
+    <string name="edit_address_title">Change address</string>
+    <string name="edit_address_save">Save changes</string>
+    <string name="edit_address_notice">Your new address will be sent to our team to update before your order ships.</string>
+    <string name="error_address_change_failed">Couldn\'t submit your address change. Please try again.</string>
+    <string name="cd_copy_order_number">Copy order number</string>
+    <string name="cd_copy_tracking_number">Copy tracking number</string>
+    <string name="cd_edit_address">Edit address</string>
     <string name="scan_results_title">Results</string>
     <string name="scan_suit_not_detected_title">Suit is not detected</string>
     <string name="scan_suit_not_detected_body">You’re not wearing the suit right now. Put it on to continue, or switch to Regular Scan.</string>
@@ -666,6 +762,8 @@
     <string name="scan_step_3_b">Hold still while your body scan is being captured.</string>
     <string name="scan_progress_submitting">Submitting your photos…</string>
     <string name="scan_progress_processing">Processing your scan…</string>
+    <string name="action_results">Results</string>
+    <string name="action_rescan">Rescan</string>
 
     <!-- How to scan (Prepare Your Scan) flow -->
     <string name="how_to_scan_title">Prepare Your Scan</string>

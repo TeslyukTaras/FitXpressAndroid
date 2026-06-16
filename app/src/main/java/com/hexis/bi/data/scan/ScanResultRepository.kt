@@ -9,6 +9,11 @@ import com.hexis.bi.data.scan.api.MeasurementResponse
 class ScanResultRepository {
     var latestResult: ScanResult? = null
     var selectedScanId: String? = null
+
+    fun clear() {
+        latestResult = null
+        selectedScanId = null
+    }
 }
 
 data class ScanResult(

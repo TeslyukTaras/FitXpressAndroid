@@ -40,4 +40,7 @@ object DateFormatConstants {
 
     /** Day, MMM d (e.g. "Fri, Dec 19") for trend chart tooltips. */
     const val WEEKDAY_MONTH_DAY = "EEE, MMM d"
+
+    /** Numeric date + 12h time, e.g. "12.06.2026 09:41 am", for the order details timeline. */
+    const val ORDER_TIMELINE_TIMESTAMP = "dd.MM.yyyy hh:mm a"
 }

@@ -59,7 +59,9 @@ import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppDatePicker
+import com.hexis.bi.ui.components.AppDialog
 import com.hexis.bi.ui.components.AppLogo
+import com.hexis.bi.ui.components.my_suit.BuySuitDialogContent
 import com.hexis.bi.ui.components.my_suit.SuitCareSheet
 import com.hexis.bi.ui.components.my_suit.SuitConnectedBanner
 import com.hexis.bi.ui.components.my_suit.SuitInfoRow
@@ -80,14 +82,20 @@ import com.hexis.bi.utils.parseDob
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
+private const val PAGE_PERSONAL_INFO = 0
+private const val PAGE_MY_SUIT = 1
 private const val PAGE_COUNT = 2
 private const val PAGE_SCROLL_DURATION_MS = 350
+
+private const val DROPDOWN_ARROW_ROTATION_EXPANDED = 270f
+private const val DROPDOWN_ARROW_ROTATION_COLLAPSED = 90f
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingScreen(
     onFinish: () -> Unit,
     modifier: Modifier = Modifier,
+    onBuySuitScanRequested: () -> Unit = {},
     viewModel: OnboardingViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -96,6 +104,7 @@ fun OnboardingScreen(
 
     val pagerState = rememberPagerState { PAGE_COUNT }
     val scope = rememberCoroutineScope()
+    var showBuySuitDialog by remember { mutableStateOf(false) }
     val isLastPage = pagerState.currentPage == PAGE_COUNT - 1
     val goToPage: (Int) -> Unit = { page ->
         scope.launch {
@@ -126,7 +135,7 @@ fun OnboardingScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .then(
-                        if (state.showDatePicker)
+                        if (state.showDatePicker || showBuySuitDialog)
                             Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
                         else Modifier
                     )
@@ -151,10 +160,10 @@ fun OnboardingScreen(
                     error = error,
                     onDismissError = viewModel::clearError,
                     topBar = {
-                        if (pagerState.currentPage != 0) BaseTopBar(
+                        if (pagerState.currentPage != PAGE_PERSONAL_INFO) BaseTopBar(
                             title = stringResource(R.string.my_suit_title),
                             background = Color.Transparent,
-                            onBack = { goToPage(0) },
+                            onBack = { goToPage(PAGE_PERSONAL_INFO) },
                         )
                     },
                     bottomBar = {
@@ -163,7 +172,7 @@ fun OnboardingScreen(
                             pageCount = PAGE_COUNT,
                             isLastPage = isLastPage,
                             onSkip = if (!isLastPage) ({ viewModel.skip() }) else null,
-                            onBack = if (isLastPage) ({ goToPage(0) }) else null,
+                            onBack = if (isLastPage) ({ goToPage(PAGE_PERSONAL_INFO) }) else null,
                             onNext = { goToPage(pagerState.currentPage + 1) },
                             onFinish = viewModel::finish,
                         )
@@ -175,8 +184,12 @@ fun OnboardingScreen(
                         userScrollEnabled = false,
                     ) { page ->
                         when (page) {
-                            0 -> PersonalInfoPage(state = state, viewModel = viewModel)
-                            1 -> MySuitPage(state = state, viewModel = viewModel)
+                            PAGE_PERSONAL_INFO -> PersonalInfoPage(state = state, viewModel = viewModel)
+                            PAGE_MY_SUIT -> MySuitPage(
+                                state = state,
+                                viewModel = viewModel,
+                                onBuyOne = { showBuySuitDialog = true },
+                            )
                         }
                     }
                 }
@@ -194,6 +207,16 @@ fun OnboardingScreen(
                 onContinue = viewModel::dismissSuitCareSheet,
                 onDismiss = viewModel::dismissSuitCareSheet,
             )
+
+            if (showBuySuitDialog) AppDialog(onDismiss = { showBuySuitDialog = false }) {
+                BuySuitDialogContent(
+                    onBuySuit = {
+                        showBuySuitDialog = false
+                        onBuySuitScanRequested()
+                        viewModel.finish()
+                    },
+                )
+            }
         }
     }
 }
@@ -379,7 +402,7 @@ private fun GenderField(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .size(dimensionResource(R.dimen.icon_medium))
-                        .rotate(if (expanded) 270f else 90f),
+                        .rotate(if (expanded) DROPDOWN_ARROW_ROTATION_EXPANDED else DROPDOWN_ARROW_ROTATION_COLLAPSED),
                 )
             },
             modifier = Modifier.fillMaxWidth(),
@@ -540,6 +563,7 @@ private fun MeasurementSlider(
 private fun MySuitPage(
     state: OnboardingState,
     viewModel: OnboardingViewModel,
+    onBuyOne: () -> Unit,
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val frameHeight = maxHeight
@@ -566,6 +590,7 @@ private fun MySuitPage(
                     suitIdInput = state.suitIdInput,
                     onSuitIdChange = viewModel::updateSuitIdInput,
                     onConnect = viewModel::connectSuit,
+                    onBuyOne = onBuyOne,
                 )
             }
         }
@@ -621,6 +646,7 @@ private fun ColumnScope.SuitDisconnectedContent(
     suitIdInput: String,
     onSuitIdChange: (String) -> Unit,
     onConnect: () -> Unit,
+    onBuyOne: () -> Unit,
 ) {
     Text(
         text = stringResource(R.string.onboarding_suit_connect_title),
@@ -692,6 +718,7 @@ private fun ColumnScope.SuitDisconnectedContent(
         text = noSuitText,
         style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Normal),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.clickable(onClick = onBuyOne),
     )
     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 }

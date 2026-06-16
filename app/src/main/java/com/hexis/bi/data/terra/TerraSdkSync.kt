@@ -63,6 +63,11 @@ object TerraSdkSync {
         generation.incrementAndGet()
     }
 
+    suspend fun reset() {
+        generation.incrementAndGet()
+        debounceMutex.withLock { lastSyncElapsedRealtimeMs = 0L }
+    }
+
     /**
      * @param force skips the foreground debounce (e.g. right after a successful `initConnection`).
      * @return true when a pull actually ran; false when there was nothing to sync or it was debounced.

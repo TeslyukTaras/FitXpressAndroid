@@ -26,6 +26,7 @@ timber = "5.0.1"
 uiUnit = "1.11.0"
 terraAndroid = "1.6.3"
 androidxBrowser = "1.10.0"
+libphonenumber = "8.13.52"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -74,6 +75,7 @@ timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "tim
 androidx-compose-ui-unit = { group = "androidx.compose.ui", name = "ui-unit", version.ref = "uiUnit" }
 terra-android = { group = "co.tryterra", name = "terra-android", version.ref = "terraAndroid" }
 androidx-browser = { group = "androidx.browser", name = "browser", version.ref = "androidxBrowser" }
+libphonenumber = { group = "com.googlecode.libphonenumber", name = "libphonenumber", version.ref = "libphonenumber" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

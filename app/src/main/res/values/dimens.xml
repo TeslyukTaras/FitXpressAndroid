@@ -23,6 +23,10 @@
     <dimen name="icon_medium">24dp</dimen>
     <dimen name="icon_large">32dp</dimen>
     <dimen name="icon_normalized">40dp</dimen>
+    <dimen name="flag_circle_small">22dp</dimen>
+    <dimen name="timeline_dot_size">16dp</dimen>
+    <dimen name="timeline_connector_width">0.5dp</dimen>
+    <dimen name="timeline_dash">1.66dp</dimen>
 
     <!-- Padding -->
     <dimen name="padding_small">8dp</dimen>
@@ -38,6 +42,7 @@
     <dimen name="sleep_stage_dash_segment">5dp</dimen>
     <dimen name="sleep_stage_dist_light">56dp</dimen>
     <dimen name="sleep_stage_dist_deep">32dp</dimen>
+    <dimen name="suit_size_image_height">275dp</dimen>
     <dimen name="sleep_stage_dist_rem">76dp</dimen>
     <dimen name="sleep_stage_dist_awake">38dp</dimen>
     <dimen name="sleep_heart_chart_height">220dp</dimen>

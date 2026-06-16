@@ -100,10 +100,11 @@ class ScanHistoryRepository(
             .document(auth.currentUser?.uid ?: error("Not authenticated"))
             .collection(COLLECTION_SCANS)
 
+    /** @return the saved scan's document id (as used by [getScanRecordById] and `ScanRecord.id`). */
     suspend fun saveScan(
         response: MeasurementResponse,
         savedAtMillis: Long = System.currentTimeMillis(),
-    ): Result<Unit> = runCatching {
+    ): Result<String> = runCatching {
         val docId = Date(savedAtMillis).formatAsScanDocId()
         val scanRef = scansCollection().document(docId)
 
@@ -149,6 +150,7 @@ class ScanHistoryRepository(
 
         batch.commit().await()
         Timber.d("saveScan: wrote %s with %d fields", docId, mainData.size)
+        docId
     }
 
     suspend fun getLatestScan(): Result<ScanRecord?> =

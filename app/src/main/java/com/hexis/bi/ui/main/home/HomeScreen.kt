@@ -30,12 +30,14 @@ import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.dark.LightStatusBarIcons
 import com.hexis.bi.ui.dark.darkScreenBackground
+import com.hexis.bi.ui.main.buysuit.orderdetails.OrderDetailsSheet
 import com.hexis.bi.ui.main.home.components.ActivityOverviewCard
 import com.hexis.bi.ui.main.home.components.HomeHeader
 import com.hexis.bi.ui.main.home.components.IntelligenceScoresCard
 import com.hexis.bi.ui.main.home.components.PromoBanner
 import com.hexis.bi.ui.main.home.components.ScanOverviewCard
 import com.hexis.bi.ui.main.home.components.SleepOverviewCard
+import com.hexis.bi.ui.main.home.components.SuitOrderCard
 import com.hexis.bi.ui.main.home.components.UserStatsCard
 import com.hexis.bi.ui.theme.dark.DarkTheme
 import org.koin.androidx.compose.koinViewModel
@@ -53,6 +55,8 @@ fun HomeScreen(
     onPhysiqueDriftClick: () -> Unit = {},
     onPaceOfAgingClick: () -> Unit = {},
     onScanClick: () -> Unit = {},
+    onBuySuitClick: () -> Unit = {},
+    onEditOrderAddress: (orderId: String) -> Unit = {},
     viewModel: HomeViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -123,9 +127,16 @@ fun HomeScreen(
                     age = state.age ?: unknown,
                 )
 
-                if (!state.isSuitConnected) {
+                val suitOrder = state.suitOrder
+                if (suitOrder != null) {
                     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
-                    PromoBanner(onBuyClick = { /* TODO */ })
+                    SuitOrderCard(
+                        data = suitOrder,
+                        onClick = viewModel::showOrderDetails,
+                    )
+                } else if (state.suitSectionResolved && !state.isSuitConnected) {
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+                    PromoBanner(onBuyClick = onBuySuitClick)
                 }
 
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
@@ -181,6 +192,18 @@ fun HomeScreen(
                     },
                 )
             }
+        }
+
+        val orderDetails = state.orderDetails
+        if (state.showOrderDetails && orderDetails != null) {
+            OrderDetailsSheet(
+                details = orderDetails,
+                onDismiss = viewModel::dismissOrderDetails,
+                onEditAddress = {
+                    viewModel.dismissOrderDetails()
+                    onEditOrderAddress(orderDetails.orderId)
+                },
+            )
         }
     }
 }

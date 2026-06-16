@@ -15,7 +15,8 @@ data class StartScanState(
     val steps: List<List<ScanInstruction>> = defaultSteps,
     val isComplete: Boolean = false,
     val scanProgress: ScanProgress? = null,
-    val shouldLaunchCamera: Boolean = true,
+    val scanErrorMessage: String? = null,
+    val shouldLaunchCamera: Boolean = false,
     val shouldNavigateBack: Boolean = false,
     val retakeOnErrorDismiss: Boolean = false,
 ) {

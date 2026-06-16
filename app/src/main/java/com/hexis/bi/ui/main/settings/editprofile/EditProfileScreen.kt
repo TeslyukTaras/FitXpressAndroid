@@ -56,15 +56,14 @@ import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppDatePicker
+import com.hexis.bi.ui.dark.BodyGlassCard
 import com.hexis.bi.ui.dark.DarkOutlinedTextField
 import com.hexis.bi.ui.dark.DarkPrimaryButton
 import com.hexis.bi.ui.dark.DarkSlider
 import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.dark.BodyGlassCard
 import com.hexis.bi.ui.dark.darkScreenBackground
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleChip
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleTrack
-import com.hexis.bi.ui.theme.DarkSliderLabel
 import com.hexis.bi.ui.theme.dark.DarkTheme
 import com.hexis.bi.utils.parseDob
 import org.koin.androidx.compose.koinViewModel
@@ -375,14 +374,20 @@ private fun PersonalInfoSection(
     )
 
     BodyGlassCard(
-        contentPadding = PaddingValues(dimensionResource(R.dimen.spacer_l)),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_l)),
+        contentPadding = PaddingValues(
+            start = dimensionResource(R.dimen.spacer_xs),
+            top = dimensionResource(R.dimen.spacer_l),
+            end = dimensionResource(R.dimen.spacer_xs),
+            bottom = dimensionResource(R.dimen.spacer_2xs)
+        ),
     ) {
         UnitsToggle(
+            modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacer_xs)),
             isMetric = state.isMetric,
             onSelectMetric = viewModel::selectMetric,
             onSelectImperial = viewModel::selectImperial,
         )
+        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_l)))
         MeasurementSlider(
             label = stringResource(R.string.edit_profile_height),
             valueText = if (state.isMetric) stringResource(
@@ -398,6 +403,7 @@ private fun PersonalInfoSection(
             valueRange = state.heightSliderRange,
             onValueChange = viewModel::updateHeight,
         )
+        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
         MeasurementSlider(
             label = stringResource(R.string.edit_profile_weight),
             valueText = if (state.isMetric) stringResource(
@@ -414,12 +420,13 @@ private fun PersonalInfoSection(
 
 @Composable
 private fun UnitsToggle(
+    modifier: Modifier,
     isMetric: Boolean,
     onSelectMetric: () -> Unit,
     onSelectImperial: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -456,19 +463,21 @@ private fun MeasurementSlider(
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = dimensionResource(R.dimen.spacer_xs)),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyMedium,
-                color = DarkSliderLabel,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f),
             )
             Text(
                 text = valueText,
                 style = MaterialTheme.typography.bodyLarge,
-                color = DarkSliderLabel,
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
         DarkSlider(

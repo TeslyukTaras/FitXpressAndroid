@@ -23,7 +23,7 @@ class ThreeDLookApi(
         frontPhoto: Uri,
         sidePhoto: Uri,
         heightCm: Float,
-        weightKg: Float,
+        weightKg: Float?,
         gender: String,
         age: Int,
     ): Result<String> = withContext(Dispatchers.IO) {
@@ -44,15 +44,17 @@ class ThreeDLookApi(
                     sideBytes.toRequestBody(MEDIA_TYPE_JPEG.toMediaType()),
                 )
                 .addFormDataPart(FIELD_HEIGHT, heightCm.toInt().toString())
-                .addFormDataPart(FIELD_WEIGHT, weightKg.toInt().toString())
                 .addFormDataPart(FIELD_GENDER, gender)
                 .addFormDataPart(FIELD_AGE, age.toString())
-                .build()
+            if (weightKg != null) {
+                body.addFormDataPart(FIELD_WEIGHT, weightKg.toInt().toString())
+            }
+            val requestBody = body.build()
 
             val request = Request.Builder()
                 .url("$BASE_URL$PATH_MEASUREMENTS")
                 .addHeader(HEADER_AUTHORIZATION, "$AUTH_SCHEME ${BuildConfig.THREEDLOOK_API_TOKEN}")
-                .post(body)
+                .post(requestBody)
                 .build()
 
             Timber.d("createMeasurement: POST %s%s (front=%dB side=%dB)", BASE_URL, PATH_MEASUREMENTS, frontBytes.size, sideBytes.size)

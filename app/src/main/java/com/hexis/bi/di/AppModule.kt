@@ -8,10 +8,13 @@ import com.hexis.bi.data.activity.ActivityRepository
 import com.hexis.bi.data.activity.TerraApiActivityRepository
 import com.hexis.bi.data.auth.AuthRepository
 import com.hexis.bi.data.auth.FirebaseAuthRepository
+import com.hexis.bi.data.auth.SessionCleaner
 import com.hexis.bi.data.healthconnections.FirestoreHealthConnectionsRepository
 import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
 import com.hexis.bi.data.network.httpLoggingInterceptor
 import com.hexis.bi.data.notification.NotificationInboxRepository
+import com.hexis.bi.data.order.FirestoreOrderRepository
+import com.hexis.bi.data.order.OrderDraftHolder
 import com.hexis.bi.data.preferences.UserPreferencesRepository
 import com.hexis.bi.data.recovery.RecoveryRepository
 import com.hexis.bi.data.recovery.TerraDerivedRecoveryRepository
@@ -35,6 +38,7 @@ import com.hexis.bi.data.terra.TerraRestSourceResolver
 import com.hexis.bi.data.terra.TerraWidgetApi
 import com.hexis.bi.data.user.FirestoreUserRepository
 import com.hexis.bi.data.user.UserRepository
+import com.hexis.bi.domain.order.OrderRepository
 import com.hexis.bi.domain.suit.SuitRepository
 import com.hexis.bi.ui.MainViewModel
 import com.hexis.bi.ui.auth.forgotpassword.ForgotPasswordViewModel
@@ -42,6 +46,9 @@ import com.hexis.bi.ui.auth.login.LoginViewModel
 import com.hexis.bi.ui.auth.onboarding.OnboardingViewModel
 import com.hexis.bi.ui.auth.signup.SignUpViewModel
 import com.hexis.bi.ui.main.body.BodyViewModel
+import com.hexis.bi.ui.main.buysuit.editaddress.EditAddressViewModel
+import com.hexis.bi.ui.main.buysuit.shipping.ShippingDetailsViewModel
+import com.hexis.bi.ui.main.buysuit.suitsize.SuitSizeResultsViewModel
 import com.hexis.bi.ui.main.home.HomeViewModel
 import com.hexis.bi.ui.main.home.activity.ActivityViewModel
 import com.hexis.bi.ui.main.home.longevity.LongevityViewModel
@@ -91,6 +98,7 @@ val appModule = module {
     single<ScanReminderScheduler> { ScanReminderSchedulerImpl(androidContext(), get(), get()) }
     single { NotificationPermissionCoordinator(androidContext(), get(), get(), get(), get()) }
     single<AuthRepository> { FirebaseAuthRepository(get(), get(), androidContext()) }
+    single { SessionCleaner(get(), get(), get(), get(), get()) }
     single<SuitRepository> { MockSuitRepository(get()) }
     single<UserRepository> { FirestoreUserRepository(get(), get(), androidContext()) }
     single {
@@ -98,13 +106,15 @@ val appModule = module {
             .connectTimeout(HTTP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .readTimeout(HTTP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .writeTimeout(HTTP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .apply { addInterceptor(httpLoggingInterceptor()) }
+            .apply { httpLoggingInterceptor()?.let { addInterceptor(it) } }
             .build()
     }
     single { ThreeDLookApi(get(), androidContext()) }
     single { ThreeDLookRepository(get(), get()) }
     single { ScanResultRepository() }
     single { ScanHistoryRepository(get(), get()) }
+    single { OrderDraftHolder() }
+    single<OrderRepository> { FirestoreOrderRepository(get(), get()) }
     single { TerraAuthApi(get()) }
     single { TerraApi(get()) }
     single<HealthConnectionsRepository> {
@@ -130,6 +140,7 @@ val appModule = module {
     viewModel {
         HomeViewModel(
             androidApplication(),
+            get(),
             get(),
             get(),
             get(),
@@ -168,7 +179,10 @@ val appModule = module {
     viewModel { ScanViewModel(androidApplication(), get()) }
     viewModel { StartScanViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { ResultsViewModel(androidApplication(), get(), get(), get(), get()) }
+    viewModel { SuitSizeResultsViewModel(androidApplication(), get(), get(), get(), get()) }
+    viewModel { ShippingDetailsViewModel(androidApplication(), get(), get(), get()) }
+    viewModel { (orderId: String) -> EditAddressViewModel(androidApplication(), get(), orderId) }
     viewModel { ScanHistoryViewModel(androidApplication(), get(), get()) }
-    viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get()) }
+    viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { OnboardingViewModel(androidApplication(), get(), get()) }
 }

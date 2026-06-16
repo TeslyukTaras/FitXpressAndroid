@@ -16,15 +16,18 @@ fun ScanScreen(
     onBuySuit: () -> Unit,
     onShowHowToScan: () -> Unit,
     modifier: Modifier = Modifier,
+    scanPurpose: ScanPurpose = ScanPurpose.BodyScan,
+    requireConnectedSuit: Boolean = true,
     viewModel: ScanViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    if (state.suitConnected) StartScanScreen(
+    if (!requireConnectedSuit || state.suitConnected) StartScanScreen(
         onBack = onBack,
         onScanComplete = onScanComplete,
         onShowHowToScan = onShowHowToScan,
         modifier = modifier,
+        scanPurpose = scanPurpose,
     )
     else ScanErrorScreen(
         onBack = onBack,
