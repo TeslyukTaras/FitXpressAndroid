@@ -8,6 +8,7 @@ data class UserSettings(
     val stepsGoal: Int? = null,
     val showActiveCalories: Boolean? = null,
     val activityDataSource: String? = null,
+    val sleepDataSource: String? = null,
     val pushNotificationsEnabled: Boolean? = null,
     val voiceGuidanceEnabled: Boolean? = null,
     val scanRemindersEnabled: Boolean? = null,

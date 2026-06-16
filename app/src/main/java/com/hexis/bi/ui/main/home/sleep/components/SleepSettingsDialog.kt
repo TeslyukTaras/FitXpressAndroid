@@ -19,18 +19,16 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
-import com.hexis.bi.domain.enums.HealthProvider
 import com.hexis.bi.ui.dark.DarkOutlinedButton
 import com.hexis.bi.ui.dark.DarkPrimaryButton
 import com.hexis.bi.ui.dark.DarkSlider
-import com.hexis.bi.ui.main.home.sleep.nameRes
 import com.hexis.bi.ui.theme.Gray200
 import com.hexis.bi.utils.constants.SleepConstants
 
 @Composable
 fun SleepSettingsDialogContent(
     sleepGoalHours: Int,
-    dataSource: HealthProvider,
+    dataSource: String,
     onGoalChange: (Int) -> Unit,
     onCancel: () -> Unit,
     onSave: () -> Unit,
@@ -103,7 +101,7 @@ fun SleepSettingsDialogContent(
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
-                text = stringResource(dataSource.nameRes()),
+                text = dataSource,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )

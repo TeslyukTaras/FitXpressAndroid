@@ -170,7 +170,7 @@ val appModule = module {
     viewModel { NotificationsSettingsViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { NotificationsViewModel(androidApplication(), get()) }
     viewModel { BodyViewModel(androidApplication(), get(), get(), get(), get()) }
-    viewModel { SleepViewModel(androidApplication(), get(), get()) }
+    viewModel { SleepViewModel(androidApplication(), get(), get(), get()) }
     viewModel { ActivityViewModel(androidApplication(), get(), get(), get()) }
     viewModel { RecoveryViewModel(androidApplication(), get()) }
     viewModel { LongevityViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }

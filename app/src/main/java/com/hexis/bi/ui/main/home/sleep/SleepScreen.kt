@@ -127,7 +127,7 @@ fun SleepScreen(
                 AppDialog(onDismiss = viewModel::dismissSettingsDialog) {
                     SleepSettingsDialogContent(
                         sleepGoalHours = state.sleepGoalHoursDraft,
-                        dataSource = state.dataSource,
+                        dataSource = state.dataSourceName,
                         onGoalChange = viewModel::updateSleepGoalDraft,
                         onCancel = viewModel::dismissSettingsDialog,
                         onSave = viewModel::saveSettings,

@@ -5,6 +5,7 @@ import com.hexis.bi.R
 import com.hexis.bi.utils.constants.ActivityConstants
 import com.hexis.bi.utils.constants.TerraProviders
 import com.hexis.bi.utils.kmToMiles
+import com.hexis.bi.utils.toProviderDisplayName
 
 enum class ActivityTab(@StringRes val labelRes: Int) {
     Day(R.string.activity_tab_day),
@@ -114,19 +115,3 @@ data class ActivityState(
     val selectedWeekDay: WeekDayData?
         get() = weekDays.getOrNull(selectedWeekDayIndex)
 }
-
-internal fun String.toProviderDisplayName(): String =
-    when {
-        equals(TerraProviders.HEALTH_CONNECT, ignoreCase = true) -> "Google Health"
-        equals("GoogleHealth", ignoreCase = true) -> "Google Health"
-        equals("GOOGLE", ignoreCase = true) -> "Google"
-        equals("AppleHealth", ignoreCase = true) -> "Apple Health"
-        equals("APPLE", ignoreCase = true) ||
-                equals("APPLE_HEALTH", ignoreCase = true) -> "Apple Health"
-        else -> split('_')
-            .filter { it.isNotBlank() }
-            .joinToString(" ") { part ->
-                part.lowercase().replaceFirstChar { it.titlecase() }
-            }
-            .ifBlank { this }
-    }
