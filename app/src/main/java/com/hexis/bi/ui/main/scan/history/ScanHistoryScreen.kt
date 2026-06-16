@@ -126,7 +126,7 @@ fun ScanHistoryScreen(
                         ScanHistoryRow(
                             item = item,
                             isMetric = state.isMetric,
-                            showDivider = index < state.items.lastIndex,
+                            showDivider = true, //previously index < state.items.lastIndex,
                             onClick = { onOpenScan(item.scanId) },
                         )
                     }
