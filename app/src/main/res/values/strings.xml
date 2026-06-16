@@ -768,30 +768,30 @@
     <!-- How to scan (Prepare Your Scan) flow -->
     <string name="how_to_scan_title">Prepare Your Scan</string>
     <string name="how_to_scan_subtitle_default">Follow these steps for the best results.</string>
-    <string name="how_to_scan_subtitle_phone">Place your phone correctly for the best scan.</string>
+    <string name="how_to_scan_subtitle_phone">Place Your Phone Correctly For Teh Best Scan</string>
     <string name="how_to_scan_step_counter">%1$d/%2$d</string>
     <string name="action_finish">Finish</string>
     <string name="cd_how_to_scan_illustration">Scan preparation illustration</string>
 
     <string name="how_to_scan_step_1_header">Space &amp; background</string>
-    <string name="how_to_scan_step_1_a">Use bright, even lighting</string>
-    <string name="how_to_scan_step_1_b">Choose a clear, uncluttered area</string>
+    <string name="how_to_scan_step_1_a">Use Bright Even Lighting</string>
+    <string name="how_to_scan_step_1_b">Choose a Clear, Uncluttered Area</string>
     <string name="how_to_scan_step_1_c">Keep your full body in frame</string>
 
     <string name="how_to_scan_step_2_header">What to wear</string>
-    <string name="how_to_scan_step_2_a">Put on the Hexis-Bi suit</string>
-    <string name="how_to_scan_step_2_b">No belts or accessories</string>
-    <string name="how_to_scan_step_2_c">Tie long hair up</string>
+    <string name="how_to_scan_step_2_a">Put On The Hexis-Bi Suit</string>
+    <string name="how_to_scan_step_2_b">No Belts or Accessories</string>
+    <string name="how_to_scan_step_2_c">Tie Long Hair Up</string>
 
     <string name="how_to_scan_step_3_header">Phone setup</string>
-    <string name="how_to_scan_step_3_a">Adjust the volume to hear the voice instructions</string>
+    <string name="how_to_scan_step_3_a">Adjust the Volume to hear the Voice Instructions</string>
     <string name="how_to_scan_step_3_b">Place your phone at a 90° angle, facing you</string>
-    <string name="how_to_scan_step_3_c">Make sure your full body fits in the frame</string>
+    <string name="how_to_scan_step_3_c">Make Sure Your Full Body Fits in The Frame</string>
 
     <string name="how_to_scan_step_4_header">During the scan</string>
     <string name="how_to_scan_step_4_a">Adjust the voice volume</string>
-    <string name="how_to_scan_step_4_b">Stand still and follow the voice commands</string>
-    <string name="how_to_scan_step_4_c">We’ll transform your scan into body intelligence</string>
+    <string name="how_to_scan_step_4_b">Standing Forward and Follow the Voice Commands</string>
+    <string name="how_to_scan_step_4_c">Transforming your Scan Into Body Intelligence</string>
     <string name="cd_scan_warning">Warning</string>
     <string name="scan_results_tab_visual">Visual</string>
     <string name="scan_results_tab_posture">Posture</string>
