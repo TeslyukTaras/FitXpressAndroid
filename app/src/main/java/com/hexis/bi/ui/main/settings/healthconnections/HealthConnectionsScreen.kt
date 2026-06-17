@@ -86,9 +86,12 @@ private fun Context.openHealthConnectInstall() {
     }
 }
 
-private fun List<TerraProviderUi>.filterByQuery(query: String): List<TerraProviderUi> =
+private fun List<TerraProviderUi>.filterByQuery(
+    query: String,
+    label: (TerraProviderUi) -> String,
+): List<TerraProviderUi> =
     if (query.isBlank()) this
-    else filter { it.label.contains(query.trim(), ignoreCase = true) }
+    else filter { label(it).contains(query.trim(), ignoreCase = true) }
 
 @Composable
 fun HealthConnectionsScreen(
@@ -126,9 +129,14 @@ fun HealthConnectionsScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    val filteredSdk = state.sdkProviders.filterByQuery(searchQuery)
-    val filteredWearables = state.wearableProviders.filterByQuery(searchQuery)
-    val filteredOther = state.otherProviders.filterByQuery(searchQuery)
+    val providerLabels: Map<String, String> =
+        (state.sdkProviders + state.wearableProviders + state.otherProviders)
+            .associate { it.code to stringResource(it.labelRes) }
+    val labelOf: (TerraProviderUi) -> String = { providerLabels.getValue(it.code) }
+
+    val filteredSdk = state.sdkProviders.filterByQuery(searchQuery, labelOf)
+    val filteredWearables = state.wearableProviders.filterByQuery(searchQuery, labelOf)
+    val filteredOther = state.otherProviders.filterByQuery(searchQuery, labelOf)
 
     val trimmedQuery = searchQuery.trim()
     val hasSearchNoResults = trimmedQuery.isNotEmpty() &&
@@ -190,7 +198,7 @@ fun HealthConnectionsScreen(
                             key(provider.code) {
                                 HealthConnectionRow(
                                     iconRes = provider.iconRes,
-                                    title = provider.label,
+                                    title = labelOf(provider),
                                     connected = state.wearableConnections.hasProvider(provider.code),
                                     onClick = {
                                         if (provider.code.equals(
@@ -203,7 +211,7 @@ fun HealthConnectionsScreen(
                                         } else {
                                             viewModel.onSdkProviderRowClick(
                                                 provider = provider.code,
-                                                displayName = provider.label,
+                                                displayName = labelOf(provider),
                                                 activity = activity,
                                             )
                                         }
@@ -220,12 +228,12 @@ fun HealthConnectionsScreen(
                             key(provider.code) {
                                 HealthConnectionRow(
                                     iconRes = provider.iconRes,
-                                    title = provider.label,
+                                    title = labelOf(provider),
                                     connected = state.wearableConnections.hasProvider(provider.code),
                                     onClick = {
                                         viewModel.onWidgetProviderRowClick(
                                             provider.code,
-                                            provider.label
+                                            labelOf(provider)
                                         )
                                     },
                                 )
@@ -240,12 +248,12 @@ fun HealthConnectionsScreen(
                             key(provider.code) {
                                 HealthConnectionRow(
                                     iconRes = provider.iconRes,
-                                    title = provider.label,
+                                    title = labelOf(provider),
                                     connected = state.wearableConnections.hasProvider(provider.code),
                                     onClick = {
                                         viewModel.onWidgetProviderRowClick(
                                             provider.code,
-                                            provider.label
+                                            labelOf(provider)
                                         )
                                     },
                                 )

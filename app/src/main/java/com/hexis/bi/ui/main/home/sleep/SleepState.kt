@@ -6,7 +6,6 @@ import com.hexis.bi.R
 import com.hexis.bi.data.sleep.SleepStage
 import com.hexis.bi.utils.constants.SleepConstants
 import com.hexis.bi.utils.constants.TerraProviders
-import com.hexis.bi.utils.toProviderDisplayName
 
 enum class SleepTab { Day, Summary }
 
@@ -115,7 +114,4 @@ data class SleepState(
 
     // Recovery bottom sheet
     val showRecoverySheet: Boolean = false,
-) {
-    val dataSourceName: String
-        get() = dataSource.toProviderDisplayName()
-}
+)

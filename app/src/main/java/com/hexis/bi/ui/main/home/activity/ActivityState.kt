@@ -5,7 +5,6 @@ import com.hexis.bi.R
 import com.hexis.bi.utils.constants.ActivityConstants
 import com.hexis.bi.utils.constants.TerraProviders
 import com.hexis.bi.utils.kmToMiles
-import com.hexis.bi.utils.toProviderDisplayName
 
 enum class ActivityTab(@StringRes val labelRes: Int) {
     Day(R.string.activity_tab_day),
@@ -94,9 +93,6 @@ data class ActivityState(
     val showActiveCaloriesDraft: Boolean = true,
     val dataSource: String = TerraProviders.HEALTH_CONNECT,
 ) {
-    val dataSourceName: String
-        get() = dataSource.toProviderDisplayName()
-
     val progressPercent: Int
         get() = if (stepsGoal > 0)
             ((currentSteps.toFloat() / stepsGoal) * 100).toInt().coerceIn(0, 100)

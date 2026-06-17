@@ -35,6 +35,7 @@ import com.hexis.bi.ui.dark.darkScreenBackground
 import com.hexis.bi.ui.main.home.sleep.components.SleepRecoverySheetBody
 import com.hexis.bi.ui.main.home.sleep.components.SleepSettingsDialogContent
 import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.utils.providerDisplayName
 import org.koin.androidx.compose.koinViewModel
 
 /** Fraction of the screen height occupied by the "Sleep and Recovery" info sheet. */
@@ -127,7 +128,7 @@ fun SleepScreen(
                 AppDialog(onDismiss = viewModel::dismissSettingsDialog) {
                     SleepSettingsDialogContent(
                         sleepGoalHours = state.sleepGoalHoursDraft,
-                        dataSource = state.dataSourceName,
+                        dataSource = state.dataSource.providerDisplayName(),
                         onGoalChange = viewModel::updateSleepGoalDraft,
                         onCancel = viewModel::dismissSettingsDialog,
                         onSave = viewModel::saveSettings,

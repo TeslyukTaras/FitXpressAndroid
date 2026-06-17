@@ -1,13 +1,14 @@
 package com.hexis.bi.ui.main.settings.healthconnections
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import com.hexis.bi.R
 import com.hexis.bi.data.healthconnections.HealthConnection
 import com.hexis.bi.domain.enums.HealthProvider
 
 data class TerraProviderUi(
     val code: String,
-    val label: String,
+    @StringRes val labelRes: Int,
     @DrawableRes val iconRes: Int = R.drawable.ic_connect,
 )
 
