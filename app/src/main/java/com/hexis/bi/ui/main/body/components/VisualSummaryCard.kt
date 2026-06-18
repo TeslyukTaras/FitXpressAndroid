@@ -110,6 +110,7 @@ private fun FullBodyMeasurementList(
         )
 
         FULL_BODY_MEASUREMENT_ROWS
+            .filter { it.region in state.visibleRegions }
             .forEachIndexed { index, row ->
                 if (index > 0) AppHorizontalGradientDivider(
                     modifier = Modifier.padding(vertical = dimensionResource(R.dimen.spacer_m)),

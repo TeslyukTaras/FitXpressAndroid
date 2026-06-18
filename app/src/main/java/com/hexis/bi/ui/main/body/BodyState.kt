@@ -82,6 +82,8 @@ data class VisualState(
     val latestMeasurements: Map<String, Float> = emptyMap(),
     val previousMeasurements: Map<String, Float> = emptyMap(),
     val beforePreviousMeasurements: Map<String, Float> = emptyMap(),
+    /** Regions the user chose to show in measurement tables (Scan Preference). */
+    val visibleRegions: Set<BodyMeasurementRegion> = BodyMeasurementRegion.measurableRegions.toSet(),
 )
 
 data class CompareState(
@@ -99,6 +101,8 @@ data class CompareState(
     val rightPreviousMeasurements: Map<String, Float> = emptyMap(),
     val leftColorModel: BodyVisualColorModel = BodyVisualColorModel.Idle,
     val rightColorModel: BodyVisualColorModel = BodyVisualColorModel.Idle,
+    /** Regions the user chose to show in measurement tables (Scan Preference). */
+    val visibleRegions: Set<BodyMeasurementRegion> = BodyMeasurementRegion.measurableRegions.toSet(),
 )
 
 data class BodyComposition(

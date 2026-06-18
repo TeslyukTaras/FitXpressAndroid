@@ -396,7 +396,7 @@ private fun CompareSummaryCard(
         )
 
         val rows = if (state.selectedBodyPart == BodyMeasurementRegion.FullBody) {
-            FULL_BODY_MEASUREMENT_ROWS
+            FULL_BODY_MEASUREMENT_ROWS.filter { it.region in state.visibleRegions }
         } else {
             FULL_BODY_MEASUREMENT_ROWS.filter { it.region == state.selectedBodyPart }
         }

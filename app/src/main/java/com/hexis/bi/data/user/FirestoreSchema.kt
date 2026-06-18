@@ -8,6 +8,7 @@ internal object FirestoreSchema {
 
     object UserFields {
         const val IMAGE_URL = "imageUrl"
+        const val UNIT_SYSTEM = "unitSystem"
     }
 
     object UserSettingsFields {
@@ -21,6 +22,7 @@ internal object FirestoreSchema {
         const val SCAN_REMINDERS_ENABLED = "scanRemindersEnabled"
         const val REMINDER_DAY = "reminderDay"
         const val REMINDER_HOUR = "reminderHour"
+        const val MEASUREMENT_ZONES = "measurementZones"
     }
 
     object HealthConnectionFields {
