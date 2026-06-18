@@ -26,5 +26,17 @@ enum class BodyMeasurementRegion(
     companion object {
         /** User-facing measurement parameters in display order; excludes [FullBody]. */
         val measurableRegions: List<BodyMeasurementRegion> = entries.filter { it != FullBody }
+
+        /** Region matching a persisted [name] key, or null if unknown (e.g. renamed/removed). */
+        fun fromStorageKey(key: String): BodyMeasurementRegion? =
+            entries.firstOrNull { it.name == key }
+
+        /**
+         * Regions the user has chosen to show in measurement tables (Scan Preference).
+         * A null [storedKeys] means "not configured yet" and defaults to every measurable region;
+         * an empty list means the user explicitly hid them all.
+         */
+        fun visibleRegionsOrDefault(storedKeys: List<String>?): Set<BodyMeasurementRegion> =
+            storedKeys?.mapNotNull(::fromStorageKey)?.toSet() ?: measurableRegions.toSet()
     }
 }

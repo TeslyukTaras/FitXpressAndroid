@@ -48,6 +48,8 @@ class BodyViewModel(
 
     private var allScans: List<ScanRecord> = emptyList()
     private var heightCm: Float? = null
+    private var visibleRegions: Set<BodyMeasurementRegion> =
+        BodyMeasurementRegion.measurableRegions.toSet()
     private val loadingVisualColorPairs = mutableSetOf<Pair<String, String>>()
     private val loadingCompareColorPairs = mutableSetOf<Pair<String, String>>()
     private var requestedVisualColorPair: Pair<String, String>? = null
@@ -157,6 +159,9 @@ class BodyViewModel(
             val isMetric = profile
                 ?.unitSystem
                 .isMetricUnitSystem()
+            visibleRegions = BodyMeasurementRegion.visibleRegionsOrDefault(
+                userRepository.getUserSettings().getOrNull()?.measurementZones,
+            )
 
             val scansResult = scanHistoryRepository.getRecentScans(
                 limit = BodyConstants.TREND_HISTORY_LIMIT,
@@ -230,6 +235,7 @@ class BodyViewModel(
                     latestMeasurements = selected?.measurements.orEmpty(),
                     previousMeasurements = previous?.measurements.orEmpty(),
                     beforePreviousMeasurements = beforePrevious?.measurements.orEmpty(),
+                    visibleRegions = visibleRegions,
                 ),
             )
         }
@@ -322,6 +328,7 @@ class BodyViewModel(
                     rightPreviousMeasurements = rightPrevious?.measurements.orEmpty(),
                     leftColorModel = BodyVisualColorModel.Idle,
                     rightColorModel = BodyVisualColorModel.Idle,
+                    visibleRegions = visibleRegions,
                 ),
             )
         }

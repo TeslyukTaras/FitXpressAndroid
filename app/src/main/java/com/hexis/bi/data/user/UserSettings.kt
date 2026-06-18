@@ -14,4 +14,5 @@ data class UserSettings(
     val scanRemindersEnabled: Boolean? = null,
     val reminderDay: String? = null,
     val reminderHour: Int? = null,
+    val measurementZones: List<String>? = null,
 )

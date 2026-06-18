@@ -99,8 +99,15 @@
 
     <!-- Scan preferences screen -->
     <string name="scan_preferences_title">Scan Preference</string>
+    <string name="scan_preferences_units">Units</string>
+    <string name="scan_preferences_units_subtitle">Choose your default measurement units.</string>
+    <string name="scan_preferences_metric">Metric</string>
+    <string name="scan_preferences_imperial">Imperial</string>
     <string name="scan_preferences_voice_guidance">Voice guidance</string>
-    <string name="scan_preferences_voice_guidance_subtitle">Enabled by default.\nYou can turn it off during the scan.</string>
+    <string name="scan_preferences_voice_guidance_subtitle">Choose whether voice instructions play automatically during scans.</string>
+    <string name="scan_preferences_zones_title">Measurement Zones</string>
+    <string name="scan_preferences_zones_subtitle">Choose which body zones appear in your measurement tables.</string>
+    <string name="scan_preferences_zone_all">All</string>
 
     <!-- My Suit screen -->
     <string name="my_suit_title">My Suit</string>
