@@ -15,6 +15,7 @@ internal object FirestoreSchema {
         const val STEPS_GOAL = "stepsGoal"
         const val SHOW_ACTIVE_CALORIES = "showActiveCalories"
         const val ACTIVITY_DATA_SOURCE = "activityDataSource"
+        const val SLEEP_DATA_SOURCE = "sleepDataSource"
         const val PUSH_NOTIFICATIONS_ENABLED = "pushNotificationsEnabled"
         const val VOICE_GUIDANCE_ENABLED = "voiceGuidanceEnabled"
         const val SCAN_REMINDERS_ENABLED = "scanRemindersEnabled"

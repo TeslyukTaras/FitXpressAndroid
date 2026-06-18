@@ -4,8 +4,8 @@ import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.Color
 import com.hexis.bi.R
 import com.hexis.bi.data.sleep.SleepStage
-import com.hexis.bi.domain.enums.HealthProvider
 import com.hexis.bi.utils.constants.SleepConstants
+import com.hexis.bi.utils.constants.TerraProviders
 
 enum class SleepTab { Day, Summary }
 
@@ -30,12 +30,6 @@ fun SleepStage.nameRes(): Int = when (this) {
     SleepStage.REM -> R.string.sleep_stage_rem
     SleepStage.Light -> R.string.sleep_stage_light
     SleepStage.Awake -> R.string.sleep_stage_awake
-}
-
-@StringRes
-fun HealthProvider.nameRes(): Int = when (this) {
-    HealthProvider.GoogleHealth -> R.string.health_provider_google_health
-    HealthProvider.AppleHealth -> R.string.health_provider_apple_health
 }
 
 data class SleepStageData(
@@ -116,7 +110,7 @@ data class SleepState(
     // Settings dialog
     val showSettingsDialog: Boolean = false,
     val sleepGoalHoursDraft: Int = SleepConstants.DEFAULT_SLEEP_GOAL_HOURS,
-    val dataSource: HealthProvider = HealthProvider.GoogleHealth,
+    val dataSource: String = TerraProviders.HEALTH_CONNECT,
 
     // Recovery bottom sheet
     val showRecoverySheet: Boolean = false,

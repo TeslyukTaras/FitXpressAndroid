@@ -57,7 +57,7 @@ class HealthConnectionsViewModel(
     private fun buildSdkProviders(): List<TerraProviderUi> = listOf(
         TerraProviderUi(
             code = TerraProviders.HEALTH_CONNECT,
-            label = string(R.string.provider_health_connect),
+            labelRes = R.string.provider_health_connect,
             iconRes = R.drawable.ic_google,
         ),
     )
@@ -67,7 +67,7 @@ class HealthConnectionsViewModel(
         @androidx.annotation.StringRes labelRes: Int,
         @androidx.annotation.DrawableRes iconRes: Int = R.drawable.ic_connect,
     ): TerraProviderUi =
-        TerraProviderUi(code = code, label = string(labelRes), iconRes = iconRes)
+        TerraProviderUi(code = code, labelRes = labelRes, iconRes = iconRes)
 
     private fun buildWearableProviders(): List<TerraProviderUi> = listOf(
         provider(TerraProviders.AKTIIA, R.string.provider_aktiia, R.drawable.img_aktiia),

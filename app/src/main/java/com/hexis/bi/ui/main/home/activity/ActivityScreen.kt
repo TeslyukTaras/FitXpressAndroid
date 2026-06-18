@@ -37,6 +37,7 @@ import com.hexis.bi.ui.dark.LightStatusBarIcons
 import com.hexis.bi.ui.dark.darkScreenBackground
 import com.hexis.bi.ui.main.home.activity.components.ActivitySettingsDialogContent
 import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.utils.providerDisplayName
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -143,7 +144,7 @@ fun ActivityScreen(
                 ActivitySettingsDialogContent(
                     stepsGoal = state.stepsGoalDraft,
                     showActiveCalories = state.showActiveCaloriesDraft,
-                    dataSource = state.dataSourceName,
+                    dataSource = state.dataSource.providerDisplayName(),
                     onStepsGoalChange = viewModel::updateStepsGoalDraft,
                     onShowActiveCaloriesChange = viewModel::updateActiveCaloriesDraft,
                     onCancel = viewModel::dismissSettingsDialog,

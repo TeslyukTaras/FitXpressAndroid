@@ -9,8 +9,10 @@ import com.hexis.bi.data.sleep.SleepSample
 import com.hexis.bi.data.sleep.SleepSession
 import com.hexis.bi.data.sleep.SleepStage
 import com.hexis.bi.data.sleep.SleepStageInterval
+import com.hexis.bi.data.terra.TerraRestSourceResolver
 import com.hexis.bi.data.user.FirestoreSchema
 import com.hexis.bi.data.user.UserRepository
+import com.hexis.bi.utils.constants.TerraProviders
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.theme.SleepStageAwake
 import com.hexis.bi.ui.theme.SleepStageDeep
@@ -38,6 +40,7 @@ class SleepViewModel(
     application: Application,
     private val sleepRepository: SleepRepository,
     private val userRepository: UserRepository,
+    private val sourceResolver: TerraRestSourceResolver,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(SleepState())
@@ -48,21 +51,37 @@ class SleepViewModel(
     private val loadedTabs = mutableSetOf<SleepTab>()
 
     init {
+        observeDataSource()
         userRepository.observeUserSettings()
             .onEach { settings ->
                 val goal = settings.sleepGoalHours ?: SleepConstants.DEFAULT_SLEEP_GOAL_HOURS
+                val settingsDataSource = settings.sleepDataSource
                 _state.update { curr ->
-                    if (curr.showSettingsDialog) {
-                        curr.copy(sleepGoalHours = goal)
-                    } else {
-                        curr.copy(sleepGoalHours = goal, sleepGoalHoursDraft = goal)
-                    }
+                    curr.copy(
+                        sleepGoalHours = goal,
+                        sleepGoalHoursDraft = if (curr.showSettingsDialog) curr.sleepGoalHoursDraft else goal,
+                        dataSource = settingsDataSource ?: curr.dataSource,
+                    )
                 }
             }
             .catch { e -> Timber.w(e, "observeUserSettings failed; keeping sleep goal defaults") }
             .launchIn(viewModelScope)
 
         loadDataForTab(_state.value.selectedTab)
+    }
+
+    private fun observeDataSource() {
+        viewModelScope.launch {
+            val provider = sourceResolver.resolveOrderedIdentities()
+                .getOrDefault(emptyList())
+                .firstOrNull()
+                ?.provider
+                ?: TerraProviders.HEALTH_CONNECT
+            _state.update { it.copy(dataSource = provider) }
+            userRepository.updateUserSettings(
+                mapOf(FirestoreSchema.UserSettingsFields.SLEEP_DATA_SOURCE to provider)
+            ).onFailure { setError(it.message) }
+        }
     }
 
     fun selectTab(tab: SleepTab) {
