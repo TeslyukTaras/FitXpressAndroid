@@ -22,8 +22,8 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.AppVerticalGradientDivider
-import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.components.AppVerticalGradientDivider
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.recovery.RecoveryMetric
 import com.hexis.bi.ui.main.home.recovery.RecoveryStatus
 

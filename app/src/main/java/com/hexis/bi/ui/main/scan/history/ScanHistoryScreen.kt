@@ -39,14 +39,13 @@ import com.hexis.bi.data.scan.TopChangeVsPrevious
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppDatePicker
-import com.hexis.bi.ui.dark.AppHorizontalGradientDivider
-import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.dark.darkScreenBackground
+import com.hexis.bi.ui.components.AppHorizontalGradientDivider
+import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.main.scan.results.MeasurementChange
-import com.hexis.bi.ui.theme.Green
-import com.hexis.bi.ui.theme.dark.DarkTheme
 import com.hexis.bi.utils.cmToInches
 import org.koin.androidx.compose.koinViewModel
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,105 +60,103 @@ fun ScanHistoryScreen(
 
     LightStatusBarIcons()
 
-    DarkTheme {
-        Box(modifier = modifier.fillMaxSize()) {
-            BaseScreen(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(
-                        if (state.showDateRangePicker)
-                            Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
-                        else Modifier
-                    )
-                    .darkScreenBackground(),
-                containerColor = Color.Transparent,
-                isLoading = state.isLoading,
-                error = state.error,
-                onDismissError = viewModel::clearStateError,
-                topBar = {
-                    BaseTopBar(
-                        title = stringResource(R.string.scan_history_title),
-                        background = Color.Transparent,
-                        onBack = onBack,
-                        actions = {
-                            IconButton(onClick = {
-                                onCalendarClick()
-                                viewModel.showDateRangePicker()
-                            }) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_calendar),
-                                    contentDescription = stringResource(R.string.cd_scan_history_calendar),
-                                    tint = MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier.size(dimensionResource(R.dimen.icon_medium_small)),
-                                )
-                            }
-                        },
-                    )
-                },
-            ) {
+    Box(modifier = modifier.fillMaxSize()) {
+        BaseScreen(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (state.showDateRangePicker)
+                        Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
+                    else Modifier
+                )
+                .screenBackground(),
+            containerColor = Color.Transparent,
+            isLoading = state.isLoading,
+            error = state.error,
+            onDismissError = viewModel::clearStateError,
+            topBar = {
+                BaseTopBar(
+                    title = stringResource(R.string.scan_history_title),
+                    background = Color.Transparent,
+                    onBack = onBack,
+                    actions = {
+                        IconButton(onClick = {
+                            onCalendarClick()
+                            viewModel.showDateRangePicker()
+                        }) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_calendar),
+                                contentDescription = stringResource(R.string.cd_scan_history_calendar),
+                                tint = MaterialTheme.colorScheme.onBackground,
+                                modifier = Modifier.size(dimensionResource(R.dimen.icon_medium_small)),
+                            )
+                        }
+                    },
+                )
+            },
+        ) {
 
-                if (!state.isLoading && state.items.isEmpty()) Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    val hasDateFilter = state.selectedStartDateMillis != null ||
-                            state.selectedEndDateMillis != null
-                    Text(
-                        text = stringResource(
-                            if (hasDateFilter) R.string.scan_history_empty_for_range
-                            else R.string.body_scan_history_empty
-                        ),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
-                        textAlign = TextAlign.Center,
-                    )
-                } else LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(
-                        top = dimensionResource(R.dimen.spacer_s),
-                        bottom = dimensionResource(R.dimen.spacer_3xl),
+            if (!state.isLoading && state.items.isEmpty()) Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                val hasDateFilter = state.selectedStartDateMillis != null ||
+                        state.selectedEndDateMillis != null
+                Text(
+                    text = stringResource(
+                        if (hasDateFilter) R.string.scan_history_empty_for_range
+                        else R.string.body_scan_history_empty
                     ),
-                    verticalArrangement = Arrangement.Top,
-                ) {
-                    itemsIndexed(state.items, key = { _, item -> item.scanId }) { index, item ->
-                        ScanHistoryRow(
-                            item = item,
-                            isMetric = state.isMetric,
-                            showDivider = true, //previously index < state.items.lastIndex,
-                            onClick = { onOpenScan(item.scanId) },
-                        )
-                    }
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
+                    textAlign = TextAlign.Center,
+                )
+            } else LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    top = dimensionResource(R.dimen.spacer_s),
+                    bottom = dimensionResource(R.dimen.spacer_3xl),
+                ),
+                verticalArrangement = Arrangement.Top,
+            ) {
+                itemsIndexed(state.items, key = { _, item -> item.scanId }) { index, item ->
+                    ScanHistoryRow(
+                        item = item,
+                        isMetric = state.isMetric,
+                        showDivider = true, //previously index < state.items.lastIndex,
+                        onClick = { onOpenScan(item.scanId) },
+                    )
                 }
             }
+        }
 
-            if (state.showDateRangePicker) {
-                val pickerState = rememberDateRangePickerState(
-                    initialSelectedStartDateMillis = state.selectedStartDateMillis,
-                    initialSelectedEndDateMillis = state.selectedEndDateMillis,
-                )
-                val isWithinLimit = isScanHistoryRangeWithinLimit(
-                    pickerState.selectedStartDateMillis,
-                    pickerState.selectedEndDateMillis,
-                )
-                AppDatePicker(
-                    state = pickerState,
-                    onDismissRequest = viewModel::hideDateRangePicker,
-                    onReset = viewModel::resetDateRange,
-                    onSelect = { startDateMillis, endDateMillis ->
-                        viewModel.applyDateRange(
-                            startDateMillis,
-                            endDateMillis,
-                        )
-                    },
-                    modifier = Modifier.widthIn(max = dimensionResource(R.dimen.app_date_picker_dialog_max_width)),
-                    isRangeValid = isWithinLimit,
-                    rangeErrorText = stringResource(
-                        R.string.scan_history_date_range_limit,
-                        SCAN_HISTORY_MAX_RANGE_DAYS,
-                    ),
-                )
-            }
+        if (state.showDateRangePicker) {
+            val pickerState = rememberDateRangePickerState(
+                initialSelectedStartDateMillis = state.selectedStartDateMillis,
+                initialSelectedEndDateMillis = state.selectedEndDateMillis,
+            )
+            val isWithinLimit = isScanHistoryRangeWithinLimit(
+                pickerState.selectedStartDateMillis,
+                pickerState.selectedEndDateMillis,
+            )
+            AppDatePicker(
+                state = pickerState,
+                onDismissRequest = viewModel::hideDateRangePicker,
+                onReset = viewModel::resetDateRange,
+                onSelect = { startDateMillis, endDateMillis ->
+                    viewModel.applyDateRange(
+                        startDateMillis,
+                        endDateMillis,
+                    )
+                },
+                modifier = Modifier.widthIn(max = dimensionResource(R.dimen.app_date_picker_dialog_max_width)),
+                isRangeValid = isWithinLimit,
+                rangeErrorText = stringResource(
+                    R.string.scan_history_date_range_limit,
+                    SCAN_HISTORY_MAX_RANGE_DAYS,
+                ),
+            )
         }
     }
 }
@@ -225,7 +222,7 @@ private fun topChangeAnnotated(
         append(stringResource(topChange.bodyPartRes))
         append(" ")
         val valueColor = when (topChange.change) {
-            MeasurementChange.Positive -> Green
+            MeasurementChange.Positive -> NocturnePulseTheme.extendedColors.green
             MeasurementChange.Negative -> MaterialTheme.colorScheme.error
             null -> MaterialTheme.colorScheme.onSurface
         }

@@ -34,8 +34,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.ScannerShadowEnd
-import com.hexis.bi.ui.theme.ScannerShadowStart
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 private const val SCAN_ANIMATION_DURATION_MS = 5000
 
@@ -66,8 +65,8 @@ fun ScanViewfinder(
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .drawScannerOverlay(
                 color = color,
-                shadowStartColor = ScannerShadowStart,
-                shadowEndColor = ScannerShadowEnd,
+                shadowStartColor = NocturnePulseTheme.extendedColors.scannerShadowStart,
+                shadowEndColor = NocturnePulseTheme.extendedColors.scannerShadowEnd,
                 cornerLength = dimensionResource(R.dimen.scan_corner_length),
                 cornerStrokeWidth = cornerWidth,
                 scannerStrokeWidth = dimensionResource(R.dimen.scanner_line_stroke_width),

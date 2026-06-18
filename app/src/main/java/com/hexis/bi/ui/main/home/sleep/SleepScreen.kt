@@ -29,12 +29,11 @@ import com.hexis.bi.ui.base.BaseBottomSheet
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppDialog
-import com.hexis.bi.ui.dark.DarkTabSelector
-import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.dark.darkScreenBackground
+import com.hexis.bi.ui.components.AppTabSelector
+import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.main.home.sleep.components.SleepRecoverySheetBody
 import com.hexis.bi.ui.main.home.sleep.components.SleepSettingsDialogContent
-import com.hexis.bi.ui.theme.dark.DarkTheme
 import com.hexis.bi.utils.providerDisplayName
 import org.koin.androidx.compose.koinViewModel
 
@@ -54,96 +53,94 @@ fun SleepScreen(
 
     LightStatusBarIcons()
 
-    DarkTheme {
-        Box(modifier = modifier) {
-            BaseScreen(
+    Box(modifier = modifier) {
+        BaseScreen(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (state.showSettingsDialog || state.showRecoverySheet)
+                        Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
+                    else Modifier
+                )
+                .screenBackground(),
+            containerColor = Color.Transparent,
+            isLoading = isLoading,
+            error = error,
+            onDismissError = viewModel::clearError,
+            topBar = {
+                BaseTopBar(
+                    title = stringResource(R.string.sleep_screen_title),
+                    onBack = onBack,
+                    background = Color.Transparent,
+                    actions = {
+                        IconButton(onClick = viewModel::showSettingsDialog) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_settings),
+                                contentDescription = stringResource(R.string.cd_settings),
+                                tint = MaterialTheme.colorScheme.onBackground,
+                                modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+                            )
+                        }
+                    },
+                )
+            },
+        ) {
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .then(
-                        if (state.showSettingsDialog || state.showRecoverySheet)
-                            Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
-                        else Modifier
-                    )
-                    .darkScreenBackground(),
-                containerColor = Color.Transparent,
-                isLoading = isLoading,
-                error = error,
-                onDismissError = viewModel::clearError,
-                topBar = {
-                    BaseTopBar(
-                        title = stringResource(R.string.sleep_screen_title),
-                        onBack = onBack,
-                        background = Color.Transparent,
-                        actions = {
-                            IconButton(onClick = viewModel::showSettingsDialog) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_settings),
-                                    contentDescription = stringResource(R.string.cd_settings),
-                                    tint = MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
-                                )
-                            }
-                        },
-                    )
-                },
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
-                ) {
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
 
-                    DarkTabSelector(
-                        tabs = SleepTab.entries,
-                        selectedTab = state.selectedTab,
-                        onTabSelected = viewModel::selectTab,
-                        modifier = Modifier.fillMaxWidth(),
+                AppTabSelector(
+                    tabs = SleepTab.entries,
+                    selectedTab = state.selectedTab,
+                    onTabSelected = viewModel::selectTab,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                when (state.selectedTab) {
+                    SleepTab.Day -> SleepDayContent(
+                        state = state,
+                        onInfoClick = viewModel::showRecoverySheet,
+                        onPreviousDay = viewModel::previousDay,
+                        onNextDay = viewModel::nextDay,
+                        onRetry = viewModel::retryLoad,
                     )
 
-                    when (state.selectedTab) {
-                        SleepTab.Day -> SleepDayContent(
-                            state = state,
-                            onInfoClick = viewModel::showRecoverySheet,
-                            onPreviousDay = viewModel::previousDay,
-                            onNextDay = viewModel::nextDay,
-                            onRetry = viewModel::retryLoad,
-                        )
-
-                        SleepTab.Summary -> SleepSummaryContent(
-                            state = state,
-                            onInfoClick = viewModel::showRecoverySheet,
-                            onPreviousWeek = viewModel::previousWeek,
-                            onNextWeek = viewModel::nextWeek,
-                            onRetry = viewModel::retrySummaryLoad,
-                        )
-                    }
-
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
-                }
-            }
-
-            if (state.showSettingsDialog) {
-                AppDialog(onDismiss = viewModel::dismissSettingsDialog) {
-                    SleepSettingsDialogContent(
-                        sleepGoalHours = state.sleepGoalHoursDraft,
-                        dataSource = state.dataSource.providerDisplayName(),
-                        onGoalChange = viewModel::updateSleepGoalDraft,
-                        onCancel = viewModel::dismissSettingsDialog,
-                        onSave = viewModel::saveSettings,
+                    SleepTab.Summary -> SleepSummaryContent(
+                        state = state,
+                        onInfoClick = viewModel::showRecoverySheet,
+                        onPreviousWeek = viewModel::previousWeek,
+                        onNextWeek = viewModel::nextWeek,
+                        onRetry = viewModel::retrySummaryLoad,
                     )
                 }
-            }
 
-            if (state.showRecoverySheet) {
-                BaseBottomSheet(
-                    title = stringResource(R.string.sleep_recovery_sheet_title),
-                    onDismiss = viewModel::dismissRecoverySheet,
-                    modifier = modifier.fillMaxHeight(RECOVERY_SHEET_HEIGHT_FRACTION),
-                ) {
-                    SleepRecoverySheetBody(onDismiss = viewModel::dismissRecoverySheet)
-                }
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
+            }
+        }
+
+        if (state.showSettingsDialog) {
+            AppDialog(onDismiss = viewModel::dismissSettingsDialog) {
+                SleepSettingsDialogContent(
+                    sleepGoalHours = state.sleepGoalHoursDraft,
+                    dataSource = state.dataSource.providerDisplayName(),
+                    onGoalChange = viewModel::updateSleepGoalDraft,
+                    onCancel = viewModel::dismissSettingsDialog,
+                    onSave = viewModel::saveSettings,
+                )
+            }
+        }
+
+        if (state.showRecoverySheet) {
+            BaseBottomSheet(
+                title = stringResource(R.string.sleep_recovery_sheet_title),
+                onDismiss = viewModel::dismissRecoverySheet,
+                modifier = modifier.fillMaxHeight(RECOVERY_SHEET_HEIGHT_FRACTION),
+            ) {
+                SleepRecoverySheetBody(onDismiss = viewModel::dismissRecoverySheet)
             }
         }
     }

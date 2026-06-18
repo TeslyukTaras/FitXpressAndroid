@@ -35,14 +35,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
-import com.hexis.bi.ui.dark.BodyGlassCard
-import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.dark.darkScreenBackground
+import com.hexis.bi.ui.components.BodyGlassCard
+import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.theme.NocturnePulseTheme
+import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.main.settings.deleteaccount.AuthProvider
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountDialog
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountEvent
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountViewModel
-import com.hexis.bi.ui.theme.dark.DarkTheme
 import org.koin.androidx.compose.koinViewModel
 
 private data class SettingsRow(
@@ -93,54 +93,52 @@ fun SettingsScreen(
         AuthProvider.UNKNOWN -> { -> }
     }
 
-    DarkTheme {
-        val groups = buildSettingsGroups(
-            onNavigateToEditProfile = onNavigateToEditProfile,
-            onNavigateToNotificationSettings = onNavigateToNotificationSettings,
-            onNavigateToHealthConnections = onNavigateToHealthConnections,
-            onNavigateToMySuit = onNavigateToMySuit,
-            onNavigateToScanPreferences = onNavigateToScanPreferences,
-            onNavigateToHowToScan = onNavigateToHowToScan,
-            onShowDeleteDialog = viewModel::showDialog,
-            onLogout = onLogout,
-        )
+    val groups = buildSettingsGroups(
+        onNavigateToEditProfile = onNavigateToEditProfile,
+        onNavigateToNotificationSettings = onNavigateToNotificationSettings,
+        onNavigateToHealthConnections = onNavigateToHealthConnections,
+        onNavigateToMySuit = onNavigateToMySuit,
+        onNavigateToScanPreferences = onNavigateToScanPreferences,
+        onNavigateToHowToScan = onNavigateToHowToScan,
+        onShowDeleteDialog = viewModel::showDialog,
+        onLogout = onLogout,
+    )
 
-        Box(modifier = modifier) {
-            BaseScreen(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(
-                        if (state.showDialog) Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
-                        else Modifier
-                    )
-                    .darkScreenBackground(),
-                containerColor = Color.Transparent,
-                topBar = {
-                    BaseTopBar(
-                        title = stringResource(R.string.screen_settings),
-                        background = Color.Transparent,
-                        onBack = onBack,
-                    )
-                },
-            ) {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(groups) { group -> SettingsGroupSection(group) }
-                    item { Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl))) }
-                }
-            }
-
-            if (state.showDialog) {
-                DeleteAccountDialog(
-                    state = state,
-                    isLoading = isLoading,
-                    error = error,
-                    onDismiss = viewModel::dismissDialog,
-                    onPasswordChange = viewModel::updatePassword,
-                    onTogglePasswordVisibility = viewModel::togglePasswordVisibility,
-                    onCancel = viewModel::dismissDialog,
-                    onDelete = onDelete,
+    Box(modifier = modifier) {
+        BaseScreen(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (state.showDialog) Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
+                    else Modifier
                 )
+                .screenBackground(),
+            containerColor = Color.Transparent,
+            topBar = {
+                BaseTopBar(
+                    title = stringResource(R.string.screen_settings),
+                    background = Color.Transparent,
+                    onBack = onBack,
+                )
+            },
+        ) {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(groups) { group -> SettingsGroupSection(group) }
+                item { Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl))) }
             }
+        }
+
+        if (state.showDialog) {
+            DeleteAccountDialog(
+                state = state,
+                isLoading = isLoading,
+                error = error,
+                onDismiss = viewModel::dismissDialog,
+                onPasswordChange = viewModel::updatePassword,
+                onTogglePasswordVisibility = viewModel::togglePasswordVisibility,
+                onCancel = viewModel::dismissDialog,
+                onDelete = onDelete,
+            )
         }
     }
 }
@@ -216,7 +214,7 @@ private fun buildSettingsGroups(
     onLogout: () -> Unit,
 ): List<SettingsGroup> {
     val primary = MaterialTheme.colorScheme.primary
-    val destructive = DarkTheme.extendedColors.destructive
+    val destructive = NocturnePulseTheme.extendedColors.destructive
     return listOf(
         SettingsGroup(
             titleRes = R.string.settings_group_account,

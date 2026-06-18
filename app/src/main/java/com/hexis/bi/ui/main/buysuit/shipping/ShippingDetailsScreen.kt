@@ -49,10 +49,10 @@ import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppDialog
-import com.hexis.bi.ui.dark.DarkOutlinedTextField
-import com.hexis.bi.ui.dark.DarkPrimaryButton
-import com.hexis.bi.ui.dark.darkScreenBackground
-import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.components.AppOutlinedTextField
+import com.hexis.bi.ui.components.AppPrimaryButton
+import com.hexis.bi.ui.theme.screenBackground
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.utils.constants.GlassConstants
 import com.hexis.bi.utils.glass
 import org.koin.androidx.compose.koinViewModel
@@ -82,7 +82,7 @@ fun ShippingDetailsScreen(
                         Modifier
                     }
                 )
-                .darkScreenBackground(),
+                .screenBackground(),
             containerColor = Color.Transparent,
             isLoading = isLoading,
             error = error,
@@ -166,14 +166,14 @@ private fun ShippingDetailsContent(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_m)),
         ) {
-            DarkOutlinedTextField(
+            AppOutlinedTextField(
                 value = state.firstName,
                 onValueChange = viewModel::updateFirstName,
                 label = stringResource(R.string.label_first_name),
                 error = state.firstNameError,
                 modifier = Modifier.weight(1f),
             )
-            DarkOutlinedTextField(
+            AppOutlinedTextField(
                 value = state.lastName,
                 onValueChange = viewModel::updateLastName,
                 label = stringResource(R.string.label_last_name),
@@ -184,7 +184,7 @@ private fun ShippingDetailsContent(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
 
-        DarkOutlinedTextField(
+        AppOutlinedTextField(
             value = state.email,
             onValueChange = viewModel::updateEmail,
             label = stringResource(R.string.label_email),
@@ -270,7 +270,7 @@ private fun ShippingDetailsContent(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
-        DarkPrimaryButton(
+        AppPrimaryButton(
             text = stringResource(R.string.shipping_place_order),
             onClick = viewModel::placeOrder,
             modifier = Modifier.fillMaxWidth(),
@@ -307,9 +307,10 @@ private fun PhoneNumberField(
             modifier = Modifier
                 .fillMaxWidth()
                 .glass(
+                    tint = NocturnePulseTheme.extendedColors.glassRimHighlight,
                     shape = MaterialTheme.shapes.small,
                     level = GlassConstants.LEVEL_DEFAULT,
-                    fill = DarkTheme.extendedColors.surfaceTranslucent,
+                    fill = NocturnePulseTheme.extendedColors.surfaceTranslucent,
                     backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
                     rimWidth = dimensionResource(R.dimen.glass_rim_width),
                     backgroundAlpha = GlassConstants.TEXT_FIELD_BACKGROUND_ALPHA,
@@ -447,7 +448,7 @@ private fun OrderConfirmationDialog(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
-        DarkPrimaryButton(
+        AppPrimaryButton(
             text = stringResource(R.string.action_ok),
             onClick = onDismiss,
             modifier = Modifier.fillMaxWidth(),

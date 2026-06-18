@@ -14,7 +14,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
 import com.hexis.bi.domain.body.BodyMeasurementRegion
-import com.hexis.bi.ui.dark.DarkTabSelector
+import com.hexis.bi.ui.components.AppTabSelector
 import com.hexis.bi.ui.main.body.BodyVisualMode
 import com.hexis.bi.ui.main.body.CompactSummaryCardHeight
 import com.hexis.bi.ui.main.body.CompareContent
@@ -43,7 +43,7 @@ internal fun ScanResultsContent(
     Column(modifier = modifier.fillMaxSize()) {
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
 
-        DarkTabSelector(
+        AppTabSelector(
             tabs = ResultsTab.entries,
             selectedTab = state.selectedTab,
             onTabSelected = actions.onTabSelected,

@@ -11,10 +11,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.dark.ChartAxisLine
-import com.hexis.bi.ui.theme.dark.ScanSparklineMarkerFill
 import com.hexis.bi.utils.SmoothLinePath
 import com.hexis.bi.utils.constants.HomeConstants
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 /**
  * Compact smooth trend line for the Scan overview card. Plots [points] (oldest → newest) auto-scaled
@@ -27,6 +26,8 @@ internal fun ScanSparkline(
     modifier: Modifier = Modifier,
 ) {
     val lineColor = MaterialTheme.colorScheme.primary
+    val markerFill = NocturnePulseTheme.extendedColors.scanSparklineMarkerFill
+    val markerBorder = NocturnePulseTheme.extendedColors.chartAxisLine
     val density = LocalDensity.current
     val strokePx = with(density) { dimensionResource(R.dimen.home_sparkline_stroke).toPx() }
     val markerRadiusPx = with(density) {
@@ -70,9 +71,9 @@ internal fun ScanSparkline(
 
         // Mark the previous peak — the last interior local maximum — as in the design.
         val peak = coords[previousPeakIndex(points)]
-        drawCircle(color = ScanSparklineMarkerFill, radius = markerRadiusPx, center = peak)
+        drawCircle(color = markerFill, radius = markerRadiusPx, center = peak)
         drawCircle(
-            color = ChartAxisLine,
+            color = markerBorder,
             radius = markerRadiusPx - markerBorderPx / 2f,
             center = peak,
             style = Stroke(width = markerBorderPx),

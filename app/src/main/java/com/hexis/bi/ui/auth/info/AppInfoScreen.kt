@@ -27,9 +27,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import com.hexis.bi.R
 import com.hexis.bi.ui.auth.components.AuthTopBar
-import com.hexis.bi.ui.dark.DarkPrimaryButton
-import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.components.AppPrimaryButton
+import com.hexis.bi.ui.components.LightStatusBarIcons
 import com.hexis.bi.utils.constants.AuthFlowConstants
 
 @Composable
@@ -39,87 +38,85 @@ fun AppInfoScreen(
 ) {
     LightStatusBarIcons()
 
-    DarkTheme {
-        Box(
-            modifier = modifier
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .clipToBounds(),
+    ) {
+        Column(
+            modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .clipToBounds(),
+                .statusBarsPadding()
+                .navigationBarsPadding(),
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-                    .navigationBarsPadding(),
-            ) {
-                Spacer(modifier = Modifier.weight(AuthFlowConstants.HERO_TOP_SPACER_WEIGHT))
-
-                Image(
-                    painter = painterResource(R.drawable.img_app_info_hero),
-                    contentDescription = null,
-                    contentScale = ContentScale.Fit,
-                    alignment = Alignment.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-
-                Spacer(modifier = Modifier.weight(AuthFlowConstants.HERO_BOTTOM_SPACER_WEIGHT))
-            }
+            Spacer(modifier = Modifier.weight(AuthFlowConstants.HERO_TOP_SPACER_WEIGHT))
 
             Image(
-                painter = painterResource(R.drawable.img_app_info_gradient),
+                painter = painterResource(R.drawable.img_app_info_hero),
                 contentDescription = null,
-                contentScale = ContentScale.FillWidth,
-                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .fillMaxWidth(),
+                contentScale = ContentScale.Fit,
+                alignment = Alignment.Center,
+                modifier = Modifier.fillMaxWidth(),
             )
 
-            AuthTopBar(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .fillMaxWidth(),
+            Spacer(modifier = Modifier.weight(AuthFlowConstants.HERO_BOTTOM_SPACER_WEIGHT))
+        }
+
+        Image(
+            painter = painterResource(R.drawable.img_app_info_gradient),
+            contentDescription = null,
+            contentScale = ContentScale.FillWidth,
+            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth(),
+        )
+
+        AuthTopBar(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth(),
+        )
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = dimensionResource(R.dimen.padding_medium))
+                .padding(bottom = dimensionResource(R.dimen.spacer_xxl)),
+        ) {
+            Text(
+                text = buildAnnotatedString {
+                    withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+                        append(stringResource(R.string.app_info_title_accent))
+                    }
+                    append(stringResource(R.string.space))
+                    withStyle(SpanStyle(color = MaterialTheme.colorScheme.onBackground)) {
+                        append(stringResource(R.string.app_info_title_rest))
+                    }
+                },
+                style = MaterialTheme.typography.headlineLarge,
+                modifier = Modifier.fillMaxWidth(),
             )
 
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(horizontal = dimensionResource(R.dimen.padding_medium))
-                    .padding(bottom = dimensionResource(R.dimen.spacer_xxl)),
-            ) {
-                Text(
-                    text = buildAnnotatedString {
-                        withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                            append(stringResource(R.string.app_info_title_accent))
-                        }
-                        append(stringResource(R.string.space))
-                        withStyle(SpanStyle(color = MaterialTheme.colorScheme.onBackground)) {
-                            append(stringResource(R.string.app_info_title_rest))
-                        }
-                    },
-                    style = MaterialTheme.typography.headlineLarge,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_xs)))
 
-                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_xs)))
+            Text(
+                text = stringResource(R.string.app_info_subtitle),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth(),
+            )
 
-                Text(
-                    text = stringResource(R.string.app_info_subtitle),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
-                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
-
-                DarkPrimaryButton(
-                    text = stringResource(R.string.action_get_started),
-                    onClick = onFinish,
-                    trailingIcon = R.drawable.ic_arrow,
-                )
-            }
+            AppPrimaryButton(
+                text = stringResource(R.string.action_get_started),
+                onClick = onFinish,
+                trailingIcon = R.drawable.ic_arrow,
+            )
         }
     }
 }

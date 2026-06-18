@@ -59,13 +59,15 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.withResumed
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppSlider
-import com.hexis.bi.ui.dark.BodyGlassCard
-import com.hexis.bi.ui.dark.DarkPrimaryButton
+import com.hexis.bi.ui.components.BodyGlassCard
+import com.hexis.bi.ui.components.AppPrimaryButton
 import com.hexis.bi.ui.main.scan.ScanPurpose
 import com.hexis.bi.ui.main.scan.components.ScanChecklistSheet
 import com.hexis.bi.ui.main.scan.processing.ScanAnalyzingContent
@@ -74,16 +76,13 @@ import com.hexis.bi.ui.main.scan.results.content.PersonalizeResultsDialog
 import com.hexis.bi.ui.main.scan.results.content.ScanResultsContent
 import com.hexis.bi.ui.main.scan.results.isDisplayable
 import com.hexis.bi.ui.main.scan.results.resultsActions
-import com.hexis.bi.ui.theme.Blue200
-import com.hexis.bi.ui.theme.Blue300
-import com.hexis.bi.ui.theme.Green
-import com.hexis.bi.ui.theme.dark.Positive
-import com.hexis.bi.ui.dark.darkScreenBackground
+import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.utils.gradientBackground
 import com.look.camera.sdk.SdkActivity
 import com.look.camera.sdk.data.LaunchOption
 import org.koin.androidx.compose.koinViewModel
 import timber.log.Timber
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 private const val BODY_SCAN_REVEAL_DURATION_MS = 300
 
@@ -123,6 +122,7 @@ fun StartScanScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val view = LocalView.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     var bodyResultsReady by remember { mutableStateOf(false) }
     var bodyProgressComplete by remember { mutableStateOf(false) }
     var showChecklistSheet by remember(scanPurpose) {
@@ -166,7 +166,9 @@ fun StartScanScreen(
         bodyProgressComplete = false
     }
 
-    LaunchedEffect(state.shouldNavigateBack) { if (state.shouldNavigateBack) onBack() }
+    LaunchedEffect(state.shouldNavigateBack) {
+        if (state.shouldNavigateBack) lifecycleOwner.lifecycle.withResumed { onBack() }
+    }
 
     val mode = scanMode(scanPurpose, state)
     val showBodyResults = mode == ScanMode.BodyRunning &&
@@ -178,7 +180,7 @@ fun StartScanScreen(
 
     BaseScreen(
         modifier = modifier
-            .then(if (mode.isDark) Modifier.darkScreenBackground() else Modifier)
+            .then(if (mode.isDark) Modifier.screenBackground() else Modifier)
             .then(
                 if (state.showPersonalizeResultsHint) {
                     Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
@@ -345,7 +347,7 @@ private fun SuitSizeScanAnalysisScreen(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
 
-        DarkPrimaryButton(
+        AppPrimaryButton(
             text = stringResource(
                 when {
                     hasError -> R.string.action_rescan
@@ -377,7 +379,7 @@ private fun SuitSizeScanStatusCard(
                 modifier = Modifier
                     .size(dimensionResource(R.dimen.icon_medium))
                     .clip(CircleShape)
-                    .background(if (hasError) MaterialTheme.colorScheme.error else Positive),
+                    .background(if (hasError) MaterialTheme.colorScheme.error else NocturnePulseTheme.extendedColors.positive),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -464,7 +466,6 @@ private fun VoiceGuidanceCard(
             AppSlider(
                 value = volume,
                 onValueChange = onVolumeChange,
-                background = MaterialTheme.colorScheme.background,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -501,7 +502,7 @@ private fun StepIndicator(
             repeat(totalSteps) { index ->
                 val isFilled = index <= currentStep - 1
                 val backgroundModifier = if (isFilled) Modifier.gradientBackground(
-                    brush = Brush.verticalGradient(listOf(Blue300, Blue200)),
+                    brush = Brush.verticalGradient(listOf(NocturnePulseTheme.extendedColors.blue300, NocturnePulseTheme.extendedColors.blue200)),
                     shape = CircleShape,
                 )
                 else Modifier.background(
@@ -533,7 +534,7 @@ private fun InstructionRow(
             modifier = Modifier
                 .size(circleSize)
                 .clip(CircleShape)
-                .background(Green),
+                .background(NocturnePulseTheme.extendedColors.green),
             contentAlignment = Alignment.Center,
         ) {
             Icon(

@@ -18,12 +18,12 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
 import com.hexis.bi.domain.body.BodyMeasurementRegion
-import com.hexis.bi.ui.dark.AppHorizontalGradientDivider
-import com.hexis.bi.ui.dark.AppVerticalGradientDivider
-import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.components.AppHorizontalGradientDivider
+import com.hexis.bi.ui.components.AppVerticalGradientDivider
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.body.BodyVisualMode
 import com.hexis.bi.ui.main.body.VisualState
-import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.utils.constants.BodyVisualConstants
 import com.hexis.bi.utils.constants.BodyVisualConstants.FULL_BODY_MEASUREMENT_ROWS
 import java.text.SimpleDateFormat
@@ -254,7 +254,7 @@ private fun MeasurementColumn(
     modifier: Modifier = Modifier,
 ) {
     val missing = stringResource(R.string.body_visual_value_missing)
-    val accentColor = DarkTheme.extendedColors.accentBlue
+    val accentColor = NocturnePulseTheme.extendedColors.accentBlue
     Column(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),

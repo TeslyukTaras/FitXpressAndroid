@@ -52,30 +52,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import com.hexis.bi.R
 import com.hexis.bi.data.sleep.SleepStage
-import com.hexis.bi.ui.dark.AppHorizontalGradientDivider
-import com.hexis.bi.ui.dark.AppVerticalGradientDivider
-import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.components.AppHorizontalGradientDivider
+import com.hexis.bi.ui.components.AppVerticalGradientDivider
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.sleep.DailyStructure
 import com.hexis.bi.ui.main.home.sleep.StageTrend
 import com.hexis.bi.ui.main.home.sleep.WeeklyStageData
 import com.hexis.bi.ui.main.home.sleep.nameRes
-import com.hexis.bi.ui.theme.Gray200
-import com.hexis.bi.ui.theme.Green
-import com.hexis.bi.ui.theme.Red100
-import com.hexis.bi.ui.theme.SleepStageAwake
-import com.hexis.bi.ui.theme.SleepStageDeep
-import com.hexis.bi.ui.theme.SleepStageLight
-import com.hexis.bi.ui.theme.SleepStageRem
 import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.ui.theme.TitleHighlightTextStyle
-import com.hexis.bi.ui.theme.dark.ActionTeal
-import com.hexis.bi.ui.theme.dark.ChartAxisLine
-import com.hexis.bi.ui.theme.dark.ChartGridLineHorizontal
-import com.hexis.bi.ui.theme.dark.Positive
-import com.hexis.bi.ui.theme.dark.TextSecondary
 import com.hexis.bi.utils.constants.SleepConstants
 import kotlin.math.abs
 import kotlin.math.ceil
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 private const val STRUCTURE_AXIS_TICKS = 3 // labels = 0, max/3, 2·max/3, max
 private const val STRUCTURE_STATS_COLUMNS = 2 // stage stats laid out two per row
@@ -167,8 +156,8 @@ private fun StructureChart(
     val axisLabels =
         List(STRUCTURE_AXIS_TICKS + 1) { axisMaxHours - axisMaxHours / STRUCTURE_AXIS_TICKS * it }
     val maxMinutes = axisMaxHours * SleepConstants.MINUTES_PER_HOUR
-    val xAxisColor = ChartGridLineHorizontal
-    val yAxisColor = ChartAxisLine
+    val xAxisColor = NocturnePulseTheme.extendedColors.chartGridLineHorizontal
+    val yAxisColor = NocturnePulseTheme.extendedColors.chartAxisLine
     // Top label is centred on the chart top, so extend the y-axis up to reach its top edge.
     val axisOvershootPx =
         rememberTextMeasurer().measure("0", MaterialTheme.typography.bodySmall).size.height / 2f
@@ -285,7 +274,7 @@ private fun StructureChart(
                         text = day.dayLabel,
                         modifier = Modifier.weight(1f),
                         style = TitleDimTextStyle,
-                        color = if (day.isHighlighted) Positive else Gray200,
+                        color = if (day.isHighlighted) NocturnePulseTheme.extendedColors.positive else NocturnePulseTheme.extendedColors.gray200,
                         textAlign = TextAlign.Center,
                     )
                 }
@@ -304,6 +293,8 @@ private fun DayStructureBar(
     val corner = dimensionResource(R.dimen.sleep_structure_bar_corner)
     val borderWidth = dimensionResource(R.dimen.sleep_structure_selection_border)
     val total = day.totalMinutes.coerceAtMost(maxMinutes)
+    val stageColor = rememberSleepStageColors()
+    val selectionBorderColor = MaterialTheme.colorScheme.primary
     Column(
         modifier = modifier
             .fillMaxHeight()
@@ -320,7 +311,7 @@ private fun DayStructureBar(
                     if (selected) Modifier.drawWithContent {
                         drawContent()
                         drawOpenBottomTopBorder(
-                            color = ActionTeal,
+                            color = selectionBorderColor,
                             strokeWidth = borderWidth.toPx(),
                             cornerRadius = corner.toPx(),
                         )
@@ -361,7 +352,7 @@ private fun StructureAxisLabels(
         modifier = modifier,
         content = {
             labels.forEach { value ->
-                Text(text = value.toString(), style = style, color = TextSecondary)
+                Text(text = value.toString(), style = style, color = MaterialTheme.colorScheme.secondary)
             }
         },
     ) { measurables, constraints ->
@@ -389,6 +380,7 @@ private fun adaptiveAxisMaxHours(structure: List<DailyStructure>): Int {
 
 @Composable
 private fun StructureLegend() {
+    val stageColor = rememberSleepStageColors()
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_m)),
@@ -448,14 +440,14 @@ private fun StatCell(
             Text(
                 text = stringResource(data.stage.nameRes()),
                 style = MaterialTheme.typography.bodySmall,
-                color = Gray200,
+                color = NocturnePulseTheme.extendedColors.gray200,
             )
             if (data.trend != null) {
                 Spacer(Modifier.width(dimensionResource(R.dimen.spacer_s)))
                 Text(
                     text = if (data.trend == StageTrend.Up) "↑" else "↓",
                     style = TitleHighlightTextStyle,
-                    color = if (data.trend == StageTrend.Up) Green else Red100,
+                    color = if (data.trend == StageTrend.Up) NocturnePulseTheme.extendedColors.green else NocturnePulseTheme.extendedColors.red100,
                 )
             }
         }
@@ -473,7 +465,7 @@ private fun stageDurationText(minutes: Int): AnnotatedString {
         MaterialTheme.typography.headlineMedium.toSpanStyle()
             .copy(color = MaterialTheme.colorScheme.onSurface)
     val unitStyle = MaterialTheme.typography.bodyLarge.toSpanStyle()
-        .copy(color = Gray200)
+        .copy(color = NocturnePulseTheme.extendedColors.gray200)
     val hourUnit = stringResource(R.string.unit_hours_short)
     val minuteUnit = stringResource(R.string.unit_minutes_short)
     return buildAnnotatedString {
@@ -486,13 +478,6 @@ private fun stageDurationText(minutes: Int): AnnotatedString {
         }
         withStyle(unitStyle) { append(" $minuteUnit") }
     }
-}
-
-private fun stageColor(stage: SleepStage): Color = when (stage) {
-    SleepStage.Deep -> SleepStageDeep
-    SleepStage.Light -> SleepStageLight
-    SleepStage.REM -> SleepStageRem
-    SleepStage.Awake -> SleepStageAwake
 }
 
 /** Outlines left + rounded top + right edges, leaving the bottom open. */

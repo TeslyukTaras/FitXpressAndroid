@@ -20,9 +20,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.AppHorizontalGradientDivider
-import com.hexis.bi.ui.dark.AppVerticalGradientDivider
-import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.components.AppHorizontalGradientDivider
+import com.hexis.bi.ui.components.AppVerticalGradientDivider
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.longevity.LongevitySignal
 import com.hexis.bi.ui.theme.TitleDimTextStyle
 

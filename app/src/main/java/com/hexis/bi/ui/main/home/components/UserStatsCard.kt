@@ -18,8 +18,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.AppVerticalGradientDivider
-import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.components.AppVerticalGradientDivider
+import com.hexis.bi.ui.components.BodyGlassCard
 
 @Composable
 fun UserStatsCard(

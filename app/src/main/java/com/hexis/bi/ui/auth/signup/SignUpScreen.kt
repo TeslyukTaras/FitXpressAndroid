@@ -36,8 +36,8 @@ import com.hexis.bi.ui.auth.SignUpEvent
 import com.hexis.bi.ui.auth.components.AuthScreenScaffold
 import com.hexis.bi.ui.auth.components.ContinueDivider
 import com.hexis.bi.ui.auth.components.SocialAuthRow
-import com.hexis.bi.ui.dark.DarkOutlinedTextField
-import com.hexis.bi.ui.dark.DarkPrimaryButton
+import com.hexis.bi.ui.components.AppOutlinedTextField
+import com.hexis.bi.ui.components.AppPrimaryButton
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -87,7 +87,7 @@ fun SignUpScreen(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
-        DarkOutlinedTextField(
+        AppOutlinedTextField(
             value = state.firstName,
             onValueChange = viewModel::updateFirstName,
             label = stringResource(R.string.label_first_name),
@@ -98,7 +98,7 @@ fun SignUpScreen(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-        DarkOutlinedTextField(
+        AppOutlinedTextField(
             value = state.lastName,
             onValueChange = viewModel::updateLastName,
             label = stringResource(R.string.label_last_name),
@@ -109,7 +109,7 @@ fun SignUpScreen(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-        DarkOutlinedTextField(
+        AppOutlinedTextField(
             value = state.email,
             onValueChange = viewModel::updateEmail,
             label = stringResource(R.string.label_email),
@@ -121,7 +121,7 @@ fun SignUpScreen(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-        DarkOutlinedTextField(
+        AppOutlinedTextField(
             value = state.password,
             onValueChange = viewModel::updatePassword,
             label = stringResource(R.string.label_password),
@@ -144,7 +144,7 @@ fun SignUpScreen(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-        DarkOutlinedTextField(
+        AppOutlinedTextField(
             value = state.confirmPassword,
             onValueChange = viewModel::updateConfirmPassword,
             label = stringResource(R.string.label_confirm_password),
@@ -174,7 +174,7 @@ fun SignUpScreen(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
-        DarkPrimaryButton(
+        AppPrimaryButton(
             text = stringResource(R.string.action_signup),
             onClick = viewModel::signUp,
             isLoading = isLoading,

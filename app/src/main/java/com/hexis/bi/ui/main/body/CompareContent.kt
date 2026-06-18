@@ -38,9 +38,9 @@ import androidx.compose.ui.unit.isSpecified
 import androidx.core.os.ConfigurationCompat
 import com.hexis.bi.R
 import com.hexis.bi.domain.body.BodyMeasurementRegion
-import com.hexis.bi.ui.dark.AppHorizontalGradientDivider
-import com.hexis.bi.ui.dark.AppVerticalGradientDivider
-import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.components.AppHorizontalGradientDivider
+import com.hexis.bi.ui.components.AppVerticalGradientDivider
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.body.components.BodyPartHorizontalScrollList
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleChip
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleTrack

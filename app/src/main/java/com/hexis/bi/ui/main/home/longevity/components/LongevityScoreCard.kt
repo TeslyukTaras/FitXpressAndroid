@@ -11,7 +11,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.theme.MeasurementTitleValueStyle
 import com.hexis.bi.ui.theme.TitleDimTextStyle
 

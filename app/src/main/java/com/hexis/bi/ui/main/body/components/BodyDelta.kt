@@ -14,7 +14,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
 import com.hexis.bi.ui.theme.TitleHighlightTextStyle
-import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import java.util.Locale
 import kotlin.math.abs
 
@@ -27,8 +27,8 @@ internal fun BodyDelta(
     val rising = delta > 0f
     val color = when {
         delta == 0f -> MaterialTheme.colorScheme.onSurfaceVariant
-        rising != decreaseIsPositive -> DarkTheme.extendedColors.positive
-        else -> DarkTheme.extendedColors.negative
+        rising != decreaseIsPositive -> NocturnePulseTheme.extendedColors.positive
+        else -> NocturnePulseTheme.extendedColors.negative
     }
     Row(
         modifier = modifier,

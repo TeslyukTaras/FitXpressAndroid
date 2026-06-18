@@ -29,11 +29,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.auth.components.AuthScreenScaffold
 import com.hexis.bi.ui.components.AppDialog
-import com.hexis.bi.ui.dark.DarkOutlinedTextField
-import com.hexis.bi.ui.dark.DarkPrimaryButton
-import com.hexis.bi.ui.theme.Green
-import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.components.AppOutlinedTextField
+import com.hexis.bi.ui.components.AppPrimaryButton
 import org.koin.androidx.compose.koinViewModel
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 fun ForgotPasswordScreen(
@@ -45,72 +44,70 @@ fun ForgotPasswordScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
 
-    DarkTheme {
-        Box(
-            modifier = modifier.fillMaxSize(),
+    Box(
+        modifier = modifier.fillMaxSize(),
+    ) {
+        AuthScreenScaffold(
+            modifier = Modifier
+                .then(
+                    if (state.showSuccessDialog)
+                        Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
+                    else Modifier
+                ),
+            isLoading = isLoading,
+            error = error,
+            onDismissError = viewModel::clearError,
+            onBack = onNavigateBack,
+            bottomPadding = dimensionResource(R.dimen.padding_forgot_password_bottom_button),
         ) {
-            AuthScreenScaffold(
-                modifier = Modifier
-                    .then(
-                        if (state.showSuccessDialog)
-                            Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
-                        else Modifier
-                    ),
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.Start,
+            ) {
+                Text(
+                    text = stringResource(R.string.forgot_password_title),
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
+                Text(
+                    text = stringResource(R.string.forgot_password_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxl)))
+
+            AppOutlinedTextField(
+                value = state.email,
+                onValueChange = viewModel::updateEmail,
+                label = stringResource(R.string.label_email),
+                placeholder = stringResource(R.string.placeholder_email),
+                error = state.emailError,
+                reserveErrorSpace = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+            AppPrimaryButton(
+                text = stringResource(R.string.action_send_code),
+                onClick = viewModel::sendCode,
+                enabled = state.email.isNotBlank(),
                 isLoading = isLoading,
-                error = error,
-                onDismissError = viewModel::clearError,
-                onBack = onNavigateBack,
-                bottomPadding = dimensionResource(R.dimen.padding_forgot_password_bottom_button),
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.Start,
-                ) {
-                    Text(
-                        text = stringResource(R.string.forgot_password_title),
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
-                    Text(
-                        text = stringResource(R.string.forgot_password_subtitle),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
 
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxl)))
-
-                DarkOutlinedTextField(
-                    value = state.email,
-                    onValueChange = viewModel::updateEmail,
-                    label = stringResource(R.string.label_email),
-                    placeholder = stringResource(R.string.placeholder_email),
-                    error = state.emailError,
-                    reserveErrorSpace = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-                DarkPrimaryButton(
-                    text = stringResource(R.string.action_send_code),
-                    onClick = viewModel::sendCode,
-                    enabled = state.email.isNotBlank(),
-                    isLoading = isLoading,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-
-            if (state.showSuccessDialog) AppDialog(
-                onDismiss = {
-                    viewModel.dismissSuccessDialog()
-                    onNavigateBack()
-                },
-            ) {
-                ForgotPasswordSuccessDialogContent(email = state.email)
-            }
+        if (state.showSuccessDialog) AppDialog(
+            onDismiss = {
+                viewModel.dismissSuccessDialog()
+                onNavigateBack()
+            },
+        ) {
+            ForgotPasswordSuccessDialogContent(email = state.email)
         }
     }
 }
@@ -127,7 +124,7 @@ private fun ForgotPasswordSuccessDialogContent(email: String) {
             Modifier
                 .size(dimensionResource(R.dimen.size_tick_icon))
                 .clip(CircleShape)
-                .background(Green)
+                .background(NocturnePulseTheme.extendedColors.green)
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_tick),

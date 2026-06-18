@@ -44,14 +44,13 @@ import com.hexis.bi.ui.components.AppDialog
 import com.hexis.bi.ui.components.my_suit.ReconnectDialogContent
 import com.hexis.bi.ui.components.my_suit.SuitConnectedBanner
 import com.hexis.bi.ui.components.my_suit.SuitInfoRow
-import com.hexis.bi.ui.dark.DarkOutlinedButton
-import com.hexis.bi.ui.dark.DarkOutlinedTextField
-import com.hexis.bi.ui.dark.DarkPrimaryButton
-import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.dark.darkScreenBackground
-import com.hexis.bi.ui.theme.dark.DarkTheme
-import com.hexis.bi.ui.theme.dark.Positive
+import com.hexis.bi.ui.components.AppOutlinedButton
+import com.hexis.bi.ui.components.AppOutlinedTextField
+import com.hexis.bi.ui.components.AppPrimaryButton
+import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.theme.screenBackground
 import org.koin.androidx.compose.koinViewModel
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 fun MySuitScreen(
@@ -66,56 +65,54 @@ fun MySuitScreen(
 
     LightStatusBarIcons()
 
-    DarkTheme {
-        Box(modifier = modifier) {
-            BaseScreen(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(
-                        if (state.showReconnectDialog) Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
-                        else Modifier
-                    )
-                    .darkScreenBackground(),
-                containerColor = Color.Transparent,
-                isLoading = isLoading,
-                error = error,
-                onDismissError = viewModel::clearError,
-                topBar = {
-                    BaseTopBar(
-                        title = stringResource(R.string.my_suit_title),
-                        background = Color.Transparent,
-                        onBack = onBack,
-                    )
-                },
-            ) {
-                var imageHeight by remember { mutableStateOf(Dp.Unspecified) }
+    Box(modifier = modifier) {
+        BaseScreen(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (state.showReconnectDialog) Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
+                    else Modifier
+                )
+                .screenBackground(),
+            containerColor = Color.Transparent,
+            isLoading = isLoading,
+            error = error,
+            onDismissError = viewModel::clearError,
+            topBar = {
+                BaseTopBar(
+                    title = stringResource(R.string.my_suit_title),
+                    background = Color.Transparent,
+                    onBack = onBack,
+                )
+            },
+        ) {
+            var imageHeight by remember { mutableStateOf(Dp.Unspecified) }
 
-                BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                    if (imageHeight == Dp.Unspecified) {
-                        imageHeight = maxHeight * 0.55f
-                    }
-
-                    if (state.isConnected) ConnectedContent(
-                        state = state,
-                        imageHeight = imageHeight,
-                        onReconnect = viewModel::showReconnectDialog,
-                    )
-                    else DisconnectedContent(
-                        suitIdInput = state.suitIdInput,
-                        imageHeight = imageHeight,
-                        onSuitIdChange = viewModel::updateSuitIdInput,
-                        onConnect = viewModel::connect,
-                        onBuyOne = onBuyOne,
-                    )
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                if (imageHeight == Dp.Unspecified) {
+                    imageHeight = maxHeight * 0.55f
                 }
-            }
 
-            if (state.showReconnectDialog) AppDialog(onDismiss = viewModel::dismissReconnectDialog) {
-                ReconnectDialogContent(
-                    onDismiss = viewModel::dismissReconnectDialog,
-                    onConfirm = viewModel::reconnect,
+                if (state.isConnected) ConnectedContent(
+                    state = state,
+                    imageHeight = imageHeight,
+                    onReconnect = viewModel::showReconnectDialog,
+                )
+                else DisconnectedContent(
+                    suitIdInput = state.suitIdInput,
+                    imageHeight = imageHeight,
+                    onSuitIdChange = viewModel::updateSuitIdInput,
+                    onConnect = viewModel::connect,
+                    onBuyOne = onBuyOne,
                 )
             }
+        }
+
+        if (state.showReconnectDialog) AppDialog(onDismiss = viewModel::dismissReconnectDialog) {
+            ReconnectDialogContent(
+                onDismiss = viewModel::dismissReconnectDialog,
+                onConfirm = viewModel::reconnect,
+            )
         }
     }
 }
@@ -160,14 +157,14 @@ private fun ConnectedContent(
         SuitInfoRow(
             label = stringResource(R.string.my_suit_status),
             value = state.connectedStatus,
-            valueColor = Positive,
+            valueColor = NocturnePulseTheme.extendedColors.positive,
         )
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
         Spacer(Modifier.weight(1f))
 
         BottomButtonAction {
-            DarkOutlinedButton(
+            AppOutlinedButton(
                 text = stringResource(R.string.action_reconnect_suit),
                 onClick = onReconnect,
                 modifier = Modifier.fillMaxWidth(),
@@ -222,7 +219,7 @@ private fun DisconnectedContent(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
 
-        DarkOutlinedTextField(
+        AppOutlinedTextField(
             value = suitIdInput,
             onValueChange = onSuitIdChange,
             label = stringResource(R.string.label_suit_id),
@@ -242,7 +239,7 @@ private fun DisconnectedContent(
         Spacer(Modifier.weight(1f))
 
         BottomButtonAction(onBuyOne) {
-            DarkPrimaryButton(
+            AppPrimaryButton(
                 text = stringResource(R.string.action_connect),
                 onClick = onConnect,
                 enabled = suitIdInput.isNotBlank(),

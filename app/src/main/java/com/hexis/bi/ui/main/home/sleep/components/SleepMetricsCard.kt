@@ -31,16 +31,11 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.AppVerticalGradientDivider
-import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.components.AppVerticalGradientDivider
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.sleep.ChartPoint
-import com.hexis.bi.ui.theme.Gray200
 import com.hexis.bi.ui.theme.TitleHighlightTextStyle
-import com.hexis.bi.ui.theme.dark.ChartGridLineHorizontal
-import com.hexis.bi.ui.theme.dark.ChartGridLineVertical
-import com.hexis.bi.ui.theme.dark.ChartHrvLine
-import com.hexis.bi.ui.theme.dark.ChartTeal
-import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.utils.formatHour
 import kotlin.math.floor
 import kotlin.math.log10
@@ -57,7 +52,7 @@ fun SleepMetricsCard(
     timeEndHour: Int,
     modifier: Modifier = Modifier,
 ) {
-    val rhrColor = DarkTheme.extendedColors.accentBlue
+    val rhrColor = NocturnePulseTheme.extendedColors.accentBlue
     val axis = remember(hrvSeries, rhrSeries) { axisFor(hrvSeries, rhrSeries) }
     BodyGlassCard(modifier = modifier) {
         Row(
@@ -83,7 +78,7 @@ fun SleepMetricsCard(
             Text(
                 text = stringResource(R.string.sleep_metric_hrv_unit),
                 style = TitleHighlightTextStyle,
-                color = ChartHrvLine,
+                color = NocturnePulseTheme.extendedColors.chartHrvLine,
             )
             Text(
                 text = stringResource(R.string.sleep_metric_rhr_unit),
@@ -97,7 +92,7 @@ fun SleepMetricsCard(
         Row(modifier = Modifier.fillMaxWidth()) {
             ChartAxisLabels(
                 values = axis?.labels.orEmpty(),
-                color = ChartHrvLine,
+                color = NocturnePulseTheme.extendedColors.chartHrvLine,
                 modifier = Modifier
                     .height(dimensionResource(R.dimen.sleep_heart_chart_height))
                     .padding(end = dimensionResource(R.dimen.spacer_xs)),
@@ -169,6 +164,10 @@ private fun HeartMetricsChart(
     val gridDashLength = dimensionResource(R.dimen.sleep_heart_grid_dash)
     val lineWidth = dimensionResource(R.dimen.sleep_heart_line_width)
     val lineCorner = dimensionResource(R.dimen.sleep_heart_line_corner)
+    val gridLineHorizontal = NocturnePulseTheme.extendedColors.chartGridLineHorizontal
+    val gridLineVertical = NocturnePulseTheme.extendedColors.chartGridLineVertical
+    val hrvFillColor = NocturnePulseTheme.extendedColors.chartLine
+    val hrvLineColor = NocturnePulseTheme.extendedColors.chartHrvLine
     Box(modifier = modifier) {
         Canvas(modifier = Modifier.matchParentSize()) {
             val gridStroke = gridWidth.toPx()
@@ -183,21 +182,21 @@ private fun HeartMetricsChart(
                 // The bottom line is the x-axis baseline: solid, the rest dashed.
                 val effect = if (index == AXIS_TICKS) null else gridDash
                 drawLine(
-                    ChartGridLineHorizontal, Offset(0f, y), Offset(size.width, y),
+                    gridLineHorizontal, Offset(0f, y), Offset(size.width, y),
                     gridStroke, pathEffect = effect,
                 )
             }
             repeat(AXIS_TICKS + 1) { index ->
                 val x = size.width * index / AXIS_TICKS.toFloat()
                 drawLine(
-                    ChartGridLineVertical, Offset(x, 0f), Offset(x, size.height),
+                    gridLineVertical, Offset(x, 0f), Offset(x, size.height),
                     gridStroke, pathEffect = gridDash,
                 )
             }
 
             val hrvBrush = Brush.verticalGradient(
                 colorStops = cssGradientStops(
-                    start = ChartTeal.copy(alpha = HRV_FILL_ALPHA), startStop = HRV_FILL_START_STOP,
+                    start = hrvFillColor.copy(alpha = HRV_FILL_ALPHA), startStop = HRV_FILL_START_STOP,
                     end = HrvGradientEnd, endStop = HRV_FILL_END_STOP,
                 ),
                 startY = 0f,
@@ -213,7 +212,7 @@ private fun HeartMetricsChart(
             )
 
             if (range != null) {
-                drawSeries(hrvSeries, range, ChartHrvLine, hrvBrush, lineStroke)
+                drawSeries(hrvSeries, range, hrvLineColor, hrvBrush, lineStroke)
                 drawSeries(rhrSeries, range, rhrColor, rhrBrush, lineStroke)
             }
         }
@@ -373,7 +372,7 @@ private fun TimelineLabels(
             Text(
                 text = formatHour(hour),
                 style = MaterialTheme.typography.labelSmall,
-                color = Gray200,
+                color = NocturnePulseTheme.extendedColors.gray200,
             )
         }
     }

@@ -101,17 +101,12 @@
     <dimen name="scan_analyzing_loader_size">160dp</dimen>
     <dimen name="scan_analyzing_loader_stroke">7dp</dimen>
     <dimen name="scan_analyzing_bottom_spacer">50dp</dimen>
-    <dimen name="scan_results_preview_height">600dp</dimen>
     <dimen name="app_date_picker_dialog_max_width">560dp</dimen>
     <dimen name="app_date_range_picker_max_height">430dp</dimen>
     <!-- Measurement leader overlay (3D preview pills + leader strokes). -->
-    <dimen name="measurement_leader_stroke_width">1.25dp</dimen>
     <dimen name="metric_avatar_retry_button_height">40dp</dimen>
     <dimen name="metric_avatar_retry_icon_size">18dp</dimen>
     <dimen name="metric_avatar_text_max_width">140dp</dimen>
-    <dimen name="measurement_leader_pill_column_max_width">132dp</dimen>
-    <dimen name="measurement_leader_pill_value_text_size">14sp</dimen>
-    <dimen name="measurement_leader_pill_title_text_size">12sp</dimen>
 
     <!-- Component sizes -->
     <dimen name="size_indicator">4dp</dimen>
@@ -141,7 +136,6 @@
     <dimen name="body_part_selector_horizontal_item_padding">12dp</dimen>
     <dimen name="promo_button_width">120dp</dimen>
     <dimen name="promo_button_height">32dp</dimen>
-    <dimen name="slider_track_height">6dp</dimen>
     <dimen name="dark_slider_track_height">4dp</dimen>
     <dimen name="switch_track_width">45dp</dimen>
     <dimen name="switch_track_height">24dp</dimen>
@@ -164,13 +158,9 @@
     <dimen name="border_thin">1dp</dimen>
     <dimen name="border_line">0.2dp</dimen>
     <dimen name="border_hairline">0.5dp</dimen>
-    <dimen name="border_thumb">3dp</dimen>
 
     <!-- Elevation -->
     <dimen name="elevation_none">0dp</dimen>
-    <dimen name="elevation_box">1dp</dimen>
-    <dimen name="elevation_card">2dp</dimen>
-    <dimen name="elevation_nav_bar">5dp</dimen>
 
     <!-- Effects -->
     <dimen name="blur_dialog_backdrop">2dp</dimen>
@@ -178,7 +168,6 @@
     <dimen name="glass_rim_width">0.25dp</dimen>
 
     <!-- Dividers -->
-    <dimen name="divider_size">1dp</dimen>
 
     <!-- Effects -->
     <dimen name="dash_width">5dp</dimen>

@@ -25,11 +25,10 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.dimensionResource
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.activity.WeekDayData
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.TitleDimTextStyle
-import com.hexis.bi.ui.theme.dark.Positive
-import com.hexis.bi.ui.theme.dark.StepIndicatorTrack
 import com.hexis.bi.utils.constants.ActivityConstants
 
 @Composable
@@ -69,13 +68,13 @@ private fun DayGauge(
     val gaugeWidth = dimensionResource(R.dimen.activity_day_gauge_width)
     val gaugeHeight = dimensionResource(R.dimen.activity_day_gauge_height)
     val strokeWidth = dimensionResource(R.dimen.activity_day_gauge_stroke)
-    val trackColor = ActivityConstants.RING_TRACK_COLOR
+    val trackColor = NocturnePulseTheme.extendedColors.activityProgressTrack
     val progressColor = MaterialTheme.colorScheme.primary
     val labelColor = when {
-        day.isToday -> Positive
+        day.isToday -> NocturnePulseTheme.extendedColors.positive
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
-    val highlightColor = StepIndicatorTrack
+    val highlightColor = NocturnePulseTheme.extendedColors.stepIndicatorTrack
     val interactionSource = remember { MutableInteractionSource() }
     val progressFraction = if (stepsGoal > 0) {
         (day.steps.toFloat() / stepsGoal).coerceIn(0f, 1f)

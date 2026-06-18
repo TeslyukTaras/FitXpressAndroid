@@ -65,22 +65,20 @@ import com.hexis.bi.ui.components.my_suit.BuySuitDialogContent
 import com.hexis.bi.ui.components.my_suit.SuitCareSheet
 import com.hexis.bi.ui.components.my_suit.SuitConnectedBanner
 import com.hexis.bi.ui.components.my_suit.SuitInfoRow
-import com.hexis.bi.ui.dark.BodyGlassCard
-import com.hexis.bi.ui.dark.DarkOutlinedButton
-import com.hexis.bi.ui.dark.DarkOutlinedTextField
-import com.hexis.bi.ui.dark.DarkPrimaryButton
-import com.hexis.bi.ui.dark.DarkSlider
-import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.dark.darkScreenBackground
+import com.hexis.bi.ui.components.BodyGlassCard
+import com.hexis.bi.ui.components.AppOutlinedButton
+import com.hexis.bi.ui.components.AppOutlinedTextField
+import com.hexis.bi.ui.components.AppPrimaryButton
+import com.hexis.bi.ui.components.AppSlider
+import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleChip
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleTrack
-import com.hexis.bi.ui.theme.DarkSliderLabel
-import com.hexis.bi.ui.theme.dark.DarkTheme
-import com.hexis.bi.ui.theme.dark.Positive
 import com.hexis.bi.utils.constants.AuthFlowConstants
 import com.hexis.bi.utils.parseDob
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 private const val PAGE_PERSONAL_INFO = 0
 private const val PAGE_MY_SUIT = 1
@@ -129,94 +127,92 @@ fun OnboardingScreen(
         }
     }
 
-    DarkTheme {
-        Box(modifier = modifier) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(
-                        if (state.showDatePicker || showBuySuitDialog)
-                            Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
-                        else Modifier
-                    )
-                    .darkScreenBackground(),
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.img_auth_gradient),
-                    contentDescription = null,
-                    contentScale = ContentScale.FillWidth,
-                    colorFilter = ColorFilter.tint(
-                        MaterialTheme.colorScheme.primary.copy(alpha = AuthFlowConstants.GRADIENT_TINT_ALPHA),
-                    ),
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .fillMaxWidth(),
+    Box(modifier = modifier) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (state.showDatePicker || showBuySuitDialog)
+                        Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
+                    else Modifier
                 )
+                .screenBackground(),
+        ) {
+            Image(
+                painter = painterResource(R.drawable.img_auth_gradient),
+                contentDescription = null,
+                contentScale = ContentScale.FillWidth,
+                colorFilter = ColorFilter.tint(
+                    MaterialTheme.colorScheme.primary.copy(alpha = AuthFlowConstants.GRADIENT_TINT_ALPHA),
+                ),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth(),
+            )
 
-                BaseScreen(
+            BaseScreen(
+                modifier = Modifier.fillMaxSize(),
+                containerColor = Color.Transparent,
+                isLoading = isLoading,
+                error = error,
+                onDismissError = viewModel::clearError,
+                topBar = {
+                    if (pagerState.currentPage != PAGE_PERSONAL_INFO) BaseTopBar(
+                        title = stringResource(R.string.my_suit_title),
+                        background = Color.Transparent,
+                        onBack = { goToPage(PAGE_PERSONAL_INFO) },
+                    )
+                },
+                bottomBar = {
+                    OnboardingBottomBar(
+                        currentPage = pagerState.currentPage,
+                        pageCount = PAGE_COUNT,
+                        isLastPage = isLastPage,
+                        onSkip = if (!isLastPage) ({ viewModel.skip() }) else null,
+                        onBack = if (isLastPage) ({ goToPage(PAGE_PERSONAL_INFO) }) else null,
+                        onNext = { goToPage(pagerState.currentPage + 1) },
+                        onFinish = viewModel::finish,
+                    )
+                },
+            ) {
+                HorizontalPager(
+                    state = pagerState,
                     modifier = Modifier.fillMaxSize(),
-                    containerColor = Color.Transparent,
-                    isLoading = isLoading,
-                    error = error,
-                    onDismissError = viewModel::clearError,
-                    topBar = {
-                        if (pagerState.currentPage != PAGE_PERSONAL_INFO) BaseTopBar(
-                            title = stringResource(R.string.my_suit_title),
-                            background = Color.Transparent,
-                            onBack = { goToPage(PAGE_PERSONAL_INFO) },
+                    userScrollEnabled = false,
+                ) { page ->
+                    when (page) {
+                        PAGE_PERSONAL_INFO -> PersonalInfoPage(state = state, viewModel = viewModel)
+                        PAGE_MY_SUIT -> MySuitPage(
+                            state = state,
+                            viewModel = viewModel,
+                            onBuyOne = { showBuySuitDialog = true },
                         )
-                    },
-                    bottomBar = {
-                        OnboardingBottomBar(
-                            currentPage = pagerState.currentPage,
-                            pageCount = PAGE_COUNT,
-                            isLastPage = isLastPage,
-                            onSkip = if (!isLastPage) ({ viewModel.skip() }) else null,
-                            onBack = if (isLastPage) ({ goToPage(PAGE_PERSONAL_INFO) }) else null,
-                            onNext = { goToPage(pagerState.currentPage + 1) },
-                            onFinish = viewModel::finish,
-                        )
-                    },
-                ) {
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.fillMaxSize(),
-                        userScrollEnabled = false,
-                    ) { page ->
-                        when (page) {
-                            PAGE_PERSONAL_INFO -> PersonalInfoPage(state = state, viewModel = viewModel)
-                            PAGE_MY_SUIT -> MySuitPage(
-                                state = state,
-                                viewModel = viewModel,
-                                onBuyOne = { showBuySuitDialog = true },
-                            )
-                        }
                     }
                 }
             }
+        }
 
-            if (state.showDatePicker) AppDatePicker(
-                state = datePickerState,
-                onDismissRequest = viewModel::hideDatePicker,
-                onSelect = viewModel::updateDateOfBirth,
+        if (state.showDatePicker) AppDatePicker(
+            state = datePickerState,
+            onDismissRequest = viewModel::hideDatePicker,
+            onSelect = viewModel::updateDateOfBirth,
+        )
+
+        if (state.showSuitCareSheet) SuitCareSheet(
+            accepted = state.careInstructionsAccepted,
+            onAcceptedChange = viewModel::setCareInstructionsAccepted,
+            onContinue = viewModel::dismissSuitCareSheet,
+            onDismiss = viewModel::dismissSuitCareSheet,
+        )
+
+        if (showBuySuitDialog) AppDialog(onDismiss = { showBuySuitDialog = false }) {
+            BuySuitDialogContent(
+                onBuySuit = {
+                    showBuySuitDialog = false
+                    onBuySuitScanRequested()
+                    viewModel.finish()
+                },
             )
-
-            if (state.showSuitCareSheet) SuitCareSheet(
-                accepted = state.careInstructionsAccepted,
-                onAcceptedChange = viewModel::setCareInstructionsAccepted,
-                onContinue = viewModel::dismissSuitCareSheet,
-                onDismiss = viewModel::dismissSuitCareSheet,
-            )
-
-            if (showBuySuitDialog) AppDialog(onDismiss = { showBuySuitDialog = false }) {
-                BuySuitDialogContent(
-                    onBuySuit = {
-                        showBuySuitDialog = false
-                        onBuySuitScanRequested()
-                        viewModel.finish()
-                    },
-                )
-            }
         }
     }
 }
@@ -334,7 +330,7 @@ private fun PersonalInfoPage(
 
                 // Date of birth
                 Box(modifier = Modifier.fillMaxWidth()) {
-                    DarkOutlinedTextField(
+                    AppOutlinedTextField(
                         value = state.dateOfBirth,
                         onValueChange = {},
                         readOnly = true,
@@ -390,7 +386,7 @@ private fun GenderField(
     var expanded by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxWidth()) {
-        DarkOutlinedTextField(
+        AppOutlinedTextField(
             value = stringResource(selected.labelRes()),
             onValueChange = {},
             readOnly = true,
@@ -540,16 +536,16 @@ private fun MeasurementSlider(
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyMedium,
-                color = DarkSliderLabel,
+                color = NocturnePulseTheme.extendedColors.sliderLabel,
                 modifier = Modifier.weight(1f),
             )
             Text(
                 text = valueText,
                 style = MaterialTheme.typography.bodyLarge,
-                color = DarkSliderLabel,
+                color = NocturnePulseTheme.extendedColors.sliderLabel,
             )
         }
-        DarkSlider(
+        AppSlider(
             value = value,
             onValueChange = onValueChange,
             valueRange = valueRange,
@@ -627,12 +623,12 @@ private fun ColumnScope.SuitConnectedContent(
     SuitInfoRow(
         label = stringResource(R.string.my_suit_status),
         value = state.connectedStatus,
-        valueColor = Positive,
+        valueColor = NocturnePulseTheme.extendedColors.positive,
     )
 
     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
-    DarkOutlinedButton(
+    AppOutlinedButton(
         text = stringResource(R.string.action_reconnect_suit),
         onClick = onReconnect,
         modifier = Modifier.fillMaxWidth(),
@@ -677,7 +673,7 @@ private fun ColumnScope.SuitDisconnectedContent(
 
     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxs)))
 
-    DarkOutlinedTextField(
+    AppOutlinedTextField(
         value = suitIdInput,
         onValueChange = onSuitIdChange,
         label = stringResource(R.string.label_suit_id),
@@ -695,7 +691,7 @@ private fun ColumnScope.SuitDisconnectedContent(
 
     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
 
-    DarkPrimaryButton(
+    AppPrimaryButton(
         text = stringResource(R.string.action_connect),
         onClick = onConnect,
         enabled = suitIdInput.isNotBlank(),

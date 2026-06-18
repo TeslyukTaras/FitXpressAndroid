@@ -1,4 +1,4 @@
-package com.hexis.bi.ui.dark
+package com.hexis.bi.ui.components
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -21,12 +21,12 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.input.VisualTransformation
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.utils.constants.GlassConstants
 import com.hexis.bi.utils.glass
 
 @Composable
-fun DarkOutlinedTextField(
+fun AppOutlinedTextField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -64,9 +64,10 @@ fun DarkOutlinedTextField(
             modifier = Modifier
                 .fillMaxWidth()
                 .glass(
+                    tint = NocturnePulseTheme.extendedColors.glassRimHighlight,
                     shape = shape,
                     level = GlassConstants.LEVEL_DEFAULT,
-                    fill = DarkTheme.extendedColors.surfaceTranslucent,
+                    fill = NocturnePulseTheme.extendedColors.surfaceTranslucent,
                     backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
                     rimWidth = dimensionResource(R.dimen.glass_rim_width),
                     backgroundAlpha = GlassConstants.TEXT_FIELD_BACKGROUND_ALPHA,

@@ -12,6 +12,7 @@ import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import kotlin.math.roundToInt
 
 class ThreeDLookApi(
     private val client: OkHttpClient,
@@ -43,11 +44,11 @@ class ThreeDLookApi(
                     SIDE_PHOTO_FILENAME,
                     sideBytes.toRequestBody(MEDIA_TYPE_JPEG.toMediaType()),
                 )
-                .addFormDataPart(FIELD_HEIGHT, heightCm.toInt().toString())
+                .addFormDataPart(FIELD_HEIGHT, heightCm.roundToInt().toString())
                 .addFormDataPart(FIELD_GENDER, gender)
                 .addFormDataPart(FIELD_AGE, age.toString())
             if (weightKg != null) {
-                body.addFormDataPart(FIELD_WEIGHT, weightKg.toInt().toString())
+                body.addFormDataPart(FIELD_WEIGHT, weightKg.roundToInt().toString())
             }
             val requestBody = body.build()
 

@@ -61,13 +61,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.core.os.ConfigurationCompat
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.AppHorizontalGradientDivider
-import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.components.AppHorizontalGradientDivider
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.body.BodyChartData
 import com.hexis.bi.ui.main.body.BodyTimeRange
 import com.hexis.bi.ui.main.body.BodyTrendPhase
 import com.hexis.bi.ui.main.body.BodyTrendPoint
-import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.utils.constants.BodyConstants
 import com.hexis.bi.utils.constants.DateFormatConstants
 import java.text.SimpleDateFormat
@@ -104,7 +104,7 @@ internal fun BodyTrendChart(
     var tooltipWidth by remember { mutableIntStateOf(0) }
     var yAxisWidthPx by remember { mutableIntStateOf(0) }
 
-    val chartColors = DarkTheme.extendedColors
+    val chartColors = NocturnePulseTheme.extendedColors
     val muscleColor = chartColors.chartLeanAdvantage
     val fatColor = chartColors.chartFatAdvantage
     val pointBackgroundColor = MaterialTheme.colorScheme.surface
@@ -456,7 +456,7 @@ internal fun BodyTrendChart(
                                         .border(
                                             BorderStroke(
                                                 dimensionResource(R.dimen.border_thin),
-                                                DarkTheme.extendedColors.cardBorder,
+                                                NocturnePulseTheme.extendedColors.cardBorder,
                                             ),
                                             MaterialTheme.shapes.small,
                                         )

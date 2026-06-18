@@ -20,9 +20,9 @@ import androidx.compose.ui.text.withStyle
 import com.hexis.bi.R
 import com.hexis.bi.domain.body.BodyMeasurementKeys
 import com.hexis.bi.domain.body.BodyMeasurementRegion
-import com.hexis.bi.ui.dark.AppVerticalGradientDivider
+import com.hexis.bi.ui.components.AppVerticalGradientDivider
 import com.hexis.bi.ui.theme.MeasurementValueStyle
-import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.utils.cmToInches
 import com.hexis.bi.utils.constants.BodyVisualConstants.MEASUREMENT_VALUE_FORMAT
 import kotlin.math.abs
@@ -78,7 +78,7 @@ private fun MeasurementDateHeaderColumn(
         Text(
             text = date,
             style = MaterialTheme.typography.bodySmall,
-            color = DarkTheme.extendedColors.accentBlue,
+            color = NocturnePulseTheme.extendedColors.accentBlue,
         )
     }
 }
@@ -139,8 +139,8 @@ internal fun MeasurementValueBlock(
                 else MaterialTheme.typography.bodyMedium,
                 color = when {
                     deltaCm == 0f -> MaterialTheme.colorScheme.onSurfaceVariant
-                    isPositiveChange -> DarkTheme.extendedColors.positive
-                    else -> DarkTheme.extendedColors.negative
+                    isPositiveChange -> NocturnePulseTheme.extendedColors.positive
+                    else -> NocturnePulseTheme.extendedColors.negative
                 },
                 modifier = if (hideValue) {
                     Modifier.padding(vertical = dimensionResource(R.dimen.spacer_xxs))

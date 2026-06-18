@@ -37,17 +37,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.hexis.bi.R
 import com.hexis.bi.data.sleep.SleepStage
-import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.sleep.TimelineSegment
 import com.hexis.bi.ui.main.home.sleep.nameRes
-import com.hexis.bi.ui.theme.Gray200
-import com.hexis.bi.ui.theme.SleepStageAwake
-import com.hexis.bi.ui.theme.SleepStageDeep
-import com.hexis.bi.ui.theme.SleepStageLight
-import com.hexis.bi.ui.theme.SleepStageRem
 import com.hexis.bi.utils.constants.SleepConstants
 import com.hexis.bi.utils.constants.TimeConstants
 import com.hexis.bi.utils.formatHour
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 private const val SHADOW_ALPHA = 0.5f
 private const val LINE_ALPHA = 0.6f
@@ -55,13 +51,6 @@ private const val LINE_ALPHA = 0.6f
 /** Stage rows top-to-bottom; the grid line sits at the bottom of each row. */
 private val STAGE_ORDER =
     listOf(SleepStage.Awake, SleepStage.REM, SleepStage.Light, SleepStage.Deep)
-
-private fun stageColor(stage: SleepStage): Color = when (stage) {
-    SleepStage.Awake -> SleepStageAwake
-    SleepStage.Light -> SleepStageLight
-    SleepStage.REM -> SleepStageRem
-    SleepStage.Deep -> SleepStageDeep
-}
 
 /** Awake/REM plateaus sit above their grid line (mid-row) and cast their shadow downward. */
 private fun SleepStage.shadowGoesDown(): Boolean =
@@ -76,7 +65,7 @@ fun SleepTimelineCard(
     modifier: Modifier = Modifier,
 ) {
     val stageHeight = dimensionResource(R.dimen.sleep_timeline_stage_height)
-    val labelStyle = MaterialTheme.typography.labelSmall.copy(color = Gray200.copy(alpha = 0.4f))
+    val labelStyle = MaterialTheme.typography.labelSmall.copy(color = NocturnePulseTheme.extendedColors.gray200.copy(alpha = 0.4f))
     val measurer = rememberTextMeasurer()
     val labelTexts = STAGE_ORDER.map { stringResource(it.nameRes()) }
     // Plot starts 16dp past the widest stage label; grid lines still span the full width.
@@ -141,7 +130,7 @@ private fun timelineDurationValue(totalMinutes: Int): AnnotatedString {
     val minutes = totalMinutes % SleepConstants.MINUTES_PER_HOUR
     val numberStyle = MaterialTheme.typography.bodyLarge.toSpanStyle().copy(color = Color.White)
     val unitStyle =
-        MaterialTheme.typography.bodyMedium.toSpanStyle().copy(color = Gray200.copy(alpha = 0.4f))
+        MaterialTheme.typography.bodyMedium.toSpanStyle().copy(color = NocturnePulseTheme.extendedColors.gray200.copy(alpha = 0.4f))
     val hourUnit = stringResource(R.string.unit_hours_short)
     val minuteUnit = stringResource(R.string.unit_minutes_short)
     return buildAnnotatedString {
@@ -189,6 +178,7 @@ private fun TimelineChart(
     val shadowHeight = dimensionResource(R.dimen.sleep_timeline_shadow_height)
     val plateauOffset = dimensionResource(R.dimen.sleep_timeline_plateau_grid_offset)
     val cornerRadius = dimensionResource(R.dimen.sleep_timeline_corner_radius)
+    val stageColor = rememberSleepStageColors()
 
     Canvas(modifier = modifier) {
         val stageHeightPx = stageHeight.toPx()
@@ -215,10 +205,10 @@ private fun TimelineChart(
         // Translucent vertical gradient shared by the whole hypnogram line (Figma border image).
         // Anchored to the plateau band so each stage's line shows its own colour (orange included).
         val lineBrush = Brush.verticalGradient(
-            0f to SleepStageAwake.copy(alpha = LINE_ALPHA),
-            0.33f to SleepStageRem.copy(alpha = LINE_ALPHA),
-            0.66f to SleepStageLight.copy(alpha = LINE_ALPHA),
-            1f to SleepStageDeep.copy(alpha = LINE_ALPHA),
+            0f to stageColor(SleepStage.Awake).copy(alpha = LINE_ALPHA),
+            0.33f to stageColor(SleepStage.REM).copy(alpha = LINE_ALPHA),
+            0.66f to stageColor(SleepStage.Light).copy(alpha = LINE_ALPHA),
+            1f to stageColor(SleepStage.Deep).copy(alpha = LINE_ALPHA),
             startY = plateauY(SleepStage.Awake),
             endY = plateauY(SleepStage.Deep),
         )
@@ -289,7 +279,7 @@ private fun TimelineTimeLabels(
             Text(
                 text = formatHour(hour),
                 style = MaterialTheme.typography.labelSmall,
-                color = Gray200,
+                color = NocturnePulseTheme.extendedColors.gray200,
             )
         }
     }

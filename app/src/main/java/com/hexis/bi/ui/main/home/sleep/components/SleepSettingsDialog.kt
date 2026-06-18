@@ -19,11 +19,11 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.DarkOutlinedButton
-import com.hexis.bi.ui.dark.DarkPrimaryButton
-import com.hexis.bi.ui.dark.DarkSlider
-import com.hexis.bi.ui.theme.Gray200
+import com.hexis.bi.ui.components.AppOutlinedButton
+import com.hexis.bi.ui.components.AppPrimaryButton
+import com.hexis.bi.ui.components.AppSlider
 import com.hexis.bi.utils.constants.SleepConstants
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 fun SleepSettingsDialogContent(
@@ -71,7 +71,7 @@ fun SleepSettingsDialogContent(
                     append(goalText)
                     val unitIndex = goalText.lastIndexOf('h')
                     if (unitIndex >= 0) {
-                        addStyle(SpanStyle(color = Gray200), unitIndex, unitIndex + 1)
+                        addStyle(SpanStyle(color = NocturnePulseTheme.extendedColors.gray200), unitIndex, unitIndex + 1)
                     }
                 },
                 style = MaterialTheme.typography.bodyLarge,
@@ -79,7 +79,7 @@ fun SleepSettingsDialogContent(
             )
         }
 
-        DarkSlider(
+        AppSlider(
             value = sleepGoalHours.toFloat(),
             onValueChange = { onGoalChange(it.toInt()) },
             valueRange = SleepConstants.SLEEP_GOAL_MIN_HOURS.toFloat()..SleepConstants.SLEEP_GOAL_MAX_HOURS.toFloat(),
@@ -115,12 +115,12 @@ fun SleepSettingsDialogContent(
                 .padding(horizontal = dimensionResource(R.dimen.padding_small)),
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_xs)),
         ) {
-            DarkOutlinedButton(
+            AppOutlinedButton(
                 text = stringResource(R.string.action_cancel),
                 onClick = onCancel,
                 modifier = Modifier.weight(1f),
             )
-            DarkPrimaryButton(
+            AppPrimaryButton(
                 text = stringResource(R.string.action_save),
                 onClick = onSave,
                 modifier = Modifier.weight(1f),

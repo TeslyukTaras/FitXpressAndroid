@@ -30,12 +30,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.IntOffset
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.Gray300
-import com.hexis.bi.ui.theme.dark.ChartAxisLine
-import com.hexis.bi.ui.theme.dark.DarkBorderMuted
-import com.hexis.bi.ui.theme.dark.Positive
 import com.hexis.bi.utils.SmoothLinePath
 import com.hexis.bi.utils.constants.LongevityConstants
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 /**
  * Smooth (monotone-cubic) line chart for the Longevity trend, with dashed horizontal grid lines,
@@ -57,8 +54,8 @@ internal fun LongevityLineChart(
     val lineStroke = dimensionResource(R.dimen.longevity_chart_line_stroke)
     val chartGap = dimensionResource(R.dimen.spacer_xs)
 
-    val gridColor = DarkBorderMuted
-    val axisColor = ChartAxisLine
+    val gridColor = MaterialTheme.colorScheme.outline
+    val axisColor = NocturnePulseTheme.extendedColors.chartAxisLine
     val lineColor = MaterialTheme.colorScheme.primary
     val gridLines = LongevityConstants.GRID_LINES
 
@@ -129,7 +126,7 @@ internal fun LongevityLineChart(
                     Text(
                         text = label,
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (index == currentLabelIndex) Positive else Gray300,
+                        color = if (index == currentLabelIndex) NocturnePulseTheme.extendedColors.positive else NocturnePulseTheme.extendedColors.gray300,
                     )
                 }
             }

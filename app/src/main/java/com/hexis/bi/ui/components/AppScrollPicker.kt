@@ -1,4 +1,4 @@
-package com.hexis.bi.ui.dark
+package com.hexis.bi.ui.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -23,7 +23,6 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
-import com.hexis.bi.ui.components.AppDialog
 import com.hexis.bi.utils.constants.GlassConstants
 import kotlin.math.absoluteValue
 
@@ -88,7 +87,7 @@ fun AppScrollPicker(
                 }
             }
 
-            DarkPrimaryButton(
+            AppPrimaryButton(
                 text = stringResource(R.string.action_save),
                 onClick = onConfirm,
                 modifier = Modifier.fillMaxWidth()

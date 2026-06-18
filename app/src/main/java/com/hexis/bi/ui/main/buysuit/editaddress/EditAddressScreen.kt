@@ -25,8 +25,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
-import com.hexis.bi.ui.dark.DarkPrimaryButton
-import com.hexis.bi.ui.dark.darkScreenBackground
+import com.hexis.bi.ui.components.AppPrimaryButton
+import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.main.buysuit.shipping.CountryPickerField
 import com.hexis.bi.ui.main.buysuit.shipping.CountryPickerSheet
 import com.hexis.bi.ui.main.buysuit.shipping.ShippingCountryProvider
@@ -62,7 +62,7 @@ fun EditAddressScreen(
                         Modifier
                     }
                 )
-                .darkScreenBackground(),
+                .screenBackground(),
             containerColor = Color.Transparent,
             isLoading = isLoading,
             error = error,
@@ -172,7 +172,7 @@ private fun EditAddressContent(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
-        DarkPrimaryButton(
+        AppPrimaryButton(
             text = stringResource(R.string.edit_address_save),
             onClick = viewModel::submit,
             modifier = Modifier.fillMaxWidth(),

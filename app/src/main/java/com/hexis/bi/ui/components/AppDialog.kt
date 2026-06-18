@@ -34,24 +34,6 @@ import com.hexis.bi.ui.theme.overlayBorder
  * The blur effect on the underlying screen content is intentionally NOT handled here —
  * each screen is responsible for blurring its own content when a dialog is visible,
  * since some screens may have composables rendered outside [BaseScreen].
- *
- * Usage:
- * ```kotlin
- * Box(modifier = modifier) {
- *     BaseScreen(
- *         modifier = Modifier.then(
- *             if (showDialog) Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
- *             else Modifier
- *         ),
- *     ) { screenContent() }
- *
- *     if (showDialog) {
- *         AppDialog {
- *             // dialog content
- *         }
- *     }
- * }
- * ```
  */
 @Composable
 fun AppDialog(

@@ -1,4 +1,4 @@
-package com.hexis.bi.ui.dark
+package com.hexis.bi.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -10,11 +10,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.Dp
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.GradientDividerCenter
-import com.hexis.bi.ui.theme.GradientDividerEdge
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.utils.constants.GradientDividerConstants
 
 /**
@@ -25,28 +25,33 @@ import com.hexis.bi.utils.constants.GradientDividerConstants
  */
 enum class GradientDividerDirection { BOTH, START, END }
 
-private fun horizontalFadeBrush(direction: GradientDividerDirection): Brush = when (direction) {
-    GradientDividerDirection.BOTH -> Brush.horizontalGradient(
-        GradientDividerConstants.EDGE_STOP to GradientDividerEdge,
-        GradientDividerConstants.CENTER_STOP to GradientDividerCenter,
-        GradientDividerConstants.END_STOP to GradientDividerEdge,
-    )
+private fun horizontalFadeBrush(
+    direction: GradientDividerDirection,
+    edge: Color,
+    center: Color
+): Brush =
+    when (direction) {
+        GradientDividerDirection.BOTH -> Brush.horizontalGradient(
+            GradientDividerConstants.EDGE_STOP to edge,
+            GradientDividerConstants.CENTER_STOP to center,
+            GradientDividerConstants.END_STOP to edge,
+        )
 
-    GradientDividerDirection.START -> Brush.horizontalGradient(
-        GradientDividerConstants.EDGE_STOP to GradientDividerCenter,
-        GradientDividerConstants.END_STOP to GradientDividerEdge,
-    )
+        GradientDividerDirection.START -> Brush.horizontalGradient(
+            GradientDividerConstants.EDGE_STOP to center,
+            GradientDividerConstants.END_STOP to edge,
+        )
 
-    GradientDividerDirection.END -> Brush.horizontalGradient(
-        GradientDividerConstants.EDGE_STOP to GradientDividerEdge,
-        GradientDividerConstants.END_STOP to GradientDividerCenter,
-    )
-}
+        GradientDividerDirection.END -> Brush.horizontalGradient(
+            GradientDividerConstants.EDGE_STOP to edge,
+            GradientDividerConstants.END_STOP to center,
+        )
+    }
 
-private fun verticalFadeBrush(): Brush = Brush.verticalGradient(
-    GradientDividerConstants.EDGE_STOP to GradientDividerEdge,
-    GradientDividerConstants.CENTER_STOP to GradientDividerCenter,
-    GradientDividerConstants.END_STOP to GradientDividerEdge,
+private fun verticalFadeBrush(edge: Color, center: Color): Brush = Brush.verticalGradient(
+    GradientDividerConstants.EDGE_STOP to edge,
+    GradientDividerConstants.CENTER_STOP to center,
+    GradientDividerConstants.END_STOP to edge,
 )
 
 /**
@@ -59,7 +64,9 @@ fun AppHorizontalGradientDivider(
     thickness: Dp = dimensionResource(R.dimen.border_line),
     direction: GradientDividerDirection = GradientDividerDirection.BOTH,
 ) {
-    val brush = remember(direction) { horizontalFadeBrush(direction) }
+    val edge = NocturnePulseTheme.extendedColors.gradientDividerEdge
+    val center = NocturnePulseTheme.extendedColors.gradientDividerCenter
+    val brush = remember(direction, edge, center) { horizontalFadeBrush(direction, edge, center) }
     Box(
         modifier
             .fillMaxWidth()
@@ -77,7 +84,9 @@ fun AppVerticalGradientDivider(
     modifier: Modifier = Modifier,
     thickness: Dp = dimensionResource(R.dimen.border_line),
 ) {
-    val brush = remember { verticalFadeBrush() }
+    val edge = NocturnePulseTheme.extendedColors.gradientDividerEdge
+    val center = NocturnePulseTheme.extendedColors.gradientDividerCenter
+    val brush = remember(edge, center) { verticalFadeBrush(edge, center) }
     Box(
         modifier
             .width(thickness)

@@ -11,14 +11,14 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.dimensionResource
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 internal fun PaceOfAgingMeter(
     fraction: Float,
     modifier: Modifier = Modifier,
 ) {
-    val ext = DarkTheme.extendedColors
+    val ext = NocturnePulseTheme.extendedColors
     val trackColor = ext.gaugeTrack
     val fillColors = remember(ext.gaugeLow, ext.gaugeMid, ext.gaugeHigh) {
         listOf(ext.gaugeLow, ext.gaugeMid, ext.gaugeHigh)

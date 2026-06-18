@@ -25,13 +25,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
-import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.dark.darkScreenBackground
+import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.main.home.paceofaging.components.PaceOfAgingInfoBottomSheet
 import com.hexis.bi.ui.main.home.paceofaging.components.PaceOfAgingInsightCard
 import com.hexis.bi.ui.main.home.paceofaging.components.PaceOfAgingStatsCard
 import com.hexis.bi.ui.main.home.paceofaging.components.PaceOfAgingTrendCard
-import com.hexis.bi.ui.theme.dark.DarkTheme
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,64 +46,62 @@ fun PaceOfAgingScreen(
 
     LightStatusBarIcons()
 
-    DarkTheme {
-        Box(modifier = modifier) {
-            BaseScreen(
+    Box(modifier = modifier) {
+        BaseScreen(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (state.showInfoSheet) Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
+                    else Modifier
+                )
+                .screenBackground(),
+            containerColor = Color.Transparent,
+            isLoading = isLoading,
+            error = error,
+            onDismissError = viewModel::clearError,
+            topBar = {
+                BaseTopBar(
+                    title = stringResource(R.string.pace_of_aging_screen_title),
+                    onBack = onBack,
+                    background = Color.Transparent,
+                    actions = {
+                        IconButton(onClick = viewModel::showInfoSheet) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_info),
+                                contentDescription = stringResource(R.string.cd_info),
+                                tint = MaterialTheme.colorScheme.onBackground,
+                                modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+                            )
+                        }
+                    },
+                )
+            },
+        ) {
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .then(
-                        if (state.showInfoSheet) Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
-                        else Modifier
-                    )
-                    .darkScreenBackground(),
-                containerColor = Color.Transparent,
-                isLoading = isLoading,
-                error = error,
-                onDismissError = viewModel::clearError,
-                topBar = {
-                    BaseTopBar(
-                        title = stringResource(R.string.pace_of_aging_screen_title),
-                        onBack = onBack,
-                        background = Color.Transparent,
-                        actions = {
-                            IconButton(onClick = viewModel::showInfoSheet) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_info),
-                                    contentDescription = stringResource(R.string.cd_info),
-                                    tint = MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
-                                )
-                            }
-                        },
-                    )
-                },
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
-                ) {
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
 
-                    PaceOfAgingTrendCard(state = state)
+                PaceOfAgingTrendCard(state = state)
 
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-                    PaceOfAgingStatsCard(
-                        waistTrend = state.waistTrend,
-                        bodyFat = state.bodyFat,
-                    )
+                PaceOfAgingStatsCard(
+                    waistTrend = state.waistTrend,
+                    bodyFat = state.bodyFat,
+                )
 
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-                    PaceOfAgingInsightCard(insight = state.insight)
+                PaceOfAgingInsightCard(insight = state.insight)
 
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
-                }
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
             }
-
-            if (state.showInfoSheet) PaceOfAgingInfoBottomSheet(onDismiss = viewModel::dismissInfoSheet)
         }
+
+        if (state.showInfoSheet) PaceOfAgingInfoBottomSheet(onDismiss = viewModel::dismissInfoSheet)
     }
 }

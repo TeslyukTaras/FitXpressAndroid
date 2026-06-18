@@ -56,15 +56,15 @@ import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppDatePicker
-import com.hexis.bi.ui.dark.BodyGlassCard
-import com.hexis.bi.ui.dark.DarkOutlinedTextField
-import com.hexis.bi.ui.dark.DarkPrimaryButton
-import com.hexis.bi.ui.dark.DarkSlider
-import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.dark.darkScreenBackground
+import com.hexis.bi.ui.components.BodyGlassCard
+import com.hexis.bi.ui.components.AppOutlinedTextField
+import com.hexis.bi.ui.components.AppPrimaryButton
+import com.hexis.bi.ui.components.AppSlider
+import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.theme.NocturnePulseTheme
+import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleChip
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleTrack
-import com.hexis.bi.ui.theme.dark.DarkTheme
 import com.hexis.bi.utils.parseDob
 import org.koin.androidx.compose.koinViewModel
 
@@ -101,140 +101,138 @@ fun EditProfileScreen(
         }
     }
 
-    DarkTheme {
-        Box(modifier = modifier) {
-            BaseScreen(
+    Box(modifier = modifier) {
+        BaseScreen(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (state.showDatePicker)
+                        Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
+                    else Modifier
+                )
+                .screenBackground(),
+            containerColor = Color.Transparent,
+            isLoading = isLoading,
+            error = error,
+            onDismissError = viewModel::clearError,
+            message = message,
+            onDismissMessage = viewModel::clearMessage,
+            viewModel = viewModel,
+            topBar = {
+                BaseTopBar(
+                    title = stringResource(R.string.edit_profile_title),
+                    background = Color.Transparent,
+                    onBack = onBack,
+                )
+            },
+        ) {
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .then(
-                        if (state.showDatePicker)
-                            Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
-                        else Modifier
-                    )
-                    .darkScreenBackground(),
-                containerColor = Color.Transparent,
-                isLoading = isLoading,
-                error = error,
-                onDismissError = viewModel::clearError,
-                message = message,
-                onDismissMessage = viewModel::clearMessage,
-                viewModel = viewModel,
-                topBar = {
-                    BaseTopBar(
-                        title = stringResource(R.string.edit_profile_title),
-                        background = Color.Transparent,
-                        onBack = onBack,
-                    )
-                },
+                    .verticalScroll(rememberScrollState())
+                    .imePadding()
+                    .padding(horizontal = dimensionResource(R.dimen.padding_medium))
+                    .navigationBarsPadding(),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .imePadding()
-                        .padding(horizontal = dimensionResource(R.dimen.padding_medium))
-                        .navigationBarsPadding(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+                AvatarPicker(
+                    imageUrl = state.imageUrl,
+                    onClick = {
+                        photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    },
+                )
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_xs)),
                 ) {
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-                    AvatarPicker(
-                        imageUrl = state.imageUrl,
-                        onClick = {
-                            photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                        },
+                    AppOutlinedTextField(
+                        value = state.firstName,
+                        onValueChange = viewModel::updateFirstName,
+                        label = stringResource(R.string.label_first_name),
+                        placeholder = stringResource(R.string.label_first_name),
+                        modifier = Modifier.weight(1f),
                     )
-
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_xs)),
-                    ) {
-                        DarkOutlinedTextField(
-                            value = state.firstName,
-                            onValueChange = viewModel::updateFirstName,
-                            label = stringResource(R.string.label_first_name),
-                            placeholder = stringResource(R.string.label_first_name),
-                            modifier = Modifier.weight(1f),
-                        )
-                        DarkOutlinedTextField(
-                            value = state.lastName,
-                            onValueChange = viewModel::updateLastName,
-                            label = stringResource(R.string.label_last_name),
-                            placeholder = stringResource(R.string.label_last_name),
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
-
-                    DarkOutlinedTextField(
-                        value = state.email,
-                        onValueChange = viewModel::updateEmail,
-                        label = stringResource(R.string.label_email),
-                        placeholder = stringResource(R.string.placeholder_email),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        modifier = Modifier.fillMaxWidth(),
+                    AppOutlinedTextField(
+                        value = state.lastName,
+                        onValueChange = viewModel::updateLastName,
+                        label = stringResource(R.string.label_last_name),
+                        placeholder = stringResource(R.string.label_last_name),
+                        modifier = Modifier.weight(1f),
                     )
-
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
-
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        DarkOutlinedTextField(
-                            value = state.dateOfBirth,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = stringResource(R.string.label_date_of_birth),
-                            placeholder = stringResource(R.string.placeholder_date_of_birth),
-                            trailingIcon = {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_calendar),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .clickable(onClick = viewModel::showDatePicker),
-                        )
-                    }
-
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
-
-                    GenderField(
-                        selected = state.gender,
-                        onSelect = viewModel::selectGender,
-                    )
-
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
-
-                    PersonalInfoSection(state = state, viewModel = viewModel)
-
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
-
-                    DarkPrimaryButton(
-                        text = stringResource(R.string.action_save),
-                        onClick = viewModel::save,
-                        enabled = state.canSave,
-                        isLoading = isLoading,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
                 }
-            }
 
-            if (state.showDatePicker) AppDatePicker(
-                state = datePickerState,
-                onDismissRequest = viewModel::hideDatePicker,
-                onSelect = viewModel::updateDateOfBirth,
-            )
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+
+                AppOutlinedTextField(
+                    value = state.email,
+                    onValueChange = viewModel::updateEmail,
+                    label = stringResource(R.string.label_email),
+                    placeholder = stringResource(R.string.placeholder_email),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    AppOutlinedTextField(
+                        value = state.dateOfBirth,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = stringResource(R.string.label_date_of_birth),
+                        placeholder = stringResource(R.string.placeholder_date_of_birth),
+                        trailingIcon = {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_calendar),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clickable(onClick = viewModel::showDatePicker),
+                    )
+                }
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+
+                GenderField(
+                    selected = state.gender,
+                    onSelect = viewModel::selectGender,
+                )
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+
+                PersonalInfoSection(state = state, viewModel = viewModel)
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
+
+                AppPrimaryButton(
+                    text = stringResource(R.string.action_save),
+                    onClick = viewModel::save,
+                    enabled = state.canSave,
+                    isLoading = isLoading,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
+            }
         }
+
+        if (state.showDatePicker) AppDatePicker(
+            state = datePickerState,
+            onDismissRequest = viewModel::hideDatePicker,
+            onSelect = viewModel::updateDateOfBirth,
+        )
     }
 }
 
@@ -244,7 +242,7 @@ private fun AvatarPicker(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val translucent = DarkTheme.extendedColors.surfaceTranslucent
+    val translucent = NocturnePulseTheme.extendedColors.surfaceTranslucent
     val avatarSize = dimensionResource(R.dimen.size_avatar_large)
     val buttonSize = dimensionResource(R.dimen.size_avatar_button)
 
@@ -310,7 +308,7 @@ private fun GenderField(
     var expanded by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxWidth()) {
-        DarkOutlinedTextField(
+        AppOutlinedTextField(
             value = stringResource(selected.labelRes()),
             onValueChange = {},
             readOnly = true,
@@ -480,7 +478,7 @@ private fun MeasurementSlider(
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }
-        DarkSlider(
+        AppSlider(
             value = value,
             onValueChange = onValueChange,
             valueRange = valueRange,

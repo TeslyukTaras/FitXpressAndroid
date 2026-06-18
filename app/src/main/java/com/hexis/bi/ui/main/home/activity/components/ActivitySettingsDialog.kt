@@ -19,14 +19,14 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.DarkOutlinedButton
-import com.hexis.bi.ui.dark.DarkPrimaryButton
-import com.hexis.bi.ui.dark.DarkSlider
-import com.hexis.bi.ui.dark.DarkSwitch
-import com.hexis.bi.ui.theme.Gray200
+import com.hexis.bi.ui.components.AppOutlinedButton
+import com.hexis.bi.ui.components.AppPrimaryButton
+import com.hexis.bi.ui.components.AppSlider
+import com.hexis.bi.ui.components.AppSwitch
 import com.hexis.bi.utils.constants.ActivityConstants
 import java.text.NumberFormat
 import java.util.Locale
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 fun ActivitySettingsDialogContent(
@@ -101,7 +101,7 @@ fun ActivitySettingsDialogContent(
                     val unitIndex = stepsText.indexOf(unitText)
                     if (unitIndex >= 0) {
                         addStyle(
-                            SpanStyle(color = Gray200),
+                            SpanStyle(color = NocturnePulseTheme.extendedColors.gray200),
                             unitIndex,
                             stepsText.length,
                         )
@@ -112,7 +112,7 @@ fun ActivitySettingsDialogContent(
             )
         }
 
-        DarkSlider(
+        AppSlider(
             value = stepsGoal.toFloat(),
             onValueChange = { raw ->
                 val step = ActivityConstants.STEPS_GOAL_SLIDER_STEP
@@ -138,7 +138,7 @@ fun ActivitySettingsDialogContent(
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Normal),
                 color = MaterialTheme.colorScheme.onBackground,
             )
-            DarkSwitch(
+            AppSwitch(
                 checked = showActiveCalories,
                 onCheckedChange = onShowActiveCaloriesChange,
             )
@@ -152,12 +152,12 @@ fun ActivitySettingsDialogContent(
                 .padding(horizontal = dimensionResource(R.dimen.padding_small)),
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_xs)),
         ) {
-            DarkOutlinedButton(
+            AppOutlinedButton(
                 text = stringResource(R.string.action_cancel),
                 onClick = onCancel,
                 modifier = Modifier.weight(1f),
             )
-            DarkPrimaryButton(
+            AppPrimaryButton(
                 text = stringResource(R.string.action_save),
                 onClick = onSave,
                 modifier = Modifier.weight(1f),

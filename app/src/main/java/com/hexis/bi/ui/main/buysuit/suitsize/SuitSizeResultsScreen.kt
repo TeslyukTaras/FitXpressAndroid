@@ -40,22 +40,22 @@ import com.hexis.bi.R
 import com.hexis.bi.domain.order.SuitSize
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
-import com.hexis.bi.ui.dark.AppHorizontalGradientDivider
-import com.hexis.bi.ui.dark.BodyGlassCard
-import com.hexis.bi.ui.dark.DarkPrimaryButton
-import com.hexis.bi.ui.dark.DarkSlider
-import com.hexis.bi.ui.dark.darkScreenBackground
+import com.hexis.bi.ui.components.AppHorizontalGradientDivider
+import com.hexis.bi.ui.components.BodyGlassCard
+import com.hexis.bi.ui.components.AppPrimaryButton
+import com.hexis.bi.ui.components.AppSlider
+import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleChip
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleTrack
-import com.hexis.bi.ui.theme.dark.Positive
-import com.hexis.bi.utils.cmToFeetAndInches
 import com.hexis.bi.utils.cmToInches
+import com.hexis.bi.utils.cmToRoundedFeetAndInches
 import com.hexis.bi.utils.constants.ProfileConstants
 import com.hexis.bi.utils.inchesToCm
 import com.hexis.bi.utils.kgToLb
 import com.hexis.bi.utils.lbToKg
 import org.koin.androidx.compose.koinViewModel
 import kotlin.math.roundToInt
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 fun SuitSizeResultsScreen(
@@ -68,7 +68,7 @@ fun SuitSizeResultsScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
 
     BaseScreen(
-        modifier = modifier.darkScreenBackground(),
+        modifier = modifier.screenBackground(),
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
         error = error,
         onDismissError = viewModel::clearError,
@@ -224,7 +224,7 @@ private fun SuitSizeResultsContent(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
 
-        DarkPrimaryButton(
+        AppPrimaryButton(
             text = stringResource(R.string.suit_size_proceed_to_order),
             onClick = onProceedToOrder,
             enabled = state.canProceedToOrder,
@@ -307,7 +307,7 @@ private fun MeasurementSliderRow(
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }
-        DarkSlider(
+        AppSlider(
             value = value.coerceIn(valueRange.start, valueRange.endInclusive),
             onValueChange = onValueChange,
             valueRange = valueRange,
@@ -339,13 +339,13 @@ private fun SuitFeatureRow(text: String) {
             modifier = Modifier
                 .size(dimensionResource(R.dimen.icon_medium))
                 .clip(CircleShape)
-                .border(dimensionResource(R.dimen.border_thin), Positive, CircleShape),
+                .border(dimensionResource(R.dimen.border_thin), NocturnePulseTheme.extendedColors.positive, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_tick),
                 contentDescription = null,
-                tint = Positive,
+                tint = NocturnePulseTheme.extendedColors.positive,
                 modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
             )
         }
@@ -362,8 +362,8 @@ private fun formatHeight(heightCm: Float, isMetric: Boolean): String =
     if (isMetric) {
         "${heightCm.roundToInt()} cm"
     } else {
-        val (feet, inches) = heightCm.cmToFeetAndInches()
-        "$feet ft ${inches.roundToInt()} in"
+        val (feet, inches) = heightCm.cmToRoundedFeetAndInches()
+        "$feet ft $inches in"
     }
 
 private fun formatWeight(weightKg: Float, isMetric: Boolean): String =

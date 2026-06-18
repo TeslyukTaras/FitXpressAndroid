@@ -1,4 +1,4 @@
-package com.hexis.bi.ui.components.profile
+package com.hexis.bi.ui.base
 
 interface HealthParameters {
     val isMetric: Boolean

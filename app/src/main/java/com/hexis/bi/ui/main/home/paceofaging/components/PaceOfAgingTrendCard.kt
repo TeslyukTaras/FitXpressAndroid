@@ -15,7 +15,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.paceofaging.PaceOfAgingState
 import com.hexis.bi.ui.theme.MeasurementTitleValueStyle
 import com.hexis.bi.ui.theme.TitleDimTextStyle

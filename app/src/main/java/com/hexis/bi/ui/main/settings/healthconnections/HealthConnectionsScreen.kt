@@ -53,16 +53,15 @@ import com.hexis.bi.data.healthconnections.HealthConnection
 import com.hexis.bi.data.terra.TerraConfig
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
-import com.hexis.bi.ui.dark.AppHorizontalGradientDivider
-import com.hexis.bi.ui.dark.AppSearchField
-import com.hexis.bi.ui.dark.BodyGlassCard
-import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.dark.darkScreenBackground
-import com.hexis.bi.ui.theme.dark.DarkTheme
-import com.hexis.bi.ui.theme.dark.Positive
+import com.hexis.bi.ui.components.AppHorizontalGradientDivider
+import com.hexis.bi.ui.components.AppSearchField
+import com.hexis.bi.ui.components.BodyGlassCard
+import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.utils.constants.HealthConnectConstants
 import com.hexis.bi.utils.constants.TerraProviders
 import org.koin.androidx.compose.koinViewModel
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
@@ -146,132 +145,130 @@ fun HealthConnectionsScreen(
 
     LightStatusBarIcons()
 
-    DarkTheme {
-    BaseScreen(
-        modifier = modifier
+BaseScreen(
+    modifier = modifier
+        .fillMaxSize()
+        .screenBackground(),
+    containerColor = Color.Transparent,
+    isLoading = isLoading,
+    error = error,
+    onDismissError = viewModel::clearError,
+    message = message,
+    onDismissMessage = viewModel::clearMessage,
+    viewModel = viewModel,
+    topBar = {
+        BaseTopBar(
+            title = stringResource(R.string.screen_health_connections),
+            background = Color.Transparent,
+            onBack = onBack,
+        )
+    },
+) {
+    Column(
+        modifier = Modifier
             .fillMaxSize()
-            .darkScreenBackground(),
-        containerColor = Color.Transparent,
-        isLoading = isLoading,
-        error = error,
-        onDismissError = viewModel::clearError,
-        message = message,
-        onDismissMessage = viewModel::clearMessage,
-        viewModel = viewModel,
-        topBar = {
-            BaseTopBar(
-                title = stringResource(R.string.screen_health_connections),
-                background = Color.Transparent,
-                onBack = onBack,
-            )
-        },
+            .verticalScroll(scrollState)
+            .padding(horizontal = dimensionResource(R.dimen.padding_medium))
+            .padding(top = dimensionResource(R.dimen.padding_medium)),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(horizontal = dimensionResource(R.dimen.padding_medium))
-                .padding(top = dimensionResource(R.dimen.padding_medium)),
-        ) {
-            AppSearchField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-            )
+        AppSearchField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+        )
 
-            Spacer(modifier = Modifier.padding(top = dimensionResource(R.dimen.spacer_l)))
+        Spacer(modifier = Modifier.padding(top = dimensionResource(R.dimen.spacer_l)))
 
-            if (hasSearchNoResults) HealthConnectionsSearchEmptyState(query = trimmedQuery)
-            else {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_m)),
-                ) {
-                    if (searchQuery.isBlank()) Text(
-                        text = stringResource(R.string.health_connections_subtitle),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    var needsDividerBeforeNext = false
+        if (hasSearchNoResults) HealthConnectionsSearchEmptyState(query = trimmedQuery)
+        else {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_m)),
+            ) {
+                if (searchQuery.isBlank()) Text(
+                    text = stringResource(R.string.health_connections_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                var needsDividerBeforeNext = false
 
-                    if (filteredSdk.isNotEmpty()) {
-                        filteredSdk.forEach { provider ->
-                            key(provider.code) {
-                                HealthConnectionRow(
-                                    iconRes = provider.iconRes,
-                                    title = labelOf(provider),
-                                    connected = state.wearableConnections.hasProvider(provider.code),
-                                    onClick = {
-                                        if (provider.code.equals(
-                                                TerraProviders.HEALTH_CONNECT,
-                                                ignoreCase = true
-                                            ) &&
-                                            !context.isHealthConnectInstalled()
-                                        ) {
-                                            context.openHealthConnectInstall()
-                                        } else {
-                                            viewModel.onSdkProviderRowClick(
-                                                provider = provider.code,
-                                                displayName = labelOf(provider),
-                                                activity = activity,
-                                            )
-                                        }
-                                    },
-                                )
-                            }
-                        }
-                        needsDividerBeforeNext = true
-                    }
-
-                    if (filteredWearables.isNotEmpty()) {
-                        if (needsDividerBeforeNext) HealthConnectionsSectionDivider()
-                        filteredWearables.forEach { provider ->
-                            key(provider.code) {
-                                HealthConnectionRow(
-                                    iconRes = provider.iconRes,
-                                    title = labelOf(provider),
-                                    connected = state.wearableConnections.hasProvider(provider.code),
-                                    onClick = {
-                                        viewModel.onWidgetProviderRowClick(
-                                            provider.code,
-                                            labelOf(provider)
-                                        )
-                                    },
-                                )
-                            }
-                        }
-                        needsDividerBeforeNext = true
-                    }
-
-                    if (filteredOther.isNotEmpty()) {
-                        if (needsDividerBeforeNext) HealthConnectionsSectionDivider()
-                        filteredOther.forEach { provider ->
-                            key(provider.code) {
-                                HealthConnectionRow(
-                                    iconRes = provider.iconRes,
-                                    title = labelOf(provider),
-                                    connected = state.wearableConnections.hasProvider(provider.code),
-                                    onClick = {
-                                        viewModel.onWidgetProviderRowClick(
-                                            provider.code,
-                                            labelOf(provider)
-                                        )
-                                    },
-                                )
-                            }
-                        }
-                        needsDividerBeforeNext = true
-                    }
-
-                    if (TerraConfig.isSandbox && searchQuery.isBlank()) {
-                        if (needsDividerBeforeNext) HealthConnectionsSectionDivider()
-                        key(TerraProviders.DUMMY) {
+                if (filteredSdk.isNotEmpty()) {
+                    filteredSdk.forEach { provider ->
+                        key(provider.code) {
                             HealthConnectionRow(
-                                iconRes = R.drawable.ic_connect,
-                                title = stringResource(R.string.health_connection_dummy),
-                                connected = state.wearableConnections.hasProvider(TerraProviders.DUMMY),
-                                onClick = { viewModel.onDummyRowClick() },
+                                iconRes = provider.iconRes,
+                                title = labelOf(provider),
+                                connected = state.wearableConnections.hasProvider(provider.code),
+                                onClick = {
+                                    if (provider.code.equals(
+                                            TerraProviders.HEALTH_CONNECT,
+                                            ignoreCase = true
+                                        ) &&
+                                        !context.isHealthConnectInstalled()
+                                    ) {
+                                        context.openHealthConnectInstall()
+                                    } else {
+                                        viewModel.onSdkProviderRowClick(
+                                            provider = provider.code,
+                                            displayName = labelOf(provider),
+                                            activity = activity,
+                                        )
+                                    }
+                                },
                             )
                         }
+                    }
+                    needsDividerBeforeNext = true
+                }
+
+                if (filteredWearables.isNotEmpty()) {
+                    if (needsDividerBeforeNext) HealthConnectionsSectionDivider()
+                    filteredWearables.forEach { provider ->
+                        key(provider.code) {
+                            HealthConnectionRow(
+                                iconRes = provider.iconRes,
+                                title = labelOf(provider),
+                                connected = state.wearableConnections.hasProvider(provider.code),
+                                onClick = {
+                                    viewModel.onWidgetProviderRowClick(
+                                        provider.code,
+                                        labelOf(provider)
+                                    )
+                                },
+                            )
+                        }
+                    }
+                    needsDividerBeforeNext = true
+                }
+
+                if (filteredOther.isNotEmpty()) {
+                    if (needsDividerBeforeNext) HealthConnectionsSectionDivider()
+                    filteredOther.forEach { provider ->
+                        key(provider.code) {
+                            HealthConnectionRow(
+                                iconRes = provider.iconRes,
+                                title = labelOf(provider),
+                                connected = state.wearableConnections.hasProvider(provider.code),
+                                onClick = {
+                                    viewModel.onWidgetProviderRowClick(
+                                        provider.code,
+                                        labelOf(provider)
+                                    )
+                                },
+                            )
+                        }
+                    }
+                    needsDividerBeforeNext = true
+                }
+
+                if (TerraConfig.isSandbox && searchQuery.isBlank()) {
+                    if (needsDividerBeforeNext) HealthConnectionsSectionDivider()
+                    key(TerraProviders.DUMMY) {
+                        HealthConnectionRow(
+                            iconRes = R.drawable.ic_connect,
+                            title = stringResource(R.string.health_connection_dummy),
+                            connected = state.wearableConnections.hasProvider(TerraProviders.DUMMY),
+                            onClick = { viewModel.onDummyRowClick() },
+                        )
                     }
                 }
             }
@@ -330,7 +327,7 @@ private fun HealthConnectionRow(
                 Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val statusColor =
-                        if (connected) Positive else MaterialTheme.colorScheme.onSurfaceVariant
+                        if (connected) NocturnePulseTheme.extendedColors.positive else MaterialTheme.colorScheme.onSurfaceVariant
                     Box(
                         modifier = Modifier
                             .size(dimensionResource(R.dimen.size_indicator))

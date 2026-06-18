@@ -5,16 +5,14 @@ import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.domain.suit.SuitRepository
 import com.hexis.bi.ui.base.BaseViewModel
-import com.hexis.bi.utils.cmToInches
 import com.hexis.bi.utils.constants.MeasurementConstants
 import com.hexis.bi.utils.inchesToCm
-import com.hexis.bi.utils.kgToLb
 import com.hexis.bi.utils.lbToKg
+import com.hexis.bi.utils.persistedUserMeasurements
 import com.hexis.bi.utils.parseDob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlin.math.roundToInt
 
 class OnboardingViewModel(
     application: Application,
@@ -81,14 +79,13 @@ class OnboardingViewModel(
 
     fun finish() = launch {
         val s = _state.value
-        val heightCmInt = s.heightCm.toInt()
-        val weightKgInt = s.weightKg.toInt()
+        val measurements = persistedUserMeasurements(s.heightCm, s.weightKg)
         val fields = mutableMapOf<String, Any?>(
             "gender" to s.gender.name,
-            "heightCm" to heightCmInt,
-            "weightKg" to weightKgInt,
-            "heightIn" to heightCmInt.toFloat().cmToInches().roundToInt(),
-            "weightLb" to weightKgInt.toFloat().kgToLb().roundToInt(),
+            "heightCm" to measurements.heightCm,
+            "weightKg" to measurements.weightKg,
+            "heightIn" to measurements.heightIn,
+            "weightLb" to measurements.weightLb,
             "unitSystem" to if (s.isMetric) MeasurementConstants.UNIT_SYSTEM_METRIC
             else MeasurementConstants.UNIT_SYSTEM_IMPERIAL,
         )

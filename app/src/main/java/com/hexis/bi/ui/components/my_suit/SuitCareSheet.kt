@@ -28,7 +28,7 @@ import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseBottomSheet
-import com.hexis.bi.ui.dark.DarkPrimaryButton
+import com.hexis.bi.ui.components.AppPrimaryButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,7 +88,7 @@ fun SuitCareSheet(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxl)))
 
-        DarkPrimaryButton(
+        AppPrimaryButton(
             text = stringResource(R.string.action_continue),
             onClick = onContinue,
             enabled = accepted,

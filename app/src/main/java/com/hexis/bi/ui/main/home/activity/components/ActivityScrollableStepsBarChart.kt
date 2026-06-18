@@ -43,17 +43,12 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.hexis.bi.R
 import com.hexis.bi.ui.main.home.activity.BarChartEntry
-import com.hexis.bi.ui.theme.AccentBlue
 import com.hexis.bi.ui.theme.ActivityMediumTitleStyle
-import com.hexis.bi.ui.theme.ChartTooltipFill
-import com.hexis.bi.ui.theme.ChartTooltipBorder
-import com.hexis.bi.ui.theme.BodyToggleSelectedLabel
-import com.hexis.bi.ui.theme.Gray200
-import com.hexis.bi.ui.theme.White
-import com.hexis.bi.ui.theme.dark.ChartAxisLine
 import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.roundToInt
+import com.hexis.bi.ui.theme.NocturnePulseTheme
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun ActivityScrollableStepsBarChart(
@@ -92,7 +87,7 @@ fun ActivityScrollableStepsBarChart(
     val pointerVerticalPadding = dimensionResource(R.dimen.activity_chart_pointer_vertical_padding)
     val pointerColor = MaterialTheme.colorScheme.onSurfaceVariant
     val gridColor = MaterialTheme.colorScheme.outline
-    val axisColor = ChartAxisLine
+    val axisColor = NocturnePulseTheme.extendedColors.chartAxisLine
     val axisStrokeWidth = dimensionResource(R.dimen.border_hairline)
 
     val xLabelStyle = MaterialTheme.typography.bodySmall
@@ -173,7 +168,7 @@ fun ActivityScrollableStepsBarChart(
                         Text(
                             text = fmt.format(totalValue),
                             style = ActivityMediumTitleStyle,
-                            color = AccentBlue,
+                            color = NocturnePulseTheme.extendedColors.accentBlue,
                         )
                     }
                 }
@@ -309,10 +304,10 @@ fun ActivityScrollableStepsBarChart(
                             IntOffset(targetX.coerceIn(minX, maxX).roundToInt(), 0)
                         }
                         .clip(MaterialTheme.shapes.small)
-                        .background(ChartTooltipFill)
+                        .background(NocturnePulseTheme.extendedColors.chartTooltipFill)
                         .border(
                             width = dimensionResource(R.dimen.border_hairline),
-                            color = ChartTooltipBorder,
+                            color = NocturnePulseTheme.extendedColors.chartTooltipBorder,
                             shape = MaterialTheme.shapes.small,
                         )
                         .padding(
@@ -324,21 +319,21 @@ fun ActivityScrollableStepsBarChart(
                     Text(
                         text = tooltipEntry.tooltipLabel,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = BodyToggleSelectedLabel,
+                        color = NocturnePulseTheme.extendedColors.bodyToggleSelectedLabel,
                         textAlign = TextAlign.Center,
                     )
                     Row {
                         Text(
                             text = fmt.format(tooltipEntry.value.toInt()),
                             style = MaterialTheme.typography.headlineSmall,
-                            color = White,
+                            color = Color.White,
                             modifier = Modifier.alignByBaseline(),
                         )
                         Spacer(Modifier.width(dimensionResource(R.dimen.spacer_3xs)))
                         Text(
                             text = stringResource(R.string.activity_unit_steps_full),
                             style = MaterialTheme.typography.titleMedium,
-                            color = Gray200,
+                            color = NocturnePulseTheme.extendedColors.gray200,
                             modifier = Modifier.alignByBaseline(),
                         )
                     }

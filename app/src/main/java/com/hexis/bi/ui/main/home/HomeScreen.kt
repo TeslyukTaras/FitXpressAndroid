@@ -28,8 +28,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
-import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.dark.darkScreenBackground
+import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.main.buysuit.orderdetails.OrderDetailsSheet
 import com.hexis.bi.ui.main.home.components.ActivityOverviewCard
 import com.hexis.bi.ui.main.home.components.HomeHeader
@@ -39,7 +39,6 @@ import com.hexis.bi.ui.main.home.components.ScanOverviewCard
 import com.hexis.bi.ui.main.home.components.SleepOverviewCard
 import com.hexis.bi.ui.main.home.components.SuitOrderCard
 import com.hexis.bi.ui.main.home.components.UserStatsCard
-import com.hexis.bi.ui.theme.dark.DarkTheme
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -81,130 +80,128 @@ fun HomeScreen(
 
     LightStatusBarIcons()
 
-    DarkTheme {
-        BaseScreen(
-            modifier = modifier
+    BaseScreen(
+        modifier = modifier
+            .fillMaxSize()
+            .screenBackground(),
+        containerColor = Color.Transparent,
+        isLoading = isLoading,
+        error = error,
+        onDismissError = viewModel::clearError,
+    ) {
+        val navClearance =
+            dimensionResource(R.dimen.size_bottom_nav_center) +
+                    dimensionResource(R.dimen.spacer_l) +
+                    dimensionResource(R.dimen.spacer_2xl)
+        Column(
+            modifier = Modifier
                 .fillMaxSize()
-                .darkScreenBackground(),
-            containerColor = Color.Transparent,
-            isLoading = isLoading,
-            error = error,
-            onDismissError = viewModel::clearError,
+                .verticalScroll(rememberScrollState())
+                .padding(
+                    start = dimensionResource(R.dimen.padding_medium),
+                    end = dimensionResource(R.dimen.padding_medium),
+                    top = dimensionResource(R.dimen.padding_top),
+                    bottom = navClearance
+                ),
         ) {
-            val navClearance =
-                dimensionResource(R.dimen.size_bottom_nav_center) +
-                        dimensionResource(R.dimen.spacer_l) +
-                        dimensionResource(R.dimen.spacer_2xl)
-            Column(
+            val scanSubtitle = state.latestScanDate?.let {
+                stringResource(R.string.home_latest_scan, it)
+            }
+            HomeHeader(
+                userName = state.userName,
+                imageUrl = state.imageUrl,
+                subtitle = scanSubtitle,
+                hasUnreadNotifications = state.hasUnreadNotifications,
+                onNotificationClick = onNotificationClick,
+                onSettingsClick = onSettingsClick,
+            )
+
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+
+            val unknown = stringResource(R.string.stat_unknown)
+            UserStatsCard(
+                weight = state.weight ?: unknown,
+                height = state.height ?: unknown,
+                age = state.age ?: unknown,
+            )
+
+            val suitOrder = state.suitOrder
+            if (suitOrder != null) {
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+                SuitOrderCard(
+                    data = suitOrder,
+                    onClick = viewModel::showOrderDetails,
+                )
+            } else if (state.suitSectionResolved && !state.isSuitConnected) {
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+                PromoBanner(onBuyClick = onBuySuitClick)
+            }
+
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+
+            SectionTitle(stringResource(R.string.home_overview_title))
+
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+
+            Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(
-                        start = dimensionResource(R.dimen.padding_medium),
-                        end = dimensionResource(R.dimen.padding_medium),
-                        top = dimensionResource(R.dimen.padding_top),
-                        bottom = navClearance
-                    ),
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Max),
+                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_s)),
             ) {
-                val scanSubtitle = state.latestScanDate?.let {
-                    stringResource(R.string.home_latest_scan, it)
-                }
-                HomeHeader(
-                    userName = state.userName,
-                    imageUrl = state.imageUrl,
-                    subtitle = scanSubtitle,
-                    hasUnreadNotifications = state.hasUnreadNotifications,
-                    onNotificationClick = onNotificationClick,
-                    onSettingsClick = onSettingsClick,
-                )
-
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
-
-                val unknown = stringResource(R.string.stat_unknown)
-                UserStatsCard(
-                    weight = state.weight ?: unknown,
-                    height = state.height ?: unknown,
-                    age = state.age ?: unknown,
-                )
-
-                val suitOrder = state.suitOrder
-                if (suitOrder != null) {
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
-                    SuitOrderCard(
-                        data = suitOrder,
-                        onClick = viewModel::showOrderDetails,
-                    )
-                } else if (state.suitSectionResolved && !state.isSuitConnected) {
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
-                    PromoBanner(onBuyClick = onBuySuitClick)
-                }
-
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
-
-                SectionTitle(stringResource(R.string.home_overview_title))
-
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
-
-                Row(
+                ActivityOverviewCard(
+                    data = state.activity,
+                    onClick = onActivityClick,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(IntrinsicSize.Max),
-                    horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_s)),
-                ) {
-                    ActivityOverviewCard(
-                        data = state.activity,
-                        onClick = onActivityClick,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
-                    )
-                    SleepOverviewCard(
-                        data = state.sleep,
-                        onClick = onSleepClick,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
-                    )
-                }
-
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
-
-                ScanOverviewCard(
-                    data = state.scan,
-                    onClick = onScanClick,
+                        .weight(1f)
+                        .fillMaxHeight(),
                 )
-
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
-
-                SectionTitle(stringResource(R.string.home_intelligence_title))
-
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
-
-                IntelligenceScoresCard(
-                    scores = state.intelligenceScores,
-                    onScoreClick = { key ->
-                        when (key) {
-                            IntelligenceScoreKey.RECOVERY -> onRecoveryClick()
-                            IntelligenceScoreKey.PHYSIQUE_DRIFT -> onPhysiqueDriftClick()
-                            IntelligenceScoreKey.LONGEVITY -> onLongevityClick()
-                            IntelligenceScoreKey.PACE_OF_AGING -> onPaceOfAgingClick()
-                        }
-                    },
+                SleepOverviewCard(
+                    data = state.sleep,
+                    onClick = onSleepClick,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
                 )
             }
-        }
 
-        val orderDetails = state.orderDetails
-        if (state.showOrderDetails && orderDetails != null) {
-            OrderDetailsSheet(
-                details = orderDetails,
-                onDismiss = viewModel::dismissOrderDetails,
-                onEditAddress = {
-                    viewModel.dismissOrderDetails()
-                    onEditOrderAddress(orderDetails.orderId)
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
+
+            ScanOverviewCard(
+                data = state.scan,
+                onClick = onScanClick,
+            )
+
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+
+            SectionTitle(stringResource(R.string.home_intelligence_title))
+
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+
+            IntelligenceScoresCard(
+                scores = state.intelligenceScores,
+                onScoreClick = { key ->
+                    when (key) {
+                        IntelligenceScoreKey.RECOVERY -> onRecoveryClick()
+                        IntelligenceScoreKey.PHYSIQUE_DRIFT -> onPhysiqueDriftClick()
+                        IntelligenceScoreKey.LONGEVITY -> onLongevityClick()
+                        IntelligenceScoreKey.PACE_OF_AGING -> onPaceOfAgingClick()
+                    }
                 },
             )
         }
+    }
+
+    val orderDetails = state.orderDetails
+    if (state.showOrderDetails && orderDetails != null) {
+        OrderDetailsSheet(
+            details = orderDetails,
+            onDismiss = viewModel::dismissOrderDetails,
+            onEditAddress = {
+                viewModel.dismissOrderDetails()
+                onEditOrderAddress(orderDetails.orderId)
+            },
+        )
     }
 }
 

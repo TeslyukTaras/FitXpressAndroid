@@ -15,14 +15,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleChip
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleTrack
 import com.hexis.bi.ui.main.home.longevity.LongevityTab
 import com.hexis.bi.ui.main.home.longevity.LongevityTrendData
-import com.hexis.bi.ui.theme.AccentBlue
 import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.ui.theme.TitleHighlightTextStyle
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 internal fun LongevityTrendCard(
@@ -66,7 +66,7 @@ internal fun LongevityTrendCard(
         Text(
             text = trendData.dateLabel,
             style = TitleHighlightTextStyle,
-            color = AccentBlue,
+            color = NocturnePulseTheme.extendedColors.accentBlue,
         )
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxl)))
@@ -97,7 +97,7 @@ internal fun LongevityTrendCard(
             Text(
                 text = stringResource(trendData.trend.labelRes),
                 style = MaterialTheme.typography.labelMedium,
-                color = AccentBlue,
+                color = NocturnePulseTheme.extendedColors.accentBlue,
             )
         }
     }

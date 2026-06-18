@@ -1,4 +1,4 @@
-package com.hexis.bi.ui.dark
+package com.hexis.bi.ui.components
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.clickable
@@ -24,10 +24,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.DarkPrimaryButtonDisabledFill
-import com.hexis.bi.ui.theme.DarkPrimaryButtonGradientBottom
-import com.hexis.bi.ui.theme.DarkPrimaryButtonGradientTop
-import com.hexis.bi.utils.constants.DarkBackgroundConstants
+import com.hexis.bi.ui.theme.NocturnePulseTheme
+import com.hexis.bi.utils.constants.BackgroundConstants
 import com.hexis.bi.utils.constants.GlassConstants
 import com.hexis.bi.utils.glass
 
@@ -37,7 +35,7 @@ import com.hexis.bi.utils.glass
  * minimum interactive size that ignores small explicit heights.
  */
 @Composable
-fun DarkPrimaryButton(
+fun AppPrimaryButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -55,12 +53,14 @@ fun DarkPrimaryButton(
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant
     }
+    val gradientTop = NocturnePulseTheme.extendedColors.primaryButtonGradientTop
+    val gradientBottom = NocturnePulseTheme.extendedColors.primaryButtonGradientBottom
     val fillBrush: ((Size) -> Brush)? = if (isActive) {
         { size ->
             Brush.verticalGradient(
-                colors = listOf(DarkPrimaryButtonGradientTop, DarkPrimaryButtonGradientBottom),
-                startY = size.height * DarkBackgroundConstants.COMPONENT_VERTICAL_GRADIENT_START_FRACTION,
-                endY = size.height * DarkBackgroundConstants.COMPONENT_VERTICAL_GRADIENT_END_FRACTION,
+                colors = listOf(gradientTop, gradientBottom),
+                startY = size.height * BackgroundConstants.COMPONENT_VERTICAL_GRADIENT_START_FRACTION,
+                endY = size.height * BackgroundConstants.COMPONENT_VERTICAL_GRADIENT_END_FRACTION,
             )
         }
     } else {
@@ -72,9 +72,10 @@ fun DarkPrimaryButton(
             .then(if (width != null) Modifier.width(width) else Modifier.fillMaxWidth())
             .height(resolvedHeight)
             .glass(
+                tint = NocturnePulseTheme.extendedColors.glassRimHighlight,
                 shape = shape,
                 level = GlassConstants.LEVEL_RAISED,
-                fill = if (isActive) Color.Transparent else DarkPrimaryButtonDisabledFill,
+                fill = if (isActive) Color.Transparent else NocturnePulseTheme.extendedColors.primaryButtonDisabledFill,
                 fillBrush = fillBrush,
                 backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
                 rimWidth = dimensionResource(R.dimen.glass_rim_width),

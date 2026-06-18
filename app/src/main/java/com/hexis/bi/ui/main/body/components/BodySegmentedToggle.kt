@@ -22,12 +22,9 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.BodyToggleSelectedChipFill
-import com.hexis.bi.ui.theme.BodyToggleSelectedLabel
-import com.hexis.bi.ui.theme.BodyToggleTrackBorder
-import com.hexis.bi.ui.theme.BodyToggleUnselectedLabel
 import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.ui.theme.TitleHighlightTextStyle
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 internal fun BodySegmentedToggleTrack(
@@ -40,7 +37,7 @@ internal fun BodySegmentedToggleTrack(
             .clip(CircleShape)
             .border(
                 width = dimensionResource(R.dimen.border_line),
-                color = BodyToggleTrackBorder,
+                color = NocturnePulseTheme.extendedColors.bodyToggleTrackBorder,
                 shape = CircleShape,
             )
             .padding(
@@ -66,7 +63,7 @@ internal fun BodySegmentedToggleChip(
             .height(dimensionResource(R.dimen.body_toggle_height))
             .width(width)
             .clip(CircleShape)
-            .then(if (isSelected) Modifier.background(BodyToggleSelectedChipFill) else Modifier)
+            .then(if (isSelected) Modifier.background(NocturnePulseTheme.extendedColors.bodyToggleSelectedChipFill) else Modifier)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -78,7 +75,7 @@ internal fun BodySegmentedToggleChip(
         Text(
             text = label,
             style = if (isSelected) TitleHighlightTextStyle else TitleDimTextStyle,
-            color = if (isSelected) BodyToggleSelectedLabel else BodyToggleUnselectedLabel,
+            color = if (isSelected) NocturnePulseTheme.extendedColors.bodyToggleSelectedLabel else NocturnePulseTheme.extendedColors.bodyToggleUnselectedLabel,
             textAlign = TextAlign.Center,
             maxLines = 1,
         )

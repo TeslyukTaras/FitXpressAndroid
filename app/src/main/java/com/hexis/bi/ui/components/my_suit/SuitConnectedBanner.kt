@@ -20,8 +20,8 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.BodyGlassCard
-import com.hexis.bi.ui.theme.dark.Positive
+import com.hexis.bi.ui.components.BodyGlassCard
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 fun SuitConnectedBanner() {
@@ -34,7 +34,7 @@ fun SuitConnectedBanner() {
                 Modifier
                     .size(dimensionResource(R.dimen.icon_medium))
                     .clip(CircleShape)
-                    .background(Positive),
+                    .background(NocturnePulseTheme.extendedColors.positive),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_tick),

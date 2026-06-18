@@ -36,7 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseBottomSheet
-import com.hexis.bi.ui.dark.DarkOutlinedTextField
+import com.hexis.bi.ui.components.AppOutlinedTextField
 import com.hexis.bi.utils.constants.GlassConstants
 import com.hexis.bi.utils.constants.ShippingConstants
 
@@ -56,7 +56,7 @@ internal fun ShippingField(
     error: String? = null,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        DarkOutlinedTextField(
+        AppOutlinedTextField(
             value = value,
             onValueChange = onValueChange,
             label = label,
@@ -77,7 +77,7 @@ internal fun CountryPickerField(
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Box {
-            DarkOutlinedTextField(
+            AppOutlinedTextField(
                 value = country.name,
                 onValueChange = {},
                 label = label,
@@ -133,7 +133,7 @@ internal fun CountryPickerSheet(
         onDismiss = onDismiss,
         modifier = Modifier.fillMaxHeight(ShippingConstants.COUNTRY_SHEET_HEIGHT_FRACTION),
     ) {
-        DarkOutlinedTextField(
+        AppOutlinedTextField(
             value = query,
             onValueChange = { query = it },
             placeholder = stringResource(R.string.shipping_search_country),

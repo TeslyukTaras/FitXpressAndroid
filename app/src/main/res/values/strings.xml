@@ -155,7 +155,6 @@
     <string name="delete_account_dialog_action_delete">Delete</string>
 
     <!-- Home screen -->
-    <string name="home_welcome">Welcome Back!</string>
     <string name="home_latest_scan">Latest Scan · %1$s</string>
     <string name="home_stat_weight">Weight</string>
     <string name="home_stat_height">Height</string>
@@ -164,7 +163,6 @@
     <string name="home_banner_body">Your body knows before you do</string>
     <string name="home_action_buy_suit">Buy Suit</string>
     <string name="home_overview_title">Overview</string>
-    <string name="home_intelligence_scores_title">Intelligence Scores</string>
     <string name="home_intelligence_title">Body Intelligence</string>
     <string name="intelligence_recovery">Recovery</string>
     <string name="intelligence_physique_drift">Physique Drift</string>
@@ -173,12 +171,9 @@
     <string name="intelligence_coming">Coming</string>
     <string name="home_card_sleep">Sleep</string>
     <string name="home_card_activity">Activity</string>
-    <string name="home_card_activity_score">Activity Score</string>
-    <string name="home_card_recovery">Recovery</string>
     <!-- Activity mini bar chart day-range labels. -->
     <string name="home_activity_start_label">12 am</string>
     <string name="home_activity_end_label">11:59 pm</string>
-    <string name="home_recovery_score_value">%1$d/100</string>
     <string name="home_card_scan">Scan</string>
     <!-- Home "Scan" overview card. -->
     <string name="home_scan_no_data">No scans yet</string>
@@ -189,9 +184,6 @@
     <string name="home_scan_change_label">%1$s %2$s</string>
     <string name="home_scan_arrow_down">↓</string>
     <string name="home_scan_arrow_up">↑</string>
-    <string name="home_sleep_goal">Goal: %1$s h</string>
-    <string name="home_activity_value_label">steps</string>
-    <string name="home_activity_goal">Goal: %1$s</string>
     <string name="home_nav_home">Home</string>
     <string name="home_nav_body">Body</string>
     <string name="body_scan_history_empty">No saved scans yet. Complete a scan to see history.</string>
@@ -292,9 +284,7 @@
     <string name="cd_clear_selection">Clear selection</string>
 
     <!-- Sleep screen -->
-    <string name="sleep_placeholder">-</string>
     <string name="sleep_screen_title">Sleep</string>
-    <string name="sleep_status_title">Sleep status</string>
     <string name="sleep_stages_title">Sleep Stages</string>
     <string name="sleep_stage_deep">Deep</string>
     <string name="sleep_stage_rem">REM</string>
@@ -316,16 +306,13 @@
     <string name="unit_percent">%</string>
     <string name="unit_ms">ms</string>
     <string name="unit_bpm">bpm</string>
-    <string name="sleep_metrics_title">Sleep metrics</string>
     <string name="sleep_heart_metrics_title">Heart Metrics</string>
     <string name="sleep_last_night">Last Night</string>
-    <string name="sleep_metric_restfulness">Restfulness</string>
     <string name="sleep_metric_hrv">HRV</string>
     <string name="sleep_metric_hrv_unit">HRV (ms)</string>
     <string name="sleep_metric_rhr_short">RHR</string>
     <string name="sleep_metric_rhr_unit">RHR (bpm)</string>
     <string name="sleep_metric_value_unit">%1$d %2$s</string>
-    <string name="sleep_metric_resting_heart_rate">Resting heart rate</string>
     <string name="sleep_timeline_title">Sleep Timeline</string>
     <string name="sleep_recovery_title">Sleep &amp; Body Recovery</string>
     <string name="sleep_recovery_subtitle">Better sleep consistency may support improved recovery over time.</string>
@@ -641,7 +628,6 @@
     <!-- Activity period tabs (Week/Month/Year) -->
     <string name="activity_total_steps">Total steps</string>
     <string name="activity_avg_steps_per_day">Average Daily Steps</string>
-    <string name="activity_trend_label">Trend:</string>
     <string name="activity_trend_label_week">Activity Trend</string>
     <string name="activity_trend_label_month">Monthly Trend</string>
     <string name="activity_trend_label_year">Yearly Trend</string>
@@ -685,7 +671,6 @@
     <string name="scan_checklist_voice_guidance">Follow voice guidance</string>
     <string name="scan_checklist_front_left_photos">Take front and left-side photos</string>
     <string name="scan_checklist_footer">You can find these tips again from the info icon.</string>
-    <string name="suit_size_units">Units</string>
     <string name="suit_size_confirm_body">Please confirm your height and weight. Accurate values improve your suit size recommendation.</string>
     <string name="suit_size_feature_lightweight">Lightweight second-skin comfort</string>
     <string name="suit_size_feature_tracking">Designed for precision body tracking</string>
@@ -772,8 +757,6 @@
     <string name="scan_step_2_b">Keep arms slightly away from your body</string>
     <string name="scan_step_3_a">Turn to Your Left Side, Feet Together.</string>
     <string name="scan_step_3_b">Hold still while your body scan is being captured.</string>
-    <string name="scan_progress_submitting">Submitting your photos…</string>
-    <string name="scan_progress_processing">Processing your scan…</string>
     <string name="action_results">Results</string>
     <string name="action_rescan">Rescan</string>
 
@@ -808,29 +791,9 @@
     <string name="scan_results_tab_visual">Visual</string>
     <string name="scan_results_tab_posture">Posture</string>
     <string name="scan_results_tab_compare">Compare</string>
-    <string name="scan_results_color_analysis">Color analysis</string>
-    <string name="scan_results_color_analysis_subtitle">Visualize changes by body areas</string>
-    <string name="scan_results_color_analysis_needs_two_scans">Available after your next scan — needs two scans to compare.</string>
-    <string name="scan_results_color_analysis_loading">Preparing color analysis…</string>
-    <string name="scan_results_color_analysis_error">Couldn\'t load color analysis. Turn the switch off and on to try again.</string>
-    <string name="scan_results_measurements_title">Measurements</string>
-    <string name="scan_results_body_part">Body part</string>
-    <string name="scan_results_today">Today</string>
-    <string name="scan_results_previous">Previous</string>
-    <string name="scan_results_no_value">-</string>
-    <string name="scan_results_loading">Loading results…</string>
-    <string name="scan_results_preview_unavailable">3D preview unavailable</string>
     <string name="scan_results_avatar_loading">Preparing Body Evolution View</string>
-    <string name="scan_results_compare_no_previous">No previous scan to compare</string>
-    <string name="scan_results_compare_previous">Previous</string>
-    <string name="scan_results_compare_current">Current</string>
     <string name="unit_cm">cm</string>
-    <string name="unit_ft">ft</string>
     <string name="unit_in">in</string>
-    <string name="measurement_leader_value_metric">%1$s %2$s</string>
-    <string name="measurement_leader_value_imperial">%1$s %2$s %3$s %4$s</string>
-    <string name="format_value_decimal">%1$.1f</string>
-    <string name="format_value_int">%1$d</string>
     <string name="format_delta_up">%1$+.1f %2$s ↑</string>
     <string name="format_delta_down">%1$+.1f %2$s ↓</string>
     <string name="format_delta_neutral">%1$+.1f %2$s</string>
@@ -859,10 +822,8 @@
     <string name="scan_error_processing_failed">Scan processing failed</string>
     <string name="scan_error_timeout">Scan timed out. Please try again.</string>
     <string name="scan_error_with_detail">%1$s: %2$s</string>
-    <string name="activity_goal_label_format">" / %1$s"</string>
 
     <!-- Physique Drift screen -->
-    <string name="physique_drift_screen_title">Physique Drift</string>
     <string name="physique_drift_screen_title_short">Physique</string>
     <string name="physique_drift_score_title">Physique Drift</string>
     <string name="physique_drift_score_scale">/ 10</string>

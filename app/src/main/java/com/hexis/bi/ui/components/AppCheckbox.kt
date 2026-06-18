@@ -1,4 +1,4 @@
-package com.hexis.bi.ui.dark
+package com.hexis.bi.ui.components
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.size
@@ -14,14 +14,14 @@ import androidx.compose.ui.semantics.Role
 import com.hexis.bi.R
 
 /**
- * Dark design-system checkbox rendered from the design icons: an accent-tinted square
+ * Design-system checkbox rendered from the design icons: an accent-tinted square
  * ([R.drawable.ic_square]) that gains a checkmark when [checked] ([R.drawable.ic_square_check]).
  *
  * Pass a null [onCheckedChange] to render the box as display-only when an enclosing row owns the
  * click (so the whole row is the touch target).
  */
 @Composable
-fun DarkCheckbox(
+fun AppCheckbox(
     checked: Boolean,
     onCheckedChange: ((Boolean) -> Unit)?,
     modifier: Modifier = Modifier,

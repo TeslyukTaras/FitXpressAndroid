@@ -19,7 +19,7 @@ import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 fun AppAvatar(
@@ -31,7 +31,7 @@ fun AppAvatar(
         modifier = modifier
             .size(size)
             .clip(CircleShape)
-            .background(DarkTheme.extendedColors.surfaceTranslucent),
+            .background(NocturnePulseTheme.extendedColors.surfaceTranslucent),
         contentAlignment = Alignment.Center,
     ) {
         if (!imageUrl.isNullOrBlank()) AsyncImage(

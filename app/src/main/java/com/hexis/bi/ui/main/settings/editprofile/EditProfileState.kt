@@ -1,9 +1,9 @@
 package com.hexis.bi.ui.main.settings.editprofile
 import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.ui.base.UiEvent
-import com.hexis.bi.ui.components.profile.HealthParameters
-import com.hexis.bi.utils.cmToFeetAndInches
+import com.hexis.bi.ui.base.HealthParameters
 import com.hexis.bi.utils.cmToInches
+import com.hexis.bi.utils.cmToRoundedFeetAndInches
 import com.hexis.bi.utils.constants.ProfileConstants
 import com.hexis.bi.utils.kgToLb
 import kotlin.math.roundToInt
@@ -42,10 +42,10 @@ data class EditProfileState(
         get() = heightCm.roundToInt()
 
     override val heightFeet: Int
-        get() = heightCm.cmToFeetAndInches().first
+        get() = heightCm.cmToRoundedFeetAndInches().first
 
     override val heightInches: Int
-        get() = heightCm.cmToFeetAndInches().second.roundToInt()
+        get() = heightCm.cmToRoundedFeetAndInches().second
 
     override val weightSliderValue: Float
         get() = if (isMetric) weightKg else weightKg.kgToLb()
