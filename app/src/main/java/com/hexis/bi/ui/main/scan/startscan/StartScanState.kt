@@ -15,13 +15,17 @@ data class StartScanState(
     val steps: List<List<ScanInstruction>> = defaultSteps,
     val isComplete: Boolean = false,
     val scanProgress: ScanProgress? = null,
+    val isPreparingResults: Boolean = false,
     val scanErrorMessage: String? = null,
     val shouldLaunchCamera: Boolean = false,
     val shouldNavigateBack: Boolean = false,
     val retakeOnErrorDismiss: Boolean = false,
+    val showPersonalizeResultsHint: Boolean = false,
 ) {
     val isProcessing: Boolean
-        get() = scanProgress is ScanProgress.Submitting || scanProgress is ScanProgress.Processing
+        get() = isPreparingResults ||
+                scanProgress is ScanProgress.Submitting ||
+                scanProgress is ScanProgress.Processing
 }
 
 private val defaultSteps = listOf(

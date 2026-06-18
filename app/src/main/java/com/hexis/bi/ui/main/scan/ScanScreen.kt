@@ -15,6 +15,7 @@ fun ScanScreen(
     onConnectSuit: () -> Unit,
     onBuySuit: () -> Unit,
     onShowHowToScan: () -> Unit,
+    onOpenScanPreferences: () -> Unit,
     modifier: Modifier = Modifier,
     scanPurpose: ScanPurpose = ScanPurpose.BodyScan,
     requireConnectedSuit: Boolean = true,
@@ -26,6 +27,7 @@ fun ScanScreen(
         onBack = onBack,
         onScanComplete = onScanComplete,
         onShowHowToScan = onShowHowToScan,
+        onOpenScanPreferences = onOpenScanPreferences,
         modifier = modifier,
         scanPurpose = scanPurpose,
     )
@@ -33,6 +35,7 @@ fun ScanScreen(
         onBack = onBack,
         onConnectSuit = onConnectSuit,
         onBuySuit = onBuySuit,
+        onShowHowToScan = onShowHowToScan,
         modifier = modifier,
     )
 }

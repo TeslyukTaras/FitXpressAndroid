@@ -2,6 +2,8 @@ package com.hexis.bi.ui.main.scan.results
 
 import androidx.annotation.StringRes
 import com.hexis.bi.R
+import com.hexis.bi.ui.main.body.CompareState
+import com.hexis.bi.ui.main.body.VisualState
 
 enum class ResultsTab {
     Visual, Posture, Compare;
@@ -33,24 +35,20 @@ data class MeasurementRow(
     val previous: MeasurementValue?,
 )
 
+/**
+ * The Results screen reuses the My Body Visual/Compare presentation ([VisualState] / [CompareState]
+ * rendered by `VisualContent` / `CompareContent`). It is locked to the just-completed (or
+ * opened-from-history) scan and its neighbours — there is no scan picker here.
+ */
 data class ResultsState(
     val selectedTab: ResultsTab = ResultsTab.Visual,
-    val colorAnalysisEnabled: Boolean = false,
-    val colorAnalysis: ColorAnalysisUiState = ColorAnalysisUiState.Idle,
     val isMetric: Boolean = true,
-    val measurements: List<MeasurementRow> = emptyList(),
-    val model3dUrl: String? = null,
-    val previousModel3dUrl: String? = null,
-    val isPreviewSectionLoading: Boolean = true,
-    val todayDate: String = "",
-    val previousDate: String? = null,
-    val showSkinAreas: Boolean = false,
+    val isLoading: Boolean = true,
+    val visual: VisualState = VisualState(),
+    val compare: CompareState = CompareState(),
+    val modelCardHeightPx: Int = 0,
+    val showPersonalizeResultsHint: Boolean = false,
 )
 
-sealed interface ColorAnalysisUiState {
-    data object Idle : ColorAnalysisUiState
-    data object Loading : ColorAnalysisUiState
-    data object Unavailable : ColorAnalysisUiState
-    data class Ready(val coloredModelUrl: String) : ColorAnalysisUiState
-    data object Error : ColorAnalysisUiState
-}
+internal val ResultsState.isDisplayable: Boolean
+    get() = !isLoading && visual.hasData

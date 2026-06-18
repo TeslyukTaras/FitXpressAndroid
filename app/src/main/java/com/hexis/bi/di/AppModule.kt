@@ -177,8 +177,8 @@ val appModule = module {
     viewModel { PaceOfAgingViewModel(androidApplication(), get(), get(), get(), get(), get()) }
     viewModel { PhysiqueDriftViewModel(androidApplication(), get(), get()) }
     viewModel { ScanViewModel(androidApplication(), get()) }
-    viewModel { StartScanViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
-    viewModel { ResultsViewModel(androidApplication(), get(), get(), get(), get()) }
+    viewModel { StartScanViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { ResultsViewModel(androidApplication(), get(), get(), get(), get(), get()) }
     viewModel { SuitSizeResultsViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { ShippingDetailsViewModel(androidApplication(), get(), get(), get()) }
     viewModel { (orderId: String) -> EditAddressViewModel(androidApplication(), get(), orderId) }

@@ -168,6 +168,38 @@ class ScanHistoryRepository(
             scans.getOrNull(1) to scans.getOrNull(2)
         }
 
+    fun buildScanRecordFromResponse(
+        response: MeasurementResponse,
+        scanId: String,
+        savedAtMillis: Long,
+    ): ScanRecord {
+        val circumference = response.circumferenceParams?.let { jsonObjectToFloatMap(it) }.orEmpty()
+        val frontLinearParams = response.frontLinearParams?.let { jsonObjectToFloatMap(it) }.orEmpty()
+        val sideLinearParams = response.sideLinearParams?.let { jsonObjectToFloatMap(it) }.orEmpty()
+        val measurements = MeasurementMapper.mergeMeasurementParams(
+            circumference = circumference,
+            frontLinear = frontLinearParams,
+            sideLinear = sideLinearParams,
+        )
+
+        return ScanRecord(
+            id = scanId,
+            measurementId = response.id,
+            timestamp = savedAtMillis,
+            model3dUrl = response.model3dUrl,
+            measurements = measurements,
+            frontLinearParams = frontLinearParams,
+            sideLinearParams = sideLinearParams,
+            weightKg = response.weight?.toFloat() ?: response.estimatedWeight?.toFloat(),
+            bmi = response.bmi?.toFloat() ?: response.estimatedBmi?.toFloat(),
+            fatPercentage = response.fatPercentage?.toFloat(),
+            leanBodyMassKg = response.leanBodyMass?.toFloat()
+                ?: response.estimatedLeanBodyMass?.toFloat(),
+            fatBodyMassKg = response.fatBodyMass?.toFloat()
+                ?: response.estimatedFatBodyMass?.toFloat(),
+        )
+    }
+
     suspend fun getRecentScans(
         limit: Long = SCAN_HISTORY_DEFAULT_LIMIT,
         projection: ScanFetchProjection = ScanFetchProjection.FULL,
@@ -357,6 +389,13 @@ class ScanHistoryRepository(
             val prim = value as? JsonPrimitive ?: return@mapNotNull null
             val d = prim.content.toDoubleOrNull() ?: return@mapNotNull null
             key.snakeToCamel() to d
+        }.toMap()
+
+    private fun jsonObjectToFloatMap(obj: JsonObject): Map<String, Float> =
+        obj.mapNotNull { (key, value) ->
+            val prim = value as? JsonPrimitive ?: return@mapNotNull null
+            val f = prim.content.toFloatOrNull() ?: return@mapNotNull null
+            key.snakeToCamel() to f
         }.toMap()
 
     private fun jsonObjectToAnyMap(obj: JsonObject): Map<String, Any> =

@@ -36,10 +36,13 @@ internal fun VisualTopArea(
     onBodyPartSelected: (BodyMeasurementRegion) -> Unit,
     onScanSelected: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    showScanSelector: Boolean = true,
+    onAvatarReady: () -> Unit = {},
 ) {
     Box(modifier = modifier) {
         BodyModelPreview(
             state = state,
+            onAvatarReady = onAvatarReady,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(modelAreaHeight)
@@ -58,25 +61,28 @@ internal fun VisualTopArea(
                 .height(modelAreaHeight),
         )
 
-        VisualScanDateDropdown(
-            label = selectedScanLabel,
-            selectedTimestamp = state.latestScanTimestamp,
-            options = state.scanOptions,
-            dateFormatter = dateFormatter,
-            onScanSelected = onScanSelected,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    horizontal = dimensionResource(R.dimen.padding_medium),
-                    vertical = dimensionResource(R.dimen.spacer_3xs)
-                ),
-        )
+        if (showScanSelector) {
+            VisualScanDateDropdown(
+                label = selectedScanLabel,
+                selectedTimestamp = state.latestScanTimestamp,
+                options = state.scanOptions,
+                dateFormatter = dateFormatter,
+                onScanSelected = onScanSelected,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = dimensionResource(R.dimen.padding_medium),
+                        vertical = dimensionResource(R.dimen.spacer_3xs)
+                    ),
+            )
+        }
     }
 }
 
 @Composable
 private fun BodyModelPreview(
     state: VisualState,
+    onAvatarReady: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val coloredModel = state.colorModel as? BodyVisualColorModel.Ready
@@ -93,6 +99,7 @@ private fun BodyModelPreview(
             modelUrl = state.latestModel3dUrl,
             selectedBodyPart = state.selectedBodyPart,
             visible = showBaseModel,
+            onAvatarReady = onAvatarReady,
         )
         coloredModel?.let { model ->
             ModelPreview(
@@ -101,6 +108,7 @@ private fun BodyModelPreview(
                 selectedBodyPart = state.selectedBodyPart,
                 loadingMessageRes = R.string.body_visual_color_loading,
                 visible = showColorModel,
+                onAvatarReady = onAvatarReady,
             )
         }
         if (state.mode == BodyVisualMode.Color && coloredModel == null) {
@@ -131,6 +139,7 @@ private fun BoxScope.ModelPreview(
     useModelVertexColors: Boolean = false,
     loadingMessageRes: Int = R.string.scan_results_avatar_loading,
     visible: Boolean = true,
+    onAvatarReady: () -> Unit = {},
 ) {
     val modifier = Modifier
         .fillMaxSize()
@@ -148,6 +157,7 @@ private fun BoxScope.ModelPreview(
         useGradientBackground = false,
         framingRegion = selectedBodyPart,
         loadingMessageRes = loadingMessageRes,
+        onAvatarReady = if (visible) onAvatarReady else null,
     )
 }
 

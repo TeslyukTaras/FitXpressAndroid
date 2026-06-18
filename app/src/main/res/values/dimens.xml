@@ -98,6 +98,9 @@
     <dimen name="scan_corner_stroke_width">4dp</dimen>
     <dimen name="scan_corner_radius">6dp</dimen>
     <dimen name="scanner_line_stroke_width">3dp</dimen>
+    <dimen name="scan_analyzing_loader_size">160dp</dimen>
+    <dimen name="scan_analyzing_loader_stroke">7dp</dimen>
+    <dimen name="scan_analyzing_bottom_spacer">50dp</dimen>
     <dimen name="scan_results_preview_height">600dp</dimen>
     <dimen name="app_date_picker_dialog_max_width">560dp</dimen>
     <dimen name="app_date_range_picker_max_height">430dp</dimen>
