@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -38,6 +39,7 @@ import com.hexis.bi.ui.auth.components.ContinueDivider
 import com.hexis.bi.ui.auth.components.SocialAuthRow
 import com.hexis.bi.ui.components.AppOutlinedTextField
 import com.hexis.bi.ui.components.AppPrimaryButton
+import com.hexis.bi.utils.legal.LegalUrls
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -223,6 +225,7 @@ fun SignUpScreen(
 
 @Composable
 private fun TermsRow(accepted: Boolean, onToggle: () -> Unit) {
+    val uriHandler = LocalUriHandler.current
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth(),
@@ -247,7 +250,7 @@ private fun TermsRow(accepted: Boolean, onToggle: () -> Unit) {
                 LinkAnnotation.Clickable(
                     tag = "TERMS",
                     styles = TextLinkStyles(SpanStyle(color = MaterialTheme.colorScheme.primary)),
-                    linkInteractionListener = { },
+                    linkInteractionListener = { uriHandler.openUri(LegalUrls.TERMS_AND_CONDITIONS) },
                 )
             ) {
                 append(stringResource(R.string.terms_link))
@@ -259,7 +262,7 @@ private fun TermsRow(accepted: Boolean, onToggle: () -> Unit) {
                 LinkAnnotation.Clickable(
                     tag = "PRIVACY",
                     styles = TextLinkStyles(SpanStyle(color = MaterialTheme.colorScheme.primary)),
-                    linkInteractionListener = { },
+                    linkInteractionListener = { uriHandler.openUri(LegalUrls.PRIVACY_POLICY) },
                 )
             ) {
                 append(stringResource(R.string.privacy_link))

@@ -5,7 +5,6 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,6 +27,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -37,12 +37,13 @@ import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.components.LightStatusBarIcons
-import com.hexis.bi.ui.theme.NocturnePulseTheme
-import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.main.settings.deleteaccount.AuthProvider
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountDialog
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountEvent
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountViewModel
+import com.hexis.bi.ui.theme.NocturnePulseTheme
+import com.hexis.bi.ui.theme.screenBackground
+import com.hexis.bi.utils.legal.LegalUrls
 import org.koin.androidx.compose.koinViewModel
 
 private data class SettingsRow(
@@ -74,6 +75,7 @@ fun SettingsScreen(
     viewModel: DeleteAccountViewModel = koinViewModel(),
 ) {
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
@@ -100,6 +102,7 @@ fun SettingsScreen(
         onNavigateToMySuit = onNavigateToMySuit,
         onNavigateToScanPreferences = onNavigateToScanPreferences,
         onNavigateToHowToScan = onNavigateToHowToScan,
+        onOpenTerms = { uriHandler.openUri(LegalUrls.TERMS_AND_CONDITIONS) },
         onShowDeleteDialog = viewModel::showDialog,
         onLogout = onLogout,
     )
@@ -210,6 +213,7 @@ private fun buildSettingsGroups(
     onNavigateToMySuit: () -> Unit,
     onNavigateToScanPreferences: () -> Unit,
     onNavigateToHowToScan: () -> Unit,
+    onOpenTerms: () -> Unit,
     onShowDeleteDialog: () -> Unit,
     onLogout: () -> Unit,
 ): List<SettingsGroup> {
@@ -219,24 +223,52 @@ private fun buildSettingsGroups(
         SettingsGroup(
             titleRes = R.string.settings_group_account,
             items = listOf(
-                SettingsRow(R.drawable.ic_user, R.string.settings_edit_profile, onClick = onNavigateToEditProfile),
-                SettingsRow(R.drawable.ic_bell, R.string.settings_notifications, onClick = onNavigateToNotificationSettings),
-                SettingsRow(R.drawable.ic_connect, R.string.settings_health_connections, onClick = onNavigateToHealthConnections),
+                SettingsRow(
+                    R.drawable.ic_user,
+                    R.string.settings_edit_profile,
+                    onClick = onNavigateToEditProfile
+                ),
+                SettingsRow(
+                    R.drawable.ic_bell,
+                    R.string.settings_notifications,
+                    onClick = onNavigateToNotificationSettings
+                ),
+                SettingsRow(
+                    R.drawable.ic_connect,
+                    R.string.settings_health_connections,
+                    onClick = onNavigateToHealthConnections
+                ),
             ),
         ),
         SettingsGroup(
             titleRes = R.string.settings_group_suit_scanning,
             items = listOf(
-                SettingsRow(R.drawable.ic_body, R.string.settings_my_suit, onClick = onNavigateToMySuit),
-                SettingsRow(R.drawable.ic_scan, R.string.settings_scan_preferences, onClick = onNavigateToScanPreferences),
+                SettingsRow(
+                    R.drawable.ic_body,
+                    R.string.settings_my_suit,
+                    onClick = onNavigateToMySuit
+                ),
+                SettingsRow(
+                    R.drawable.ic_scan,
+                    R.string.settings_scan_preferences,
+                    onClick = onNavigateToScanPreferences
+                ),
             ),
         ),
         SettingsGroup(
             titleRes = R.string.settings_group_support_about,
             items = listOf(
-                SettingsRow(R.drawable.ic_info, R.string.settings_how_scanning_works, onClick = onNavigateToHowToScan),
+                SettingsRow(
+                    R.drawable.ic_info,
+                    R.string.settings_how_scanning_works,
+                    onClick = onNavigateToHowToScan
+                ),
                 SettingsRow(R.drawable.ic_help, R.string.settings_help),
-                SettingsRow(R.drawable.ic_lock, R.string.settings_terms_privacy),
+                SettingsRow(
+                    R.drawable.ic_lock,
+                    R.string.settings_terms_privacy,
+                    onClick = onOpenTerms
+                ),
                 SettingsRow(R.drawable.ic_warning, R.string.settings_report_problem),
             ),
         ),
