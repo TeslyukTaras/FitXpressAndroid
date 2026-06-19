@@ -1,7 +1,6 @@
 package com.hexis.bi.ui.main.home.sleep
 
 import android.app.Application
-import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewModelScope
 import com.hexis.bi.R
 import com.hexis.bi.data.sleep.SleepRepository
@@ -14,10 +13,6 @@ import com.hexis.bi.data.user.FirestoreSchema
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.utils.constants.TerraProviders
 import com.hexis.bi.ui.base.BaseViewModel
-import com.hexis.bi.ui.theme.SleepStageAwake
-import com.hexis.bi.ui.theme.SleepStageDeep
-import com.hexis.bi.ui.theme.SleepStageLight
-import com.hexis.bi.ui.theme.SleepStageRem
 import com.hexis.bi.utils.formatFullMonthDay
 import com.hexis.bi.utils.formatShortDateRange
 import com.hexis.bi.utils.weekDayAbbreviation
@@ -280,7 +275,6 @@ class SleepViewModel(
             SleepStageData(
                 stage = stage,
                 durationMinutes = intervals.sumOf { it.durationMinutes },
-                color = stageColor(stage),
                 hrv = averageInIntervals(session.hrvSamples, intervals) ?: session.hrvMs,
                 rhr = averageInIntervals(session.heartRateSamples, intervals)
                     ?: session.restingHeartRateBpm,
@@ -289,14 +283,7 @@ class SleepViewModel(
     }
 
     private fun emptyStageData(): List<SleepStageData> =
-        STAGE_DISPLAY_ORDER.map { SleepStageData(it, durationMinutes = 0, color = stageColor(it)) }
-
-    private fun stageColor(stage: SleepStage): Color = when (stage) {
-        SleepStage.Deep -> SleepStageDeep
-        SleepStage.REM -> SleepStageRem
-        SleepStage.Light -> SleepStageLight
-        SleepStage.Awake -> SleepStageAwake
-    }
+        STAGE_DISPLAY_ORDER.map { SleepStageData(it, durationMinutes = 0) }
 
     /** Average value of [samples] whose timestamp falls inside any of [intervals], or null if none. */
     private fun averageInIntervals(

@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -30,8 +31,8 @@ import com.hexis.bi.R
 import com.hexis.bi.ui.components.AppButton
 import com.hexis.bi.ui.components.AppDialog
 import com.hexis.bi.ui.components.AppOutlinedButton
-import com.hexis.bi.ui.components.AppTextField
-import com.hexis.bi.ui.theme.Red300
+import com.hexis.bi.ui.components.AppOutlinedTextField
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 fun DeleteAccountDialog(
@@ -79,7 +80,7 @@ fun DeleteAccountDialog(
                 if (isEmailProvider) {
                     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
-                    AppTextField(
+                    AppOutlinedTextField(
                         value = state.password,
                         onValueChange = onPasswordChange,
                         label = stringResource(R.string.label_password),
@@ -128,7 +129,8 @@ fun DeleteAccountDialog(
                         text = stringResource(R.string.delete_account_dialog_action_delete),
                         onClick = onDelete,
                         enabled = !isLoading,
-                        containerColor = Red300,
+                        containerColor = NocturnePulseTheme.extendedColors.red300,
+                        contentColor = Color.White,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -140,7 +142,7 @@ fun DeleteAccountDialog(
                     .background(MaterialTheme.colorScheme.background.copy(alpha = 0.75f)),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator(color = Red300)
+                CircularProgressIndicator(color = NocturnePulseTheme.extendedColors.red300)
             }
         }
     }

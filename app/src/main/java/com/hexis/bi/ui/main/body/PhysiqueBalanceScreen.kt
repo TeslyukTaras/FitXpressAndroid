@@ -34,12 +34,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
-import com.hexis.bi.ui.dark.BodyGlassCard
-import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.dark.darkScreenBackground
+import com.hexis.bi.ui.components.BodyGlassCard
+import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.theme.NocturnePulseTheme
+import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.main.body.components.BisInfoBottomSheet
 import com.hexis.bi.ui.main.body.components.BodyTrendChart
-import com.hexis.bi.ui.theme.dark.DarkTheme
 import com.hexis.bi.utils.constants.BodyConstants
 import org.koin.androidx.compose.koinViewModel
 import java.time.LocalDate
@@ -58,79 +58,77 @@ fun PhysiqueBalanceScreen(
 
     LightStatusBarIcons()
 
-    DarkTheme {
-        BaseScreen(
-            modifier = modifier
-                .fillMaxSize()
-                .then(if (state.showBisInfo) Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop)) else Modifier)
-                .darkScreenBackground(),
-            containerColor = Color.Transparent,
-            topBar = {
-                BaseTopBar(
-                    title = stringResource(R.string.body_physique_balance_title),
-                    background = Color.Transparent,
-                    onBack = onBack,
-                    actions = {
-                        IconButton(onClick = viewModel::showBisInfo) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_info),
-                                contentDescription = stringResource(R.string.cd_body_bis_info),
-                                tint = MaterialTheme.colorScheme.onBackground,
-                                modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
-                            )
-                        }
-                    },
-                )
-            },
-        ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
-
-                when (state.loadState) {
-                    BodyLoadState.Loading -> PhysiqueBalancePlaceholder {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+    BaseScreen(
+        modifier = modifier
+            .fillMaxSize()
+            .then(if (state.showBisInfo) Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop)) else Modifier)
+            .screenBackground(),
+        containerColor = Color.Transparent,
+        topBar = {
+            BaseTopBar(
+                title = stringResource(R.string.body_physique_balance_title),
+                background = Color.Transparent,
+                onBack = onBack,
+                actions = {
+                    IconButton(onClick = viewModel::showBisInfo) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_info),
+                            contentDescription = stringResource(R.string.cd_body_bis_info),
+                            tint = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+                        )
                     }
+                },
+            )
+        },
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
 
-                    BodyLoadState.Error -> PhysiqueBalancePlaceholder {
+            when (state.loadState) {
+                BodyLoadState.Loading -> PhysiqueBalancePlaceholder {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                }
+
+                BodyLoadState.Error -> PhysiqueBalancePlaceholder {
+                    Text(
+                        text = stringResource(R.string.body_error_title),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
+                    TextButton(onClick = viewModel::retry) {
                         Text(
-                            text = stringResource(R.string.body_error_title),
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onBackground,
+                            text = stringResource(R.string.action_retry),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.primary,
                         )
-                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
-                        TextButton(onClick = viewModel::retry) {
-                            Text(
-                                text = stringResource(R.string.action_retry),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                        }
                     }
+                }
 
-                    BodyLoadState.Ready -> Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .verticalScroll(rememberScrollState())
-                            .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
-                    ) {
-                        BodyTrendChart(
-                            chart = state.chart,
-                            timeRange = state.timeRange,
-                            onTimeRangeChange = viewModel::selectTimeRange,
-                            showSegmentLegend = true,
-                        )
+                BodyLoadState.Ready -> Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+                ) {
+                    BodyTrendChart(
+                        chart = state.chart,
+                        timeRange = state.timeRange,
+                        onTimeRangeChange = viewModel::selectTimeRange,
+                        showSegmentLegend = true,
+                    )
 
-                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-                        PhysiqueBalanceSummary(state = state)
-                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
-                    }
+                    PhysiqueBalanceSummary(state = state)
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
                 }
             }
         }
-
-        if (state.showBisInfo) BisInfoBottomSheet(onDismiss = viewModel::dismissBisInfo)
     }
+
+    if (state.showBisInfo) BisInfoBottomSheet(onDismiss = viewModel::dismissBisInfo)
 }
 
 @Composable
@@ -212,7 +210,7 @@ private fun PhysiqueMetricCard(
                         Text(
                             text = value,
                             style = MaterialTheme.typography.titleLarge,
-                            color = DarkTheme.extendedColors.positive,
+                            color = NocturnePulseTheme.extendedColors.positive,
                         )
                         if (valueSuffix != null) {
                             Spacer(Modifier.width(dimensionResource(R.dimen.spacer_xxs)))
@@ -250,7 +248,7 @@ private fun PhysiqueMetricCard(
                 Text(
                     text = value,
                     style = MaterialTheme.typography.headlineMedium,
-                    color = if (highlighted) DarkTheme.extendedColors.positive
+                    color = if (highlighted) NocturnePulseTheme.extendedColors.positive
                     else MaterialTheme.colorScheme.primary
                 )
                 if (valueSuffix != null) {

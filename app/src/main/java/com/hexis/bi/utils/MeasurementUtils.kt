@@ -29,6 +29,25 @@ fun Float.cmToFeetAndInches(): Pair<Int, Float> {
 fun Int.inchesToFeetAndInches(): Pair<Int, Int> =
     (this / INCHES_PER_FOOT) to (this % INCHES_PER_FOOT)
 
+/** Rounds total height first so display never produces values like 5 ft 12 in. */
+fun Float.cmToRoundedFeetAndInches(): Pair<Int, Int> =
+    this.cmToInches().roundToInt().inchesToFeetAndInches()
+
+data class PersistedUserMeasurements(
+    val heightCm: Int,
+    val weightKg: Int,
+    val heightIn: Int,
+    val weightLb: Int,
+)
+
+fun persistedUserMeasurements(heightCm: Float, weightKg: Float): PersistedUserMeasurements =
+    PersistedUserMeasurements(
+        heightCm = heightCm.roundToInt(),
+        weightKg = weightKg.roundToInt(),
+        heightIn = heightCm.cmToInches().roundToInt(),
+        weightLb = weightKg.kgToLb().roundToInt(),
+    )
+
 fun String?.isMetricUnitSystem(fallback: Boolean = true): Boolean =
     if (this == null) fallback else this == UNIT_SYSTEM_METRIC
 

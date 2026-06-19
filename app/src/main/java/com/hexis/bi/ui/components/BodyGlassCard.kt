@@ -1,4 +1,4 @@
-package com.hexis.bi.ui.dark
+package com.hexis.bi.ui.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +17,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.theme.NocturnePulseTheme
+import com.hexis.bi.ui.theme.bodyGlassCardFillBrush
 import com.hexis.bi.utils.constants.GlassConstants
 import com.hexis.bi.utils.glass
 
@@ -30,11 +31,12 @@ fun BodyGlassCard(
     highlighted: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val colors = DarkTheme.extendedColors
+    val colors = NocturnePulseTheme.extendedColors
     Column(
         modifier = modifier
             .fillMaxWidth()
             .glass(
+                tint = NocturnePulseTheme.extendedColors.glassRimHighlight,
                 shape = MaterialTheme.shapes.medium,
                 level = GlassConstants.LEVEL_DEFAULT,
                 fillBrush = { bodyGlassCardFillBrush(it) },

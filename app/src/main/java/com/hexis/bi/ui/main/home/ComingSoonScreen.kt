@@ -17,9 +17,8 @@ import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
-import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.dark.darkScreenBackground
-import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.theme.screenBackground
 
 /** Dark-themed placeholder for Body Intelligence features that aren't built yet. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,33 +31,31 @@ fun ComingSoonScreen(
 ) {
     LightStatusBarIcons()
 
-    DarkTheme {
-        BaseScreen(
-            modifier = modifier
+    BaseScreen(
+        modifier = modifier
+            .fillMaxSize()
+            .screenBackground(),
+        containerColor = Color.Transparent,
+        topBar = {
+            BaseTopBar(
+                title = stringResource(titleRes),
+                onBack = onBack,
+                background = Color.Transparent,
+            )
+        },
+    ) {
+        Box(
+            modifier = Modifier
                 .fillMaxSize()
-                .darkScreenBackground(),
-            containerColor = Color.Transparent,
-            topBar = {
-                BaseTopBar(
-                    title = stringResource(titleRes),
-                    onBack = onBack,
-                    background = Color.Transparent,
-                )
-            },
+                .padding(dimensionResource(R.dimen.padding_medium)),
+            contentAlignment = Alignment.Center,
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(dimensionResource(R.dimen.padding_medium)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(messageRes),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-            }
+            Text(
+                text = stringResource(messageRes),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }

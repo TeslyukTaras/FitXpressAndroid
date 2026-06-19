@@ -11,14 +11,13 @@ import com.hexis.bi.data.user.UserProfile
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.ui.base.BaseViewModel
-import com.hexis.bi.utils.cmToInches
 import com.hexis.bi.utils.constants.MeasurementConstants
 import com.hexis.bi.utils.constants.ProfileConstants
 import com.hexis.bi.utils.formatDob
 import com.hexis.bi.utils.inchesToCm
 import com.hexis.bi.utils.isMetricUnitSystem
-import com.hexis.bi.utils.kgToLb
 import com.hexis.bi.utils.lbToKg
+import com.hexis.bi.utils.persistedUserMeasurements
 import com.hexis.bi.utils.parseDob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -148,8 +147,7 @@ private fun Bitmap.compressJpeg(quality: Int): ByteArray {
 
 private fun EditProfileState.toUserProfile(uid: String): UserProfile {
     val dob = dateOfBirth.parseDob()
-    val heightCmInt = heightCm.toInt()
-    val weightKgInt = weightKg.toInt()
+    val measurements = persistedUserMeasurements(heightCm, weightKg)
     return UserProfile(
         uid = uid,
         firstName = firstName,
@@ -157,10 +155,10 @@ private fun EditProfileState.toUserProfile(uid: String): UserProfile {
         email = email,
         imageUrl = imageUrl,
         gender = gender.name,
-        heightCm = heightCmInt,
-        weightKg = weightKgInt,
-        heightIn = heightCmInt.toFloat().cmToInches().roundToInt(),
-        weightLb = weightKgInt.toFloat().kgToLb().roundToInt(),
+        heightCm = measurements.heightCm,
+        weightKg = measurements.weightKg,
+        heightIn = measurements.heightIn,
+        weightLb = measurements.weightLb,
         unitSystem = if (isMetric) MeasurementConstants.UNIT_SYSTEM_METRIC else MeasurementConstants.UNIT_SYSTEM_IMPERIAL,
         dateOfBirth = dob,
     )

@@ -2,7 +2,7 @@ package com.hexis.bi.utils.constants
 
 import androidx.compose.ui.graphics.Color
 
-internal object DarkBackgroundConstants {
+internal object BackgroundConstants {
 
     const val MESH_GRADIENT_ANGLE_DEG = 190.26f
     const val MESH_GRADIENT_LINE_LENGTH_FACTOR = 1.2323f

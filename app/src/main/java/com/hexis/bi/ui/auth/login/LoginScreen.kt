@@ -35,8 +35,8 @@ import com.hexis.bi.ui.auth.LoginEvent
 import com.hexis.bi.ui.auth.components.AuthScreenScaffold
 import com.hexis.bi.ui.auth.components.ContinueDivider
 import com.hexis.bi.ui.auth.components.SocialAuthRow
-import com.hexis.bi.ui.dark.DarkOutlinedTextField
-import com.hexis.bi.ui.dark.DarkPrimaryButton
+import com.hexis.bi.ui.components.AppOutlinedTextField
+import com.hexis.bi.ui.components.AppPrimaryButton
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -90,7 +90,7 @@ fun LoginScreen(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
-        DarkOutlinedTextField(
+        AppOutlinedTextField(
             value = state.email,
             onValueChange = viewModel::updateEmail,
             label = stringResource(R.string.label_email),
@@ -102,7 +102,7 @@ fun LoginScreen(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-        DarkOutlinedTextField(
+        AppOutlinedTextField(
             value = state.password,
             onValueChange = viewModel::updatePassword,
             label = stringResource(R.string.label_password),
@@ -136,7 +136,7 @@ fun LoginScreen(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
-        DarkPrimaryButton(
+        AppPrimaryButton(
             text = stringResource(R.string.action_login),
             onClick = viewModel::login,
             isLoading = isLoading,

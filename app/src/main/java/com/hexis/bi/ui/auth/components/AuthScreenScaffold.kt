@@ -33,9 +33,8 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.dark.darkScreenBackground
-import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.utils.constants.AuthFlowConstants
 
 /**
@@ -57,87 +56,85 @@ internal fun AuthScreenScaffold(
     bottomPadding: Dp? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    DarkTheme {
-        LightStatusBarIcons()
-        val resolvedBottomPadding = bottomPadding ?: dimensionResource(R.dimen.padding_auth_vertical)
-        val snackbarHostState = remember { SnackbarHostState() }
+    LightStatusBarIcons()
+    val resolvedBottomPadding = bottomPadding ?: dimensionResource(R.dimen.padding_auth_vertical)
+    val snackbarHostState = remember { SnackbarHostState() }
 
-        LaunchedEffect(error) {
-            if (error != null) {
-                snackbarHostState.showSnackbar(
-                    message = error,
-                    duration = SnackbarDuration.Indefinite,
-                    withDismissAction = true,
-                )
-                onDismissError()
-            }
-        }
-
-        LaunchedEffect(message) {
-            if (message != null) {
-                snackbarHostState.showSnackbar(
-                    message = message,
-                    duration = SnackbarDuration.Short,
-                )
-                onDismissMessage()
-            }
-        }
-
-        Box(
-            modifier = modifier
-                .fillMaxSize()
-                .darkScreenBackground(),
-        ) {
-            Image(
-                painter = painterResource(R.drawable.img_auth_gradient),
-                contentDescription = null,
-                contentScale = ContentScale.FillWidth,
-                colorFilter = ColorFilter.tint(
-                    MaterialTheme.colorScheme.primary.copy(alpha = AuthFlowConstants.GRADIENT_TINT_ALPHA),
-                ),
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .fillMaxWidth(),
+    LaunchedEffect(error) {
+        if (error != null) {
+            snackbarHostState.showSnackbar(
+                message = error,
+                duration = SnackbarDuration.Indefinite,
+                withDismissAction = true,
             )
+            onDismissError()
+        }
+    }
 
-            val scrollState = rememberScrollState()
-            BoxWithConstraints(
+    LaunchedEffect(message) {
+        if (message != null) {
+            snackbarHostState.showSnackbar(
+                message = message,
+                duration = SnackbarDuration.Short,
+            )
+            onDismissMessage()
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .screenBackground(),
+    ) {
+        Image(
+            painter = painterResource(R.drawable.img_auth_gradient),
+            contentDescription = null,
+            contentScale = ContentScale.FillWidth,
+            colorFilter = ColorFilter.tint(
+                MaterialTheme.colorScheme.primary.copy(alpha = AuthFlowConstants.GRADIENT_TINT_ALPHA),
+            ),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth(),
+        )
+
+        val scrollState = rememberScrollState()
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .imePadding(),
+        ) {
+            Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .imePadding(),
+                    .fillMaxWidth()
+                    .verticalScroll(scrollState)
+                    .heightIn(min = maxHeight)
+                    .navigationBarsPadding()
+                    .padding(bottom = resolvedBottomPadding),
+                verticalArrangement = Arrangement.Top,
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                AuthTopBar(onBack = onBack)
+                Spacer(modifier = Modifier.weight(1f))
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .verticalScroll(scrollState)
-                        .heightIn(min = maxHeight)
-                        .navigationBarsPadding()
-                        .padding(bottom = resolvedBottomPadding),
-                    verticalArrangement = Arrangement.Top,
+                        .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    AuthTopBar(onBack = onBack)
-                    Spacer(modifier = Modifier.weight(1f))
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        content = content,
-                    )
-                }
+                    content = content,
+                )
             }
-
-            SnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .imePadding(),
-            )
-
-            if (isLoading) LoadingOverlay()
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .imePadding(),
+        )
+
+        if (isLoading) LoadingOverlay()
     }
 }
 

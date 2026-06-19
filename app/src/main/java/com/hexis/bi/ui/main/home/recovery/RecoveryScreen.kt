@@ -21,11 +21,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
-import com.hexis.bi.ui.dark.DarkTabSelector
-import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.dark.darkScreenBackground
+import com.hexis.bi.ui.components.AppTabSelector
+import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.main.home.recovery.components.RecoveryInfoBottomSheet
-import com.hexis.bi.ui.theme.dark.DarkTheme
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,68 +40,66 @@ fun RecoveryScreen(
 
     LightStatusBarIcons()
 
-    DarkTheme {
-        Box(modifier = modifier) {
-            BaseScreen(
+    Box(modifier = modifier) {
+        BaseScreen(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (state.showInfoSheet) Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
+                    else Modifier
+                )
+                .screenBackground(),
+            containerColor = Color.Transparent,
+            isLoading = isLoading,
+            error = error,
+            onDismissError = viewModel::clearError,
+            topBar = {
+                BaseTopBar(
+                    title = stringResource(R.string.recovery_screen_title),
+                    onBack = onBack,
+                    background = Color.Transparent,
+                )
+            },
+        ) {
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .then(
-                        if (state.showInfoSheet) Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
-                        else Modifier
-                    )
-                    .darkScreenBackground(),
-                containerColor = Color.Transparent,
-                isLoading = isLoading,
-                error = error,
-                onDismissError = viewModel::clearError,
-                topBar = {
-                    BaseTopBar(
-                        title = stringResource(R.string.recovery_screen_title),
-                        onBack = onBack,
-                        background = Color.Transparent,
-                    )
-                },
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
-                ) {
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
 
-                    DarkTabSelector(
-                        tabs = RecoveryTab.entries,
-                        selectedTab = state.selectedTab,
-                        onTabSelected = viewModel::selectTab,
-                        tabLabel = { stringResource(it.labelRes) },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                AppTabSelector(
+                    tabs = RecoveryTab.entries,
+                    selectedTab = state.selectedTab,
+                    onTabSelected = viewModel::selectTab,
+                    tabLabel = { stringResource(it.labelRes) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
 
-                    when (state.selectedTab) {
-                        RecoveryTab.Day -> {
-                            RecoveryDayContent(
-                                state = state,
-                                onInfoClick = viewModel::showInfoSheet,
-                                onPreviousDay = viewModel::previousDay,
-                                onNextDay = viewModel::nextDay,
-                            )
-                        }
-
-                        RecoveryTab.Summary -> {
-                            RecoverySummaryContent(
-                                state = state,
-                                onPreviousWeek = viewModel::previousWeek,
-                                onNextWeek = viewModel::nextWeek,
-                            )
-                        }
+                when (state.selectedTab) {
+                    RecoveryTab.Day -> {
+                        RecoveryDayContent(
+                            state = state,
+                            onInfoClick = viewModel::showInfoSheet,
+                            onPreviousDay = viewModel::previousDay,
+                            onNextDay = viewModel::nextDay,
+                        )
                     }
 
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
+                    RecoveryTab.Summary -> {
+                        RecoverySummaryContent(
+                            state = state,
+                            onPreviousWeek = viewModel::previousWeek,
+                            onNextWeek = viewModel::nextWeek,
+                        )
+                    }
                 }
-            }
 
-            if (state.showInfoSheet) RecoveryInfoBottomSheet(onDismiss = viewModel::dismissInfoSheet)
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
+            }
         }
+
+        if (state.showInfoSheet) RecoveryInfoBottomSheet(onDismiss = viewModel::dismissInfoSheet)
     }
 }

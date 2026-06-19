@@ -35,8 +35,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.AppVerticalGradientDivider
-import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.components.AppVerticalGradientDivider
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.theme.MeasurementValueStyle
 import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.ui.theme.TitleHighlightTextStyle

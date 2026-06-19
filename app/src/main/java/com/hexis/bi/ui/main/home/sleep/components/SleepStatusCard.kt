@@ -31,11 +31,11 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import com.hexis.bi.R
 import com.hexis.bi.data.sleep.SleepStage
-import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.sleep.SleepStageData
 import com.hexis.bi.ui.main.home.sleep.nameRes
-import com.hexis.bi.ui.theme.Gray200
 import com.hexis.bi.utils.constants.SleepConstants
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 /** Vertical gap (dimen res) between each stage's marker line and the HRV label below it. */
 private fun SleepStage.connectorDistanceRes(): Int = when (this) {
@@ -113,8 +113,8 @@ private fun stageHeaderValue(totalSleepMinutes: Int, sleepGoalHours: Int): Annot
     val minutes = totalSleepMinutes % 60
     val numberStyle = MaterialTheme.typography.bodyLarge.toSpanStyle().copy(color = Color.White)
     val unitStyle =
-        MaterialTheme.typography.bodyMedium.toSpanStyle().copy(color = Gray200.copy(alpha = 0.4f))
-    val goalStyle = MaterialTheme.typography.bodyMedium.toSpanStyle().copy(color = Gray200)
+        MaterialTheme.typography.bodyMedium.toSpanStyle().copy(color = NocturnePulseTheme.extendedColors.gray200.copy(alpha = 0.4f))
+    val goalStyle = MaterialTheme.typography.bodyMedium.toSpanStyle().copy(color = NocturnePulseTheme.extendedColors.gray200)
     val hourUnit = stringResource(R.string.unit_hours_short)
     val minuteUnit = stringResource(R.string.unit_minutes_short)
     val goalText = stringResource(R.string.sleep_stage_header_goal, sleepGoalHours)
@@ -134,7 +134,7 @@ private fun stageDurationValue(minutes: Int): AnnotatedString {
     val mins = safe % SleepConstants.MINUTES_PER_HOUR
     val valueStyle = MaterialTheme.typography.labelMedium.toSpanStyle()
         .copy(color = MaterialTheme.colorScheme.onBackground)
-    val unitStyle = MaterialTheme.typography.bodySmall.toSpanStyle().copy(color = Gray200)
+    val unitStyle = MaterialTheme.typography.bodySmall.toSpanStyle().copy(color = NocturnePulseTheme.extendedColors.gray200)
     val hourUnit = stringResource(R.string.unit_hours_short)
     val minuteUnit = stringResource(R.string.unit_minutes_short)
     return buildAnnotatedString {
@@ -156,13 +156,13 @@ private fun StageAxisLabels(
         Text(
             text = stringResource(R.string.sleep_metric_hrv),
             style = MaterialTheme.typography.bodySmall,
-            color = Gray200.copy(alpha = 0.4f),
+            color = NocturnePulseTheme.extendedColors.gray200.copy(alpha = 0.4f),
         )
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
         Text(
             text = stringResource(R.string.sleep_metric_rhr_short),
             style = MaterialTheme.typography.bodySmall,
-            color = Gray200.copy(alpha = 0.4f),
+            color = NocturnePulseTheme.extendedColors.gray200.copy(alpha = 0.4f),
         )
     }
 }
@@ -175,9 +175,10 @@ private fun SleepStageColumn(
     drawRightEdge: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val connectorColor = Gray200.copy(alpha = 0.4f)
+    val connectorColor = NocturnePulseTheme.extendedColors.gray200.copy(alpha = 0.4f)
     val dashStroke = dimensionResource(R.dimen.sleep_stage_dash_stroke)
     val dashSegment = dimensionResource(R.dimen.sleep_stage_dash_segment)
+    val stageColor = rememberSleepStageColors()
 
     Column(modifier = modifier.fillMaxHeight(), verticalArrangement = Arrangement.Bottom) {
         Text(
@@ -187,7 +188,7 @@ private fun SleepStageColumn(
         Text(
             text = stringResource(stage.stage.nameRes()),
             style = MaterialTheme.typography.bodySmall,
-            color = Gray200.copy(alpha = 0.4f),
+            color = NocturnePulseTheme.extendedColors.gray200.copy(alpha = 0.4f),
             modifier = Modifier.padding(
                 start = dimensionResource(R.dimen.spacer_xxs),
                 top = dimensionResource(R.dimen.spacer_3xs)
@@ -234,7 +235,7 @@ private fun SleepStageColumn(
                         .fillMaxWidth()
                         .height(dimensionResource(R.dimen.sleep_stage_line_height))
                         .clip(CircleShape)
-                        .background(stage.color)
+                        .background(stageColor(stage.stage))
                 )
                 Spacer(Modifier.height(connectorDistance))
                 Text(
@@ -244,7 +245,7 @@ private fun SleepStageColumn(
                         stringResource(R.string.unit_ms),
                     ),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Gray200.copy(alpha = 0.4f),
+                    color = NocturnePulseTheme.extendedColors.gray200.copy(alpha = 0.4f),
                     modifier = Modifier.padding(start = dimensionResource(R.dimen.spacer_xxs))
                 )
                 Text(
@@ -254,7 +255,7 @@ private fun SleepStageColumn(
                         stringResource(R.string.unit_bpm),
                     ),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Gray200.copy(alpha = 0.4f),
+                    color = NocturnePulseTheme.extendedColors.gray200.copy(alpha = 0.4f),
                     modifier = Modifier.padding(
                         start = dimensionResource(R.dimen.spacer_xxs),
                         top = dimensionResource(R.dimen.spacer_2xs)

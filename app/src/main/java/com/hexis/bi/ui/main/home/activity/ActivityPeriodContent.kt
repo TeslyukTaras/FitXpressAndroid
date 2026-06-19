@@ -9,7 +9,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.AppDateNavigator
-import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.activity.components.ActivityAvgTrendRow
 import com.hexis.bi.ui.main.home.activity.components.ActivityGridCell
 import com.hexis.bi.ui.main.home.activity.components.ActivityMetricsGrid

@@ -2,7 +2,7 @@
 <resources>
 
     <style name="Theme.FitXpress" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@drawable/bg_dark_mesh</item>
+        <item name="android:windowBackground">@drawable/bg_mesh</item>
     </style>
 
     <style name="Theme.FitXpress.Starting" parent="Theme.SplashScreen">

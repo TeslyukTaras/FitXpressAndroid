@@ -1,4 +1,4 @@
-package com.hexis.bi.ui.dark
+package com.hexis.bi.ui.components
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.clickable
@@ -27,12 +27,14 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.theme.NocturnePulseTheme
+import com.hexis.bi.ui.theme.mainNavBarFillBrush
+import com.hexis.bi.ui.theme.scanFabFillBrush
 import com.hexis.bi.utils.constants.GlassConstants
 import com.hexis.bi.utils.glass
 
 @Composable
-fun DarkMainNavBottomBar(
+fun AppMainNavBottomBar(
     isHomeSelected: Boolean,
     isBodySelected: Boolean,
     onHomeClick: () -> Unit,
@@ -51,10 +53,11 @@ fun DarkMainNavBottomBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .glass(
-                    CircleShape,
+                    tint = NocturnePulseTheme.extendedColors.glassRimHighlight,
+                    shape = CircleShape,
                     level = GlassConstants.LEVEL_DEFAULT,
                     fill = Color.Transparent,
-                    fillBrush = { darkMainNavBarFillBrush(it) },
+                    fillBrush = { mainNavBarFillBrush(it) },
                     backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
                     rimWidth = dimensionResource(R.dimen.glass_rim_width),
                     backgroundAlpha = 1f,
@@ -64,7 +67,7 @@ fun DarkMainNavBottomBar(
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            DarkNavTab(
+            AppNavTab(
                 iconRes = R.drawable.ic_home_filled,
                 label = stringResource(R.string.home_nav_home),
                 selected = isHomeSelected,
@@ -73,7 +76,7 @@ fun DarkMainNavBottomBar(
 
             ScanFab(onClick = onScanClick)
 
-            DarkNavTab(
+            AppNavTab(
                 iconRes = R.drawable.ic_body_filled,
                 label = stringResource(R.string.home_nav_body),
                 selected = isBodySelected,
@@ -89,10 +92,11 @@ private fun ScanFab(onClick: () -> Unit) {
         modifier = Modifier
             .size(dimensionResource(R.dimen.size_bottom_nav_center))
             .glass(
-                CircleShape,
+                tint = NocturnePulseTheme.extendedColors.glassRimHighlight,
+                shape = CircleShape,
                 level = GlassConstants.LEVEL_RAISED,
                 fill = Color.Transparent,
-                fillBrush = { darkScanFabFillBrush(it) },
+                fillBrush = { scanFabFillBrush(it) },
                 backgroundBlur = dimensionResource(R.dimen.glass_background_blur),
                 rimWidth = dimensionResource(R.dimen.glass_rim_width),
             )
@@ -113,14 +117,14 @@ private fun ScanFab(onClick: () -> Unit) {
 }
 
 @Composable
-private fun DarkNavTab(
+private fun AppNavTab(
     @DrawableRes iconRes: Int,
     label: String,
     selected: Boolean,
     onClick: () -> Unit,
 ) {
     val color = if (selected) MaterialTheme.colorScheme.onSurface
-    else DarkTheme.extendedColors.textTertiary
+    else NocturnePulseTheme.extendedColors.textTertiary
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier

@@ -30,9 +30,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.DarkPrimaryButton
-import com.hexis.bi.ui.dark.promoBannerFillBrush
-import com.hexis.bi.ui.theme.dark.DarkBorderMuted
+import com.hexis.bi.ui.components.AppPrimaryButton
+import com.hexis.bi.ui.theme.promoBannerFillBrush
 import com.hexis.bi.utils.constants.HomeConstants
 
 @Composable
@@ -50,7 +49,7 @@ fun PromoBanner(
             .drawBehind { drawRect(brush = promoBannerFillBrush(size)) }
             .border(
                 width = dimensionResource(R.dimen.border_hairline),
-                color = DarkBorderMuted,
+                color = MaterialTheme.colorScheme.outline,
                 shape = shape,
             ),
     ) {
@@ -106,7 +105,7 @@ fun PromoBanner(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
-            DarkPrimaryButton(
+            AppPrimaryButton(
                 text = stringResource(R.string.home_action_buy_suit),
                 onClick = onBuyClick,
                 width = dimensionResource(R.dimen.promo_button_width),

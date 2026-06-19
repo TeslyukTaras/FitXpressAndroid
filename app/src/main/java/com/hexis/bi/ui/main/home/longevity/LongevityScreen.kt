@@ -25,15 +25,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
-import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.dark.darkScreenBackground
+import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.main.home.longevity.components.LongevityInfoBottomSheet
 import com.hexis.bi.ui.main.home.longevity.components.LongevityInsightCard
 import com.hexis.bi.ui.main.home.longevity.components.LongevityScoreCard
 import com.hexis.bi.ui.main.home.longevity.components.LongevitySignalsCard
 import com.hexis.bi.ui.main.home.longevity.components.LongevityStatusCard
 import com.hexis.bi.ui.main.home.longevity.components.LongevityTrendCard
-import com.hexis.bi.ui.theme.dark.DarkTheme
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,81 +48,79 @@ fun LongevityScreen(
 
     LightStatusBarIcons()
 
-    DarkTheme {
-        Box(modifier = modifier) {
-            BaseScreen(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(
-                        if (state.showInfoSheet) Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
-                        else Modifier
-                    )
-                    .darkScreenBackground(),
-                containerColor = Color.Transparent,
-                isLoading = isLoading,
-                error = error,
-                onDismissError = viewModel::clearError,
-                topBar = {
-                    BaseTopBar(
-                        title = stringResource(R.string.longevity_screen_title),
-                        onBack = onBack,
-                        background = Color.Transparent,
-                        actions = {
-                            IconButton(onClick = viewModel::showInfoSheet) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_info),
-                                    contentDescription = stringResource(R.string.cd_info),
-                                    tint = MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
-                                )
-                            }
-                        },
-                    )
-                },
-            ) {
-                val trendData = when (state.selectedTab) {
-                    LongevityTab.Daily -> state.daily
-                    LongevityTab.Weekly -> state.weekly
-                }
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
-                ) {
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
-
-                    LongevityScoreCard(
-                        score = state.score,
-                        syncedDate = state.syncedDate,
-                    )
-
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-                    LongevityTrendCard(
-                        selectedTab = state.selectedTab,
-                        onTabSelected = viewModel::selectTab,
-                        trendData = trendData,
-                    )
-
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-                    LongevitySignalsCard(signals = state.signals)
-
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-                    LongevityStatusCard(signals = state.statusSignals)
-
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-                    LongevityInsightCard()
-
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
-                }
+    Box(modifier = modifier) {
+        BaseScreen(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (state.showInfoSheet) Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
+                    else Modifier
+                )
+                .screenBackground(),
+            containerColor = Color.Transparent,
+            isLoading = isLoading,
+            error = error,
+            onDismissError = viewModel::clearError,
+            topBar = {
+                BaseTopBar(
+                    title = stringResource(R.string.longevity_screen_title),
+                    onBack = onBack,
+                    background = Color.Transparent,
+                    actions = {
+                        IconButton(onClick = viewModel::showInfoSheet) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_info),
+                                contentDescription = stringResource(R.string.cd_info),
+                                tint = MaterialTheme.colorScheme.onBackground,
+                                modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+                            )
+                        }
+                    },
+                )
+            },
+        ) {
+            val trendData = when (state.selectedTab) {
+                LongevityTab.Daily -> state.daily
+                LongevityTab.Weekly -> state.weekly
             }
 
-            if (state.showInfoSheet) LongevityInfoBottomSheet(onDismiss = viewModel::dismissInfoSheet)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+            ) {
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
+
+                LongevityScoreCard(
+                    score = state.score,
+                    syncedDate = state.syncedDate,
+                )
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+                LongevityTrendCard(
+                    selectedTab = state.selectedTab,
+                    onTabSelected = viewModel::selectTab,
+                    trendData = trendData,
+                )
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+                LongevitySignalsCard(signals = state.signals)
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+                LongevityStatusCard(signals = state.statusSignals)
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+                LongevityInsightCard()
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
+            }
         }
+
+        if (state.showInfoSheet) LongevityInfoBottomSheet(onDismiss = viewModel::dismissInfoSheet)
     }
 }

@@ -43,12 +43,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.recovery.DailyRecoveryEntry
-import com.hexis.bi.ui.theme.ChartTooltipFill
 import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.utils.constants.RecoveryConstants
 import kotlin.math.roundToInt
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 private fun summaryChartFractionFromTop(score: Float): Float {
     val value = score.coerceIn(0f, RecoveryConstants.MAX_SCORE)
@@ -313,7 +313,7 @@ fun RecoveryBarChart(
                                 IntOffset(targetX.roundToInt(), 0)
                             }
                             .clip(MaterialTheme.shapes.small)
-                            .background(ChartTooltipFill)
+                            .background(NocturnePulseTheme.extendedColors.chartTooltipFill)
                             .border(
                                 width = dimensionResource(R.dimen.border_line),
                                 color = MaterialTheme.colorScheme.outline,

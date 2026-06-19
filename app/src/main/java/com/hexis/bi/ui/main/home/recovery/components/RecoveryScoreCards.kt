@@ -16,12 +16,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.recovery.RecoveryTrend
-import com.hexis.bi.ui.theme.AccentBlue
 import com.hexis.bi.ui.theme.MeasurementValueStyle
 import com.hexis.bi.ui.theme.TitleDimTextStyle
-import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 fun RecoveryScoreCards(
@@ -52,7 +51,7 @@ fun RecoveryScoreCards(
             Text(
                 text = stringResource(R.string.recovery_avg_score_value, avgScore),
                 style = MeasurementValueStyle,
-                color = AccentBlue,
+                color = NocturnePulseTheme.extendedColors.accentBlue,
             )
         }
 
@@ -91,7 +90,7 @@ fun RecoveryScoreCards(
 
 @Composable
 private fun trendColor(trend: RecoveryTrend): Color = when (trend) {
-    RecoveryTrend.Improving -> DarkTheme.extendedColors.gaugeHigh
-    RecoveryTrend.Decreasing -> DarkTheme.extendedColors.gaugeLow
-    RecoveryTrend.Stable -> AccentBlue
+    RecoveryTrend.Improving -> NocturnePulseTheme.extendedColors.gaugeHigh
+    RecoveryTrend.Decreasing -> NocturnePulseTheme.extendedColors.gaugeLow
+    RecoveryTrend.Stable -> NocturnePulseTheme.extendedColors.accentBlue
 }

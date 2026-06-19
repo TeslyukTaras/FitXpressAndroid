@@ -1,12 +1,7 @@
 package com.hexis.bi.ui.main.home.recovery
 
 import androidx.annotation.StringRes
-import androidx.compose.ui.graphics.Color
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.Blue300
-import com.hexis.bi.ui.theme.Green
-import com.hexis.bi.ui.theme.Red100
-import com.hexis.bi.ui.theme.Yellow
 import com.hexis.bi.utils.constants.RecoveryConstants
 
 enum class RecoveryTab(@StringRes val labelRes: Int) {
@@ -18,11 +13,10 @@ enum class RecoveryLoadState { Loading, Ready, Error }
 
 enum class RecoveryStatus(
     @StringRes val labelRes: Int,
-    val color: Color,
 ) {
-    Ready(R.string.recovery_status_ready, Blue300),
-    Recovering(R.string.recovery_status_recovering, Yellow),
-    Low(R.string.recovery_status_low, Red100);
+    Ready(R.string.recovery_status_ready),
+    Recovering(R.string.recovery_status_recovering),
+    Low(R.string.recovery_status_low);
 
     companion object {
         fun fromScore(score: Int): RecoveryStatus = when {
@@ -36,11 +30,10 @@ enum class RecoveryStatus(
 enum class RecoveryTrend(
     @StringRes val labelRes: Int,
     @StringRes val descriptionRes: Int,
-    val color: Color,
 ) {
-    Stable(R.string.recovery_trend_flat, R.string.recovery_trend_flat_description, Blue300),
-    Improving(R.string.recovery_trend_up, R.string.recovery_trend_up_description, Green),
-    Decreasing(R.string.recovery_trend_down, R.string.recovery_trend_down_description, Red100),
+    Stable(R.string.recovery_trend_flat, R.string.recovery_trend_flat_description),
+    Improving(R.string.recovery_trend_up, R.string.recovery_trend_up_description),
+    Decreasing(R.string.recovery_trend_down, R.string.recovery_trend_down_description),
 }
 
 data class RecoveryMetric(

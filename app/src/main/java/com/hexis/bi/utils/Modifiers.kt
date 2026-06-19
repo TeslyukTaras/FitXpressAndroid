@@ -18,7 +18,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.Dp
-import com.hexis.bi.ui.theme.GlassRimHighlight
 import com.hexis.bi.utils.constants.GlassConstants
 import kotlin.math.PI
 import kotlin.math.atan2
@@ -89,7 +88,7 @@ fun Modifier.glass(
     level: Int = GlassConstants.LEVEL_DEFAULT,
     fill: Color = Color.Transparent,
     fillBrush: ((Size) -> Brush)? = null,
-    tint: Color = GlassRimHighlight,
+    tint: Color,
     backgroundAlpha: Float? = null,
     backgroundBlur: Dp = Dp.Unspecified,
     rimWidth: Dp = Dp.Unspecified,

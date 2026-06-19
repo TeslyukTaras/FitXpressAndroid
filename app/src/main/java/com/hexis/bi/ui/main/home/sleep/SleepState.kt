@@ -1,7 +1,6 @@
 package com.hexis.bi.ui.main.home.sleep
 
 import androidx.annotation.StringRes
-import androidx.compose.ui.graphics.Color
 import com.hexis.bi.R
 import com.hexis.bi.data.sleep.SleepStage
 import com.hexis.bi.utils.constants.SleepConstants
@@ -35,7 +34,6 @@ fun SleepStage.nameRes(): Int = when (this) {
 data class SleepStageData(
     val stage: SleepStage,
     val durationMinutes: Int,
-    val color: Color,
     /** Average HRV (RMSSD, ms) during this stage; falls back to the night average. */
     val hrv: Int = 0,
     /** Average heart rate (bpm) during this stage; falls back to the night resting rate. */

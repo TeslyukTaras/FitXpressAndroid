@@ -1,41 +1,35 @@
 package com.hexis.bi.ui.components
 
-import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.Blue200
-import com.hexis.bi.ui.theme.Blue300
-import com.hexis.bi.utils.gradientBackground
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppSlider(
-    modifier: Modifier = Modifier,
     value: Float,
     onValueChange: (Float) -> Unit,
-    background: Color = MaterialTheme.colorScheme.background,
-    valueRange: ClosedFloatingPointRange<Float> = 0f..1f
+    modifier: Modifier = Modifier,
+    valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
 ) {
     val sliderColors = SliderDefaults.colors(
-        thumbColor = MaterialTheme.colorScheme.background,
-        activeTrackColor = Blue300,
-        activeTickColor = Blue300,
-        inactiveTrackColor = background,
-        inactiveTickColor = Blue300,
+        thumbColor = NocturnePulseTheme.extendedColors.sliderActiveTrack,
+        activeTrackColor = NocturnePulseTheme.extendedColors.sliderActiveTrack,
+        activeTickColor = NocturnePulseTheme.extendedColors.sliderActiveTrack,
+        inactiveTrackColor = NocturnePulseTheme.extendedColors.sliderInactiveTrack,
+        inactiveTickColor = NocturnePulseTheme.extendedColors.sliderInactiveTrack,
     )
 
     Slider(
@@ -48,29 +42,18 @@ fun AppSlider(
             Box(
                 modifier = Modifier
                     .size(dimensionResource(R.dimen.icon_small))
-                    .shadow(
-                        elevation = dimensionResource(R.dimen.elevation_box),
-                        shape = CircleShape
-                    )
-                    .gradientBackground(
-                        brush = Brush.verticalGradient(listOf(Blue300, Blue200)),
-                        shape = MaterialTheme.shapes.small,
-                    )
-                    .border(
-                        width = dimensionResource(R.dimen.border_thumb),
-                        color = MaterialTheme.colorScheme.background,
-                        shape = CircleShape
-                    )
+                    .clip(CircleShape)
+                    .background(NocturnePulseTheme.extendedColors.sliderActiveTrack),
             )
         },
         track = { sliderState ->
             SliderDefaults.Track(
                 sliderState = sliderState,
-                modifier = Modifier.height(dimensionResource(R.dimen.slider_track_height)),
+                modifier = Modifier.height(dimensionResource(R.dimen.dark_slider_track_height)),
                 colors = sliderColors,
                 thumbTrackGapSize = 0.dp,
-                drawStopIndicator = null
+                drawStopIndicator = null,
             )
-        }
+        },
     )
 }

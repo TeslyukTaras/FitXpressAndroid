@@ -44,23 +44,14 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.hexis.bi.R
 import com.hexis.bi.ui.main.home.activity.BarChartEntry
-import com.hexis.bi.ui.theme.AccentBlue
 import com.hexis.bi.ui.theme.ActivityMediumTitleStyle
-import com.hexis.bi.ui.theme.ChartTooltipFill
-import com.hexis.bi.ui.theme.ChartTooltipBorder
-import com.hexis.bi.ui.theme.BodyToggleSelectedLabel
-import com.hexis.bi.ui.theme.Gray200
-import com.hexis.bi.ui.theme.Gray300
-import com.hexis.bi.ui.theme.White
 import com.hexis.bi.ui.theme.TitleDimTextStyle
-import com.hexis.bi.ui.theme.dark.ActivityVerticalGridLine
-import com.hexis.bi.ui.theme.dark.ChartAxisLine
-import com.hexis.bi.ui.theme.dark.Positive
 import com.hexis.bi.utils.constants.ActivityConstants
 import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.roundToInt
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 fun ActivityStepsBarChart(
@@ -76,7 +67,7 @@ fun ActivityStepsBarChart(
     chartEndPadding: Dp = 0.dp,
     xAxisStartLabel: String? = null,
     xAxisEndLabel: String? = null,
-    xAxisEdgeLabelColor: Color = Gray300,
+    xAxisEdgeLabelColor: Color = NocturnePulseTheme.extendedColors.gray300,
     xAxisBarLabelColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     highlightedXLabelIndex: Int = -1,
     goalValue: Int? = null,
@@ -105,9 +96,9 @@ fun ActivityStepsBarChart(
     val pointerVerticalPadding = dimensionResource(R.dimen.activity_chart_pointer_vertical_padding)
     val pointerColor = MaterialTheme.colorScheme.onSurfaceVariant
     val gridColor = MaterialTheme.colorScheme.outline
-    val axisColor = ChartAxisLine
+    val axisColor = NocturnePulseTheme.extendedColors.chartAxisLine
     val axisStrokeWidth = dimensionResource(R.dimen.border_hairline)
-    val vGridColor = ActivityVerticalGridLine
+    val vGridColor = NocturnePulseTheme.extendedColors.activityVerticalGridLine
     val vGridDash = dimensionResource(R.dimen.activity_chart_vgrid_dash)
     val vGridWidth = dimensionResource(R.dimen.activity_chart_vgrid_width)
 
@@ -170,7 +161,7 @@ fun ActivityStepsBarChart(
                             Text(
                                 text = fmt.format(totalValue),
                                 style = ActivityMediumTitleStyle,
-                                color = AccentBlue,
+                                color = NocturnePulseTheme.extendedColors.accentBlue,
                                 modifier = Modifier.alignByBaseline(),
                             )
                             if (goalValue != null) Text(
@@ -367,10 +358,10 @@ fun ActivityStepsBarChart(
                             IntOffset(targetX.roundToInt(), 0)
                         }
                         .clip(MaterialTheme.shapes.small)
-                        .background(ChartTooltipFill)
+                        .background(NocturnePulseTheme.extendedColors.chartTooltipFill)
                         .border(
                             width = dimensionResource(R.dimen.border_hairline),
-                            color = ChartTooltipBorder,
+                            color = NocturnePulseTheme.extendedColors.chartTooltipBorder,
                             shape = MaterialTheme.shapes.small,
                         )
                         .padding(
@@ -382,21 +373,21 @@ fun ActivityStepsBarChart(
                     Text(
                         text = tooltipEntry.tooltipLabel,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = BodyToggleSelectedLabel,
+                        color = NocturnePulseTheme.extendedColors.bodyToggleSelectedLabel,
                         textAlign = TextAlign.Center,
                     )
                     Row {
                         Text(
                             text = fmt.format(tooltipEntry.value.toInt()),
                             style = MaterialTheme.typography.headlineSmall,
-                            color = White,
+                            color = Color.White,
                             modifier = Modifier.alignByBaseline(),
                         )
                         Spacer(Modifier.width(dimensionResource(R.dimen.spacer_3xs)))
                         Text(
                             text = stringResource(R.string.activity_unit_steps_full),
                             style = MaterialTheme.typography.titleMedium,
-                            color = Gray200,
+                            color = NocturnePulseTheme.extendedColors.gray200,
                             modifier = Modifier.alignByBaseline(),
                         )
                     }
@@ -488,7 +479,7 @@ fun ActivityStepsBarChart(
                             Text(
                                 text = label,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (index == highlightedXLabelIndex) Positive
+                                color = if (index == highlightedXLabelIndex) NocturnePulseTheme.extendedColors.positive
                                 else xAxisBarLabelColor,
                                 minLines = 1,
                                 modifier = Modifier.offset {

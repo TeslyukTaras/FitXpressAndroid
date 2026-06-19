@@ -14,7 +14,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.DarkPrimaryButton
+import com.hexis.bi.ui.components.AppPrimaryButton
 
 @Composable
 fun BuySuitDialogContent(
@@ -57,7 +57,7 @@ fun BuySuitDialogContent(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
-        DarkPrimaryButton(
+        AppPrimaryButton(
             text = stringResource(R.string.action_buy_suit_title_case),
             onClick = onBuySuit,
             modifier = Modifier.fillMaxWidth(),

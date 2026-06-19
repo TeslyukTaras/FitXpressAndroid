@@ -1,11 +1,5 @@
 package com.hexis.bi.utils.constants
 
-import androidx.compose.ui.graphics.Color
-import com.hexis.bi.ui.theme.AccentBlue
-import com.hexis.bi.ui.theme.ActivityDistanceProgress
-import com.hexis.bi.ui.theme.ActivityProgressTrack
-import com.hexis.bi.ui.theme.ActivityStepsProgress
-
 internal object ActivityConstants {
     const val HOURS_IN_DAY = 24
     const val DEFAULT_STEP_GOAL = 10_000
@@ -27,13 +21,9 @@ internal object ActivityConstants {
     const val DEFAULT_DISTANCE_GOAL_KM = 8f
     const val DEFAULT_CALORIES_GOAL = 500
 
-    // Circular progress & metric indicators (ordered inner→outer: steps, distance, calories)
-    val RING_TRACK_COLOR = ActivityProgressTrack
-    val RING_COLORS: List<Color> = listOf(
-        ActivityStepsProgress,
-        ActivityDistanceProgress,
-        AccentBlue,
-    )
+    // Circular progress & metric indicators are coloured from the theme; see
+    // NocturnePulseTheme.extendedColors (activityStepsProgress / activityDistanceProgress /
+    // accentBlue, ordered inner→outer: steps, distance, calories) and activityProgressTrack.
     const val CIRCLE_FULL_SWEEP = 360f
     const val CIRCLE_START_ANGLE = 0f
     const val GAUGE_START_ANGLE = 180f

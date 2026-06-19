@@ -40,7 +40,6 @@ import androidx.compose.ui.text.font.FontWeight
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseBottomSheet
 import com.hexis.bi.ui.theme.TitleDimTextStyle
-import com.hexis.bi.ui.theme.dark.TextSecondary
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -197,7 +196,7 @@ private fun TimelineStep(
     val dash = dimensionResource(R.dimen.timeline_dash)
     val mutedLine = MaterialTheme.colorScheme.outline
     val activeLine = MaterialTheme.colorScheme.primary
-    val dotColor = if (step.reached) activeLine else TextSecondary
+    val dotColor = if (step.reached) activeLine else MaterialTheme.colorScheme.secondary
     // A connector segment is active (blue) only when both endpoints it joins are reached.
     val lineAbove = if (prevReached && step.reached) activeLine else mutedLine
     val lineBelow = if (step.reached && nextReached) activeLine else mutedLine

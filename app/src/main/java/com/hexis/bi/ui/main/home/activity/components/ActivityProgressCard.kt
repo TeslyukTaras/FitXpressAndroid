@@ -28,9 +28,9 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.activity.ActivityMetric
-import com.hexis.bi.utils.constants.ActivityConstants
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 fun ActivityProgressCard(
@@ -43,10 +43,12 @@ fun ActivityProgressCard(
     onInfoClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val ext = NocturnePulseTheme.extendedColors
+    val ringColors = listOf(ext.activityStepsProgress, ext.activityDistanceProgress, ext.accentBlue)
     val indicatorColors = if (showCalories) {
-        ActivityConstants.RING_COLORS.asReversed()
+        ringColors.asReversed()
     } else {
-        ActivityConstants.RING_COLORS.asReversed().drop(1)
+        ringColors.asReversed().drop(1)
     }
     val fallbackIndicatorColor = MaterialTheme.colorScheme.primary
 

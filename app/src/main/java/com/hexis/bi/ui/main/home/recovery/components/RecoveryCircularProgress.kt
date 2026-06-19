@@ -20,7 +20,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
 import com.hexis.bi.ui.main.home.recovery.RecoveryStatus
-import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.utils.constants.RecoveryConstants
 
 @Composable
@@ -35,7 +35,7 @@ fun RecoveryCircularProgress(
     val fraction = (score / RecoveryConstants.MAX_SCORE).coerceIn(0f, 1f)
     val filledSweep = RecoveryConstants.ARC_TOTAL_SWEEP * fraction
 
-    val ext = DarkTheme.extendedColors
+    val ext = NocturnePulseTheme.extendedColors
     val gaugeLow = ext.gaugeLow
     val gaugeMid = ext.gaugeMid
     val gaugeHigh = ext.gaugeHigh

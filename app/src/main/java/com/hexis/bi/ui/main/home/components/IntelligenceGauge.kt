@@ -20,7 +20,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.utils.constants.IntelligenceConstants
 
 /**
@@ -35,7 +35,7 @@ internal fun IntelligenceGauge(
     modifier: Modifier = Modifier,
     comingSoon: Boolean = false,
 ) {
-    val ext = DarkTheme.extendedColors
+    val ext = NocturnePulseTheme.extendedColors
     val trackColor = ext.gaugeTrack
     val sw = with(LocalDensity.current) {
         dimensionResource(R.dimen.home_intelligence_gauge_stroke).toPx()

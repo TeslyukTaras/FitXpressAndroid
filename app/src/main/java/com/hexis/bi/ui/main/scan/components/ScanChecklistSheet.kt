@@ -24,7 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseBottomSheet
-import com.hexis.bi.ui.dark.DarkPrimaryButton
+import com.hexis.bi.ui.components.AppPrimaryButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,7 +74,7 @@ fun ScanChecklistSheet(
         Spacer(Modifier.weight(1f))
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-        DarkPrimaryButton(
+        AppPrimaryButton(
             text = stringResource(R.string.action_continue),
             onClick = onContinue,
             modifier = Modifier.fillMaxWidth(),

@@ -20,7 +20,7 @@ import com.hexis.bi.data.terra.TerraCallbackHandler
 import com.hexis.bi.data.terra.TerraManagerHolder
 import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.ui.navigation.AppNavGraph
-import com.hexis.bi.ui.theme.FitXpressTheme
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.utils.permissions.NotificationPermissionCoordinator
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
@@ -79,13 +79,11 @@ class MainActivity : ComponentActivity() {
         firebaseAuth.addAuthStateListener(authListener)
         handleTerraDeepLink(intent)
         enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.light(
-                scrim = Color.TRANSPARENT,
-                darkScrim = Color.TRANSPARENT,
-            ),
+            statusBarStyle = SystemBarStyle.dark(scrim = Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(scrim = Color.TRANSPARENT),
         )
         setContent {
-            FitXpressTheme {
+            NocturnePulseTheme {
                 AppNavGraph(modifier = Modifier.fillMaxSize())
             }
         }

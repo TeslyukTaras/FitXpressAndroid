@@ -48,11 +48,9 @@ import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
-import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.dark.darkScreenBackground
-import com.hexis.bi.ui.theme.dark.DarkTheme
-import com.hexis.bi.ui.theme.dark.Positive
-import com.hexis.bi.ui.theme.dark.StepIndicatorTrack
+import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.theme.screenBackground
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 /**
  * Single-screen "Prepare Your Scan" tutorial with [howToScanSteps] states the user pages
@@ -65,41 +63,39 @@ fun HowToScanScreen(
 ) {
     LightStatusBarIcons()
 
-    DarkTheme {
-        BaseScreen(
-            modifier = modifier
-                .fillMaxSize()
-                .darkScreenBackground(),
-            containerColor = Color.Transparent,
-            topBar = {
-                BaseTopBar(
-                    title = stringResource(R.string.how_to_scan_title),
-                    background = Color.Transparent,
-                    onBack = onBack,
-                    actions = {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_cross),
-                                contentDescription = stringResource(R.string.cd_close),
-                                tint = MaterialTheme.colorScheme.onBackground,
-                                modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
-                            )
-                        }
-                    },
-                )
-            },
-        ) {
-            var currentStep by rememberSaveable { mutableIntStateOf(0) }
-            val totalSteps = howToScanSteps.size
-            HowToScanContent(
-                steps = howToScanSteps,
-                currentStep = currentStep,
-                totalSteps = totalSteps,
-                onSkip = onBack,
-                onNext = { if (currentStep < totalSteps - 1) currentStep++ else onBack() },
-                modifier = modifier,
+    BaseScreen(
+        modifier = modifier
+            .fillMaxSize()
+            .screenBackground(),
+        containerColor = Color.Transparent,
+        topBar = {
+            BaseTopBar(
+                title = stringResource(R.string.how_to_scan_title),
+                background = Color.Transparent,
+                onBack = onBack,
+                actions = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_cross),
+                            contentDescription = stringResource(R.string.cd_close),
+                            tint = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+                        )
+                    }
+                },
             )
-        }
+        },
+    ) {
+        var currentStep by rememberSaveable { mutableIntStateOf(0) }
+        val totalSteps = howToScanSteps.size
+        HowToScanContent(
+            steps = howToScanSteps,
+            currentStep = currentStep,
+            totalSteps = totalSteps,
+            onSkip = onBack,
+            onNext = { if (currentStep < totalSteps - 1) currentStep++ else onBack() },
+            modifier = modifier,
+        )
     }
 }
 
@@ -233,7 +229,7 @@ private fun StepIndicator(
                         .weight(1f)
                         .height(dimensionResource(R.dimen.size_indicator_bigger))
                         .clip(CircleShape)
-                        .background(StepIndicatorTrack),
+                        .background(NocturnePulseTheme.extendedColors.stepIndicatorTrack),
                 ) {
                     Box(
                         modifier = Modifier
@@ -261,13 +257,13 @@ private fun InstructionRow(
             modifier = Modifier
                 .size(dimensionResource(R.dimen.icon_medium))
                 .clip(CircleShape)
-                .border(dimensionResource(R.dimen.border_thin), Positive, CircleShape),
+                .border(dimensionResource(R.dimen.border_thin), NocturnePulseTheme.extendedColors.positive, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_tick),
                 contentDescription = null,
-                tint = Positive,
+                tint = NocturnePulseTheme.extendedColors.positive,
                 modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
             )
         }

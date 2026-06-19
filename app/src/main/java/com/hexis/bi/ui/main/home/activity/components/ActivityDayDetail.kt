@@ -8,13 +8,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.activity.ActivityMetric
 import com.hexis.bi.ui.main.home.activity.ActivityState
 import com.hexis.bi.ui.main.home.activity.BarChartEntry
-import com.hexis.bi.ui.theme.Gray300
 import com.hexis.bi.utils.constants.ActivityConstants
 import com.hexis.bi.utils.constants.MeasurementConstants
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 fun ActivityDayDetail(
@@ -54,7 +54,7 @@ fun ActivityDayDetail(
             goalValue = state.stepsGoal,
             xAxisStartLabel = stringResource(R.string.activity_time_start),
             xAxisEndLabel = stringResource(R.string.activity_time_end),
-            xAxisEdgeLabelColor = Gray300,
+            xAxisEdgeLabelColor = NocturnePulseTheme.extendedColors.gray300,
         )
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))

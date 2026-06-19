@@ -17,8 +17,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.AppDialog
-import com.hexis.bi.ui.dark.DarkOutlinedButton
-import com.hexis.bi.ui.dark.DarkPrimaryButton
+import com.hexis.bi.ui.components.AppOutlinedButton
+import com.hexis.bi.ui.components.AppPrimaryButton
 
 @Composable
 internal fun PersonalizeResultsDialog(
@@ -54,12 +54,12 @@ internal fun PersonalizeResultsDialog(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_xs)),
             ) {
-                DarkOutlinedButton(
+                AppOutlinedButton(
                     text = stringResource(R.string.scan_personalize_go_to_settings),
                     onClick = onGoToSettings,
                     modifier = Modifier.weight(1f),
                 )
-                DarkPrimaryButton(
+                AppPrimaryButton(
                     text = stringResource(R.string.action_ok),
                     onClick = onDismiss,
                     modifier = Modifier.weight(1f),

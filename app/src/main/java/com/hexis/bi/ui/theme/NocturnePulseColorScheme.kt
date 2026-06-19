@@ -1,10 +1,9 @@
-package com.hexis.bi.ui.theme.dark
+package com.hexis.bi.ui.theme
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
-import com.hexis.bi.ui.theme.DialogWindowBackground
 
-internal val DarkColorScheme: ColorScheme = darkColorScheme(
+internal val NocturnePulseColorScheme: ColorScheme = darkColorScheme(
     primary = ActionTeal,
     onPrimary = Black,
     primaryContainer = GreenSoft,
@@ -26,14 +25,14 @@ internal val DarkColorScheme: ColorScheme = darkColorScheme(
     surface = Surface,
     onSurface = TextPrimary,
     surfaceVariant = SurfaceMuted,
-    onSurfaceVariant = DarkTextMuted,
+    onSurfaceVariant = TextMuted,
     surfaceContainerLowest = Ink,
     surfaceContainerLow = SurfaceMuted,
     surfaceContainer = Surface,
     surfaceContainerHigh = SurfaceElevated,
     surfaceContainerHighest = DialogWindowBackground,
 
-    outline = DarkBorderMuted,
+    outline = BorderMuted,
     outlineVariant = HairlineStrong,
 
     error = Negative,

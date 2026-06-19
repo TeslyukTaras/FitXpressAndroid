@@ -27,7 +27,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
 import com.hexis.bi.ui.main.body.VisualScanOption
-import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.utils.constants.GlassConstants
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -42,7 +42,7 @@ internal fun VisualScanDateDropdown(
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val accentColor = DarkTheme.extendedColors.accentBlue
+    val accentColor = NocturnePulseTheme.extendedColors.accentBlue
     val selectedDate = selectedTimestamp?.let { dateFormatter.format(Date(it)) }
         ?: stringResource(R.string.body_visual_value_missing)
 

@@ -1,4 +1,4 @@
-package com.hexis.bi.ui.dark
+package com.hexis.bi.ui.components
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.size
@@ -14,7 +14,7 @@ import androidx.compose.ui.semantics.Role
 import com.hexis.bi.R
 
 /**
- * Dark design-system radio control rendered from the design icons: a grey ring when unselected
+ * Design-system radio control rendered from the design icons: a grey ring when unselected
  * ([R.drawable.ic_circle]) and an accent ring with a filled centre when selected
  * ([R.drawable.ic_circle_check]).
  *
@@ -22,7 +22,7 @@ import com.hexis.bi.R
  * (so the whole row is the touch target).
  */
 @Composable
-fun DarkRadioButton(
+fun AppRadioButton(
     selected: Boolean,
     onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,

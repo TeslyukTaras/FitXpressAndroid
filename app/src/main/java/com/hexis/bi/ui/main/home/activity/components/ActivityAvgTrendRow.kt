@@ -18,16 +18,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.activity.TrendComparison
-import com.hexis.bi.ui.theme.AccentBlue
 import com.hexis.bi.ui.theme.ActivityMediumTitleStyle
 import com.hexis.bi.ui.theme.MeasurementValueStyle
 import com.hexis.bi.ui.theme.TitleDimTextStyle
-import com.hexis.bi.ui.theme.dark.Negative
-import com.hexis.bi.ui.theme.dark.Positive
 import java.text.NumberFormat
 import java.util.Locale
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 fun ActivityAvgTrendRow(
@@ -44,10 +42,10 @@ fun ActivityAvgTrendRow(
         stringResource(R.string.activity_trend_percent_signed, it)
     } ?: stringResource(R.string.activity_trend_none_symbol)
     val trendColor = when {
-        trendPercent != null && trendPercent > 0 -> Positive
-        trendPercent != null && trendPercent < 0 -> Negative
-        trendComparison == TrendComparison.UP -> Positive
-        trendComparison == TrendComparison.DOWN -> Negative
+        trendPercent != null && trendPercent > 0 -> NocturnePulseTheme.extendedColors.positive
+        trendPercent != null && trendPercent < 0 -> MaterialTheme.colorScheme.error
+        trendComparison == TrendComparison.UP -> NocturnePulseTheme.extendedColors.positive
+        trendComparison == TrendComparison.DOWN -> MaterialTheme.colorScheme.error
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
@@ -74,14 +72,14 @@ fun ActivityAvgTrendRow(
                 Text(
                     text = fmt.format(avgStepsPerDay),
                     style = MeasurementValueStyle,
-                    color = AccentBlue,
+                    color = NocturnePulseTheme.extendedColors.accentBlue,
                     modifier = Modifier.alignByBaseline(),
                 )
                 Spacer(Modifier.width(dimensionResource(R.dimen.spacer_3xs)))
                 Text(
                     text = stringResource(R.string.activity_unit_steps),
                     style = ActivityMediumTitleStyle,
-                    color = AccentBlue,
+                    color = NocturnePulseTheme.extendedColors.accentBlue,
                     modifier = Modifier.alignByBaseline(),
                 )
             }

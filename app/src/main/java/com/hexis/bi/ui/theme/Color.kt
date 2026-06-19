@@ -2,107 +2,101 @@ package com.hexis.bi.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// === Figma Color Styles ===
+internal val Black = Color(0xFF000000)
+internal val Blue200 = Color(0xFF001D99)
+internal val Blue300 = Color(0xFF0030FF)
+internal val Gray200 = Color(0xFFAEB4BB)
+internal val Gray300 = Color(0xFFF8F8F8)
+internal val ScannerShadowStart = Color(0x3304EBF1)
+internal val ScannerShadowEnd = Color(0x13414141)
+internal val ScanLoaderTrack = Color(0x38797979)
+internal val Red100 = Color(0xFFFF3A3A)
+internal val Red300 = Color(0xFFE62020)
+internal val Green = Color(0xFF0E8716)
+internal val Yellow = Color(0xFFF2B705)
+internal val SleepStageAwake = Color(0xFFF8AE4C)
+internal val SleepStageRem = Color(0xFF1DC473)
+internal val SleepStageDeep = Color(0xFF1DC4B3)
+internal val SleepStageLight = Color(0xFF5C93ED)
+internal val GridLineLightGray = Color(0xFFEFF0F3)
+internal val BodyToggleTrackBorder = Color(0x29F6F6F6)
+internal val BodyToggleSelectedChipFill = Color(0x33FFFFFF)
+internal val BodyToggleSelectedLabel = Color(0xFFF6F6F6)
+internal val BodyToggleUnselectedLabel = Color(0xFFE7E7E7)
+internal val AccentBlue = Color(0xFF5C93ED)
+internal val PrimaryButtonGradientTop = Color(0xFF1DC4B3)
+internal val PrimaryButtonGradientBottom = Color(0xFF0B2020)
+internal val PrimaryButtonDisabledFill = Color(0x66AEB4BB)
+internal val DialogWindowBackground = Color(0xFF1A1A1A)
+internal val GlassTrackFill = Color(0x0D090909)
+internal val GlassSelectionFill = Color(0x4D090909)
+internal val GlassRimHighlight = Color(0xFFE6FFFC)
+internal val ChartTooltipFill = Color(0x33FFFFFF)
+internal val ChartTooltipBorder = Color(0x66AEB4BB)
+internal val ActivityProgressTrack = Color(0xFF1F3134)
+internal val ActivityStepsProgress = Color(0xFFA7BEF5)
+internal val ActivityDistanceProgress = Color(0xFF7FA5F1)
+internal val SliderLabel = Color(0xFFF6F6F6)
+internal val SliderActiveTrack = Color(0xFF1DC4B3)
+internal val SliderInactiveTrack = Color(0x38797979)
+internal val GradientDividerEdge = Color(0x00BDBEC0)
+internal val GradientDividerCenter = GridLineLightGray
+internal val MeshTop = Color(0xFF163131)
+internal val MeshBottom = Color(0xFF030909)
 
-val Black = Color(0xFF060611)
+internal val BodyGlassGreen = Color(0x38244A49)
+internal val BodyGlassInk = Color(0x38030909)
+internal val BodyGlassHighlightTopStart = Color(0x5E1DC4B3)
+internal val BodyGlassHighlightBottomEnd = Color(0x4D1DC4B3)
 
-// Blue (100 = vivid primary, higher = darker)
-val Blue100 = Color(0xFF005AFF)   // vivid primary — buttons, active states, highlights
+internal val PromoBannerStart = Color(0xA31DC4B3)
+internal val PromoBannerEnd = Color(0xA30B2020)
 
-val Blue200 = Color(0xFF001D99)   // deeper blue — strong backgrounds
-val Blue300 = Color(0xFF0030FF)   // darkest blue
+internal val ActivityIdleBar = Color(0x29F6F6F6)
+internal val ScanSparklineMarkerFill = Color(0xFF173633)
 
-val BlueFadedIndicator300 = Color(0xFF4B6BFB)
-val BlueFadedIndicator200 = Color(0xFFA8C5FF)
-val BlueFadedIndicator100 = Color(0xFFD1E2FF)
-
-// Gray (100 = darkest, 600 = lightest)
-val Gray100 = Color(0xFF64748B)
-val Gray200 = Color(0xFFAEB4BB)
-val Gray300 = Color(0xFFF8F8F8)
-val Gray400 = Color(0xFFEFF0F6)
-val Gray500 = Color(0xFFEDF1F3)
-val Gray600 = Color(0xFFF0F0F0)
-
-val GrayText = Color(0xFF686868)
-
-/** Muted card surface (scan history rows, error callouts); light-only — consider theme tokens for dark mode later. */
-val HistoryCardBackground = Color(0xFFF3F3F3)
-val Bg = Color(0xFFF7F7FA)
-val White = Color(0xFFFFFFFF)
-
-val ShadowColor = Color(0x33A7A7A7)
-
-// Scanner trailing shadow gradient (below the scan line): teal → near-transparent grey.
-val ScannerShadowStart = Color(0x3304EBF1) // rgba(4, 235, 241, 0.2)
-val ScannerShadowEnd = Color(0x13414141)   // rgba(65, 65, 65, 0.076)
-
-// Unfilled track of the scan-analyzing circular loader.
-val ScanLoaderTrack = Color(0x38797979) // rgba(121, 121, 121, 0.22)
-
-// Red
-val Red100 = Color(0xFFFF3A3A)   // vivid red — errors, delete actions
-
-//val Red200 = Color(0xFFFF7070)   // muted red
-val Red300 = Color(0xFFE62020)   // deep red — destructive action buttons
-
-// Lime
-val Lime100 = Color(0xFFF2FF91)  // slightly muted lime
-val Lime200 = Color(0xFFE8FE3F)  // bright lime — highlights, active tabs
-
-// Other
-val LightBlue = Color(0xFFDDE9F5) // light blue — secondary accents
-val LightGradientBlue = Color(0xFF75A4FF)
-val LightBlueBackground = Color(0xFFE6E6E6)
-
-val Green = Color(0xFF0E8716)
-val Yellow = Color(0xFFF2B705)
-
-// Sleep stage colors
-val SleepStageAwake = Color(0xFFF8AE4C)
-val SleepStageRem = Color(0xFF1DC473)
-val SleepStageDeep = Color(0xFF1DC4B3)
-val SleepStageLight = Color(0xFF5C93ED)
-
-// Subtitle/description text (blue-purple muted — onSurfaceVariant)
-val SubtitleBlue = Color(0xFF7272A8)
-
-// Shadow
-val ShadowGray = Color(0xFFC8C8C8)
-val GridLineGray = Color(0x5EB5B5B5)
-val GridLineLightGray = Color(0xFFEFF0F3)
-
-val BodyToggleTrackBorder = Color(0x29F6F6F6)
-val BodyToggleSelectedChipFill = Color(0x33FFFFFF)
-val BodyToggleSelectedLabel = Color(0xFFF6F6F6)
-val BodyToggleUnselectedLabel = Color(0xFFE7E7E7)
-val AccentBlue = Color(0xFF5C93ED)
-
-val DarkPrimaryButtonGradientTop = Color(0xFF1DC4B3)
-val DarkPrimaryButtonGradientBottom = Color(0xFF0B2020)
-val DarkPrimaryButtonDisabledFill = Color(0x66AEB4BB)
-
-val DialogBackdrop = Color(0x40424242)
-val DialogWindowBackground = Color(0xFF1A1A1A)
-
-val GlassTrackFill = Color(0x0D090909)
-val GlassSelectionFill = Color(0x4D090909)
-val GlassRimHighlight = Color(0xFFE6FFFC)
-
-// Translucent white fill for chart press tooltips.
-val ChartTooltipFill = Color(0x33FFFFFF)
-val ChartTooltipBorder = Color(0x66AEB4BB)
-
-val ActivityProgressTrack = Color(0xFF1F3134)
-val ActivityStepsProgress = Color(0xFFA7BEF5)
-val ActivityDistanceProgress = Color(0xFF7FA5F1)
-
-val DarkSliderLabel = Color(0xFFF6F6F6)
-val DarkSliderActiveTrack = Color(0xFF1DC4B3)
-val DarkSliderInactiveTrack = Color(0x38797979)
-
-/** Transparent edge stop (`rgba(189, 190, 192, 0)`) for gradient dividers. */
-val GradientDividerEdge = Color(0x00BDBEC0)
-
-/** Center band `#EFF0F3` (same value as [GridLineLightGray]). */
-val GradientDividerCenter = GridLineLightGray
+internal val TextMuted = Color(0xFFAEB4BB)
+internal val BorderMuted = Color(0x66AEB4BB)
+internal val SurfaceTranslucent = Color(0x4D090909)
+internal val Ink = Color(0xFF030909)
+internal val Surface = Color(0xFF101513)
+internal val SurfaceMuted = Color(0xFF0C100F)
+internal val SurfaceElevated = Color(0xFF18201D)
+internal val Hairline = Color(0xFF222B28)
+internal val HairlineStrong = Color(0xFF34403B)
+internal val TextPrimary = Color(0xFFF6F6F6)
+internal val TextSecondary = Color(0xFFC4C4C4)
+internal val TextTertiary = Color(0xFF5B6A65)
+internal val Green400 = Color(0xFF4ADE80)
+internal val GreenDeep = Color(0xFF14613E)
+internal val GreenSoft = Color(0xFF1C2A23)
+internal val Positive = Color(0xFF1DC473)
+internal val Negative = Color(0xFFE62020)
+internal val StepIndicatorTrack = Color(0x38797979)
+internal val GaugeLow = Color(0xBDD0462E)
+internal val GaugeMid = Color(0xBDECF162)
+internal val GaugeHigh = Color(0xBD1EE183)
+internal val GaugeTrack = Color(0xFF222B28)
+internal val ActionTeal = Color(0xFF1DC4B3)
+internal val ActionRed = Color(0xFFF95656)
+internal val SwitchActiveTrackTop = Color(0xA31DC4B3)
+internal val SwitchActiveTrackBottom = Color(0xA30B2020)
+internal val SwitchThumbShadow = Color(0x1F000000)
+internal val ChartBlue = Color(0xD4005AFF)
+internal val ChartTeal = Color(0xCC0DE6B0)
+internal val ChartHrvLine = Color(0xFF1DC4B3)
+internal val ChartCenterLine = Color(0x33FFFFFF)
+internal val ChartGridLine = Color(0x0DB5B5B5)
+internal val ChartGridLineHorizontal = Color(0x66AEB4BB)
+internal val ChartGridLineVertical = Color(0x1AAEB4BB)
+internal val ChartVerticalLine = Color(0x26B5B5B5)
+internal val ActivityVerticalGridLine = Color(0x5EB5B5B5)
+internal val ChartAxisLine = Color(0xFFE7E7E7)
+internal val ChartBoundaryLine = Color(0x33FFFFFF)
+internal val ChartLeanAdvantage = Color(0xFF5C93ED)
+internal val ChartFatAdvantage = Color(0xFF1DC4B3)
+internal val ChartZeroLabel = Color(0xFFF6F6F6)
+internal val ChartSelectionLine = Color.Gray.copy(alpha = 0.5f)
+internal val BodyCyan = Color(0xFF22D3EE)
+internal val Scrim = Color(0x40424242)
+internal val OverlayBorder = Color(0x66FFFFFF)

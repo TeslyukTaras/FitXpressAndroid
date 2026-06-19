@@ -33,9 +33,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
 import com.hexis.bi.ui.theme.ScanAnalyzingPercentStyle
-import com.hexis.bi.ui.theme.ScanLoaderTrack
 import kotlin.math.exp
 import kotlin.math.roundToInt
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 private const val ANALYZING_BODY_ALPHA = 0.3f
 private const val ANALYZING_CREEP_CEILING = 0.9f
@@ -130,7 +130,7 @@ private fun AnalyzingLoader(
     progress: Float,
     modifier: Modifier = Modifier,
 ) {
-    val trackColor = ScanLoaderTrack
+    val trackColor = NocturnePulseTheme.extendedColors.scanLoaderTrack
     val fillColor = MaterialTheme.colorScheme.primary
     val strokeWidth = dimensionResource(R.dimen.scan_analyzing_loader_stroke)
 

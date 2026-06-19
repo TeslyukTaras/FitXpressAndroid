@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.utils.constants.ActivityConstants
 
 @Composable
@@ -30,10 +31,13 @@ fun ActivityCircularProgress(
     val strokeWidth = dimensionResource(R.dimen.activity_arc_stroke_width)
     val ringGap = dimensionResource(R.dimen.activity_arc_ring_gap)
 
+    val ext = NocturnePulseTheme.extendedColors
+    val ringColors = listOf(ext.activityStepsProgress, ext.activityDistanceProgress, ext.accentBlue)
+    val ringTrackColor = ext.activityProgressTrack
     val rings = if (showCalories) {
-        listOf(stepsProgress, distanceProgress, caloriesProgress).zip(ActivityConstants.RING_COLORS)
+        listOf(stepsProgress, distanceProgress, caloriesProgress).zip(ringColors)
     } else {
-        listOf(stepsProgress, distanceProgress).zip(ActivityConstants.RING_COLORS.dropLast(1))
+        listOf(stepsProgress, distanceProgress).zip(ringColors.dropLast(1))
     }
 
     Box(
@@ -56,7 +60,7 @@ fun ActivityCircularProgress(
 
                 // Gray track
                 drawArc(
-                    color = ActivityConstants.RING_TRACK_COLOR,
+                    color = ringTrackColor,
                     startAngle = ActivityConstants.CIRCLE_START_ANGLE,
                     sweepAngle = ActivityConstants.CIRCLE_FULL_SWEEP,
                     useCenter = false,

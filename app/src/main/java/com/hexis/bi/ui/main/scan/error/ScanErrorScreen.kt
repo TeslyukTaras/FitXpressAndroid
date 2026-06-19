@@ -28,12 +28,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
-import com.hexis.bi.ui.dark.BodyGlassCard
-import com.hexis.bi.ui.dark.DarkOutlinedButton
-import com.hexis.bi.ui.dark.DarkPrimaryButton
-import com.hexis.bi.ui.dark.darkScreenBackground
+import com.hexis.bi.ui.components.BodyGlassCard
+import com.hexis.bi.ui.components.AppOutlinedButton
+import com.hexis.bi.ui.components.AppPrimaryButton
+import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.main.scan.components.ScanViewfinder
-import com.hexis.bi.ui.theme.Yellow
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,7 +45,7 @@ fun ScanErrorScreen(
     modifier: Modifier = Modifier,
 ) {
     BaseScreen(
-        modifier = modifier.darkScreenBackground(),
+        modifier = modifier.screenBackground(),
         containerColor = Color.Transparent,
         topBar = {
             CenterAlignedTopAppBar(
@@ -118,7 +118,7 @@ private fun SuitNotDetectedCard(
             Icon(
                 painter = painterResource(R.drawable.ic_warning),
                 contentDescription = stringResource(R.string.cd_scan_warning),
-                tint = Yellow,
+                tint = NocturnePulseTheme.extendedColors.yellow,
                 modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
             )
             Spacer(Modifier.width(dimensionResource(R.dimen.spacer_m)))
@@ -143,12 +143,12 @@ private fun SuitNotDetectedCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_xs)),
         ) {
-            DarkOutlinedButton(
+            AppOutlinedButton(
                 text = stringResource(R.string.action_connect_suit),
                 onClick = onConnectSuit,
                 modifier = Modifier.weight(1f),
             )
-            DarkPrimaryButton(
+            AppPrimaryButton(
                 text = stringResource(R.string.action_buy_suit),
                 onClick = onBuySuit,
                 modifier = Modifier.weight(1f),

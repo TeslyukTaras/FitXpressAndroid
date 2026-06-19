@@ -32,11 +32,10 @@ import com.hexis.bi.ui.base.BaseBottomSheet
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppDialog
-import com.hexis.bi.ui.dark.DarkTabSelector
-import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.dark.darkScreenBackground
+import com.hexis.bi.ui.components.AppTabSelector
+import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.main.home.activity.components.ActivitySettingsDialogContent
-import com.hexis.bi.ui.theme.dark.DarkTheme
 import com.hexis.bi.utils.providerDisplayName
 import org.koin.androidx.compose.koinViewModel
 
@@ -53,178 +52,176 @@ fun ActivityScreen(
 
     LightStatusBarIcons()
 
-    DarkTheme {
-        Box(modifier = modifier) {
-        BaseScreen(
+    Box(modifier = modifier) {
+    BaseScreen(
+        modifier = Modifier
+            .then(
+                if (state.showInfoSheet || state.showSettingsDialog)
+                    Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
+                else Modifier
+            )
+            .screenBackground(),
+        containerColor = Color.Transparent,
+        isLoading = isLoading,
+        error = error,
+        onDismissError = viewModel::clearError,
+        topBar = {
+            BaseTopBar(
+                title = stringResource(R.string.activity_screen_title),
+                onBack = onBack,
+                background = Color.Transparent,
+                actions = {
+                    IconButton(onClick = viewModel::showSettingsDialog) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_settings),
+                            contentDescription = stringResource(R.string.cd_settings),
+                            tint = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+                        )
+                    }
+                },
+            )
+        },
+    ) {
+        Column(
             modifier = Modifier
-                .then(
-                    if (state.showInfoSheet || state.showSettingsDialog)
-                        Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
-                    else Modifier
-                )
-                .darkScreenBackground(),
-            containerColor = Color.Transparent,
-            isLoading = isLoading,
-            error = error,
-            onDismissError = viewModel::clearError,
-            topBar = {
-                BaseTopBar(
-                    title = stringResource(R.string.activity_screen_title),
-                    onBack = onBack,
-                    background = Color.Transparent,
-                    actions = {
-                        IconButton(onClick = viewModel::showSettingsDialog) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_settings),
-                                contentDescription = stringResource(R.string.cd_settings),
-                                tint = MaterialTheme.colorScheme.onBackground,
-                                modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
-                            )
-                        }
-                    },
-                )
-            },
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
+
+            AppTabSelector(
+                tabs = ActivityTab.entries,
+                selectedTab = state.selectedTab,
+                onTabSelected = viewModel::selectTab,
+                tabLabel = { stringResource(it.labelRes) },
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            when (state.selectedTab) {
+                ActivityTab.Day -> ActivityDayContent(
+                    state = state,
+                    onInfoClick = viewModel::showInfoSheet,
+                    onPreviousDay = viewModel::previousDay,
+                    onNextDay = viewModel::nextDay,
+                    onRetry = viewModel::retryDayLoad,
+                )
+
+                ActivityTab.Week -> ActivityWeekContent(
+                    state = state,
+                    onPreviousWeek = viewModel::previousWeek,
+                    onNextWeek = viewModel::nextWeek,
+                    onSelectWeekDay = viewModel::selectWeekDay,
+                    onClearWeekDay = viewModel::clearWeekDaySelection,
+                    onInfoClick = viewModel::showInfoSheet,
+                    onRetry = viewModel::retryWeekLoad,
+                )
+
+                ActivityTab.Month -> ActivityMonthContent(
+                    state = state,
+                    onPreviousMonth = viewModel::previousMonth,
+                    onNextMonth = viewModel::nextMonth,
+                    onRetry = viewModel::retryMonthLoad,
+                )
+
+                ActivityTab.Year -> ActivityYearContent(
+                    state = state,
+                    onPreviousYear = viewModel::previousYear,
+                    onNextYear = viewModel::nextYear,
+                    onRetry = viewModel::retryYearLoad,
+                )
+            }
+
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
+        }
+    }
+
+    if (state.showSettingsDialog) {
+        AppDialog(onDismiss = viewModel::dismissSettingsDialog) {
+            ActivitySettingsDialogContent(
+                stepsGoal = state.stepsGoalDraft,
+                showActiveCalories = state.showActiveCaloriesDraft,
+                dataSource = state.dataSource.providerDisplayName(),
+                onStepsGoalChange = viewModel::updateStepsGoalDraft,
+                onShowActiveCaloriesChange = viewModel::updateActiveCaloriesDraft,
+                onCancel = viewModel::dismissSettingsDialog,
+                onSave = viewModel::saveSettings,
+            )
+        }
+    }
+
+    if (state.showInfoSheet) {
+        BaseBottomSheet(
+            title = stringResource(R.string.activity_info_sheet_title),
+            onDismiss = viewModel::dismissInfoSheet,
+            modifier = modifier.fillMaxHeight(0.75f),
+        ) {
+            Text(
+                text = stringResource(R.string.activity_info_heading_1),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
+            Text(
+                text = stringResource(R.string.activity_info_body_1),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+            Text(
+                text = stringResource(R.string.activity_info_heading_2),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
+            Text(
+                text = stringResource(R.string.activity_info_body_2),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+            Text(
+                text = stringResource(R.string.activity_info_heading_3),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
+            Text(
+                text = stringResource(R.string.activity_info_body_3),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+            Text(
+                text = stringResource(R.string.activity_info_heading_4),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
+            Text(
+                text = stringResource(R.string.activity_info_body_4),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
+
+            TextButton(
+                onClick = viewModel::dismissInfoSheet,
+                modifier = Modifier.align(Alignment.End),
             ) {
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
-
-                DarkTabSelector(
-                    tabs = ActivityTab.entries,
-                    selectedTab = state.selectedTab,
-                    onTabSelected = viewModel::selectTab,
-                    tabLabel = { stringResource(it.labelRes) },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-
-                when (state.selectedTab) {
-                    ActivityTab.Day -> ActivityDayContent(
-                        state = state,
-                        onInfoClick = viewModel::showInfoSheet,
-                        onPreviousDay = viewModel::previousDay,
-                        onNextDay = viewModel::nextDay,
-                        onRetry = viewModel::retryDayLoad,
-                    )
-
-                    ActivityTab.Week -> ActivityWeekContent(
-                        state = state,
-                        onPreviousWeek = viewModel::previousWeek,
-                        onNextWeek = viewModel::nextWeek,
-                        onSelectWeekDay = viewModel::selectWeekDay,
-                        onClearWeekDay = viewModel::clearWeekDaySelection,
-                        onInfoClick = viewModel::showInfoSheet,
-                        onRetry = viewModel::retryWeekLoad,
-                    )
-
-                    ActivityTab.Month -> ActivityMonthContent(
-                        state = state,
-                        onPreviousMonth = viewModel::previousMonth,
-                        onNextMonth = viewModel::nextMonth,
-                        onRetry = viewModel::retryMonthLoad,
-                    )
-
-                    ActivityTab.Year -> ActivityYearContent(
-                        state = state,
-                        onPreviousYear = viewModel::previousYear,
-                        onNextYear = viewModel::nextYear,
-                        onRetry = viewModel::retryYearLoad,
-                    )
-                }
-
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
-            }
-        }
-
-        if (state.showSettingsDialog) {
-            AppDialog(onDismiss = viewModel::dismissSettingsDialog) {
-                ActivitySettingsDialogContent(
-                    stepsGoal = state.stepsGoalDraft,
-                    showActiveCalories = state.showActiveCaloriesDraft,
-                    dataSource = state.dataSource.providerDisplayName(),
-                    onStepsGoalChange = viewModel::updateStepsGoalDraft,
-                    onShowActiveCaloriesChange = viewModel::updateActiveCaloriesDraft,
-                    onCancel = viewModel::dismissSettingsDialog,
-                    onSave = viewModel::saveSettings,
+                Text(
+                    text = stringResource(R.string.action_got_it),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
         }
-
-        if (state.showInfoSheet) {
-            BaseBottomSheet(
-                title = stringResource(R.string.activity_info_sheet_title),
-                onDismiss = viewModel::dismissInfoSheet,
-                modifier = modifier.fillMaxHeight(0.75f),
-            ) {
-                Text(
-                    text = stringResource(R.string.activity_info_heading_1),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
-                Text(
-                    text = stringResource(R.string.activity_info_body_1),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-                Text(
-                    text = stringResource(R.string.activity_info_heading_2),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
-                Text(
-                    text = stringResource(R.string.activity_info_body_2),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-                Text(
-                    text = stringResource(R.string.activity_info_heading_3),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
-                Text(
-                    text = stringResource(R.string.activity_info_body_3),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-                Text(
-                    text = stringResource(R.string.activity_info_heading_4),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
-                Text(
-                    text = stringResource(R.string.activity_info_body_4),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-
-                Spacer(Modifier.weight(1f))
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
-
-                TextButton(
-                    onClick = viewModel::dismissInfoSheet,
-                    modifier = Modifier.align(Alignment.End),
-                ) {
-                    Text(
-                        text = stringResource(R.string.action_got_it),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
-        }
-        }
+    }
     }
 }

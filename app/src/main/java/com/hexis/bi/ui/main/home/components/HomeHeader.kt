@@ -22,7 +22,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.AppAvatar
-import com.hexis.bi.ui.theme.dark.DefaultDarkExtendedColors
+import com.hexis.bi.ui.theme.DefaultExtendedColors
 
 @Composable
 fun HomeHeader(
@@ -69,7 +69,7 @@ fun HomeHeader(
                 badge = {
                     if (hasUnreadNotifications) Badge(
                         modifier.size(dimensionResource(R.dimen.size_indicator)),
-                        containerColor = DefaultDarkExtendedColors.positive,
+                        containerColor = DefaultExtendedColors.positive,
                     )
                 }
             ) {

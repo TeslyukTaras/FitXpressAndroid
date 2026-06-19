@@ -16,8 +16,8 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.DarkOutlinedButton
-import com.hexis.bi.ui.dark.DarkPrimaryButton
+import com.hexis.bi.ui.components.AppOutlinedButton
+import com.hexis.bi.ui.components.AppPrimaryButton
 
 @Composable
 fun ReconnectDialogContent(onDismiss: () -> Unit, onConfirm: () -> Unit) {
@@ -58,12 +58,12 @@ fun ReconnectDialogContent(onDismiss: () -> Unit, onConfirm: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_xs)),
         ) {
-            DarkOutlinedButton(
+            AppOutlinedButton(
                 text = stringResource(R.string.action_cancel),
                 onClick = onDismiss,
                 modifier = Modifier.weight(1f),
             )
-            DarkPrimaryButton(
+            AppPrimaryButton(
                 text = stringResource(R.string.action_reconnect),
                 onClick = onConfirm,
                 modifier = Modifier.weight(1f),

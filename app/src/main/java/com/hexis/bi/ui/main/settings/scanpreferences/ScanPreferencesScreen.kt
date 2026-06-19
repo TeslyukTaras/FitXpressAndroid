@@ -35,14 +35,13 @@ import com.hexis.bi.domain.body.BodyMeasurementRegion
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.base.UiEvent
-import com.hexis.bi.ui.dark.BodyGlassCard
-import com.hexis.bi.ui.dark.DarkCheckbox
-import com.hexis.bi.ui.dark.DarkPrimaryButton
-import com.hexis.bi.ui.dark.DarkRadioButton
-import com.hexis.bi.ui.dark.DarkSwitch
-import com.hexis.bi.ui.dark.LightStatusBarIcons
-import com.hexis.bi.ui.dark.darkScreenBackground
-import com.hexis.bi.ui.theme.dark.DarkTheme
+import com.hexis.bi.ui.components.BodyGlassCard
+import com.hexis.bi.ui.components.AppCheckbox
+import com.hexis.bi.ui.components.AppPrimaryButton
+import com.hexis.bi.ui.components.AppRadioButton
+import com.hexis.bi.ui.components.AppSwitch
+import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.utils.constants.BodyVisualConstants
 import org.koin.androidx.compose.koinViewModel
 
@@ -64,75 +63,73 @@ fun ScanPreferencesScreen(
         }
     }
 
-    DarkTheme {
-        BaseScreen(
-            modifier = modifier
-                .fillMaxSize()
-                .darkScreenBackground(),
-            containerColor = Color.Transparent,
-            isLoading = isLoading,
-            error = error,
-            onDismissError = viewModel::clearError,
-            viewModel = viewModel,
-            topBar = {
-                BaseTopBar(
-                    title = stringResource(R.string.scan_preferences_title),
-                    background = Color.Transparent,
-                    onBack = onBack,
-                )
-            },
-            bottomBar = {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = dimensionResource(R.dimen.padding_medium))
-                        .padding(
-                            top = dimensionResource(R.dimen.spacer_m),
-                            bottom = dimensionResource(R.dimen.spacer_l),
-                        )
-                        .navigationBarsPadding(),
-                ) {
-                    DarkPrimaryButton(
-                        text = stringResource(R.string.action_save),
-                        onClick = viewModel::save,
-                        isLoading = state.isSaving,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            },
-        ) {
-            Column(
+    BaseScreen(
+        modifier = modifier
+            .fillMaxSize()
+            .screenBackground(),
+        containerColor = Color.Transparent,
+        isLoading = isLoading,
+        error = error,
+        onDismissError = viewModel::clearError,
+        viewModel = viewModel,
+        topBar = {
+            BaseTopBar(
+                title = stringResource(R.string.scan_preferences_title),
+                background = Color.Transparent,
+                onBack = onBack,
+            )
+        },
+        bottomBar = {
+            Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+                    .fillMaxWidth()
+                    .padding(horizontal = dimensionResource(R.dimen.padding_medium))
+                    .padding(
+                        top = dimensionResource(R.dimen.spacer_m),
+                        bottom = dimensionResource(R.dimen.spacer_l),
+                    )
+                    .navigationBarsPadding(),
             ) {
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
-
-                UnitsCard(
-                    isMetric = state.isMetric,
-                    onSelectMetric = viewModel::selectMetric,
-                    onSelectImperial = viewModel::selectImperial,
+                AppPrimaryButton(
+                    text = stringResource(R.string.action_save),
+                    onClick = viewModel::save,
+                    isLoading = state.isSaving,
+                    modifier = Modifier.fillMaxWidth(),
                 )
-
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-                VoiceGuidanceCard(
-                    enabled = state.voiceGuidanceEnabled,
-                    onToggle = viewModel::toggleVoiceGuidance,
-                )
-
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-                MeasurementZonesCard(
-                    allSelected = state.allZonesSelected,
-                    selectedZones = state.selectedZones,
-                    onToggleAll = viewModel::toggleAllZones,
-                    onToggleZone = viewModel::toggleZone,
-                )
-
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
             }
+        },
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+        ) {
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+
+            UnitsCard(
+                isMetric = state.isMetric,
+                onSelectMetric = viewModel::selectMetric,
+                onSelectImperial = viewModel::selectImperial,
+            )
+
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+            VoiceGuidanceCard(
+                enabled = state.voiceGuidanceEnabled,
+                onToggle = viewModel::toggleVoiceGuidance,
+            )
+
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+            MeasurementZonesCard(
+                allSelected = state.allZonesSelected,
+                selectedZones = state.selectedZones,
+                onToggleAll = viewModel::toggleAllZones,
+                onToggleZone = viewModel::toggleZone,
+            )
+
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
         }
     }
 }
@@ -206,7 +203,7 @@ private fun UnitOption(
             .padding(vertical = dimensionResource(R.dimen.spacer_2xs)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        DarkRadioButton(selected = selected, onClick = null)
+        AppRadioButton(selected = selected, onClick = null)
         Spacer(Modifier.width(dimensionResource(R.dimen.spacer_2xs)))
         Text(
             text = label,
@@ -230,7 +227,7 @@ private fun VoiceGuidanceCard(
                 )
             }
             Spacer(Modifier.width(dimensionResource(R.dimen.spacer_2xl)))
-            DarkSwitch(checked = enabled, onCheckedChange = onToggle)
+            AppSwitch(checked = enabled, onCheckedChange = onToggle)
         }
     }
 }
@@ -288,7 +285,7 @@ private fun ZoneRow(
             .padding(vertical = dimensionResource(R.dimen.spacer_2xs)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        DarkCheckbox(checked = checked, onCheckedChange = null)
+        AppCheckbox(checked = checked, onCheckedChange = null)
         Spacer(Modifier.width(dimensionResource(R.dimen.spacer_2xs)))
         Text(
             text = label,

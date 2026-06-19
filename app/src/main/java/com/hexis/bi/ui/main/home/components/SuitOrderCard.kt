@@ -21,10 +21,10 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
-import com.hexis.bi.ui.dark.BodyGlassCard
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.SuitOrderOverview
 import com.hexis.bi.ui.theme.TitleDimTextStyle
-import com.hexis.bi.ui.theme.dark.Positive
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 fun SuitOrderCard(
@@ -39,7 +39,7 @@ fun SuitOrderCard(
                     modifier = Modifier
                         .size(dimensionResource(R.dimen.icon_medium))
                         .clip(CircleShape)
-                        .background(Positive),
+                        .background(NocturnePulseTheme.extendedColors.positive),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
@@ -59,7 +59,7 @@ fun SuitOrderCard(
                 Text(
                     text = data.status,
                     style = TitleDimTextStyle,
-                    color = Positive,
+                    color = NocturnePulseTheme.extendedColors.positive,
                 )
             }
 
