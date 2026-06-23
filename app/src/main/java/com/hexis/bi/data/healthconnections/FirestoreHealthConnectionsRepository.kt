@@ -54,6 +54,7 @@ class FirestoreHealthConnectionsRepository(
             HealthConnectionFields.TERRA_USER_ID to connection.terraUserId,
             HealthConnectionFields.PROVIDER to connection.provider,
             HealthConnectionFields.SOURCE to connection.source,
+            HealthConnectionFields.ENVIRONMENT to connection.environment,
             HealthConnectionFields.CONNECTED_AT to (connection.connectedAt ?: Timestamp.now()),
             HealthConnectionFields.ACTIVE to connection.active,
         )

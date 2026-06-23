@@ -1,9 +1,13 @@
 package com.hexis.bi.data.terra
 
 import co.tryterra.terra.enums.Connections
+import com.google.firebase.Timestamp
 import com.hexis.bi.data.healthconnections.HealthConnection
 import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
 import com.hexis.bi.utils.constants.TerraProviders
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.JsonElement
 import timber.log.Timber
 import java.time.LocalDate
@@ -59,6 +63,21 @@ class TerraRestSourceResolver(
 
         val sdkHc = terraManagerHolder.current?.getUserId(Connections.HEALTH_CONNECT)
         if (!sdkHc.isNullOrBlank() && seen.add(sdkHc)) {
+            val alreadyKnown = connections.any { it.terraUserId == sdkHc }
+            if (!alreadyKnown) {
+                healthConnections.upsertConnection(
+                    HealthConnection(
+                        terraUserId = sdkHc,
+                        provider = TerraProviders.HEALTH_CONNECT,
+                        source = HealthConnection.SOURCE_SDK,
+                        environment = TerraConfig.environment,
+                        connectedAt = Timestamp.now(),
+                        active = true,
+                    ),
+                ).onFailure {
+                    Timber.w(it, "Unable to persist live SDK Health Connect id before Terra REST fetch")
+                }
+            }
             out.add(
                 TerraRestIdentity(
                     terraUserId = sdkHc,
@@ -97,22 +116,29 @@ internal suspend fun <T> TerraRestSourceResolver.fetchMergedFromAllSources(
     val identities = resolveOrderedIdentities().getOrElse { return Result.failure(it) }
     if (identities.isEmpty()) return Result.success(emptyList())
 
-    val perSource = ArrayList<List<T>>(identities.size)
-    var lastError: Throwable? = null
-    for (id in identities) {
-        val rows = fetchJson(id.terraUserId, start, end).getOrElse {
-            lastError = it
-            continue
-        }
-        val parsed = runCatching { parse(rows) }
-            .onFailure {
-                Timber.w(it, "Terra row parse failed for provider %s; skipping source", id.provider)
-                lastError = it
+    val results: List<Result<List<T>>> = coroutineScope {
+        identities.map { id ->
+            async {
+                fetchJson(id.terraUserId, start, end).mapCatching { rows ->
+                    runCatching { parse(rows) }
+                        .onFailure {
+                            Timber.w(it, "Terra row parse failed for provider %s; skipping source", id.provider)
+                        }
+                        .getOrThrow()
+                }
             }
-            .getOrNull() ?: continue
-        perSource.add(parsed)
+        }.awaitAll()
     }
-    if (perSource.isEmpty() && lastError != null) return Result.failure(lastError)
+
+    val perSource = results.mapNotNull { it.getOrNull() }
+    if (perSource.isEmpty()) {
+        val firstError = results.firstNotNullOfOrNull { it.exceptionOrNull() }
+        if (firstError != null) return Result.failure(firstError)
+    } else {
+        results.forEach { result ->
+            result.exceptionOrNull()?.let { Timber.w(it, "Terra source fetch failed; excluded from merge") }
+        }
+    }
     return Result.success(merge(perSource))
 }
 

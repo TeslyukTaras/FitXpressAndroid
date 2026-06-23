@@ -1,5 +1,6 @@
 package com.hexis.bi.data.sleep
 
+import com.hexis.bi.data.terra.TerraDetail
 import java.time.LocalDate
 
 interface SleepRepository {
@@ -8,5 +9,6 @@ interface SleepRepository {
     suspend fun getSessionsForRange(
         start: LocalDate,
         end: LocalDate,
+        detail: TerraDetail = TerraDetail.NONE,
     ): Result<List<SleepSession>>
 }

@@ -11,9 +11,6 @@ val localProps = Properties()
 val localPropsFile: File = rootProject.file("local.properties")
 if (localPropsFile.exists()) localProps.load(localPropsFile.inputStream())
 
-fun localOr(key: String, default: String): String =
-    localProps.getProperty(key, default)
-
 android {
     namespace = "com.hexis.bi"
     compileSdk = 37
@@ -34,19 +31,8 @@ android {
 
         buildConfigField(
             "String",
-            "THREEDLOOK_API_TOKEN",
-            "\"${localProps.getProperty("threedlook.api.token", "")}\""
-        )
-
-        buildConfigField(
-            "String",
             "TERRA_DEV_ID",
-            "\"${localOr("terra.dev.id", "")}\""
-        )
-        buildConfigField(
-            "String",
-            "TERRA_API_KEY",
-            "\"${localOr("terra.api.key", "")}\""
+            "\"${localProps.getProperty("terra.dev.id", "")}\""
         )
     }
 
@@ -59,6 +45,7 @@ android {
             resValue("string", "app_name", "FitXpress Dev")
             buildConfigField("String", "ENVIRONMENT", "\"dev\"")
             buildConfigField("String", "API_BASE_URL", "\"https://api.dev.hexis.bi/\"")
+            buildConfigField("String", "TERRA_FUNCTION_PREFIX", "\"terraDev\"")
             buildConfigField("boolean", "TERRA_INCLUDE_DUMMY_PROVIDER", "true")
         }
         create("stage") {
@@ -68,6 +55,7 @@ android {
             resValue("string", "app_name", "FitXpress Stage")
             buildConfigField("String", "ENVIRONMENT", "\"stage\"")
             buildConfigField("String", "API_BASE_URL", "\"https://api.stage.hexis.bi/\"")
+            buildConfigField("String", "TERRA_FUNCTION_PREFIX", "\"terraDev\"")
             buildConfigField("boolean", "TERRA_INCLUDE_DUMMY_PROVIDER", "false")
         }
         create("prod") {
@@ -75,6 +63,7 @@ android {
             resValue("string", "app_name", "FitXpress")
             buildConfigField("String", "ENVIRONMENT", "\"prod\"")
             buildConfigField("String", "API_BASE_URL", "\"https://api.hexis.bi/\"")
+            buildConfigField("String", "TERRA_FUNCTION_PREFIX", "\"terraProd\"")
             buildConfigField("boolean", "TERRA_INCLUDE_DUMMY_PROVIDER", "false")
         }
     }
@@ -126,6 +115,7 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
+    implementation(libs.firebase.functions)
     implementation(libs.firebase.messaging)
     implementation(libs.firebase.storage)
     implementation(libs.androidx.navigation.compose)

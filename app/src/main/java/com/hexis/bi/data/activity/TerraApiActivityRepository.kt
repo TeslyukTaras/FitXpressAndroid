@@ -1,6 +1,7 @@
 package com.hexis.bi.data.activity
 
 import com.hexis.bi.data.terra.TerraApi
+import com.hexis.bi.data.terra.TerraDetail
 import com.hexis.bi.data.terra.TerraRangeJsonFetcher
 import com.hexis.bi.data.terra.TerraRestSourceResolver
 import com.hexis.bi.data.terra.TerraSdkSync
@@ -20,7 +21,7 @@ class TerraApiActivityRepository(
     private val sourceResolver: TerraRestSourceResolver,
 ) : ActivityRepository {
 
-    private val rangeCache = TtlCache<Pair<LocalDate, LocalDate>, List<ActivitySummary>>(
+    private val rangeCache = TtlCache<Triple<LocalDate, LocalDate, TerraDetail>, List<ActivitySummary>>(
         ttlMs = TerraCacheConstants.RANGE_CACHE_TTL_MS,
         generation = { TerraSdkSync.syncGeneration },
     )
@@ -29,7 +30,7 @@ class TerraApiActivityRepository(
         sourceResolver.fetchMergedFromAllSources(
             start = date.minusDays(ActivityRepositoryConstants.DAY_LOOKBACK_DAYS),
             end = date.plusDays(ActivityRepositoryConstants.DAY_LOOKAHEAD_DAYS),
-            fetchJson = ::fetchJsonForUser,
+            fetchJson = { terraUserId, start, end -> fetchJsonForUser(terraUserId, start, end, TerraDetail.FULL) },
             parse = { rows -> rows.mapNotNull { TerraActivityJsonMapper.summaryOrNull(it, fallbackDate = date) } },
             merge = ::mergeGapFillByDate,
         ).map { rows ->
@@ -39,13 +40,16 @@ class TerraApiActivityRepository(
     override suspend fun getSummariesForRange(
         start: LocalDate,
         end: LocalDate,
+        detail: TerraDetail,
     ): Result<List<ActivitySummary>> {
-        val key = start to end
+        val key = Triple(start, end, detail)
         rangeCache.get(key)?.let { return Result.success(it) }
         return sourceResolver.fetchMergedFromAllSources(
             start = start,
             end = end,
-            fetchJson = ::fetchJsonForUser,
+            fetchJson = { terraUserId, rangeStart, rangeEnd ->
+                fetchJsonForUser(terraUserId, rangeStart, rangeEnd, detail)
+            },
             parse = { rows -> rows.mapNotNull(TerraActivityJsonMapper::summaryOrNull) },
             merge = ::mergeGapFillByDate,
         ).map { summaries ->
@@ -57,8 +61,9 @@ class TerraApiActivityRepository(
         terraUserId: String,
         start: LocalDate,
         end: LocalDate,
+        detail: TerraDetail,
     ): Result<List<JsonElement>> = TerraRangeJsonFetcher.fetchJsonRows(start, end.plusDays(1)) { rs, re ->
-        api.getDaily(terraUserId = terraUserId, startDate = rs, endDate = re)
+        api.getDaily(terraUserId = terraUserId, startDate = rs, endDate = re, detail = detail)
     }
 
     private fun mergeGapFillByDate(perSource: List<List<ActivitySummary>>): List<ActivitySummary> {

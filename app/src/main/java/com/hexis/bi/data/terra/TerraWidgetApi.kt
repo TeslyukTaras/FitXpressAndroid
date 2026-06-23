@@ -1,26 +1,17 @@
 package com.hexis.bi.data.terra
 
+import com.google.firebase.functions.FirebaseFunctions
+import com.hexis.bi.data.firebase.toJsonElement
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.Serializable
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.OkHttpClient
-import okhttp3.RequestBody.Companion.toRequestBody
 
 data class TerraAuthSession(val authUrl: String, val userId: String?)
 
 /** Produces a Terra auth URL for web-based providers (Oura, Garmin, …). */
-class TerraWidgetApi(private val client: OkHttpClient) {
-
-    @Serializable
-    private data class WidgetRequest(
-        val reference_id: String,
-        val auth_success_redirect_url: String,
-        val auth_failure_redirect_url: String,
-        val providers: String,
-        val language: String = "en",
-    )
+class TerraWidgetApi(private val functions: FirebaseFunctions) {
 
     @Serializable
     private data class WidgetResponse(
@@ -32,8 +23,8 @@ class TerraWidgetApi(private val client: OkHttpClient) {
 
     @Serializable
     private data class AuthenticateUserResponse(
-        val auth_url: String? = null,
-        val user_id: String? = null,
+        val authUrl: String? = null,
+        val userId: String? = null,
         val status: String? = null,
         val message: String? = null,
     )
@@ -49,26 +40,18 @@ class TerraWidgetApi(private val client: OkHttpClient) {
     suspend fun authenticateUser(referenceId: String, resource: String): Result<TerraAuthSession> =
         withContext(Dispatchers.IO) {
             try {
-                val url = "$TERRA_BASE_URL${Path.AUTHENTICATE_USER}".toHttpUrl().newBuilder()
-                    .addQueryParameter(Query.RESOURCE, resource)
-                    .addQueryParameter(Query.REFERENCE_ID, referenceId)
-                    .addQueryParameter(Query.AUTH_SUCCESS_REDIRECT_URL, TerraDeepLinks.SUCCESS_URL)
-                    .addQueryParameter(Query.AUTH_FAILURE_REDIRECT_URL, TerraDeepLinks.FAILURE_URL)
-                    .addQueryParameter(Query.LANGUAGE, DEFAULT_LANGUAGE)
-                    .build()
-
-                val request = terraRequest(url.toString())
-                    .post(EMPTY_JSON_BODY.toRequestBody(TERRA_JSON_MEDIA))
-                    .build()
-
-                client.newCall(request).execute().use { response ->
-                    val body = response.body.string()
-                    if (!response.isSuccessful) error("Terra authenticateUser ${response.code}: $body")
-                    val parsed = terraJson.decodeFromString(AuthenticateUserResponse.serializer(), body)
-                    val authUrl = parsed.auth_url
-                        ?: error("Terra authenticateUser returned no auth_url: $body")
-                    Result.success(TerraAuthSession(authUrl = authUrl, userId = parsed.user_id))
-                }
+                val data = functions
+                    .getHttpsCallable(terraFunction(FUNCTION_AUTHENTICATE_USER))
+                    .call(mapOf(FIELD_RESOURCE to resource))
+                    .await()
+                    .data
+                val parsed = terraJson.decodeFromJsonElement(
+                    AuthenticateUserResponse.serializer(),
+                    data.toJsonElement(),
+                )
+                val authUrl = parsed.authUrl
+                    ?: error("Terra authenticateUser returned no auth_url")
+                Result.success(TerraAuthSession(authUrl = authUrl, userId = parsed.userId))
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 Result.failure(e)
@@ -82,48 +65,24 @@ class TerraWidgetApi(private val client: OkHttpClient) {
     suspend fun generateWidgetSession(referenceId: String, providers: String): Result<String> =
         withContext(Dispatchers.IO) {
             try {
-                val payload = terraJson.encodeToString(
-                    WidgetRequest.serializer(),
-                    WidgetRequest(
-                        reference_id = referenceId,
-                        auth_success_redirect_url = TerraDeepLinks.SUCCESS_URL,
-                        auth_failure_redirect_url = TerraDeepLinks.FAILURE_URL,
-                        providers = providers,
-                    ),
-                )
-
-                val request = terraRequest("$TERRA_BASE_URL${Path.GENERATE_WIDGET_SESSION}")
-                    .post(payload.toRequestBody(TERRA_JSON_MEDIA))
-                    .build()
-
-                client.newCall(request).execute().use { response ->
-                    val body = response.body.string()
-                    if (!response.isSuccessful) error("Terra widget ${response.code}: $body")
-                    val parsed = terraJson.decodeFromString(WidgetResponse.serializer(), body)
-                    val url = parsed.url ?: error("Terra widget returned no url: $body")
-                    Result.success(url)
-                }
+                val data = functions
+                    .getHttpsCallable(terraFunction(FUNCTION_GENERATE_WIDGET_SESSION))
+                    .call(mapOf(FIELD_PROVIDERS to providers))
+                    .await()
+                    .data
+                val parsed = terraJson.decodeFromJsonElement(WidgetResponse.serializer(), data.toJsonElement())
+                val url = parsed.url ?: error("Terra widget returned no url")
+                Result.success(url)
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 Result.failure(e)
             }
         }
 
-    private object Path {
-        const val AUTHENTICATE_USER = "/auth/authenticateUser"
-        const val GENERATE_WIDGET_SESSION = "/auth/generateWidgetSession"
-    }
-
-    private object Query {
-        const val RESOURCE = "resource"
-        const val REFERENCE_ID = "reference_id"
-        const val AUTH_SUCCESS_REDIRECT_URL = "auth_success_redirect_url"
-        const val AUTH_FAILURE_REDIRECT_URL = "auth_failure_redirect_url"
-        const val LANGUAGE = "language"
-    }
-
     private companion object {
-        const val DEFAULT_LANGUAGE = "en"
-        const val EMPTY_JSON_BODY = "{}"
+        const val FUNCTION_AUTHENTICATE_USER = "AuthenticateUser"
+        const val FUNCTION_GENERATE_WIDGET_SESSION = "GenerateWidgetSession"
+        const val FIELD_RESOURCE = "resource"
+        const val FIELD_PROVIDERS = "providers"
     }
 }

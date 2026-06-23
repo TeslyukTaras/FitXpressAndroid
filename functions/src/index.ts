@@ -427,21 +427,24 @@ function readDetail(data: unknown): TerraDetail {
 
 function projectByDetail(json: unknown, data: unknown): unknown {
   const detail = readDetail(data);
-  // "none": Terra already omitted samples. "full": keep everything. "stages": drop heavy series.
-  return detail === "stages" ? stripHeavySampleArrays(json) : json;
+  if (detail === "full") {
+    return json;
+  }
+  return stripSampleArrays(json, /* keepHypnogram */ detail === "stages");
 }
 
-function stripHeavySampleArrays(value: unknown): unknown {
+function stripSampleArrays(value: unknown, keepHypnogram: boolean): unknown {
   if (Array.isArray(value)) {
-    return value.map(stripHeavySampleArrays);
+    return value.map((item) => stripSampleArrays(item, keepHypnogram));
   }
   if (value !== null && typeof value === "object") {
     const result: Record<string, unknown> = {};
     for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
-      if (Array.isArray(item) && /sample/i.test(key) && key !== KEEP_SAMPLE_KEY) {
+      const isSampleArray = Array.isArray(item) && /sample/i.test(key);
+      if (isSampleArray && !(keepHypnogram && key === KEEP_SAMPLE_KEY)) {
         continue;
       }
-      result[key] = stripHeavySampleArrays(item);
+      result[key] = stripSampleArrays(item, keepHypnogram);
     }
     return result;
   }

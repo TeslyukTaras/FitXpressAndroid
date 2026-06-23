@@ -9,6 +9,7 @@ data class HealthConnection(
     val terraUserId: String = "",
     val provider: String = "",
     val source: String = SOURCE_API,
+    val environment: String = "",
     val connectedAt: Timestamp? = null,
     val active: Boolean = true,
 ) {
