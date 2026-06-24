@@ -1,8 +1,6 @@
 package com.hexis.bi.ui.main.settings.editprofile
 
 import android.app.Application
-import android.graphics.Bitmap
-import android.graphics.ImageDecoder
 import android.net.Uri
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
@@ -11,6 +9,7 @@ import com.hexis.bi.data.user.UserProfile
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.ui.base.BaseViewModel
+import com.hexis.bi.utils.ImageCompressor
 import com.hexis.bi.utils.constants.MeasurementConstants
 import com.hexis.bi.utils.constants.ProfileConstants
 import com.hexis.bi.utils.formatDob
@@ -23,8 +22,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.tasks.await
-import java.io.ByteArrayOutputStream
-import kotlin.math.roundToInt
 
 class EditProfileViewModel(
     application: Application,
@@ -104,45 +101,16 @@ class EditProfileViewModel(
             .onFailure { setError(it.message) }
     }
 
-    private fun prepareAvatarUploadBytes(uri: Uri): ByteArray {
-        val bitmap = decodeBitmap(uri)
-        val scaled = bitmap.scaleToFit(ProfileConstants.PROFILE_IMAGE_MAX_DIMENSION_PX)
-        if (scaled !== bitmap) bitmap.recycle()
-
-        var quality = ProfileConstants.PROFILE_IMAGE_JPEG_QUALITY
-        var bytes = scaled.compressJpeg(quality)
-        while (
-            bytes.size > ProfileConstants.PROFILE_IMAGE_MAX_BYTES &&
-            quality > ProfileConstants.PROFILE_IMAGE_MIN_JPEG_QUALITY
-        ) {
-            quality -= ProfileConstants.PROFILE_IMAGE_QUALITY_STEP
-            bytes = scaled.compressJpeg(quality)
-        }
-        scaled.recycle()
-        return bytes
-    }
-
-    private fun decodeBitmap(uri: Uri): Bitmap {
-        return ImageDecoder.decodeBitmap(ImageDecoder.createSource(appContext.contentResolver, uri)) { decoder, _, _ ->
-            decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
-        }
-    }
-}
-
-private fun Bitmap.scaleToFit(maxDimension: Int): Bitmap {
-    val largestSide = maxOf(width, height)
-    if (largestSide <= maxDimension) return this
-
-    val scale = maxDimension.toFloat() / largestSide.toFloat()
-    val scaledWidth = (width * scale).roundToInt().coerceAtLeast(1)
-    val scaledHeight = (height * scale).roundToInt().coerceAtLeast(1)
-    return Bitmap.createScaledBitmap(this, scaledWidth, scaledHeight, true)
-}
-
-private fun Bitmap.compressJpeg(quality: Int): ByteArray {
-    val output = ByteArrayOutputStream()
-    compress(Bitmap.CompressFormat.JPEG, quality, output)
-    return output.toByteArray()
+    private fun prepareAvatarUploadBytes(uri: Uri): ByteArray =
+        ImageCompressor.readAsJpeg(
+            context = appContext,
+            uri = uri,
+            targetBytes = ProfileConstants.PROFILE_IMAGE_MAX_BYTES.toLong(),
+            startQuality = ProfileConstants.PROFILE_IMAGE_JPEG_QUALITY,
+            minQuality = ProfileConstants.PROFILE_IMAGE_MIN_JPEG_QUALITY,
+            qualityStep = ProfileConstants.PROFILE_IMAGE_QUALITY_STEP,
+            maxDimensionPx = ProfileConstants.PROFILE_IMAGE_MAX_DIMENSION_PX,
+        )
 }
 
 private fun EditProfileState.toUserProfile(uid: String): UserProfile {
