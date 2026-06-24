@@ -373,10 +373,10 @@
     <string name="sleep_insight_poor">Short or fragmented sleep detected. Prioritize a longer, steadier night to support recovery.</string>
     <string name="sleep_error_title">Couldn\'t load sleep data</string>
     <string name="action_retry">Retry</string>
-    <string name="sleep_settings_title">Sleep settings</string>
-    <string name="sleep_settings_goal">Sleep goal</string>
-    <string name="sleep_settings_data_source">Data source</string>
-    <string name="sleep_summary_last_7_days">Last 7 days</string>
+    <string name="sleep_settings_title">Sleep Settings</string>
+    <string name="sleep_settings_goal">Sleep Goal</string>
+    <string name="sleep_settings_data_source">Data Source</string>
+    <string name="sleep_summary_last_7_days">Last 7 Days</string>
     <string name="sleep_summary_trend_note">Arrows indicate changes compared to the previous week.</string>
     <string name="sleep_structure_title">Sleep Structure</string>
     <string name="sleep_recovery_sheet_title">Sleep and Recovery</string>
@@ -651,10 +651,10 @@
     <string name="activity_tab_month">Month</string>
     <string name="activity_tab_year">Year</string>
     <string name="activity_goal_value_suffix"> / %1$s</string>
-    <string name="activity_progress_title">Activity progress</string>
+    <string name="activity_progress_title">Activity Progress</string>
     <string name="activity_metric_calories">Calories</string>
     <string name="activity_metric_distance">Distance</string>
-    <string name="activity_metric_steps">Step</string>
+    <string name="activity_metric_steps">Steps</string>
     <string name="activity_metric_duration">Duration</string>
     <string name="activity_unit_cal">cal</string>
     <string name="activity_unit_km">km</string>
@@ -664,7 +664,7 @@
     <string name="activity_unit_hours_short">h</string>
     <string name="activity_unit_minutes_short">m</string>
     <string name="activity_unit_seconds_short">s</string>
-    <string name="activity_steps_timeline">Steps timeline</string>
+    <string name="activity_steps_timeline">Steps Timeline</string>
     <string name="activity_time_start">12 am</string>
     <string name="activity_time_end">11:59 pm</string>
     <string name="activity_info_sheet_title">Activity Progress Score</string>
@@ -678,7 +678,7 @@
     <string name="activity_info_body_4">Regular movement supports energy levels, recovery, and long-term health. Over time, it can also contribute to changes in body composition.</string>
 
     <!-- Activity period tabs (Week/Month/Year) -->
-    <string name="activity_total_steps">Total steps</string>
+    <string name="activity_total_steps">Total Steps</string>
     <string name="activity_avg_steps_per_day">Average Daily Steps</string>
     <string name="activity_trend_label_week">Activity Trend</string>
     <string name="activity_trend_label_month">Monthly Trend</string>
