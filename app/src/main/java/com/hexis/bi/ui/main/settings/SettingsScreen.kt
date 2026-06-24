@@ -1,6 +1,12 @@
 package com.hexis.bi.ui.main.settings
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
@@ -32,6 +38,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.hexis.bi.BuildConfig
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
@@ -102,6 +109,20 @@ fun SettingsScreen(
         onNavigateToMySuit = onNavigateToMySuit,
         onNavigateToScanPreferences = onNavigateToScanPreferences,
         onNavigateToHowToScan = onNavigateToHowToScan,
+        onOpenHelp = {
+            openSupportEmail(
+                context = context,
+                subject = context.getString(R.string.support_email_subject),
+                includeDiagnostics = false,
+            )
+        },
+        onReportProblem = {
+            openSupportEmail(
+                context = context,
+                subject = context.getString(R.string.problem_report_email_subject),
+                includeDiagnostics = true,
+            )
+        },
         onOpenTerms = { uriHandler.openUri(LegalUrls.TERMS_AND_CONDITIONS) },
         onShowDeleteDialog = viewModel::showDialog,
         onLogout = onLogout,
@@ -213,6 +234,8 @@ private fun buildSettingsGroups(
     onNavigateToMySuit: () -> Unit,
     onNavigateToScanPreferences: () -> Unit,
     onNavigateToHowToScan: () -> Unit,
+    onOpenHelp: () -> Unit,
+    onReportProblem: () -> Unit,
     onOpenTerms: () -> Unit,
     onShowDeleteDialog: () -> Unit,
     onLogout: () -> Unit,
@@ -263,13 +286,21 @@ private fun buildSettingsGroups(
                     R.string.settings_how_scanning_works,
                     onClick = onNavigateToHowToScan
                 ),
-                SettingsRow(R.drawable.ic_help, R.string.settings_help),
+                SettingsRow(
+                    R.drawable.ic_help,
+                    R.string.settings_help,
+                    onClick = onOpenHelp,
+                ),
                 SettingsRow(
                     R.drawable.ic_lock,
                     R.string.settings_terms_privacy,
                     onClick = onOpenTerms
                 ),
-                SettingsRow(R.drawable.ic_warning, R.string.settings_report_problem),
+                SettingsRow(
+                    R.drawable.ic_warning,
+                    R.string.settings_report_problem,
+                    onClick = onReportProblem,
+                ),
             ),
         ),
         SettingsGroup(
@@ -294,4 +325,43 @@ private fun buildSettingsGroups(
             ),
         ),
     )
+}
+
+private fun openSupportEmail(
+    context: Context,
+    subject: String,
+    includeDiagnostics: Boolean,
+) {
+    val recipient = context.getString(R.string.support_email_address)
+    val body = if (includeDiagnostics) {
+        val deviceModel = listOf(Build.MANUFACTURER, Build.MODEL)
+            .filter(String::isNotBlank)
+            .joinToString(" ")
+            .replaceFirstChar { it.uppercase() }
+        context.getString(
+            R.string.support_email_body,
+            BuildConfig.VERSION_NAME,
+            BuildConfig.VERSION_CODE,
+            BuildConfig.ENVIRONMENT,
+            deviceModel,
+            Build.VERSION.RELEASE,
+            Build.VERSION.SDK_INT,
+        )
+    } else {
+        ""
+    }
+    val emailUri = Uri.parse(
+        "mailto:$recipient?subject=${Uri.encode(subject)}&body=${Uri.encode(body)}"
+    )
+    val intent = Intent(Intent.ACTION_SENDTO, emailUri).apply {
+        putExtra(Intent.EXTRA_EMAIL, arrayOf(recipient))
+        putExtra(Intent.EXTRA_SUBJECT, subject)
+        putExtra(Intent.EXTRA_TEXT, body)
+    }
+
+    try {
+        context.startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+        Toast.makeText(context, R.string.error_no_email_app, Toast.LENGTH_SHORT).show()
+    }
 }
