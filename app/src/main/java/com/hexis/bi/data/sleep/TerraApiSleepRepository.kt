@@ -1,6 +1,7 @@
 package com.hexis.bi.data.sleep
 
 import com.hexis.bi.data.terra.TerraApi
+import com.hexis.bi.data.terra.TerraDetail
 import com.hexis.bi.data.terra.TerraRangeJsonFetcher
 import com.hexis.bi.data.terra.TerraRestSourceResolver
 import com.hexis.bi.data.terra.TerraSdkSync
@@ -24,7 +25,7 @@ class TerraApiSleepRepository(
     private val sourceResolver: TerraRestSourceResolver,
 ) : SleepRepository {
 
-    private val rangeCache = TtlCache<Pair<LocalDate, LocalDate>, List<SleepSession>>(
+    private val rangeCache = TtlCache<Triple<LocalDate, LocalDate, TerraDetail>, List<SleepSession>>(
         ttlMs = TerraCacheConstants.RANGE_CACHE_TTL_MS,
         generation = { TerraSdkSync.syncGeneration },
     )
@@ -33,18 +34,22 @@ class TerraApiSleepRepository(
         getSessionsForRange(
             date.minusDays(SleepRepositoryConstants.DAY_LOOKBACK_DAYS),
             date.plusDays(SleepRepositoryConstants.DAY_LOOKAHEAD_DAYS),
+            detail = TerraDetail.FULL,
         ).map { sessions -> selectSessionForNight(sessions, date) }
 
     override suspend fun getSessionsForRange(
         start: LocalDate,
         end: LocalDate,
+        detail: TerraDetail,
     ): Result<List<SleepSession>> {
-        val key = start to end
+        val key = Triple(start, end, detail)
         rangeCache.get(key)?.let { return Result.success(it) }
         return sourceResolver.fetchMergedFromAllSources(
             start = start,
             end = end,
-            fetchJson = ::fetchJsonForUser,
+            fetchJson = { terraUserId, rangeStart, rangeEnd ->
+                fetchJsonForUser(terraUserId, rangeStart, rangeEnd, detail)
+            },
             parse = { rows -> rows.mapNotNull(TerraSleepJsonMapper::sessionOrNull) },
             merge = ::mergeGapFillByWakeDay,
         ).map { sessions ->
@@ -59,11 +64,12 @@ class TerraApiSleepRepository(
         terraUserId: String,
         start: LocalDate,
         end: LocalDate,
+        detail: TerraDetail,
     ): Result<List<JsonElement>> {
         val apiEnd = end.plusDays(1)
         Timber.d("Terra /sleep request user_id=%s range=[%s..%s]", redactSensitiveId(terraUserId), start, end)
         return TerraRangeJsonFetcher.fetchJsonRows(start, apiEnd) { rs, re ->
-            api.getSleep(terraUserId = terraUserId, startDate = rs, endDate = re)
+            api.getSleep(terraUserId = terraUserId, startDate = rs, endDate = re, detail = detail)
         }.also { result ->
             result.exceptionOrNull()?.let { e ->
                 Timber.e(e, "Terra /sleep failed user=%s [%s..%s]", redactSensitiveId(terraUserId), start, end)

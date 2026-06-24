@@ -3,6 +3,7 @@ package com.hexis.bi.di
 import androidx.credentials.CredentialManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.storage.FirebaseStorage
 import com.hexis.bi.data.activity.ActivityRepository
 import com.hexis.bi.data.activity.TerraApiActivityRepository
@@ -79,6 +80,7 @@ import java.util.concurrent.TimeUnit
 val appModule = module {
     single { FirebaseAuth.getInstance() }
     single { FirebaseFirestore.getInstance() }
+    single { FirebaseFunctions.getInstance(FIREBASE_FUNCTIONS_REGION) }
     single { FirebaseStorage.getInstance() }
     single { CredentialManager.create(androidContext()) }
     single { AppPreferencesDataStore(androidContext()) }
@@ -109,7 +111,7 @@ val appModule = module {
             .apply { httpLoggingInterceptor()?.let { addInterceptor(it) } }
             .build()
     }
-    single { ThreeDLookApi(get(), androidContext()) }
+    single { ThreeDLookApi(get(), get(), get(), androidContext()) }
     single { ThreeDLookRepository(get(), get()) }
     single { ScanResultRepository() }
     single { ScanHistoryRepository(get(), get()) }
@@ -186,3 +188,5 @@ val appModule = module {
     viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { OnboardingViewModel(androidApplication(), get(), get()) }
 }
+
+private const val FIREBASE_FUNCTIONS_REGION = "us-central1"

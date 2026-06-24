@@ -16,6 +16,7 @@ import com.hexis.bi.data.healthconnections.HealthConnection
 import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
 import com.hexis.bi.data.terra.TerraApi
 import com.hexis.bi.data.terra.TerraCallbackHandler
+import com.hexis.bi.data.terra.TerraConfig
 import com.hexis.bi.data.terra.TerraConnector
 import com.hexis.bi.data.terra.TerraManagerHolder
 import com.hexis.bi.data.terra.TerraSdkSync
@@ -335,6 +336,7 @@ class HealthConnectionsViewModel(
                 terraUserId = userId,
                 provider = provider.uppercase(),
                 source = HealthConnection.SOURCE_API,
+                environment = TerraConfig.environment,
                 connectedAt = Timestamp.now(),
                 active = true,
             ),
@@ -471,6 +473,7 @@ class HealthConnectionsViewModel(
                 terraUserId = terraUserId,
                 provider = provider,
                 source = HealthConnection.SOURCE_SDK,
+                environment = TerraConfig.environment,
                 connectedAt = Timestamp.now(),
                 active = true,
             ),

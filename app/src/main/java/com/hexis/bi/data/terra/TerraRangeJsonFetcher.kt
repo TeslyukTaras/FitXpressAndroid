@@ -21,11 +21,14 @@ object TerraRangeJsonFetcher {
     ): Result<List<JsonElement>> {
         require(!start.isAfter(end)) { "start after end" }
 
+        val effectiveEnd = minOf(end, LocalDate.now().plusDays(1))
+        if (start.isAfter(effectiveEnd)) return Result.success(emptyList())
+
         val out = ArrayList<JsonElement>()
         return try {
             var cursor = start
-            while (!cursor.isAfter(end)) {
-                val chunkEnd = minOf(cursor.plusDays(MAX_DAYS_PER_CHUNK - 1), end)
+            while (!cursor.isAfter(effectiveEnd)) {
+                val chunkEnd = minOf(cursor.plusDays(MAX_DAYS_PER_CHUNK - 1), effectiveEnd)
                 collectChunk(cursor, chunkEnd, out, fetch)
                 cursor = chunkEnd.plusDays(1)
             }

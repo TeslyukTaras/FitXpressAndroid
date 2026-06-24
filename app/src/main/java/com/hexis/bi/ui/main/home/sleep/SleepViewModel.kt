@@ -8,6 +8,7 @@ import com.hexis.bi.data.sleep.SleepSample
 import com.hexis.bi.data.sleep.SleepSession
 import com.hexis.bi.data.sleep.SleepStage
 import com.hexis.bi.data.sleep.SleepStageInterval
+import com.hexis.bi.data.terra.TerraDetail
 import com.hexis.bi.data.terra.TerraRestSourceResolver
 import com.hexis.bi.data.user.FirestoreSchema
 import com.hexis.bi.data.user.UserRepository
@@ -365,7 +366,7 @@ class SleepViewModel(
 
         viewModelScope.launch {
             sleepRepository
-                .getSessionsForRange(previousStart, end)
+                .getSessionsForRange(previousStart, end, TerraDetail.STAGES)
                 .fold(
                     onSuccess = { sessions ->
                         val current = sessions.filter { session ->
@@ -465,6 +466,7 @@ class SleepViewModel(
             sleepRepository.getSessionsForRange(
                 targetDay.minusDays(SLEEP_DAY_FALLBACK_RANGE_DAYS + 1),
                 targetDay.plusDays(SLEEP_DAY_FALLBACK_RANGE_DAYS),
+                TerraDetail.FULL,
             )
         }
         val fallback = rangeResult

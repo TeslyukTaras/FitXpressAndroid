@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.viewModelScope
 import com.hexis.bi.data.activity.ActivityRepository
 import com.hexis.bi.data.activity.ActivitySummary
+import com.hexis.bi.data.terra.TerraDetail
 import com.hexis.bi.data.terra.TerraRestSourceResolver
 import com.hexis.bi.data.user.FirestoreSchema
 import com.hexis.bi.data.user.UserRepository
@@ -290,7 +291,7 @@ class ActivityViewModel(
         }
         viewModelScope.launch {
             activityRepository
-                .getSummariesForRange(previousStart, weekEnd)
+                .getSummariesForRange(previousStart, weekEnd, TerraDetail.FULL)
                 .fold(
                     onSuccess = { allRows ->
                         val rows = allRows.filterByDateRange(weekStart, weekEnd)

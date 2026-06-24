@@ -11,6 +11,7 @@ import com.hexis.bi.data.scan.ScanFetchProjection
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanRecord
 import com.hexis.bi.data.sleep.SleepRepository
+import com.hexis.bi.data.terra.TerraDetail
 import com.hexis.bi.data.terra.TerraManagerHolder
 import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.data.user.UserRepository
@@ -320,7 +321,7 @@ class HomeViewModel(
                 sleepRepository.getSessionsForRange(windowStart.minusDays(1), today).getOrNull().orEmpty()
             }
             val activityDeferred = async {
-                activityRepository.getSummariesForRange(windowStart, today).getOrNull().orEmpty()
+                activityRepository.getSummariesForRange(windowStart, today, TerraDetail.FULL).getOrNull().orEmpty()
             }
 
             val sleep = sleepDeferred.await()

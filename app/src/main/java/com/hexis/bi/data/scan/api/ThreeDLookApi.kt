@@ -2,20 +2,27 @@ package com.hexis.bi.data.scan.api
 
 import android.content.Context
 import android.net.Uri
-import com.hexis.bi.BuildConfig
-import timber.log.Timber
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.functions.FirebaseFunctions
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.StorageMetadata
+import com.google.firebase.storage.StorageReference
+import com.hexis.bi.data.firebase.toJsonElement
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.MultipartBody
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import kotlin.math.roundToInt
+import timber.log.Timber
+import java.util.UUID
 
 class ThreeDLookApi(
-    private val client: OkHttpClient,
+    private val functions: FirebaseFunctions,
+    private val storage: FirebaseStorage,
+    private val auth: FirebaseAuth,
     private val context: Context,
 ) {
     private val json = Json { ignoreUnknownKeys = true }
@@ -28,69 +35,70 @@ class ThreeDLookApi(
         gender: String,
         age: Int,
     ): Result<String> = withContext(Dispatchers.IO) {
-        runCatching {
+        val uid = auth.currentUser?.uid
+            ?: return@withContext Result.failure(IllegalStateException("Not authenticated"))
+        val scanId = UUID.randomUUID().toString()
+        val frontPath = "$TMP_SCAN_ROOT/$uid/$scanId/$FRONT_PHOTO_FILENAME"
+        val sidePath = "$TMP_SCAN_ROOT/$uid/$scanId/$SIDE_PHOTO_FILENAME"
+        val frontRef = storage.reference.child(frontPath)
+        val sideRef = storage.reference.child(sidePath)
+        try {
             val frontBytes = readPhoto(frontPhoto)
             val sideBytes = readPhoto(sidePhoto)
 
-            val body = MultipartBody.Builder()
-                .setType(MultipartBody.FORM)
-                .addFormDataPart(
-                    FIELD_FRONT_PHOTO,
-                    FRONT_PHOTO_FILENAME,
-                    frontBytes.toRequestBody(MEDIA_TYPE_JPEG.toMediaType()),
-                )
-                .addFormDataPart(
-                    FIELD_SIDE_PHOTO,
-                    SIDE_PHOTO_FILENAME,
-                    sideBytes.toRequestBody(MEDIA_TYPE_JPEG.toMediaType()),
-                )
-                .addFormDataPart(FIELD_HEIGHT, heightCm.roundToInt().toString())
-                .addFormDataPart(FIELD_GENDER, gender)
-                .addFormDataPart(FIELD_AGE, age.toString())
-            if (weightKg != null) {
-                body.addFormDataPart(FIELD_WEIGHT, weightKg.roundToInt().toString())
-            }
-            val requestBody = body.build()
-
-            val request = Request.Builder()
-                .url("$BASE_URL$PATH_MEASUREMENTS")
-                .addHeader(HEADER_AUTHORIZATION, "$AUTH_SCHEME ${BuildConfig.THREEDLOOK_API_TOKEN}")
-                .post(requestBody)
+            val metadata = StorageMetadata.Builder()
+                .setContentType(MEDIA_TYPE_JPEG)
                 .build()
-
-            Timber.d("createMeasurement: POST %s%s (front=%dB side=%dB)", BASE_URL, PATH_MEASUREMENTS, frontBytes.size, sideBytes.size)
-            client.newCall(request).execute().use { response ->
-                val responseBody = response.body.string()
-                Timber.d("createMeasurement: %d body=%s", response.code, responseBody)
-
-                if (!response.isSuccessful) {
-                    error("Create measurement failed (${response.code}): $responseBody")
-                }
-
-                json.decodeFromString<CreateMeasurementResponse>(responseBody).id
+            coroutineScope {
+                listOf(
+                    async { frontRef.putBytes(frontBytes, metadata).await() },
+                    async { sideRef.putBytes(sideBytes, metadata).await() },
+                ).awaitAll()
             }
+
+            Timber.d(
+                "createMeasurement: uploaded temp scan files scanId=%s front=%dB side=%dB",
+                scanId,
+                frontBytes.size,
+                sideBytes.size,
+            )
+
+            val payload = buildMap<String, Any> {
+                put(FIELD_FRONT_PATH, frontPath)
+                put(FIELD_SIDE_PATH, sidePath)
+                put(FIELD_HEIGHT_CM, heightCm)
+                put(FIELD_GENDER, gender)
+                put(FIELD_AGE, age)
+                weightKg?.let { put(FIELD_WEIGHT_KG, it) }
+            }
+
+            val data = functions
+                .getHttpsCallable(FUNCTION_CREATE_MEASUREMENT)
+                .call(payload)
+                .await()
+                .data
+            Result.success(
+                json.decodeFromJsonElement(CreateMeasurementResponse.serializer(), data.toJsonElement()).id,
+            )
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            deleteQuietly(frontRef, sideRef)
+            Result.failure(e)
         }
     }
 
     suspend fun getMeasurement(id: String): Result<MeasurementResponse> =
         withContext(Dispatchers.IO) {
-            runCatching {
-                val request = Request.Builder()
-                    .url("$BASE_URL$PATH_MEASUREMENTS$id/")
-                    .addHeader(HEADER_AUTHORIZATION, "$AUTH_SCHEME ${BuildConfig.THREEDLOOK_API_TOKEN}")
-                    .get()
-                    .build()
-
-                client.newCall(request).execute().use { response ->
-                    val responseBody = response.body.string()
-                    Timber.d("getMeasurement: %d body=%s", response.code, responseBody)
-
-                    if (!response.isSuccessful) {
-                        error("Get measurement failed (${response.code}): $responseBody")
-                    }
-
-                    json.decodeFromString<MeasurementResponse>(responseBody)
-                }
+            try {
+                val data = functions
+                    .getHttpsCallable(FUNCTION_GET_MEASUREMENT)
+                    .call(mapOf(FIELD_ID to id))
+                    .await()
+                    .data
+                Result.success(json.decodeFromJsonElement(MeasurementResponse.serializer(), data.toJsonElement()))
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                Result.failure(e)
             }
         }
 
@@ -98,44 +106,36 @@ class ThreeDLookApi(
         beforeMeasurementId: String,
         afterMeasurementId: String,
     ): Result<String> = withContext(Dispatchers.IO) {
-        runCatching {
-            val payload = json.encodeToString(
-                BodyProgressRequest.serializer(),
-                BodyProgressRequest(beforeMeasurementId, afterMeasurementId),
-            )
-            val request = Request.Builder()
-                .url("$BASE_URL$PATH_BODY_PROGRESS")
-                .addHeader(HEADER_AUTHORIZATION, "$AUTH_SCHEME ${BuildConfig.THREEDLOOK_API_TOKEN}")
-                .post(payload.toRequestBody(MEDIA_TYPE_JSON.toMediaType()))
-                .build()
-
-            client.newCall(request).execute().use { response ->
-                val responseBody = response.body.string()
-                Timber.d("createBodyProgress: %d body=%s", response.code, responseBody)
-                if (!response.isSuccessful) {
-                    error("Create body progress failed (${response.code}): $responseBody")
-                }
-                json.decodeFromString<BodyProgress3dResponse>(responseBody).id
-            }
+        try {
+            val data = functions
+                .getHttpsCallable(FUNCTION_CREATE_BODY_PROGRESS)
+                .call(
+                    mapOf(
+                        FIELD_MEASUREMENT_BEFORE_ID to beforeMeasurementId,
+                        FIELD_MEASUREMENT_AFTER_ID to afterMeasurementId,
+                    ),
+                )
+                .await()
+                .data
+            Result.success(json.decodeFromJsonElement(BodyProgress3dResponse.serializer(), data.toJsonElement()).id)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            Result.failure(e)
         }
     }
 
     suspend fun getBodyProgress(id: String): Result<BodyProgress3dResponse> =
         withContext(Dispatchers.IO) {
-            runCatching {
-                val request = Request.Builder()
-                    .url("$BASE_URL$PATH_BODY_PROGRESS$id/")
-                    .addHeader(HEADER_AUTHORIZATION, "$AUTH_SCHEME ${BuildConfig.THREEDLOOK_API_TOKEN}")
-                    .get()
-                    .build()
-
-                client.newCall(request).execute().use { response ->
-                    val responseBody = response.body.string()
-                    if (!response.isSuccessful) {
-                        error("Get body progress failed (${response.code}): $responseBody")
-                    }
-                    json.decodeFromString<BodyProgress3dResponse>(responseBody)
-                }
+            try {
+                val data = functions
+                    .getHttpsCallable(FUNCTION_GET_BODY_PROGRESS)
+                    .call(mapOf(FIELD_ID to id))
+                    .await()
+                    .data
+                Result.success(json.decodeFromJsonElement(BodyProgress3dResponse.serializer(), data.toJsonElement()))
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                Result.failure(e)
             }
         }
 
@@ -144,23 +144,31 @@ class ThreeDLookApi(
             ?.use { it.readBytes() }
             ?: error("Unable to open photo: $uri")
 
+    private suspend fun deleteQuietly(vararg refs: StorageReference) {
+        refs.forEach { ref ->
+            runCatching { ref.delete().await() }
+                .onFailure { Timber.w(it, "Failed to delete orphaned temp scan file %s", ref.path) }
+        }
+    }
+
     companion object {
-        private const val BASE_URL = "https://backend.fitxpress.3dlook.me/api/1.0/"
-        private const val PATH_MEASUREMENTS = "measurements/"
-        private const val PATH_BODY_PROGRESS = "body_progress/"
-
-        private const val HEADER_AUTHORIZATION = "Authorization"
-        private const val AUTH_SCHEME = "Token"
-
+        private const val TMP_SCAN_ROOT = "tmpScans"
         private const val MEDIA_TYPE_JPEG = "image/jpeg"
-        private const val MEDIA_TYPE_JSON = "application/json"
 
-        private const val FIELD_FRONT_PHOTO = "front_photo"
-        private const val FIELD_SIDE_PHOTO = "side_photo"
-        private const val FIELD_HEIGHT = "height"
-        private const val FIELD_WEIGHT = "weight"
+        private const val FUNCTION_CREATE_MEASUREMENT = "threeDLookCreateMeasurement"
+        private const val FUNCTION_GET_MEASUREMENT = "threeDLookGetMeasurement"
+        private const val FUNCTION_CREATE_BODY_PROGRESS = "threeDLookCreateBodyProgress"
+        private const val FUNCTION_GET_BODY_PROGRESS = "threeDLookGetBodyProgress"
+
+        private const val FIELD_ID = "id"
+        private const val FIELD_FRONT_PATH = "frontPath"
+        private const val FIELD_SIDE_PATH = "sidePath"
+        private const val FIELD_HEIGHT_CM = "heightCm"
+        private const val FIELD_WEIGHT_KG = "weightKg"
         private const val FIELD_GENDER = "gender"
         private const val FIELD_AGE = "age"
+        private const val FIELD_MEASUREMENT_BEFORE_ID = "measurementBeforeId"
+        private const val FIELD_MEASUREMENT_AFTER_ID = "measurementAfterId"
 
         private const val FRONT_PHOTO_FILENAME = "front.jpg"
         private const val SIDE_PHOTO_FILENAME = "side.jpg"
