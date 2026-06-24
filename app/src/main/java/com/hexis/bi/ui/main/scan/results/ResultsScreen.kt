@@ -120,6 +120,9 @@ fun ResultsScreen(
     }
 
     if (state.showBodyProportionInfo) {
-        BodyProportionInfoBottomSheet(onDismiss = viewModel::dismissBodyProportionInfo)
+        BodyProportionInfoBottomSheet(
+            isFemaleProfile = state.bodyProportion.isFemaleProfile,
+            onDismiss = viewModel::dismissBodyProportionInfo,
+        )
     }
 }

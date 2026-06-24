@@ -168,6 +168,9 @@ fun BodyScreen(
 
     if (state.showBisInfo) BisInfoBottomSheet(onDismiss = viewModel::dismissBisInfo)
     if (state.showBodyProportionInfo) {
-        BodyProportionInfoBottomSheet(onDismiss = viewModel::dismissBodyProportionInfo)
+        BodyProportionInfoBottomSheet(
+            isFemaleProfile = state.bodyProportion.isFemaleProfile,
+            onDismiss = viewModel::dismissBodyProportionInfo,
+        )
     }
 }

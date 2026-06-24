@@ -107,6 +107,7 @@ data class CompareState(
 
 data class BodyProportionState(
     val hasData: Boolean = false,
+    val isFemaleProfile: Boolean = false,
     val groups: List<BodyProportionGroup> = emptyList(),
 )
 

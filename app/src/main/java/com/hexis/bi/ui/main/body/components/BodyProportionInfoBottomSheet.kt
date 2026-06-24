@@ -21,6 +21,7 @@ import com.hexis.bi.ui.base.BaseBottomSheet
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun BodyProportionInfoBottomSheet(
+    isFemaleProfile: Boolean,
     onDismiss: () -> Unit,
 ) {
     BaseBottomSheet(
@@ -41,21 +42,36 @@ internal fun BodyProportionInfoBottomSheet(
 
             ProportionInfoSection(
                 heading = R.string.body_proportion_info_upper_heading,
-                items = listOf(
-                    R.string.body_proportion_label_shoulder_waist to
-                        R.string.body_proportion_info_shoulder_waist_body,
-                    R.string.body_proportion_label_shoulder_hip to
-                        R.string.body_proportion_info_shoulder_hip_body,
-                ),
+                items = if (isFemaleProfile) {
+                    listOf(
+                        R.string.body_proportion_label_waist_hip to
+                            R.string.body_proportion_info_waist_hip_body,
+                        R.string.body_proportion_label_hip_shoulder to
+                            R.string.body_proportion_info_hip_shoulder_body,
+                    )
+                } else {
+                    listOf(
+                        R.string.body_proportion_label_shoulder_waist to
+                            R.string.body_proportion_info_shoulder_waist_body,
+                        R.string.body_proportion_label_shoulder_hip to
+                            R.string.body_proportion_info_shoulder_hip_body,
+                    )
+                },
             )
             ProportionInfoSection(
                 heading = R.string.body_proportion_info_mid_heading,
-                items = listOf(
-                    R.string.body_proportion_label_waist_height to
-                        R.string.body_proportion_info_waist_height_body,
-                    R.string.body_proportion_label_waist_hip to
-                        R.string.body_proportion_info_waist_hip_body,
-                ),
+                items = buildList {
+                    add(
+                        R.string.body_proportion_label_waist_height to
+                            R.string.body_proportion_info_waist_height_body
+                    )
+                    if (!isFemaleProfile) {
+                        add(
+                            R.string.body_proportion_label_waist_hip to
+                                R.string.body_proportion_info_waist_hip_body
+                        )
+                    }
+                },
             )
             ProportionInfoSection(
                 heading = R.string.body_proportion_info_lower_heading,

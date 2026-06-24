@@ -264,6 +264,7 @@
     <string name="body_proportion_info_upper_heading">1. Upper Body</string>
     <string name="body_proportion_info_shoulder_waist_body">Shows the relationship between shoulder width and waist size. For male profiles, this helps describe the V-taper.</string>
     <string name="body_proportion_info_shoulder_hip_body">Shows the balance between shoulder and hip width and helps indicate upper-body dominance.</string>
+    <string name="body_proportion_info_hip_shoulder_body">Shows the balance between hip and shoulder size and helps describe the overall body shape.</string>
     <string name="body_proportion_info_mid_heading">2. Mid Section</string>
     <string name="body_proportion_info_waist_height_body">Shows your waist size relative to your height and provides an indication of midsection balance.</string>
     <string name="body_proportion_info_waist_hip_body">Shows the relationship between the waist and hips, including the glute area. This ratio helps describe female body shape.</string>

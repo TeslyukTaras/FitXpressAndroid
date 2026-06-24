@@ -12,6 +12,7 @@ internal fun buildBodyProportion(
 ): BodyProportionState {
     val measurements = latest?.measurements.orEmpty()
     val frontLinear = latest?.frontLinearParams.orEmpty()
+    val isFemaleProfile = isFemale(gender)
 
     val waistGirth = measurements[BodyMeasurementKeys.Waist]
         ?: measurements[BodyMeasurementKeys.AlternativeWaistGirth]
@@ -31,7 +32,7 @@ internal fun buildBodyProportion(
     val thighWaist = ratio(thigh, waistGirth)
     val calfThigh = ratio(calf, thigh)
 
-    val upperMarkers = if (isFemale(gender)) {
+    val upperMarkers = if (isFemaleProfile) {
         val waistHip = ratio(waistGirth, hipGirth)
         val hipShoulder = ratio(hipGirth, shoulderGirth) ?: ratio(hipWidth, shoulderWidth)
         listOf(
@@ -104,6 +105,7 @@ internal fun buildBodyProportion(
 
     return BodyProportionState(
         hasData = latest != null && groups.any { group -> group.markers.any { it.value != null } },
+        isFemaleProfile = isFemaleProfile,
         groups = groups,
     )
 }

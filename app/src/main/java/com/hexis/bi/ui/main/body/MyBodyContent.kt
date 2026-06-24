@@ -162,7 +162,11 @@ private fun BodyProportionModel(
                     centerFraming = true,
                     baseDistanceScale = 1.08f,
                     meshGlow = 0.22f,
-                    bodyRings = bodyRingSpecs(proportionState),
+                    bodyRings = if (proportionState.hasData) {
+                        bodyRingSpecs(proportionState)
+                    } else {
+                        emptyList()
+                    },
                     loadingMessageRes = R.string.scan_results_avatar_loading,
                     onAvatarReady = onAvatarReady,
                 )
@@ -232,13 +236,21 @@ private fun BodyProportionCard(
             )
         }
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-        state.groups.forEachIndexed { index, group ->
-            if (index > 0) {
-                AppHorizontalGradientDivider(
-                    modifier = Modifier.padding(vertical = dimensionResource(R.dimen.spacer_l)),
-                )
+        if (!state.hasData) {
+            Text(
+                text = stringResource(R.string.body_proportion_empty),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            state.groups.forEachIndexed { index, group ->
+                if (index > 0) {
+                    AppHorizontalGradientDivider(
+                        modifier = Modifier.padding(vertical = dimensionResource(R.dimen.spacer_l)),
+                    )
+                }
+                BodyProportionGroup(group = group)
             }
-            BodyProportionGroup(group = group)
         }
     }
 }
