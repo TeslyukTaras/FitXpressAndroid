@@ -416,6 +416,8 @@ internal fun MetricAvatarPreview(
 internal data class MetricAvatarBodyRing(
     val region: BodyMeasurementRegion,
     val radiusScale: Float = 1f,
+    val verticalOffsetFraction: Float = 0f,
+    val fitFullCrossSection: Boolean = false,
 )
 
 @Composable
@@ -2853,11 +2855,17 @@ private class MetricAvatarRenderer {
         ring: MetricAvatarBodyRing,
     ): BodyRingGeometry? {
         val bounds = ringBounds(mesh, ring.region) ?: return null
-        val y = bounds.centerY
+        val y = bounds.centerY + mesh.bounds.spanY * ring.verticalOffsetFraction
         val radiusScale = ring.radiusScale.coerceAtLeast(0.1f)
         val section = when (ring.region) {
             BodyMeasurementRegion.Waist -> waistTorsoExtrema(mesh, y)
-            else -> meshExtremaAtY(mesh, y, ring.region, bounds)
+            else -> meshExtremaAtY(
+                mesh = mesh,
+                y = y,
+                region = ring.region,
+                sectionBounds = bounds,
+                fitFullCrossSection = ring.fitFullCrossSection,
+            )
         }
         val xRadius =
             (section.spanX * 0.5f * radiusScale + section.spanX * BODY_RING_PADDING_FRACTION)
@@ -2928,6 +2936,7 @@ private class MetricAvatarRenderer {
         y: Float,
         region: BodyMeasurementRegion,
         sectionBounds: ModelBounds,
+        fitFullCrossSection: Boolean,
     ): ModelBounds {
         val bandHalfHeight = mesh.bounds.spanY * when (region) {
             BodyMeasurementRegion.Shoulders -> 0.045f
@@ -2964,7 +2973,8 @@ private class MetricAvatarRenderer {
             val vy = buffer.get()
             val z = buffer.get()
             buffer.position(buffer.position() + FLOATS_PER_INTERLEAVED_VERTEX - FLOATS_PER_ATTRIB)
-            if (abs(vy - y) <= bandHalfHeight && abs(x - centerX) <= torsoHalfWidth) {
+            val insideWidth = fitFullCrossSection || abs(x - centerX) <= torsoHalfWidth
+            if (abs(vy - y) <= bandHalfHeight && insideWidth) {
                 found = true
                 minX = minOf(minX, x); maxX = maxOf(maxX, x)
                 minY = minOf(minY, vy); maxY = maxOf(maxY, vy)

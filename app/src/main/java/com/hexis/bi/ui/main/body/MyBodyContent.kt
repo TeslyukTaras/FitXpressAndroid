@@ -183,6 +183,8 @@ private fun bodyRingSpecs(state: BodyProportionState): List<MetricAvatarBodyRing
         MetricAvatarBodyRing(
             region = BodyMeasurementRegion.Shoulders,
             radiusScale = lerp(1.18f, 1.28f, upper),
+            verticalOffsetFraction = if (state.isFemaleProfile) 0f else -0.03f,
+            fitFullCrossSection = !state.isFemaleProfile,
         ),
         MetricAvatarBodyRing(
             region = BodyMeasurementRegion.Waist,
