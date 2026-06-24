@@ -8,7 +8,7 @@ import com.hexis.bi.utils.constants.BodyConstants
 enum class BodyTab {
     Stats,
     Visual,
-    Posture,
+    MyBody,
     Compare;
 
     @get:StringRes
@@ -16,7 +16,7 @@ enum class BodyTab {
         get() = when (this) {
             Stats -> R.string.body_tab_stats
             Visual -> R.string.body_tab_visual
-            Posture -> R.string.body_tab_posture
+            MyBody -> R.string.body_tab_my_body
             Compare -> R.string.body_tab_compare
         }
 }
@@ -105,6 +105,23 @@ data class CompareState(
     val visibleRegions: Set<BodyMeasurementRegion> = BodyMeasurementRegion.measurableRegions.toSet(),
 )
 
+data class BodyProportionState(
+    val hasData: Boolean = false,
+    val groups: List<BodyProportionGroup> = emptyList(),
+)
+
+data class BodyProportionGroup(
+    @StringRes val titleRes: Int,
+    val markers: List<BodyProportionMarker>,
+)
+
+data class BodyProportionMarker(
+    @StringRes val labelRes: Int,
+    val value: Float?,
+    @StringRes val statusRes: Int,
+    val progress: Float,
+)
+
 data class BodyComposition(
     val timestamp: Long,
     val weightKg: Float?,
@@ -176,7 +193,9 @@ data class BodyState(
     val periodPhysiqueDrift: Float? = null,
     val chart: BodyChartData = BodyChartData(0L, 0L),
     val showBisInfo: Boolean = false,
+    val showBodyProportionInfo: Boolean = false,
     val visual: VisualState = VisualState(),
     val compare: CompareState = CompareState(),
+    val bodyProportion: BodyProportionState = BodyProportionState(),
     val modelCardHeightPx: Int = 0,
 )

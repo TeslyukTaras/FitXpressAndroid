@@ -48,6 +48,7 @@ class BodyViewModel(
 
     private var allScans: List<ScanRecord> = emptyList()
     private var heightCm: Float? = null
+    private var gender: String? = null
     private var visibleRegions: Set<BodyMeasurementRegion> =
         BodyMeasurementRegion.measurableRegions.toSet()
     private val loadingVisualColorPairs = mutableSetOf<Pair<String, String>>()
@@ -87,6 +88,9 @@ class BodyViewModel(
 
     fun showBisInfo() = _state.update { it.copy(showBisInfo = true) }
     fun dismissBisInfo() = _state.update { it.copy(showBisInfo = false) }
+
+    fun showBodyProportionInfo() = _state.update { it.copy(showBodyProportionInfo = true) }
+    fun dismissBodyProportionInfo() = _state.update { it.copy(showBodyProportionInfo = false) }
 
     fun selectBodyPart(region: BodyMeasurementRegion) {
         _state.update { it.copy(visual = it.visual.copy(selectedBodyPart = region)) }
@@ -178,6 +182,7 @@ class BodyViewModel(
 
             allScans = scans.sortedBy { it.timestamp }
             heightCm = profile?.heightCm?.toFloat()
+            gender = profile?.gender
 
             val latest = allScans.lastOrNull()
             val previous = allScans.dropLast(1).lastOrNull()
@@ -194,6 +199,7 @@ class BodyViewModel(
                     loadState = BodyLoadState.Ready,
                     isMetric = isMetric,
                     composition = composition,
+                    bodyProportion = buildBodyProportion(latest, heightCm, gender),
                     periodPhysiqueDrift = computePeriodDrift(it.timeRange),
                 )
             }

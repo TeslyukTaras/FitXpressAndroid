@@ -7,6 +7,7 @@ package com.hexis.bi.domain.body
 object BodyMeasurementKeys {
     const val Neck = "neck"
     const val Shoulders = "shoulders"
+    const val OverarmGirth = "overarmGirth"
     const val Chest = "chest"
     const val Forearm = "forearm"
     const val Bicep = "bicep"

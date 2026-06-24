@@ -2,17 +2,18 @@ package com.hexis.bi.ui.main.scan.results
 
 import androidx.annotation.StringRes
 import com.hexis.bi.R
+import com.hexis.bi.ui.main.body.BodyProportionState
 import com.hexis.bi.ui.main.body.CompareState
 import com.hexis.bi.ui.main.body.VisualState
 
 enum class ResultsTab {
-    Visual, Posture, Compare;
+    Visual, MyBody, Compare;
 
     @get:StringRes
     val labelRes: Int
         get() = when (this) {
             Visual -> R.string.scan_results_tab_visual
-            Posture -> R.string.scan_results_tab_posture
+            MyBody -> R.string.scan_results_tab_my_body
             Compare -> R.string.scan_results_tab_compare
         }
 }
@@ -41,13 +42,15 @@ data class MeasurementRow(
  * opened-from-history) scan and its neighbours — there is no scan picker here.
  */
 data class ResultsState(
-    val selectedTab: ResultsTab = ResultsTab.Visual,
+    val selectedTab: ResultsTab = ResultsTab.MyBody,
     val isMetric: Boolean = true,
     val isLoading: Boolean = true,
     val visual: VisualState = VisualState(),
     val compare: CompareState = CompareState(),
+    val bodyProportion: BodyProportionState = BodyProportionState(),
     val modelCardHeightPx: Int = 0,
     val showPersonalizeResultsHint: Boolean = false,
+    val showBodyProportionInfo: Boolean = false,
 )
 
 internal val ResultsState.isDisplayable: Boolean

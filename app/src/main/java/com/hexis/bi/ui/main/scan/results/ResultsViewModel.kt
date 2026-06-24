@@ -16,6 +16,7 @@ import com.hexis.bi.ui.main.body.BodyVisualMode
 import com.hexis.bi.ui.main.body.CompareState
 import com.hexis.bi.ui.main.body.VisualScanOption
 import com.hexis.bi.ui.main.body.VisualState
+import com.hexis.bi.ui.main.body.buildBodyProportion
 import com.hexis.bi.utils.isMetricUnitSystem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -47,6 +48,8 @@ class ResultsViewModel(
     private var current: ScanRecord? = null
     private var previous: ScanRecord? = null
     private var beforePrevious: ScanRecord? = null
+    private var heightCm: Float? = null
+    private var gender: String? = null
 
     private val loadingColorPairs = mutableSetOf<Pair<String, String>>()
     private var requestedVisualColorPair: Pair<String, String>? = null
@@ -69,6 +72,9 @@ class ResultsViewModel(
         _state.update { it.copy(showPersonalizeResultsHint = false) }
     }
 
+    fun showBodyProportionInfo() = _state.update { it.copy(showBodyProportionInfo = true) }
+    fun dismissBodyProportionInfo() = _state.update { it.copy(showBodyProportionInfo = false) }
+
     init {
         observeColorMode()
         loadUnitSystem()
@@ -77,7 +83,14 @@ class ResultsViewModel(
 
     private fun loadUnitSystem() = launch(showLoading = false) {
         userRepository.getUser().onSuccess { profile ->
-            _state.update { it.copy(isMetric = profile.unitSystem.isMetricUnitSystem()) }
+            heightCm = profile.heightCm?.toFloat()
+            gender = profile.gender
+            _state.update {
+                it.copy(
+                    isMetric = profile.unitSystem.isMetricUnitSystem(),
+                    bodyProportion = buildBodyProportion(current, heightCm, gender),
+                )
+            }
         }
     }
 
@@ -100,6 +113,7 @@ class ResultsViewModel(
                 isLoading = false,
                 visual = buildVisual(it.visual),
                 compare = buildCompare(it.compare),
+                bodyProportion = buildBodyProportion(cur, heightCm, gender),
             )
         }
         // The persisted mode may already be Color; now that measurement ids exist, load the mesh.
@@ -213,7 +227,7 @@ class ResultsViewModel(
             ResultsTab.Visual ->
                 if (_state.value.visual.colorModel !is BodyVisualColorModel.Ready) loadVisualColorMesh()
             ResultsTab.Compare -> loadCompareColorMeshesIfNeeded()
-            ResultsTab.Posture -> Unit
+            ResultsTab.MyBody -> Unit
         }
     }
 
@@ -258,7 +272,7 @@ class ResultsViewModel(
             ResultsTab.Visual ->
                 if (_state.value.visual.colorModel !is BodyVisualColorModel.Ready) loadVisualColorMesh()
             ResultsTab.Compare -> loadCompareColorMeshesIfNeeded()
-            ResultsTab.Posture -> Unit
+            ResultsTab.MyBody -> Unit
         }
     }
 
