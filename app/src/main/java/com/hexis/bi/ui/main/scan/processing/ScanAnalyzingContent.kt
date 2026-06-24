@@ -20,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
@@ -38,6 +39,7 @@ import kotlin.math.roundToInt
 import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 private const val ANALYZING_BODY_ALPHA = 0.3f
+private const val ANALYZING_LOADER_VERTICAL_BIAS = -0.25f
 private const val ANALYZING_CREEP_CEILING = 0.9f
 private const val ANALYZING_CREEP_TIME_CONSTANT_MS = 16_000f
 private const val ANALYZING_FINISH_DURATION_MS = 3_000
@@ -84,7 +86,6 @@ internal fun ScanAnalyzingContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
-            contentAlignment = Alignment.Center,
         ) {
             Image(
                 painter = painterResource(R.drawable.img_body_scan),
@@ -94,7 +95,10 @@ internal fun ScanAnalyzingContent(
                     .fillMaxSize()
                     .alpha(ANALYZING_BODY_ALPHA),
             )
-            AnalyzingLoader(progress = progress.value)
+            AnalyzingLoader(
+                progress = progress.value,
+                modifier = Modifier.align(BiasAlignment(0f, ANALYZING_LOADER_VERTICAL_BIAS)),
+            )
         }
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
