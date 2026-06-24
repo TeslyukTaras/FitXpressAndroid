@@ -146,6 +146,11 @@
     <string name="settings_help">Help &amp; Support</string>
     <string name="settings_terms_privacy">Terms &amp; Privacy</string>
     <string name="settings_report_problem">Report a Problem</string>
+    <string name="support_email_address" translatable="false">support@hexis-bi.com</string>
+    <string name="support_email_subject">Hexis-BI Support Request</string>
+    <string name="problem_report_email_subject">Hexis-BI Problem Report</string>
+    <string name="support_email_body">Please describe the problem:\n\nSteps to reproduce:\n1. \n2. \n3. \n\nExpected result:\n\nActual result:\n\n---\nApp version: %1$s (%2$d)\nEnvironment: %3$s\nDevice model: %4$s\nOperating system: Android %5$s (API %6$d)</string>
+    <string name="error_no_email_app">No email application found</string>
     <string name="settings_group_actions">Actions</string>
     <string name="settings_delete_account">Delete Account</string>
     <string name="settings_logout">Log Out</string>
