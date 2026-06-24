@@ -202,4 +202,12 @@
     <dimen name="home_scan_spacer">40dp</dimen>
     <dimen name="pace_meter_bar_height">5.5dp</dimen>
 
+    <!-- My Body — proportion scale indicator -->
+    <dimen name="proportion_indicator_height">14dp</dimen>
+    <dimen name="proportion_indicator_track_height">4dp</dimen>
+    <dimen name="proportion_indicator_marker_inset">5dp</dimen>
+    <dimen name="proportion_indicator_marker_half_width">4dp</dimen>
+    <dimen name="proportion_indicator_marker_height">6dp</dimen>
+    <dimen name="proportion_indicator_marker_gap">2dp</dimen>
+
 </resources>

@@ -32,6 +32,7 @@ import com.hexis.bi.ui.components.AppTabSelector
 import com.hexis.bi.ui.components.LightStatusBarIcons
 import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.main.body.components.BisInfoBottomSheet
+import com.hexis.bi.ui.main.body.components.BodyProportionInfoBottomSheet
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,7 +50,13 @@ fun BodyScreen(
     BaseScreen(
         modifier = modifier
             .fillMaxSize()
-            .then(if (state.showBisInfo) Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop)) else Modifier)
+            .then(
+                if (state.showBisInfo || state.showBodyProportionInfo) {
+                    Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
+                } else {
+                    Modifier
+                }
+            )
             .screenBackground(),
         containerColor = Color.Transparent,
     ) {
@@ -98,10 +105,10 @@ fun BodyScreen(
             )
 
             when (state.selectedTab) {
-                BodyTab.Stats, BodyTab.Posture ->
+                BodyTab.Stats ->
                     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
 
-                BodyTab.Visual, BodyTab.Compare -> Unit
+                BodyTab.Visual, BodyTab.MyBody, BodyTab.Compare -> Unit
             }
 
             when (state.selectedTab) {
@@ -142,17 +149,13 @@ fun BodyScreen(
                     modifier = Modifier.weight(1f),
                 )
 
-                BodyTab.Posture -> {
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
-                    Text(
-                        text = stringResource(R.string.body_tab_coming_soon),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
-                    )
-                }
+                BodyTab.MyBody -> MyBodyContent(
+                    visualState = state.visual,
+                    proportionState = state.bodyProportion,
+                    cardHeightPx = state.modelCardHeightPx,
+                    onInfoClick = viewModel::showBodyProportionInfo,
+                    modifier = Modifier.weight(1f),
+                )
             }
 
             CompactSummaryCardHeight(
@@ -164,4 +167,10 @@ fun BodyScreen(
     }
 
     if (state.showBisInfo) BisInfoBottomSheet(onDismiss = viewModel::dismissBisInfo)
+    if (state.showBodyProportionInfo) {
+        BodyProportionInfoBottomSheet(
+            isFemaleProfile = state.bodyProportion.isFemaleProfile,
+            onDismiss = viewModel::dismissBodyProportionInfo,
+        )
+    }
 }

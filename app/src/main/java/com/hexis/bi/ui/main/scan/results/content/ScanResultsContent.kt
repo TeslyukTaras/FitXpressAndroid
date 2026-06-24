@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -18,6 +16,7 @@ import com.hexis.bi.ui.components.AppTabSelector
 import com.hexis.bi.ui.main.body.BodyVisualMode
 import com.hexis.bi.ui.main.body.CompactSummaryCardHeight
 import com.hexis.bi.ui.main.body.CompareContent
+import com.hexis.bi.ui.main.body.MyBodyContent
 import com.hexis.bi.ui.main.body.VisualContent
 import com.hexis.bi.ui.main.scan.results.ResultsState
 import com.hexis.bi.ui.main.scan.results.ResultsTab
@@ -31,6 +30,7 @@ internal data class ScanResultsActions(
     val onCompareLeftScanSelected: (Long) -> Unit,
     val onCompareRightScanSelected: (Long) -> Unit,
     val onModelCardMeasured: (Int) -> Unit,
+    val onInfoClick: () -> Unit,
 )
 
 @Composable
@@ -82,18 +82,15 @@ internal fun ScanResultsContent(
                 modifier = Modifier.weight(1f),
             )
 
-            ResultsTab.Posture -> {
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
-                Text(
-                    text = stringResource(R.string.body_tab_coming_soon),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
-                )
-            }
+            ResultsTab.MyBody -> MyBodyContent(
+                visualState = state.visual,
+                proportionState = state.bodyProportion,
+                cardHeightPx = state.modelCardHeightPx,
+                bottomClearance = bottomClearance,
+                onAvatarReady = onAvatarReady,
+                onInfoClick = actions.onInfoClick,
+                modifier = Modifier.weight(1f),
+            )
         }
 
         CompactSummaryCardHeight(

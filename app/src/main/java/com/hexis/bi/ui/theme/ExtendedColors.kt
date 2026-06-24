@@ -101,6 +101,11 @@ data class ExtendedColors(
     val chartHrvLine: Color,
     val chartGridLineHorizontal: Color,
     val chartGridLineVertical: Color,
+    // Body-proportion scale indicator
+    val proportionScaleStart: Color,
+    val proportionScaleMid: Color,
+    val proportionScaleEnd: Color,
+    val proportionScaleMarker: Color,
 )
 
 internal val DefaultExtendedColors = ExtendedColors(
@@ -183,6 +188,10 @@ internal val DefaultExtendedColors = ExtendedColors(
     chartHrvLine = ChartHrvLine,
     chartGridLineHorizontal = ChartGridLineHorizontal,
     chartGridLineVertical = ChartGridLineVertical,
+    proportionScaleStart = ProportionScaleStart,
+    proportionScaleMid = ProportionScaleMid,
+    proportionScaleEnd = ProportionScaleEnd,
+    proportionScaleMarker = ProportionScaleMarker,
 )
 
 internal val LocalExtendedColors = staticCompositionLocalOf { DefaultExtendedColors }

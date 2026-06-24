@@ -11,4 +11,5 @@ internal fun ResultsViewModel.resultsActions() = ScanResultsActions(
     onCompareLeftScanSelected = ::selectCompareLeftScan,
     onCompareRightScanSelected = ::selectCompareRightScan,
     onModelCardMeasured = ::setModelCardHeight,
+    onInfoClick = ::showBodyProportionInfo,
 )

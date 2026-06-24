@@ -17,7 +17,6 @@ import android.util.LruCache
 import android.view.MotionEvent
 import android.view.TextureView
 import android.view.View
-import android.view.ViewConfiguration
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -211,7 +210,8 @@ internal class CompareRotationLink {
     /** Eased reset progress in [0,1]; clears the animation flag once complete. */
     private fun resetProgress(): Float {
         if (!resetAnimating) return 1f
-        val linear = (SystemClock.uptimeMillis() - resetStartMs).toFloat() / FRAME_ANIMATION_DURATION_MS
+        val linear =
+            (SystemClock.uptimeMillis() - resetStartMs).toFloat() / FRAME_ANIMATION_DURATION_MS
         if (linear >= 1f) {
             resetAnimating = false
             return 1f
@@ -276,6 +276,7 @@ internal fun MetricAvatarPreview(
     framingRegion: BodyMeasurementRegion? = null,
     /** When true, framing keeps the figure horizontally centered (Compare) instead of right-shifted (Visual). */
     centerFraming: Boolean = false,
+    bodyRings: List<MetricAvatarBodyRing> = emptyList(),
     @StringRes loadingMessageRes: Int = R.string.scan_results_avatar_loading,
 ) {
     val context = LocalContext.current
@@ -308,6 +309,7 @@ internal fun MetricAvatarPreview(
     LaunchedEffect(renderHost, meshGlow) { renderHost.setMeshGlow(meshGlow) }
     LaunchedEffect(renderHost, framingRegion) { renderHost.setFramingRegion(framingRegion) }
     LaunchedEffect(renderHost, centerFraming) { renderHost.setCenterFraming(centerFraming) }
+    LaunchedEffect(renderHost, bodyRings) { renderHost.setBodyRings(bodyRings) }
 
     DisposableEffect(renderHost) {
         renderHost.setRenderFailureListener { latestRenderFailure() }
@@ -411,6 +413,13 @@ internal fun MetricAvatarPreview(
     }
 }
 
+internal data class MetricAvatarBodyRing(
+    val region: BodyMeasurementRegion,
+    val radiusScale: Float = 1f,
+    val verticalOffsetFraction: Float = 0f,
+    val fitFullCrossSection: Boolean = false,
+)
+
 @Composable
 internal fun MetricAvatarLoading(
     @StringRes messageRes: Int,
@@ -501,9 +510,8 @@ private enum class MetricAvatarLoadState {
 
 private const val TOUCH_YAW_SENSITIVITY = 0.25f
 private const val TOUCH_PITCH_SENSITIVITY = 0.2f
-private const val TWO_FINGER_ZOOM_SLOP_MULTIPLIER = 1.25f
-private const val TWO_FINGER_ZOOM_DOMINANCE_RATIO = 1.25f
-private const val TWO_FINGER_ZOOM_SENSITIVITY = 0.85f
+
+private const val TWO_FINGER_ZOOM_SENSITIVITY = 0.7f
 private const val FRAME_ANIMATION_DURATION_MS = 360L
 private const val FRAME_ANIMATION_FRAME_DELAY_MS = 16L
 private const val RENDER_THREAD_JOIN_TIMEOUT_MS = 250L
@@ -538,11 +546,11 @@ private interface MetricAvatarRenderHost {
     fun setBaseOrientation(yawDeg: Float, pitchDeg: Float)
     fun setFramingRegion(region: BodyMeasurementRegion?)
     fun setCenterFraming(enabled: Boolean)
+    fun setBodyRings(rings: List<MetricAvatarBodyRing>)
     fun setRenderFailureListener(listener: (() -> Unit)?)
     fun setOnFirstFrameRendered(listener: (() -> Unit)?)
 }
 
-private enum class TwoFingerGesture { UNDECIDED, ZOOM, PAN }
 
 private class MetricAvatarTextureView(
     context: Context,
@@ -555,12 +563,8 @@ private class MetricAvatarTextureView(
     private var lastY = 0f
     private var lastCentroidX = 0f
     private var lastCentroidY = 0f
-    private var twoFingerGesture: TwoFingerGesture? = null
-    private var gestureStartSpan = 0f
+    private var twoFingerActive = false
     private var gestureLastSpan = 0f
-    private var gestureStartCx = 0f
-    private var gestureStartCy = 0f
-    private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop.toFloat()
     private var renderThread: HandlerThread? = null
     private var renderHandler: Handler? = null
     private var eglDisplay: EGLDisplay? = null
@@ -952,6 +956,13 @@ private class MetricAvatarTextureView(
         }
     }
 
+    override fun setBodyRings(rings: List<MetricAvatarBodyRing>) {
+        queueRenderEvent {
+            avatarRenderer.setBodyRings(rings)
+            drawFrame()
+        }
+    }
+
     override fun setRenderFailureListener(listener: (() -> Unit)?) {
         renderFailureListener = listener
     }
@@ -981,7 +992,7 @@ private class MetricAvatarTextureView(
 
             MotionEvent.ACTION_POINTER_UP -> {
                 if (event.pointerCount - 1 < 2) {
-                    twoFingerGesture = null
+                    twoFingerActive = false
                     val survivor = if (event.actionIndex == 0) 1 else 0
                     lastX = event.getX(survivor)
                     lastY = event.getY(survivor)
@@ -991,9 +1002,9 @@ private class MetricAvatarTextureView(
             }
 
             MotionEvent.ACTION_MOVE -> {
-                if (zoomPanEnabled && twoFingerGesture != null && event.pointerCount >= 2) {
+                if (zoomPanEnabled && twoFingerActive && event.pointerCount >= 2) {
                     handleTwoFingerMove(event)
-                } else if (twoFingerGesture == null) {
+                } else if (!twoFingerActive) {
                     val dx = event.x - lastX
                     val dy = event.y - lastY
                     val link = boundCompareLink
@@ -1019,47 +1030,34 @@ private class MetricAvatarTextureView(
             MotionEvent.ACTION_UP -> {
                 performClick()
                 onInteractionChanged(false)
-                twoFingerGesture = null
+                twoFingerActive = false
             }
 
             MotionEvent.ACTION_CANCEL -> {
                 onInteractionChanged(false)
-                twoFingerGesture = null
+                twoFingerActive = false
             }
         }
         return true
     }
 
     private fun beginTwoFinger(event: MotionEvent) {
-        twoFingerGesture = TwoFingerGesture.UNDECIDED
-        gestureStartSpan = spanOf(event)
-        gestureLastSpan = gestureStartSpan
-        gestureStartCx = averagePointer(event, excludeIndex = -1, axisX = true)
-        gestureStartCy = averagePointer(event, excludeIndex = -1, axisX = false)
-        lastCentroidX = gestureStartCx
-        lastCentroidY = gestureStartCy
+        twoFingerActive = true
+        gestureLastSpan = spanOf(event)
+        lastCentroidX = averagePointer(event, excludeIndex = -1, axisX = true)
+        lastCentroidY = averagePointer(event, excludeIndex = -1, axisX = false)
     }
 
     private fun handleTwoFingerMove(event: MotionEvent) {
         val span = spanOf(event)
         val cx = averagePointer(event, excludeIndex = -1, axisX = true)
         val cy = averagePointer(event, excludeIndex = -1, axisX = false)
-        if (twoFingerGesture == TwoFingerGesture.UNDECIDED) {
-            val spanDelta = abs(span - gestureStartSpan)
-            val panDelta = hypot(cx - gestureStartCx, cy - gestureStartCy)
-            val zoomIsClear =
-                spanDelta >= touchSlop * TWO_FINGER_ZOOM_SLOP_MULTIPLIER &&
-                        spanDelta > panDelta * TWO_FINGER_ZOOM_DOMINANCE_RATIO
-            when {
-                zoomIsClear -> twoFingerGesture = TwoFingerGesture.ZOOM
-                panDelta >= touchSlop -> twoFingerGesture = TwoFingerGesture.PAN
-            }
-        }
-        when (twoFingerGesture) {
-            TwoFingerGesture.ZOOM -> if (gestureLastSpan > 0f) applyZoomFactor(span / gestureLastSpan)
-            TwoFingerGesture.PAN -> applyPan(cx - lastCentroidX, cy - lastCentroidY)
-            else -> Unit
-        }
+        val zoomFactor = if (gestureLastSpan > 0f && span > 0f) span / gestureLastSpan else 1f
+        applyTwoFingerTransform(
+            panDx = cx - lastCentroidX,
+            panDy = cy - lastCentroidY,
+            zoomFactor = zoomFactor,
+        )
         gestureLastSpan = span
         lastCentroidX = cx
         lastCentroidY = cy
@@ -1085,17 +1083,13 @@ private class MetricAvatarTextureView(
         }
     }
 
-    private fun applyZoomFactor(factor: Float) {
+    private fun applyTwoFingerTransform(panDx: Float, panDy: Float, zoomFactor: Float) {
+        val zoom = if (zoomFactor != 1f) zoomFactor.pow(TWO_FINGER_ZOOM_SENSITIVITY) else 1f
+        val hasPan = panDx != 0f || panDy != 0f
+        if (zoom == 1f && !hasPan) return
         queueRenderEvent {
-            avatarRenderer.zoomBy(factor.pow(TWO_FINGER_ZOOM_SENSITIVITY))
-            if (boundCompareLink == null) drawFrame()
-        }
-    }
-
-    private fun applyPan(dxPixels: Float, dyPixels: Float) {
-        if (dxPixels == 0f && dyPixels == 0f) return
-        queueRenderEvent {
-            avatarRenderer.panBy(dxPixels, dyPixels)
+            if (zoom != 1f) avatarRenderer.zoomBy(zoom)
+            if (hasPan) avatarRenderer.panBy(panDx, panDy)
             if (boundCompareLink == null) drawFrame()
         }
     }
@@ -1156,6 +1150,15 @@ private fun lerpAngleDegrees(start: Float, stop: Float, fraction: Float): Float 
 
 private fun easeInOutSine(fraction: Float): Float =
     ((1f - cos(fraction.coerceIn(0f, 1f) * Math.PI.toFloat())) / 2f)
+
+private data class BodyRingGeometry(
+    val points: FloatArray,
+) {
+    override fun equals(other: Any?): Boolean =
+        this === other || (other is BodyRingGeometry && points.contentEquals(other.points))
+
+    override fun hashCode(): Int = points.contentHashCode()
+}
 
 internal data class ModelBounds(
     val minX: Float,
@@ -1755,7 +1758,7 @@ private object ObjParser {
         val assigned = BooleanArray(clusterResult.vertices.size)
         for (originalIndex in colors.indices) {
             val clusterIndex = clusterResult.remap.getOrElse(originalIndex) { -1 }
-            if (clusterIndex in 0 until clusterResult.vertices.size && !assigned[clusterIndex]) {
+            if (clusterIndex in clusterResult.vertices.indices && !assigned[clusterIndex]) {
                 val color = colors[originalIndex]
                 val base = clusterIndex * POSITION_FLOATS_PER_VERTEX
                 out[base] = color[0]
@@ -2198,6 +2201,16 @@ private class MetricAvatarRenderer {
     private var leaderUMvp = 0
     private var leaderUColor = 0
 
+    private var ringProgram = 0
+    private var ringAPos = 0
+    private var ringAAlpha = 0
+    private var ringUMvp = 0
+    private var ringUColor = 0
+    private var bodyRings: List<MetricAvatarBodyRing> = emptyList()
+    private var cachedRingMesh: ObjMesh? = null
+    private var cachedRingSpecs: List<MetricAvatarBodyRing> = emptyList()
+    private var cachedRingGeometry: List<BodyRingGeometry> = emptyList()
+
     private var gradientProgram = 0
     private var gradientAClip = 0
     private var gradientLocResolution = 0
@@ -2341,6 +2354,7 @@ private class MetricAvatarRenderer {
 
     fun setMesh(value: ObjMesh) {
         mesh = value
+        clearBodyRingCache()
         resetUserView()
         rebuildFrameCache()
     }
@@ -2397,6 +2411,17 @@ private class MetricAvatarRenderer {
 
     fun setMeshGlow(glow: Float) {
         meshGlow = glow.coerceIn(0f, 1f)
+    }
+
+    fun setBodyRings(rings: List<MetricAvatarBodyRing>) {
+        bodyRings = rings
+        clearBodyRingCache()
+    }
+
+    private fun clearBodyRingCache() {
+        cachedRingMesh = null
+        cachedRingSpecs = emptyList()
+        cachedRingGeometry = emptyList()
     }
 
     fun rotateBy(dyaw: Float, dpitch: Float) {
@@ -2465,7 +2490,7 @@ private class MetricAvatarRenderer {
 
     private fun modelYaw(): Float {
         val link = rotationLink
-        return if (link != null) link.displayYaw() else yaw
+        return link?.displayYaw() ?: yaw
     }
 
     /**
@@ -2474,7 +2499,7 @@ private class MetricAvatarRenderer {
      */
     private fun framingSpinYaw(): Float {
         val link = rotationLink
-        return if (link != null) link.displayYaw() else framingYawOffsetDeg
+        return link?.displayYaw() ?: framingYawOffsetDeg
     }
 
     private fun modelPitch(): Float {
@@ -2484,17 +2509,17 @@ private class MetricAvatarRenderer {
 
     private fun modelZoom(): Float {
         val link = rotationLink
-        return if (link != null) link.displayZoom() else userZoom
+        return link?.displayZoom() ?: userZoom
     }
 
     private fun modelPanX(): Float {
         val link = rotationLink
-        return if (link != null) link.displayPanX() else userPanX
+        return link?.displayPanX() ?: userPanX
     }
 
     private fun modelPanY(): Float {
         val link = rotationLink
-        return if (link != null) link.displayPanY() else userPanY
+        return link?.displayPanY() ?: userPanY
     }
 
     private fun rebuildFrameCache() {
@@ -2570,6 +2595,13 @@ private class MetricAvatarRenderer {
             leaderUMvp = GLES20.glGetUniformLocation(leaderProgram, "uMvp")
             leaderUColor = GLES20.glGetUniformLocation(leaderProgram, "uColor")
         }
+        ringProgram = createRingProgram()
+        if (ringProgram != 0) {
+            ringAPos = GLES20.glGetAttribLocation(ringProgram, "aPos")
+            ringAAlpha = GLES20.glGetAttribLocation(ringProgram, "aAlpha")
+            ringUMvp = GLES20.glGetUniformLocation(ringProgram, "uMvp")
+            ringUColor = GLES20.glGetUniformLocation(ringProgram, "uColor")
+        }
     }
 
     fun onSurfaceChanged(width: Int, height: Int) {
@@ -2611,6 +2643,7 @@ private class MetricAvatarRenderer {
         updateAvatarMatrices(currentAvatarFrame())
         bindAvatarUniforms()
         drawAvatarBody(m)
+        drawBodyRings(m)
         drawRepairWireOverlay(m)
     }
 
@@ -2746,6 +2779,354 @@ private class MetricAvatarRenderer {
         drawMeshWireOverlay(m)
     }
 
+    private fun drawBodyRings(m: ObjMesh) {
+        val rings = bodyRings
+        if (rings.isEmpty() || ringProgram == 0 || ringAPos < 0 || ringAAlpha < 0) return
+
+        GLES20.glUseProgram(ringProgram)
+        GLES20.glUniformMatrix4fv(ringUMvp, 1, false, mvp, 0)
+        GLES20.glUniform4f(ringUColor, BODY_RING_R, BODY_RING_G, BODY_RING_B, 1f)
+
+        GLES20.glDisable(GLES20.GL_DEPTH_TEST)
+        GLES20.glDepthMask(false)
+        GLES20.glEnable(GLES20.GL_BLEND)
+        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+
+        bodyRingGeometry(m, rings).forEach { geometry ->
+            val buffer = bodyRingBuffer(geometry)
+            GLES20.glDisable(GLES20.GL_DEPTH_TEST)
+            drawBodyRingLine(buffer, BODY_RING_GLOW_LINE_WIDTH_PX, BODY_RING_GLOW_ALPHA)
+            GLES20.glEnable(GLES20.GL_DEPTH_TEST)
+            GLES20.glDepthFunc(GLES20.GL_LEQUAL)
+            drawBodyRingLine(buffer, BODY_RING_LINE_WIDTH_PX, 1f)
+        }
+
+        GLES20.glDisableVertexAttribArray(ringAPos)
+        GLES20.glDisableVertexAttribArray(ringAAlpha)
+        GLES20.glDisable(GLES20.GL_BLEND)
+        GLES20.glEnable(GLES20.GL_DEPTH_TEST)
+        GLES20.glDepthMask(true)
+    }
+
+    private fun bodyRingGeometry(
+        mesh: ObjMesh,
+        rings: List<MetricAvatarBodyRing>,
+    ): List<BodyRingGeometry> {
+        if (cachedRingMesh === mesh && cachedRingSpecs == rings) return cachedRingGeometry
+        val geometry = rings.mapNotNull { buildBodyRingGeometry(mesh, it) }
+        cachedRingMesh = mesh
+        cachedRingSpecs = rings.toList()
+        cachedRingGeometry = geometry
+        return geometry
+    }
+
+    private fun drawBodyRingLine(
+        buffer: FloatBuffer,
+        lineWidth: Float,
+        alpha: Float,
+    ) {
+        GLES20.glUniform4f(ringUColor, BODY_RING_R, BODY_RING_G, BODY_RING_B, alpha)
+        GLES20.glLineWidth(lineWidth)
+        buffer.position(0)
+        GLES20.glVertexAttribPointer(
+            ringAPos,
+            FLOATS_PER_ATTRIB,
+            GLES20.GL_FLOAT,
+            false,
+            BODY_RING_VERTEX_STRIDE_BYTES,
+            buffer,
+        )
+        GLES20.glEnableVertexAttribArray(ringAPos)
+        buffer.position(FLOATS_PER_ATTRIB)
+        GLES20.glVertexAttribPointer(
+            ringAAlpha,
+            1,
+            GLES20.GL_FLOAT,
+            false,
+            BODY_RING_VERTEX_STRIDE_BYTES,
+            buffer,
+        )
+        GLES20.glEnableVertexAttribArray(ringAAlpha)
+        GLES20.glDrawArrays(GLES20.GL_LINE_STRIP, 0, BODY_RING_SEGMENTS + 1)
+    }
+
+    private fun buildBodyRingGeometry(
+        mesh: ObjMesh,
+        ring: MetricAvatarBodyRing,
+    ): BodyRingGeometry? {
+        val bounds = ringBounds(mesh, ring.region) ?: return null
+        val y = bounds.centerY + mesh.bounds.spanY * ring.verticalOffsetFraction
+        val radiusScale = ring.radiusScale.coerceAtLeast(0.1f)
+        val section = when (ring.region) {
+            BodyMeasurementRegion.Waist -> waistTorsoExtrema(mesh, y)
+            else -> meshExtremaAtY(
+                mesh = mesh,
+                y = y,
+                region = ring.region,
+                sectionBounds = bounds,
+                fitFullCrossSection = ring.fitFullCrossSection,
+            )
+        }
+        val xRadius =
+            (section.spanX * 0.5f * radiusScale + section.spanX * BODY_RING_PADDING_FRACTION)
+                .coerceAtLeast(0.01f)
+        val zRadius = maxOf(
+            section.spanZ * 0.5f * radiusScale + mesh.bounds.spanZ * BODY_RING_DEPTH_PADDING_FRACTION,
+            mesh.bounds.spanX * BODY_RING_MIN_DEPTH_RADIUS_FRACTION,
+        ).coerceAtLeast(0.01f)
+        val points = FloatArray((BODY_RING_SEGMENTS + 1) * FLOATS_PER_ATTRIB)
+        var cursor = 0
+        for (i in 0..BODY_RING_SEGMENTS) {
+            val angle = (i.toFloat() / BODY_RING_SEGMENTS) * TWO_PI
+            val x = section.centerX + cos(angle) * xRadius
+            val z = section.centerZ + sin(angle) * zRadius
+            points[cursor++] = x
+            points[cursor++] = section.centerY
+            points[cursor++] = z
+        }
+        return BodyRingGeometry(points = points)
+    }
+
+    private fun bodyRingBuffer(geometry: BodyRingGeometry): FloatBuffer {
+        val points = geometry.points
+        val vertexCount = points.size / FLOATS_PER_ATTRIB
+        val values = FloatArray(vertexCount * BODY_RING_FLOATS_PER_VERTEX)
+        var minViewZ = Float.MAX_VALUE
+        var maxViewZ = -Float.MAX_VALUE
+        var pointCursor = 0
+        repeat(vertexCount) {
+            val viewZ =
+                viewSpaceZ(points[pointCursor], points[pointCursor + 1], points[pointCursor + 2])
+            minViewZ = minOf(minViewZ, viewZ)
+            maxViewZ = maxOf(maxViewZ, viewZ)
+            pointCursor += FLOATS_PER_ATTRIB
+        }
+
+        val viewZRange = (maxViewZ - minViewZ).coerceAtLeast(1e-5f)
+        var cursor = 0
+        pointCursor = 0
+        repeat(vertexCount) {
+            val x = points[pointCursor]
+            val y = points[pointCursor + 1]
+            val z = points[pointCursor + 2]
+            val viewZ = viewSpaceZ(x, y, z)
+            val frontT = ((viewZ - minViewZ) / viewZRange).coerceIn(0f, 1f)
+            val alpha = ((frontT - BODY_RING_TRANSPARENT_STOP) /
+                    (1f - BODY_RING_TRANSPARENT_STOP)).coerceIn(BODY_RING_BACK_ALPHA, 1f)
+            values[cursor++] = x
+            values[cursor++] = y
+            values[cursor++] = z
+            values[cursor++] = alpha
+            pointCursor += FLOATS_PER_ATTRIB
+        }
+        return ByteBuffer.allocateDirect(values.size * BYTES_PER_FLOAT_GL)
+            .order(ByteOrder.nativeOrder())
+            .asFloatBuffer()
+            .apply {
+                put(values)
+                position(0)
+            }
+    }
+
+    private fun viewSpaceZ(x: Float, y: Float, z: Float): Float =
+        temp[2] * x + temp[6] * y + temp[10] * z + temp[14]
+
+    private fun meshExtremaAtY(
+        mesh: ObjMesh,
+        y: Float,
+        region: BodyMeasurementRegion,
+        sectionBounds: ModelBounds,
+        fitFullCrossSection: Boolean,
+    ): ModelBounds {
+        val bandHalfHeight = mesh.bounds.spanY * when (region) {
+            BodyMeasurementRegion.Shoulders -> 0.045f
+            BodyMeasurementRegion.Thigh -> 0.045f
+            BodyMeasurementRegion.HipsGlutes -> 0.04f
+            else -> 0.035f
+        }
+        val torsoHalfWidth = maxOf(
+            sectionBounds.spanX * when (region) {
+                BodyMeasurementRegion.Shoulders -> 0.56f
+                BodyMeasurementRegion.Thigh -> 0.90f
+                BodyMeasurementRegion.HipsGlutes -> 0.72f
+                else -> 0.42f
+            },
+            mesh.bounds.spanX * when (region) {
+                BodyMeasurementRegion.Shoulders -> 0.18f
+                BodyMeasurementRegion.Thigh -> 0.24f
+                BodyMeasurementRegion.HipsGlutes -> 0.20f
+                else -> 0.11f
+            },
+        )
+        val centerX = sectionBounds.centerX
+        val buffer = mesh.vertexBuffer.duplicate()
+        buffer.position(0)
+        var minX = Float.MAX_VALUE
+        var maxX = -Float.MAX_VALUE
+        var minY = Float.MAX_VALUE
+        var maxY = -Float.MAX_VALUE
+        var minZ = Float.MAX_VALUE
+        var maxZ = -Float.MAX_VALUE
+        var found = false
+        repeat(mesh.vertexCount) {
+            val x = buffer.get()
+            val vy = buffer.get()
+            val z = buffer.get()
+            buffer.position(buffer.position() + FLOATS_PER_INTERLEAVED_VERTEX - FLOATS_PER_ATTRIB)
+            val insideWidth = fitFullCrossSection || abs(x - centerX) <= torsoHalfWidth
+            if (abs(vy - y) <= bandHalfHeight && insideWidth) {
+                found = true
+                minX = minOf(minX, x); maxX = maxOf(maxX, x)
+                minY = minOf(minY, vy); maxY = maxOf(maxY, vy)
+                minZ = minOf(minZ, z); maxZ = maxOf(maxZ, z)
+            }
+        }
+        return if (found) {
+            ModelBounds(minX, maxX, minY, maxY, minZ, maxZ)
+        } else {
+            ringBounds(mesh, region) ?: mesh.bounds
+        }
+    }
+
+    private fun waistTorsoExtrema(mesh: ObjMesh, y: Float): ModelBounds {
+        val bandHalfHeight = mesh.bounds.spanY * 0.035f
+        val midX = mesh.bounds.centerX
+        val maxHalfWindow = mesh.bounds.spanX * WAIST_RING_TORSO_HALF_WIDTH_FRACTION
+        val buffer = mesh.vertexBuffer.duplicate()
+        buffer.position(0)
+        var halfWidth = 0f
+        var minZ = Float.MAX_VALUE
+        var maxZ = -Float.MAX_VALUE
+        var found = false
+        repeat(mesh.vertexCount) {
+            val x = buffer.get()
+            val vy = buffer.get()
+            val z = buffer.get()
+            buffer.position(buffer.position() + FLOATS_PER_INTERLEAVED_VERTEX - FLOATS_PER_ATTRIB)
+            val dx = abs(x - midX)
+            if (abs(vy - y) <= bandHalfHeight && dx <= maxHalfWindow) {
+                found = true
+                halfWidth = maxOf(halfWidth, dx)
+                minZ = minOf(minZ, z); maxZ = maxOf(maxZ, z)
+            }
+        }
+        if (!found) return ringBounds(mesh, BodyMeasurementRegion.Waist) ?: mesh.bounds
+        return ModelBounds(
+            minX = midX - halfWidth,
+            maxX = midX + halfWidth,
+            minY = y - bandHalfHeight,
+            maxY = y + bandHalfHeight,
+            minZ = minZ,
+            maxZ = maxZ,
+        )
+    }
+
+    private fun ringBounds(
+        mesh: ObjMesh,
+        region: BodyMeasurementRegion,
+    ): ModelBounds? {
+        if (region == BodyMeasurementRegion.Waist) {
+            waistRingBounds(mesh)?.let { return it }
+        }
+        val key = BodyMeasurementKeys.visualAnchorKey(region)
+        val points = ArrayList<FloatArray>()
+        appendRingPacked(points, key?.let { mesh.measurementGuide.crossSectionPolylines[it] })
+        appendRingPacked(
+            points,
+            key?.let { mesh.measurementGuide.crossSectionPolylinesOpposite[it] })
+        key?.let { mesh.measurementGuide.anchorPoints[it] }?.let { points += it }
+        val bounds = ringBoundsOf(points)
+        val resolved = when {
+            bounds != null -> bounds
+            region == BodyMeasurementRegion.HipsGlutes -> ModelBounds(
+                minX = mesh.bounds.minX * 0.54f,
+                maxX = mesh.bounds.maxX * 0.54f,
+                minY = mesh.bounds.minY + mesh.bounds.spanY * 0.36f,
+                maxY = mesh.bounds.minY + mesh.bounds.spanY * 0.40f,
+                minZ = mesh.bounds.minZ * 0.7f,
+                maxZ = mesh.bounds.maxZ * 0.7f,
+            )
+
+            else -> null
+        }
+        return if (region == BodyMeasurementRegion.Shoulders) {
+            resolved?.copy(
+                minY = resolved.minY - mesh.bounds.spanY * SHOULDER_RING_DOWNWARD_OFFSET_FRACTION,
+                maxY = resolved.maxY - mesh.bounds.spanY * SHOULDER_RING_DOWNWARD_OFFSET_FRACTION,
+            )
+        } else {
+            resolved
+        }
+    }
+
+    private fun waistRingBounds(mesh: ObjMesh): ModelBounds? {
+        val upper = ringBoundsForKey(mesh, BodyMeasurementKeys.UpperWaist)
+        val waist = ringBoundsForKey(mesh, BodyMeasurementKeys.Waist)
+        val lower = ringBoundsForKey(mesh, BodyMeasurementKeys.LowerWaist)
+        return when {
+            upper != null && waist != null -> blendBounds(upper, waist, 0.24f)
+            upper != null && lower != null -> blendBounds(upper, lower, 0.18f)
+            waist != null -> waist.copy(
+                minY = waist.minY + mesh.bounds.spanY * WAIST_RING_UPWARD_OFFSET_FRACTION,
+                maxY = waist.maxY + mesh.bounds.spanY * WAIST_RING_UPWARD_OFFSET_FRACTION,
+            )
+
+            upper != null -> upper
+            lower != null -> lower.copy(
+                minY = lower.minY + mesh.bounds.spanY * WAIST_RING_UPWARD_OFFSET_FRACTION,
+                maxY = lower.maxY + mesh.bounds.spanY * WAIST_RING_UPWARD_OFFSET_FRACTION,
+            )
+
+            else -> null
+        }
+    }
+
+    private fun ringBoundsForKey(mesh: ObjMesh, key: String): ModelBounds? {
+        val points = ArrayList<FloatArray>()
+        appendRingPacked(points, mesh.measurementGuide.crossSectionPolylines[key])
+        appendRingPacked(points, mesh.measurementGuide.crossSectionPolylinesOpposite[key])
+        mesh.measurementGuide.anchorPoints[key]?.let { points += it }
+        return ringBoundsOf(points)
+    }
+
+    private fun blendBounds(
+        start: ModelBounds,
+        end: ModelBounds,
+        fraction: Float,
+    ): ModelBounds = ModelBounds(
+        minX = lerp(start.minX, end.minX, fraction),
+        maxX = lerp(start.maxX, end.maxX, fraction),
+        minY = lerp(start.minY, end.minY, fraction),
+        maxY = lerp(start.maxY, end.maxY, fraction),
+        minZ = lerp(start.minZ, end.minZ, fraction),
+        maxZ = lerp(start.maxZ, end.maxZ, fraction),
+    )
+
+    private fun appendRingPacked(into: MutableList<FloatArray>, packed: FloatArray?) {
+        if (packed == null) return
+        var i = 0
+        while (i + 2 < packed.size) {
+            into += floatArrayOf(packed[i], packed[i + 1], packed[i + 2])
+            i += 3
+        }
+    }
+
+    private fun ringBoundsOf(points: List<FloatArray>): ModelBounds? {
+        if (points.isEmpty()) return null
+        var minX = Float.MAX_VALUE
+        var maxX = -Float.MAX_VALUE
+        var minY = Float.MAX_VALUE
+        var maxY = -Float.MAX_VALUE
+        var minZ = Float.MAX_VALUE
+        var maxZ = -Float.MAX_VALUE
+        points.forEach { p ->
+            minX = minOf(minX, p[0]); maxX = maxOf(maxX, p[0])
+            minY = minOf(minY, p[1]); maxY = maxOf(maxY, p[1])
+            minZ = minOf(minZ, p[2]); maxZ = maxOf(maxZ, p[2])
+        }
+        return ModelBounds(minX, maxX, minY, maxY, minZ, maxZ)
+    }
+
     private fun createProgram(): Int {
         val vs = compileShader(GLES20.GL_VERTEX_SHADER, VERTEX_SHADER)
         val fs = compileShader(GLES20.GL_FRAGMENT_SHADER, FRAGMENT_SHADER)
@@ -2803,6 +3184,25 @@ private class MetricAvatarRenderer {
         return programId
     }
 
+    private fun createRingProgram(): Int {
+        val vs = compileShader(GLES20.GL_VERTEX_SHADER, RING_VERTEX_SHADER)
+        val fs = compileShader(GLES20.GL_FRAGMENT_SHADER, RING_FRAGMENT_SHADER)
+        if (vs == 0 || fs == 0) return 0
+
+        val programId = GLES20.glCreateProgram()
+        GLES20.glAttachShader(programId, vs)
+        GLES20.glAttachShader(programId, fs)
+        GLES20.glLinkProgram(programId)
+
+        val linkStatus = IntArray(1)
+        GLES20.glGetProgramiv(programId, GLES20.GL_LINK_STATUS, linkStatus, 0)
+        if (linkStatus[0] == 0) {
+            Timber.e("GL Ring Link Error: %s", GLES20.glGetProgramInfoLog(programId))
+            return 0
+        }
+        return programId
+    }
+
     private fun compileShader(type: Int, source: String): Int {
         val shader = GLES20.glCreateShader(type)
         GLES20.glShaderSource(shader, source)
@@ -2830,6 +3230,24 @@ private class MetricAvatarRenderer {
         private const val MESH_B = 1f
         private const val MESH_WIRE_ALPHA = 0.18f
         private const val MESH_WIRE_LINE_WIDTH_PX = 0.2f
+        private const val BODY_RING_R = 24f / 255f
+        private const val BODY_RING_G = 202f / 255f
+        private const val BODY_RING_B = 236f / 255f
+        private const val BODY_RING_LINE_WIDTH_PX = 3f
+        private const val BODY_RING_GLOW_LINE_WIDTH_PX = 9f
+        private const val BODY_RING_GLOW_ALPHA = 0.32f
+        private const val BODY_RING_SEGMENTS = 96
+        private const val BODY_RING_FLOATS_PER_VERTEX = 4
+        private const val BODY_RING_VERTEX_STRIDE_BYTES = BODY_RING_FLOATS_PER_VERTEX * 4
+        private const val BODY_RING_TRANSPARENT_STOP = 0.1571f
+        private const val BODY_RING_BACK_ALPHA = 0.16f
+        private const val WAIST_RING_TORSO_HALF_WIDTH_FRACTION = 0.18f
+        private const val BODY_RING_PADDING_FRACTION = 0.045f
+        private const val BODY_RING_DEPTH_PADDING_FRACTION = 0.06f
+        private const val BODY_RING_MIN_DEPTH_RADIUS_FRACTION = 0.16f
+        private const val WAIST_RING_UPWARD_OFFSET_FRACTION = 0.095f
+        private const val SHOULDER_RING_DOWNWARD_OFFSET_FRACTION = 0.018f
+        private const val TWO_PI = 6.2831855f
         private const val BODY_FILL_DEPTH_OFFSET_FACTOR = 1f
         private const val BODY_FILL_DEPTH_OFFSET_UNITS = 1f
 
@@ -2892,6 +3310,26 @@ private class MetricAvatarRenderer {
             uniform vec4 uColor;
             void main() {
                 gl_FragColor = uColor;
+            }
+        """
+
+        private const val RING_VERTEX_SHADER = """
+            uniform mat4 uMvp;
+            attribute vec3 aPos;
+            attribute float aAlpha;
+            varying float vAlpha;
+            void main() {
+                vAlpha = aAlpha;
+                gl_Position = uMvp * vec4(aPos, 1.0);
+            }
+        """
+
+        private const val RING_FRAGMENT_SHADER = """
+            precision mediump float;
+            uniform vec4 uColor;
+            varying float vAlpha;
+            void main() {
+                gl_FragColor = vec4(uColor.rgb, uColor.a * vAlpha);
             }
         """
 

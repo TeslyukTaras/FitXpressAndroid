@@ -27,6 +27,7 @@ import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.components.LightStatusBarIcons
 import com.hexis.bi.ui.theme.screenBackground
+import com.hexis.bi.ui.main.body.components.BodyProportionInfoBottomSheet
 import com.hexis.bi.ui.main.scan.results.content.PersonalizeResultsDialog
 import com.hexis.bi.ui.main.scan.results.content.ScanResultsContent
 import org.koin.androidx.compose.koinViewModel
@@ -52,7 +53,7 @@ fun ResultsScreen(
             .fillMaxSize()
             .screenBackground()
             .then(
-                if (state.showPersonalizeResultsHint) {
+                if (state.showPersonalizeResultsHint || state.showBodyProportionInfo) {
                     Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
                 } else {
                     Modifier
@@ -80,7 +81,7 @@ fun ResultsScreen(
                     }
                 },
                 actions = {
-                    if (!state.isLoading) IconButton(onClick = {}) {
+                    if (!state.isLoading) IconButton(onClick = viewModel::showBodyProportionInfo) {
                         Icon(
                             painter = painterResource(R.drawable.ic_info),
                             contentDescription = stringResource(R.string.cd_info),
@@ -115,6 +116,13 @@ fun ResultsScreen(
                 viewModel.onPersonalizeResultsHintDismissed()
                 onOpenScanPreferences()
             },
+        )
+    }
+
+    if (state.showBodyProportionInfo) {
+        BodyProportionInfoBottomSheet(
+            isFemaleProfile = state.bodyProportion.isFemaleProfile,
+            onDismiss = viewModel::dismissBodyProportionInfo,
         )
     }
 }
