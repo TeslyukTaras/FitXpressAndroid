@@ -63,6 +63,12 @@ fun AppMainNavBottomBar(
                     backgroundAlpha = 1f,
                     hazeAlpha = hazeAlpha,
                 )
+                // Absorb taps on the bar so they don't fall through to content behind it.
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {},
+                )
                 .padding(dimensionResource(R.dimen.spacer_xs)),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically,

@@ -8,6 +8,8 @@ import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageMetadata
 import com.google.firebase.storage.StorageReference
 import com.hexis.bi.data.firebase.toJsonElement
+import com.hexis.bi.utils.ImageCompressor
+import com.hexis.bi.utils.constants.ScanPhotoConstants
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -140,9 +142,16 @@ class ThreeDLookApi(
         }
 
     private fun readPhoto(uri: Uri): ByteArray =
-        context.contentResolver.openInputStream(uri)
-            ?.use { it.readBytes() }
-            ?: error("Unable to open photo: $uri")
+        ImageCompressor.readAsJpeg(
+            context = context,
+            uri = uri,
+            targetBytes = ScanPhotoConstants.SCAN_PHOTO_COMPRESSION_THRESHOLD_BYTES,
+            startQuality = ScanPhotoConstants.SCAN_PHOTO_JPEG_QUALITY,
+            minQuality = ScanPhotoConstants.SCAN_PHOTO_MIN_JPEG_QUALITY,
+            qualityStep = ScanPhotoConstants.SCAN_PHOTO_QUALITY_STEP,
+            hardCapBytes = ScanPhotoConstants.SCAN_PHOTO_MAX_BYTES,
+            skipIfAtMostBytes = ScanPhotoConstants.SCAN_PHOTO_COMPRESSION_THRESHOLD_BYTES,
+        )
 
     private suspend fun deleteQuietly(vararg refs: StorageReference) {
         refs.forEach { ref ->
