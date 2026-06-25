@@ -32,12 +32,12 @@ fun BuySuitDialogContent(
     ) {
         Text(
             text = stringResource(R.string.buy_suit_dialog_title),
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
         )
 
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
 
         Text(
             text = stringResource(R.string.buy_suit_dialog_body),
