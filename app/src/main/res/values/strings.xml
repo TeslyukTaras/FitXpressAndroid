@@ -47,7 +47,7 @@
 
     <!-- Notifications screen -->
     <string name="screen_notifications">Notifications</string>
-    <string name="notification_settings_title">Settings</string>
+    <string name="notification_settings_title">Notifications</string>
     <string name="notifications_mark_all_read">Mark all as read</string>
     <string name="notifications_time_just_now">Just now</string>
     <string name="notifications_time_ago">%1$s ago</string>
@@ -821,7 +821,7 @@
     <string name="cd_how_to_scan_illustration">Scan preparation illustration</string>
 
     <string name="how_to_scan_step_1_header">Space &amp; background</string>
-    <string name="how_to_scan_step_1_a">Use Bright Even Lighting</string>
+    <string name="how_to_scan_step_1_a">Use Bright, Even Lighting</string>
     <string name="how_to_scan_step_1_b">Choose a Clear, Uncluttered Area</string>
     <string name="how_to_scan_step_1_c">Keep your full body in frame</string>
 
@@ -966,7 +966,7 @@
     <string name="longevity_score_card_title">Healthy Aging Score</string>
     <string name="longevity_score_value">%1$d</string>
     <string name="longevity_score_max">/ 100</string>
-    <string name="longevity_score_description">Your Longevity score shows how well your body is aging based on key health signals.</string>
+    <string name="longevity_score_description">Your Longevity Score shows how well your body is aging based on key health signals.</string>
     <string name="longevity_synced_format">Based on your latest synced data · %1$s</string>
     <string name="longevity_trend_title">Longevity Trend</string>
     <string name="longevity_tab_daily">Daily</string>
