@@ -49,10 +49,10 @@ import com.hexis.bi.ui.main.body.components.MeasurementValueBlock
 import com.hexis.bi.ui.main.body.components.VisualScanDateDropdown
 import com.hexis.bi.ui.main.body.components.measurementValue
 import com.hexis.bi.ui.main.body.components.modelBlur
-import com.hexis.bi.ui.main.scan.results.CompareRotationLink
-import com.hexis.bi.ui.main.scan.results.MetricAvatarLoading
-import com.hexis.bi.ui.main.scan.results.MetricAvatarPreview
-import com.hexis.bi.ui.main.scan.results.MetricAvatarStatusText
+import com.hexis.bi.ui.avatar.CompareRotationLink
+import com.hexis.bi.ui.avatar.MetricAvatarLoading
+import com.hexis.bi.ui.avatar.MetricAvatarPreview
+import com.hexis.bi.ui.avatar.MetricAvatarStatusText
 import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.utils.constants.BodyVisualConstants
 import com.hexis.bi.utils.constants.BodyVisualConstants.FULL_BODY_MEASUREMENT_ROWS

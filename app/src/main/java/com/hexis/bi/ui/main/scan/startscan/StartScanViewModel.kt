@@ -15,7 +15,7 @@ import com.hexis.bi.data.reminder.ScanReminderScheduler
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.main.scan.ScanPurpose
-import com.hexis.bi.ui.main.scan.results.prefetchMetricAvatarModel
+import com.hexis.bi.ui.avatar.prefetchMetricAvatarModel
 import com.hexis.bi.utils.calculateAge
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -22,9 +22,9 @@ import com.hexis.bi.domain.body.BodyMeasurementRegion
 import com.hexis.bi.ui.main.body.BodyVisualColorModel
 import com.hexis.bi.ui.main.body.BodyVisualMode
 import com.hexis.bi.ui.main.body.VisualState
-import com.hexis.bi.ui.main.scan.results.MetricAvatarLoading
-import com.hexis.bi.ui.main.scan.results.MetricAvatarPreview
-import com.hexis.bi.ui.main.scan.results.MetricAvatarStatusText
+import com.hexis.bi.ui.avatar.MetricAvatarLoading
+import com.hexis.bi.ui.avatar.MetricAvatarPreview
+import com.hexis.bi.ui.avatar.MetricAvatarStatusText
 import java.text.SimpleDateFormat
 
 @Composable
