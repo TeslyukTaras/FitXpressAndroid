@@ -23,6 +23,7 @@ import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.data.terra.TerraWidgetApi
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.constants.TerraProviders
+import com.hexis.bi.utils.redactSensitiveId
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -268,12 +269,12 @@ class HealthConnectionsViewModel(
             }
             for (id in ids) {
                 terraApi.deauthenticateUser(id).onFailure { e ->
-                    Timber.w(e, "Terra deauthenticateUser failed user_id=%s", id)
+                    Timber.w(e, "Terra deauthenticateUser failed user_id=%s", redactSensitiveId(id))
                 }
             }
             for (id in ids) {
                 healthConnectionsRepository.deactivateConnection(id).onFailure {
-                    Timber.w(it, "deactivateConnection failed for %s", id)
+                    Timber.w(it, "deactivateConnection failed for %s", redactSensitiveId(id))
                 }
             }
             TerraSdkSync.invalidateCachesAndNotify()
@@ -406,12 +407,12 @@ class HealthConnectionsViewModel(
         }
         for (id in allIds) {
             terraApi.deauthenticateUser(id).onFailure { e ->
-                Timber.w(e, "Terra deauthenticateUser failed user_id=%s", id)
+                Timber.w(e, "Terra deauthenticateUser failed user_id=%s", redactSensitiveId(id))
             }
         }
         for (id in firestoreIds) {
             healthConnectionsRepository.deactivateConnection(id).onFailure {
-                Timber.w(it, "deactivateConnection failed for %s", id)
+                Timber.w(it, "deactivateConnection failed for %s", redactSensitiveId(id))
             }
         }
         terraManagerHolder.clearLocalManager()

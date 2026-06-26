@@ -4,10 +4,12 @@ import android.app.Activity
 import android.app.Application
 import android.os.Bundle
 import android.view.WindowManager
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.hexis.bi.data.notification.NotificationInboxRepository
 import com.hexis.bi.data.reminder.ScanReminderScheduler
 import com.hexis.bi.data.reminder.ScanReminderWorkRunner
 import com.hexis.bi.di.appModule
+import com.hexis.bi.utils.CrashlyticsTree
 import com.hexis.bi.utils.SystemNotificationHelper
 import com.look.camera.sdk.SdkActivity
 import org.koin.android.ext.koin.androidContext
@@ -22,13 +24,15 @@ class App : Application(), KoinComponent {
 
     fun scanReminderScheduler(): ScanReminderScheduler = get<ScanReminderScheduler>()
 
-    fun notificationInboxRepository(): NotificationInboxRepository = get<NotificationInboxRepository>()
+    fun notificationInboxRepository(): NotificationInboxRepository =
+        get<NotificationInboxRepository>()
 
     override fun onCreate() {
         super.onCreate()
-        if (BuildConfig.DEBUG) {
-            Timber.plant(Timber.DebugTree())
-        }
+        FirebaseCrashlytics.getInstance().isCrashlyticsCollectionEnabled = !BuildConfig.DEBUG
+        if (BuildConfig.DEBUG) Timber.plant(Timber.DebugTree())
+        else Timber.plant(CrashlyticsTree())
+        
         startKoin {
             androidLogger()
             androidContext(this@App)

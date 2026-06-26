@@ -1,7 +1,6 @@
 package com.hexis.bi.data.notification
 
 import android.content.Context
-import android.util.Log
 import androidx.annotation.StringRes
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -14,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
+import timber.log.Timber
 import java.util.UUID
 
 /**
@@ -95,7 +95,7 @@ class NotificationInboxRepository(
     private fun decodeList(raw: String): List<InboxItem> = runCatching {
         json.decodeFromString(ListSerializer(InboxItem.serializer()), raw)
     }.getOrElse { error ->
-        Log.w("NotificationInbox", "Failed to decode inbox payload", error)
+        Timber.w(error, "Failed to decode inbox payload")
         emptyList()
     }
 
