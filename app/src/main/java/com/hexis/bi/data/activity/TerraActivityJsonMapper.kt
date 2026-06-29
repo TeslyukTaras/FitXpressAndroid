@@ -1,7 +1,6 @@
 package com.hexis.bi.data.activity
 
 import com.hexis.bi.data.terra.arrayOrNull
-import com.hexis.bi.data.terra.int
 import com.hexis.bi.data.terra.objectOrNull
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonArray
@@ -161,20 +160,28 @@ private fun JsonObject.extractSteps(): Int {
     val distanceData = objectOrNull(TerraActivityJsonKeys.Nodes.DISTANCE_DATA)
     val activityData = objectOrNull(TerraActivityJsonKeys.Nodes.ACTIVITY_DATA)
     val metadata = objectOrNull(TerraActivityJsonKeys.Common.METADATA)
-    return int(TerraActivityJsonKeys.Steps.STEPS)
-        ?: distanceData?.int(TerraActivityJsonKeys.Steps.STEPS)
-        ?: distanceData?.objectOrNull(TerraActivityJsonKeys.Common.SUMMARY)?.int(
+    return stepsValue(TerraActivityJsonKeys.Steps.STEPS)
+        ?: distanceData?.stepsValue(TerraActivityJsonKeys.Steps.STEPS)
+        ?: distanceData?.objectOrNull(TerraActivityJsonKeys.Common.SUMMARY)?.stepsValue(
             TerraActivityJsonKeys.Steps.STEPS
         )
-        ?: activityData?.int(TerraActivityJsonKeys.Steps.STEPS)
-        ?: activityData?.objectOrNull(TerraActivityJsonKeys.Common.SUMMARY)?.int(
+        ?: activityData?.stepsValue(TerraActivityJsonKeys.Steps.STEPS)
+        ?: activityData?.objectOrNull(TerraActivityJsonKeys.Common.SUMMARY)?.stepsValue(
             TerraActivityJsonKeys.Steps.STEPS
         )
-        ?: int(TerraActivityJsonKeys.Steps.STEP_COUNT)
-        ?: metadata?.int(TerraActivityJsonKeys.Steps.STEP_COUNT)
-        ?: metadata?.int(TerraActivityJsonKeys.Steps.STEPS)
+        ?: stepsValue(TerraActivityJsonKeys.Steps.STEP_COUNT)
+        ?: metadata?.stepsValue(TerraActivityJsonKeys.Steps.STEP_COUNT)
+        ?: metadata?.stepsValue(TerraActivityJsonKeys.Steps.STEPS)
         ?: 0
 }
+
+/**
+ * Lenient step reader: Oura reports `steps` as a JSON integer, but Health Connect / Google
+ * normalize their aggregate as a float (e.g. `8421.0`). The strict [int] helper returns null for
+ * a float token, which would silently zero out the day, so parse through [numberAsIntOrNull].
+ */
+private fun JsonObject.stepsValue(key: String): Int? =
+    (this[key] as? JsonPrimitive)?.numberAsIntOrNull()
 
 private fun JsonObject.extractDistanceKm(): Float {
     val distanceData = objectOrNull(TerraActivityJsonKeys.Nodes.DISTANCE_DATA)

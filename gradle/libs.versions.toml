@@ -24,9 +24,9 @@ cameraSdk = "0.0.3"
 cameraX = "1.6.1"
 timber = "5.0.1"
 uiUnit = "1.11.3"
-terraAndroid = "1.7.0"
+terraAndroid = "1.7.1"
 androidxBrowser = "1.10.0"
-libphonenumber = "9.0.32"
+libphonenumber = "9.0.33"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
