@@ -1,6 +1,5 @@
 <resources>
     <!-- app_name is provided per-flavor via resValue (see app/build.gradle.kts) -->
-    <string name="logo_name">Logo</string>
 
     <!-- Content descriptions -->
     <string name="cd_back">Back</string>

@@ -88,7 +88,7 @@ fun LoginScreen(
             )
         }
 
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
+        Spacer(Modifier.height(dimensionResource(R.dimen.padding_auth_vertical)))
 
         AppOutlinedTextField(
             value = state.email,
@@ -134,7 +134,7 @@ fun LoginScreen(
                 .clickable { onForgotPassword() },
         )
 
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
+        Spacer(Modifier.height(dimensionResource(R.dimen.padding_auth_vertical)))
 
         AppPrimaryButton(
             text = stringResource(R.string.action_login),
