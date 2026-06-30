@@ -43,7 +43,7 @@ android {
             dimension = "env"
             //applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
-            resValue("string", "app_name", "FitXpress Dev")
+            resValue("string", "app_name", "Hexis-BI Dev")
             buildConfigField("String", "ENVIRONMENT", "\"dev\"")
             buildConfigField("String", "API_BASE_URL", "\"https://api.dev.hexis.bi/\"")
             buildConfigField("String", "TERRA_FUNCTION_PREFIX", "\"terraDev\"")
@@ -53,7 +53,7 @@ android {
             dimension = "env"
             //applicationIdSuffix = ".stage"
             versionNameSuffix = "-stage"
-            resValue("string", "app_name", "FitXpress Stage")
+            resValue("string", "app_name", "Hexis-BI Stage")
             buildConfigField("String", "ENVIRONMENT", "\"stage\"")
             buildConfigField("String", "API_BASE_URL", "\"https://api.stage.hexis.bi/\"")
             buildConfigField("String", "TERRA_FUNCTION_PREFIX", "\"terraDev\"")
@@ -61,7 +61,7 @@ android {
         }
         create("prod") {
             dimension = "env"
-            resValue("string", "app_name", "FitXpress")
+            resValue("string", "app_name", "Hexis-BI")
             buildConfigField("String", "ENVIRONMENT", "\"prod\"")
             buildConfigField("String", "API_BASE_URL", "\"https://api.hexis.bi/\"")
             buildConfigField("String", "TERRA_FUNCTION_PREFIX", "\"terraProd\"")
