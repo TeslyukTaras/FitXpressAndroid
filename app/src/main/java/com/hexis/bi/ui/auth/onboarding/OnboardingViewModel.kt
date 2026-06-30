@@ -78,6 +78,18 @@ class OnboardingViewModel(
     fun dismissSuitCareSheet() = _state.update { it.copy(showSuitCareSheet = false) }
 
     fun finish() = launch {
+        saveProfile()
+            .onSuccess { emitEvent(OnboardingEvent.Finished) }
+            .onFailure { setError(it.message) }
+    }
+
+    fun buySuit() = launch {
+        saveProfile()
+            .onSuccess { emitEvent(OnboardingEvent.BuySuitScan) }
+            .onFailure { setError(it.message) }
+    }
+
+    private suspend fun saveProfile(): Result<Unit> {
         val s = _state.value
         val measurements = persistedUserMeasurements(s.heightCm, s.weightKg)
         val fields = mutableMapOf<String, Any?>(
@@ -93,9 +105,7 @@ class OnboardingViewModel(
         if (s.isSuitConnected && s.connectedSuitId.isNotBlank()) {
             fields["suitId"] = s.connectedSuitId
         }
-        userRepository.updateFields(fields)
-            .onSuccess { emitEvent(OnboardingEvent.Finished) }
-            .onFailure { setError(it.message) }
+        return userRepository.updateFields(fields)
     }
 
     fun skip() {

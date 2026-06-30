@@ -11,6 +11,8 @@ import kotlin.math.roundToInt
 
 sealed interface OnboardingEvent : UiEvent {
     data object Finished : OnboardingEvent
+
+    data object BuySuitScan : OnboardingEvent
 }
 
 data class OnboardingState(

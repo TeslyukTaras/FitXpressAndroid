@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalBottomSheetDefaults
+import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -58,6 +60,7 @@ fun BaseBottomSheet(
     modifier: Modifier = Modifier,
     title: String? = null,
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    properties: ModalBottomSheetProperties = ModalBottomSheetDefaults.properties,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val cornerRadius = dimensionResource(R.dimen.corner_sheet)
@@ -66,6 +69,7 @@ fun BaseBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
+        properties = properties,
         shape = RoundedCornerShape(topStart = cornerRadius, topEnd = cornerRadius),
         containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         scrimColor = MaterialTheme.colorScheme.scrim,

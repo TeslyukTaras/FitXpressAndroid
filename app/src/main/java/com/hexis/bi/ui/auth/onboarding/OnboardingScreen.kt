@@ -116,6 +116,7 @@ fun OnboardingScreen(
         viewModel.events.collect { event ->
             when (event) {
                 is OnboardingEvent.Finished -> onFinish()
+                is OnboardingEvent.BuySuitScan -> onBuySuitScanRequested()
             }
         }
     }
@@ -209,8 +210,7 @@ fun OnboardingScreen(
             BuySuitDialogContent(
                 onBuySuit = {
                     showBuySuitDialog = false
-                    onBuySuitScanRequested()
-                    viewModel.finish()
+                    viewModel.buySuit()
                 },
             )
         }
