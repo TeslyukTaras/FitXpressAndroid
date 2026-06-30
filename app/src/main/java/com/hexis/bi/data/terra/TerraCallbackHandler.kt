@@ -3,6 +3,7 @@ package com.hexis.bi.data.terra
 import android.net.Uri
 import com.hexis.bi.data.healthconnections.HealthConnection
 import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
+import com.hexis.bi.utils.redactSensitiveId
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -37,10 +38,15 @@ class TerraCallbackHandler(
         return when (uri.path) {
             TerraDeepLinks.PATH_SUCCESS -> {
                 if (userId.isNullOrBlank() || resource.isNullOrBlank()) {
-                    Timber.w("Terra success callback missing user_id/resource: %s", uri)
+                    Timber.w("Terra success callback missing user_id/resource: path=%s", uri.path)
                     return Outcome.Malformed
                 }
-                Timber.d("Terra connected: provider=%s user=%s ref=%s", resource, userId, referenceId)
+                Timber.d(
+                    "Terra connected: provider=%s user=%s ref=%s",
+                    resource,
+                    redactSensitiveId(userId),
+                    referenceId?.let(::redactSensitiveId),
+                )
                 val result = healthConnections.upsertConnection(
                     HealthConnection(
                         terraUserId = userId,
