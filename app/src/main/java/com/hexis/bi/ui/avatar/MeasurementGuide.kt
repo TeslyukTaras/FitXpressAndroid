@@ -1,5 +1,7 @@
 package com.hexis.bi.ui.avatar
 
+import com.hexis.bi.domain.body.BodyMeasurementKeys
+import com.hexis.bi.domain.body.BodyMeasurementRegion
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
@@ -9,10 +11,7 @@ import kotlin.math.sqrt
  * the fallback/virtual anchors — that the renderer and frame solver consume for the Visual overlay.
  */
 
-private val measurementAnchorKeys = listOf(
-    "neck", "shoulders", "chest", "forearm", "bicep",
-    "upperWaist", "waist", "lowerWaist", "thigh", "calf",
-)
+private val measurementAnchorKeys: List<String> = BodyMeasurementRegion.measurementAnchorKeys
 
 internal const val MIN_CROSS_SECTION_POINTS = 12
 
@@ -62,8 +61,8 @@ internal fun neckSlicePlaneNormal(): FloatArray {
 
 private fun computeNeckClipPlane(anchors: Map<String, FloatArray>): FloatArray {
     val n = neckSlicePlaneNormal()
-    val p = anchors["neck"]
-        ?: MeasurementVisualAnchors.fallbackAnchorPosition("neck")
+    val p = anchors[BodyMeasurementKeys.Neck]
+        ?: MeasurementVisualAnchors.fallbackAnchorPosition(BodyMeasurementKeys.Neck)
         ?: floatArrayOf(0f, 1.06f, 0.13f)
     val d = -(n[0] * p[0] + n[1] * p[1] + n[2] * p[2])
     return floatArrayOf(n[0], n[1], n[2], d)
@@ -136,22 +135,22 @@ private fun slicePlaneNormalFor(
     key: String,
     anchors: Map<String, FloatArray>,
 ): FloatArray = when (key) {
-    "neck" -> neckSlicePlaneNormal()
-    "shoulders", "chest",
-    "upperWaist", "waist", "lowerWaist" -> floatArrayOf(0f, 1f, 0f)
+    BodyMeasurementKeys.Neck -> neckSlicePlaneNormal()
+    BodyMeasurementKeys.Shoulders, BodyMeasurementKeys.Chest,
+    BodyMeasurementKeys.UpperWaist, BodyMeasurementKeys.Waist, BodyMeasurementKeys.LowerWaist -> floatArrayOf(0f, 1f, 0f)
     // Keep biceps on the mid-upper-arm level; an arm-axis plane drops visibly to the elbow.
-    "bicep" -> floatArrayOf(0f, 1f, 0f)
+    BodyMeasurementKeys.Bicep -> floatArrayOf(0f, 1f, 0f)
     /* Right forearm: mirrored upper-arm root → forearm so cut lies in the arm plane, not across torso. */
-    "forearm" -> {
-        val bi = anchors["bicep"]
+    BodyMeasurementKeys.Forearm -> {
+        val bi = anchors[BodyMeasurementKeys.Bicep]
         val fo = anchors[key]
         if (bi != null && fo != null) limbAxis(mirrorX(bi), fo) else floatArrayOf(0f, 1f, 0f)
     }
 
-    "thigh" -> limbAxis(virtualHipFor(anchors), anchors[key])
+    BodyMeasurementKeys.Thigh -> limbAxis(virtualHipFor(anchors), anchors[key])
     /* Right calf: axis from mirrored left-thigh → right calf. */
-    "calf" -> {
-        val th = anchors["thigh"]
+    BodyMeasurementKeys.Calf -> {
+        val th = anchors[BodyMeasurementKeys.Thigh]
         val ca = anchors[key]
         if (th != null && ca != null) limbAxis(mirrorX(th), ca) else floatArrayOf(0f, 1f, 0f)
     }
@@ -168,19 +167,19 @@ private fun slicePlaneNormalForOpposite(
     anchors: Map<String, FloatArray>,
     oppositeBandAnchor: FloatArray,
 ): FloatArray = when (key) {
-    "bicep" -> floatArrayOf(0f, 1f, 0f)
-    "forearm" -> {
-        val bi = anchors["bicep"]
+    BodyMeasurementKeys.Bicep -> floatArrayOf(0f, 1f, 0f)
+    BodyMeasurementKeys.Forearm -> {
+        val bi = anchors[BodyMeasurementKeys.Bicep]
         if (bi != null) limbAxis(bi, oppositeBandAnchor) else floatArrayOf(0f, 1f, 0f)
     }
 
-    "thigh" -> {
+    BodyMeasurementKeys.Thigh -> {
         val hip = virtualHipMirrored(anchors)
         if (hip != null) limbAxis(hip, oppositeBandAnchor) else floatArrayOf(0f, 1f, 0f)
     }
 
-    "calf" -> {
-        val th = anchors["thigh"]
+    BodyMeasurementKeys.Calf -> {
+        val th = anchors[BodyMeasurementKeys.Thigh]
         if (th != null) limbAxis(th, oppositeBandAnchor) else floatArrayOf(0f, 1f, 0f)
     }
 
@@ -189,8 +188,8 @@ private fun slicePlaneNormalForOpposite(
 
 /** Hip root above the **right** leg when the scanned thigh anchor is on the left (mirrored X). */
 private fun virtualHipMirrored(anchors: Map<String, FloatArray>): FloatArray? {
-    val lw = anchors["lowerWaist"] ?: return null
-    val th = anchors["thigh"] ?: return null
+    val lw = anchors[BodyMeasurementKeys.LowerWaist] ?: return null
+    val th = anchors[BodyMeasurementKeys.Thigh] ?: return null
     return floatArrayOf(-th[0], lw[1], th[2])
 }
 
@@ -209,8 +208,8 @@ private fun limbAxis(parent: FloatArray?, band: FloatArray?): FloatArray {
 
 /** Synthetic hip joint above the thigh anchor, at lowerWaist height — there's no scanned anchor for it. */
 private fun virtualHipFor(anchors: Map<String, FloatArray>): FloatArray? {
-    val lw = anchors["lowerWaist"] ?: return null
-    val th = anchors["thigh"] ?: return null
+    val lw = anchors[BodyMeasurementKeys.LowerWaist] ?: return null
+    val th = anchors[BodyMeasurementKeys.Thigh] ?: return null
     return floatArrayOf(th[0], lw[1], th[2])
 }
 
@@ -226,7 +225,7 @@ private fun blendAnchorWithFallback(key: String, computed: FloatArray?): FloatAr
         )
     // These bands identify a specific limb zone; centroid blending visibly slides them
     // toward an adjacent joint on differently proportioned scans.
-    if (key == "forearm" || key == "bicep" || key == "thigh") return ref.copyOf()
+    if (key == BodyMeasurementKeys.Forearm || key == BodyMeasurementKeys.Bicep || key == BodyMeasurementKeys.Thigh) return ref.copyOf()
     if (computed == null) return ref.copyOf()
     val yWeight = 0.68f
     val xzWeight = 0.42f

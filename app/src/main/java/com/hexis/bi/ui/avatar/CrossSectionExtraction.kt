@@ -1,5 +1,6 @@
 package com.hexis.bi.ui.avatar
 
+import com.hexis.bi.domain.body.BodyMeasurementKeys
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.hypot
@@ -99,7 +100,7 @@ private fun filterSlicePointsForMeasurement(
     val ax = anchor[0]
     val az = anchor[2]
     when (key) {
-        "bicep" -> {
+        BodyMeasurementKeys.Bicep -> {
             val ay = anchor[1]
             val tubeR = if (relaxed) 0.26f else 0.19f
             val tube = filterPointsNearAnchorXYZ(p, ax, ay, az, tubeR)
@@ -133,7 +134,7 @@ private fun filterSlicePointsForMeasurement(
             }
         }
 
-        "forearm" -> {
+        BodyMeasurementKeys.Forearm -> {
             val ay = anchor[1]
             /* Larger inclusion than bicep — forearm slice often elongates; strict tube was clipping the loop */
             val tubeR = if (relaxed) 0.38f else 0.31f
@@ -160,7 +161,7 @@ private fun filterSlicePointsForMeasurement(
             }
         }
 
-        "thigh" -> {
+        BodyMeasurementKeys.Thigh -> {
             val ballR = if (relaxed) 0.42f else 0.38f
             val nearLeg = filterPointsNearAnchorXZ(p, ax, az, ballR)
             if (nearLeg.size >= MIN_CROSS_SECTION_POINTS / 2) p = nearLeg
@@ -182,7 +183,7 @@ private fun filterSlicePointsForMeasurement(
             }
         }
 
-        "calf" -> {
+        BodyMeasurementKeys.Calf -> {
             val ballR = if (relaxed) 0.42f else 0.38f
             val nearLeg = filterPointsNearAnchorXZ(p, ax, az, ballR)
             if (nearLeg.size >= MIN_CROSS_SECTION_POINTS / 2) p = nearLeg
@@ -204,7 +205,7 @@ private fun filterSlicePointsForMeasurement(
             }
         }
 
-        "neck" -> {
+        BodyMeasurementKeys.Neck -> {
             val prox = filterPointsNearAnchorXZ(p, ax, az, if (relaxed) 0.26f else 0.22f)
             if (prox.size >= MIN_CROSS_SECTION_POINTS / 2) p = prox
             val narrow = p.filter { abs(it[0]) < 0.27f }
@@ -212,8 +213,8 @@ private fun filterSlicePointsForMeasurement(
             if (!relaxed) p = filterTorsoMedianRadius(p, factor = 1.14f)
         }
         /* Keep full acromion breadth — do not median-trim like torso bands */
-        "shoulders" -> Unit
-        "chest" -> {
+        BodyMeasurementKeys.Shoulders -> Unit
+        BodyMeasurementKeys.Chest -> {
             /*
              * Disk centered on **midline** (x=0): blended anchors often drift in +x / −x and asymmetrically
              * clip the far lateral chest (classically the **right** side when anchor skews left).
@@ -226,7 +227,7 @@ private fun filterSlicePointsForMeasurement(
             if (!relaxed) p = filterChestStripSymmetricArmWings(p)
         }
 
-        "upperWaist", "waist", "lowerWaist" -> {
+        BodyMeasurementKeys.UpperWaist, BodyMeasurementKeys.Waist, BodyMeasurementKeys.LowerWaist -> {
             val prox = filterPointsNearAnchorXZ(p, 0f, az, if (relaxed) 0.58f else 0.52f)
             if (prox.size >= MIN_CROSS_SECTION_POINTS / 2) p = prox
             val f1 = if (relaxed) 1.42f else 1.36f

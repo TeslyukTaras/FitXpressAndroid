@@ -1,5 +1,6 @@
 package com.hexis.bi.ui.avatar
 
+import com.hexis.bi.domain.body.BodyMeasurementRegion
 import kotlin.math.abs
 import kotlin.math.hypot
 
@@ -30,7 +31,7 @@ internal fun polygonAreaUV(
     return abs(sum) * 0.5f
 }
 
-private val BoundaryLimbKeys = setOf("bicep", "forearm", "thigh", "calf")
+private val BoundaryLimbKeys: Set<String> = BodyMeasurementRegion.bilateralCircumferenceKeys
 
 private fun pickBestBoundaryCycle(
     cycles: List<List<Int>>,

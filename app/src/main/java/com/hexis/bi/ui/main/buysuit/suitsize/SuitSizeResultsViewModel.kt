@@ -7,6 +7,7 @@ import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanRecord
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.user.UserRepository
+import com.hexis.bi.domain.body.BodyMeasurementKeys
 import com.hexis.bi.domain.order.OrderSizing
 import com.hexis.bi.domain.order.SuitSize
 import com.hexis.bi.ui.base.BaseViewModel
@@ -96,8 +97,8 @@ class SuitSizeResultsViewModel(
         weightKg: Float,
         scan: ScanRecord?,
     ): SuitSize {
-        val chest = scan?.measurements?.firstValue("chest", "chestCircumference", "bust")
-        val waist = scan?.measurements?.firstValue("waist", "waistCircumference")
+        val chest = scan?.measurements?.firstValue(BodyMeasurementKeys.Chest, "chestCircumference", "bust")
+        val waist = scan?.measurements?.firstValue(BodyMeasurementKeys.Waist, "waistCircumference")
         val hips = scan?.measurements?.firstValue("hips", "hip", "hipCircumference")
         val torsoSignal = listOfNotNull(chest, waist, hips).averageOrNull()
 

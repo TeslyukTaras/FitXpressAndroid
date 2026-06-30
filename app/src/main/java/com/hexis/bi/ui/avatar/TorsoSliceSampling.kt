@@ -1,5 +1,7 @@
 package com.hexis.bi.ui.avatar
 
+import com.hexis.bi.domain.body.BodyMeasurementKeys
+import com.hexis.bi.domain.body.BodyMeasurementRegion
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -11,17 +13,10 @@ import kotlin.math.min
  */
 
 /** Horizontal / near-horizontal torso bands — slice loop choice uses scoring, not max area alone. */
-internal val TorsoCircumferenceKeys = setOf(
-    "neck",
-    "shoulders",
-    "chest",
-    "upperWaist",
-    "waist",
-    "lowerWaist",
-)
+internal val TorsoCircumferenceKeys: Set<String> = BodyMeasurementRegion.torsoCircumferenceKeys
 
 /** Torso keys where raw-slice fallback uses quantile-based narrowing instead of only fixed thresholds. */
-internal val TorsoGentleFallbackKeys = setOf("chest", "upperWaist", "waist", "lowerWaist")
+internal val TorsoGentleFallbackKeys: Set<String> = BodyMeasurementRegion.torsoGentleFallbackKeys
 
 internal data class TorsoSliceSample(
     val y: Float,
@@ -81,11 +76,11 @@ internal fun dynamicMeasurementAnchor(
     torsoProfile: TorsoProfile?,
 ): FloatArray {
     val sample = when (key) {
-        "shoulders" -> torsoProfile?.shoulders
-        "chest" -> torsoProfile?.chest
-        "upperWaist" -> torsoProfile?.upperWaist
-        "waist" -> torsoProfile?.waist
-        "lowerWaist" -> torsoProfile?.lowerWaist
+        BodyMeasurementKeys.Shoulders -> torsoProfile?.shoulders
+        BodyMeasurementKeys.Chest -> torsoProfile?.chest
+        BodyMeasurementKeys.UpperWaist -> torsoProfile?.upperWaist
+        BodyMeasurementKeys.Waist -> torsoProfile?.waist
+        BodyMeasurementKeys.LowerWaist -> torsoProfile?.lowerWaist
         else -> null
     } ?: return fallback
 
@@ -115,7 +110,7 @@ internal fun buildTorsoProfile(
         targetY = if (chest != null && waist != null) {
             chest.y * 0.62f + waist.y * 0.38f
         } else {
-            MeasurementVisualAnchors.fallbackAnchorPosition("upperWaist")?.get(1) ?: 0.38f
+            MeasurementVisualAnchors.fallbackAnchorPosition(BodyMeasurementKeys.UpperWaist)?.get(1) ?: 0.38f
         },
     )
     if (waist != null && chest != null) {
@@ -136,7 +131,7 @@ internal fun buildTorsoProfile(
         targetY = if (waist != null) {
             waist.y - 0.16f
         } else {
-            MeasurementVisualAnchors.fallbackAnchorPosition("lowerWaist")?.get(1) ?: 0.07f
+            MeasurementVisualAnchors.fallbackAnchorPosition(BodyMeasurementKeys.LowerWaist)?.get(1) ?: 0.07f
         },
     )
 
@@ -311,7 +306,7 @@ private fun hasArmWingContamination(
 }
 
 private fun pickShouldersSample(samples: List<TorsoSliceSample>): TorsoSliceSample? {
-    val fallbackY = MeasurementVisualAnchors.fallbackAnchorPosition("shoulders")?.get(1) ?: 1.0f
+    val fallbackY = MeasurementVisualAnchors.fallbackAnchorPosition(BodyMeasurementKeys.Shoulders)?.get(1) ?: 1.0f
     val candidates = samples
         .filter { abs(it.y - fallbackY) <= 0.20f }
         .filter { it.aspectXZ <= TORSO_ARM_ASPECT_LIMIT }
@@ -328,7 +323,7 @@ private fun pickChestSample(
     samples: List<TorsoSliceSample>,
     shoulders: TorsoSliceSample?,
 ): TorsoSliceSample? {
-    val fallbackY = MeasurementVisualAnchors.fallbackAnchorPosition("chest")?.get(1) ?: 0.67f
+    val fallbackY = MeasurementVisualAnchors.fallbackAnchorPosition(BodyMeasurementKeys.Chest)?.get(1) ?: 0.67f
     val shoulderY = shoulders?.y ?: (fallbackY + 0.22f)
     val candidates = samples
         .filter { it.y < shoulderY - 0.06f }
@@ -350,12 +345,12 @@ private fun pickChestSampleStrict(
     shoulders: TorsoSliceSample?,
     waist: TorsoSliceSample?,
 ): TorsoSliceSample? {
-    val fallbackY = MeasurementVisualAnchors.fallbackAnchorPosition("chest")?.get(1) ?: 0.67f
+    val fallbackY = MeasurementVisualAnchors.fallbackAnchorPosition(BodyMeasurementKeys.Chest)?.get(1) ?: 0.67f
     val shoulderY = shoulders?.y ?: (fallbackY + 0.22f)
 
     val waistRef = waist ?: pickNearestValidSample(
         samples,
-        MeasurementVisualAnchors.fallbackAnchorPosition("waist")?.get(1) ?: 0.24f,
+        MeasurementVisualAnchors.fallbackAnchorPosition(BodyMeasurementKeys.Waist)?.get(1) ?: 0.24f,
     )
     val torsoRefWidth = waistRef?.widthX ?: samples
         .filter { abs(it.y - fallbackY) <= 0.35f }
@@ -394,7 +389,7 @@ private fun pickWaistSample(
     samples: List<TorsoSliceSample>,
     chest: TorsoSliceSample?,
 ): TorsoSliceSample? {
-    val fallbackY = MeasurementVisualAnchors.fallbackAnchorPosition("waist")?.get(1) ?: 0.24f
+    val fallbackY = MeasurementVisualAnchors.fallbackAnchorPosition(BodyMeasurementKeys.Waist)?.get(1) ?: 0.24f
     val chestY = chest?.y ?: (fallbackY + 0.35f)
 
     val candidates = samples

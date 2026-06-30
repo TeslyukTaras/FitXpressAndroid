@@ -1,5 +1,7 @@
 package com.hexis.bi.ui.avatar
 
+import com.hexis.bi.domain.body.BodyMeasurementKeys
+import com.hexis.bi.domain.body.BodyMeasurementRegion
 import kotlin.math.max
 import kotlin.math.tan
 
@@ -80,23 +82,23 @@ internal object MeasurementVisualAnchors {
     /** Reference surface points in bbox-normalized model space (front-of-body attachment targets). */
     private val segmentsByKey: Map<String, ModelLeaderSegment> = mapOf(
         /* Neck: below cranium, front midline */
-        "neck" to ModelLeaderSegment(0f, 1.06f, 0.13f, 0.42f, 1.22f, 0.18f),
+        BodyMeasurementKeys.Neck to ModelLeaderSegment(0f, 1.06f, 0.13f, 0.42f, 1.22f, 0.18f),
         /* Shoulder shelf - slightly above the original shoulder line. */
-        "shoulders" to ModelLeaderSegment(0.48f, 1.03f, 0.11f, 0.72f, 1.02f, 0.16f),
+        BodyMeasurementKeys.Shoulders to ModelLeaderSegment(0.48f, 1.03f, 0.11f, 0.72f, 1.02f, 0.16f),
         /* Upper chest, below the armpits without overlapping the shoulder band. */
-        "chest" to ModelLeaderSegment(0f, 0.74f, 0.17f, 0.38f, 0.77f, 0.22f),
+        BodyMeasurementKeys.Chest to ModelLeaderSegment(0f, 0.74f, 0.17f, 0.38f, 0.77f, 0.22f),
         /* Mid forearm - right arm, clear of the elbow crease. */
-        "forearm" to ModelLeaderSegment(0.86f, 0.29f, 0.11f, 1.12f, 0.24f, 0.18f),
+        BodyMeasurementKeys.Forearm to ModelLeaderSegment(0.86f, 0.29f, 0.11f, 1.12f, 0.24f, 0.18f),
         /* Upper arm - middle of the biceps; horizontal slicing avoids elbow drift. */
-        "bicep" to ModelLeaderSegment(-0.58f, 0.74f, 0.11f, -0.88f, 0.68f, 0.18f),
-        "upperWaist" to ModelLeaderSegment(0f, 0.38f, 0.15f, 0.38f, 0.38f, 0.20f),
+        BodyMeasurementKeys.Bicep to ModelLeaderSegment(-0.58f, 0.74f, 0.11f, -0.88f, 0.68f, 0.18f),
+        BodyMeasurementKeys.UpperWaist to ModelLeaderSegment(0f, 0.38f, 0.15f, 0.38f, 0.38f, 0.20f),
         /* Natural waist — above iliac crest */
-        "waist" to ModelLeaderSegment(0f, 0.24f, 0.15f, 0.42f, 0.18f, 0.22f),
-        "lowerWaist" to ModelLeaderSegment(0f, 0.07f, 0.14f, 0.38f, 0.04f, 0.20f),
+        BodyMeasurementKeys.Waist to ModelLeaderSegment(0f, 0.24f, 0.15f, 0.42f, 0.18f, 0.22f),
+        BodyMeasurementKeys.LowerWaist to ModelLeaderSegment(0f, 0.07f, 0.14f, 0.38f, 0.04f, 0.20f),
         /* Left upper thigh - above the knee-side drift seen in mesh centroids. */
-        "thigh" to ModelLeaderSegment(-0.24f, -0.29f, 0.11f, -0.55f, -0.35f, 0.18f),
+        BodyMeasurementKeys.Thigh to ModelLeaderSegment(-0.24f, -0.29f, 0.11f, -0.55f, -0.35f, 0.18f),
         /* Calf — right leg */
-        "calf" to ModelLeaderSegment(0.20f, -0.95f, 0.10f, 0.52f, -1.02f, 0.16f),
+        BodyMeasurementKeys.Calf to ModelLeaderSegment(0.20f, -0.95f, 0.10f, 0.52f, -1.02f, 0.16f),
     )
 
     fun fallbackAnchorPosition(key: String): FloatArray? =
@@ -104,18 +106,7 @@ internal object MeasurementVisualAnchors {
 }
 
 /** Keys where the UI draws a **mesh cross-section** slice (horizontal plane), not a single point. */
-internal val CircumferenceVisualKeys = setOf(
-    "neck",
-    "shoulders",
-    "chest",
-    "forearm",
-    "bicep",
-    "upperWaist",
-    "waist",
-    "lowerWaist",
-    "thigh",
-    "calf",
-)
+internal val CircumferenceVisualKeys: Set<String> = BodyMeasurementRegion.circumferenceVisualKeys
 
 /** Limb circumferences: UI draws **two** rings (left + right); leader picks the nearer ring in screen space. */
-internal val BilateralCircumferenceKeys = setOf("bicep", "forearm", "thigh", "calf")
+internal val BilateralCircumferenceKeys: Set<String> = BodyMeasurementRegion.bilateralCircumferenceKeys
