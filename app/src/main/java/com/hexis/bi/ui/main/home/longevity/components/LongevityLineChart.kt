@@ -30,9 +30,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.IntOffset
 import com.hexis.bi.R
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.utils.SmoothLinePath
 import com.hexis.bi.utils.constants.LongevityConstants
-import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 /**
  * Smooth (monotone-cubic) line chart for the Longevity trend, with dashed horizontal grid lines,
@@ -204,15 +204,15 @@ private fun mapValueToFraction(value: Float): Float {
     return when {
         v >= LongevityConstants.BAND_MID_MAX ->
             (LongevityConstants.MAX_SCORE - v) /
-                (LongevityConstants.MAX_SCORE - LongevityConstants.BAND_MID_MAX) * band
+                    (LongevityConstants.MAX_SCORE - LongevityConstants.BAND_MID_MAX) * band
 
         v >= LongevityConstants.BAND_LOW_MAX ->
             band + (LongevityConstants.BAND_MID_MAX - v) /
-                (LongevityConstants.BAND_MID_MAX - LongevityConstants.BAND_LOW_MAX) * band
+                    (LongevityConstants.BAND_MID_MAX - LongevityConstants.BAND_LOW_MAX) * band
 
         else ->
             band * 2f + (LongevityConstants.BAND_LOW_MAX - v) /
-                LongevityConstants.BAND_LOW_MAX * band
+                    LongevityConstants.BAND_LOW_MAX * band
     }
 }
 

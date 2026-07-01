@@ -19,8 +19,8 @@ import com.hexis.bi.R
 import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.recovery.RecoveryTrend
 import com.hexis.bi.ui.theme.MeasurementValueStyle
-import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.ui.theme.NocturnePulseTheme
+import com.hexis.bi.ui.theme.TitleDimTextStyle
 
 @Composable
 fun RecoveryScoreCards(

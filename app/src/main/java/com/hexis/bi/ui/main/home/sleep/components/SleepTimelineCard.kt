@@ -40,10 +40,10 @@ import com.hexis.bi.data.sleep.SleepStage
 import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.sleep.TimelineSegment
 import com.hexis.bi.ui.main.home.sleep.nameRes
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.utils.constants.SleepConstants
 import com.hexis.bi.utils.constants.TimeConstants
 import com.hexis.bi.utils.formatHour
-import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 private const val SHADOW_ALPHA = 0.5f
 private const val LINE_ALPHA = 0.6f
@@ -65,7 +65,9 @@ fun SleepTimelineCard(
     modifier: Modifier = Modifier,
 ) {
     val stageHeight = dimensionResource(R.dimen.sleep_timeline_stage_height)
-    val labelStyle = MaterialTheme.typography.labelSmall.copy(color = NocturnePulseTheme.extendedColors.gray200.copy(alpha = 0.4f))
+    val labelStyle = MaterialTheme.typography.labelSmall.copy(
+        color = NocturnePulseTheme.extendedColors.gray200.copy(alpha = 0.4f)
+    )
     val measurer = rememberTextMeasurer()
     val labelTexts = STAGE_ORDER.map { stringResource(it.nameRes()) }
     // Plot starts 16dp past the widest stage label; grid lines still span the full width.
@@ -130,7 +132,8 @@ private fun timelineDurationValue(totalMinutes: Int): AnnotatedString {
     val minutes = totalMinutes % SleepConstants.MINUTES_PER_HOUR
     val numberStyle = MaterialTheme.typography.bodyLarge.toSpanStyle().copy(color = Color.White)
     val unitStyle =
-        MaterialTheme.typography.bodyMedium.toSpanStyle().copy(color = NocturnePulseTheme.extendedColors.gray200.copy(alpha = 0.4f))
+        MaterialTheme.typography.bodyMedium.toSpanStyle()
+            .copy(color = NocturnePulseTheme.extendedColors.gray200.copy(alpha = 0.4f))
     val hourUnit = stringResource(R.string.unit_hours_short)
     val minuteUnit = stringResource(R.string.unit_minutes_short)
     return buildAnnotatedString {

@@ -45,10 +45,10 @@ import androidx.compose.ui.unit.IntOffset
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.recovery.DailyRecoveryEntry
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.utils.constants.RecoveryConstants
 import kotlin.math.roundToInt
-import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 private fun summaryChartFractionFromTop(score: Float): Float {
     val value = score.coerceIn(0f, RecoveryConstants.MAX_SCORE)
@@ -251,16 +251,17 @@ fun RecoveryBarChart(
                                     end = Offset(size.width, size.height),
                                     strokeWidth = stripeWidth.toPx(),
                                 )
-                                RecoveryConstants.SUMMARY_GRID_LINES.filter { it > 0f }.forEach { value ->
-                                    val y = size.height * summaryChartFractionFromTop(value)
-                                    drawLine(
-                                        color = gridColor,
-                                        start = Offset(0f, y),
-                                        end = Offset(size.width, y),
-                                        strokeWidth = stripeWidth.toPx(),
-                                        pathEffect = dashEffect,
-                                    )
-                                }
+                                RecoveryConstants.SUMMARY_GRID_LINES.filter { it > 0f }
+                                    .forEach { value ->
+                                        val y = size.height * summaryChartFractionFromTop(value)
+                                        drawLine(
+                                            color = gridColor,
+                                            start = Offset(0f, y),
+                                            end = Offset(size.width, y),
+                                            strokeWidth = stripeWidth.toPx(),
+                                            pathEffect = dashEffect,
+                                        )
+                                    }
                             },
                     ) {
                         Row(

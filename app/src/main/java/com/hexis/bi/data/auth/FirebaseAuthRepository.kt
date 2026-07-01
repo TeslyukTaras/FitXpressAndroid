@@ -7,7 +7,6 @@ import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetCredentialResponse
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.NoCredentialException
-import com.hexis.bi.R
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.EmailAuthProvider
@@ -16,6 +15,7 @@ import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.OAuthProvider
 import com.google.firebase.auth.UserProfileChangeRequest
+import com.hexis.bi.R
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -153,6 +153,7 @@ private fun <T> Result<T>.mapAuthError(context: Context): Result<T> {
         FirebaseAuthErrorCodes.INVALID_EMAIL -> context.getString(R.string.error_auth_invalid_email)
         FirebaseAuthErrorCodes.WRONG_PASSWORD,
         FirebaseAuthErrorCodes.INVALID_CREDENTIAL -> context.getString(R.string.error_auth_wrong_password)
+
         FirebaseAuthErrorCodes.USER_NOT_FOUND -> context.getString(R.string.error_auth_user_not_found)
         FirebaseAuthErrorCodes.EMAIL_ALREADY_IN_USE -> context.getString(R.string.error_auth_email_in_use)
         FirebaseAuthErrorCodes.WEAK_PASSWORD -> context.getString(R.string.error_auth_weak_password)

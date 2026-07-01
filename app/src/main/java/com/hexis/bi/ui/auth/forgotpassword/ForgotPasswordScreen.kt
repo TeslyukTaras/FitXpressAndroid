@@ -31,8 +31,8 @@ import com.hexis.bi.ui.auth.components.AuthScreenScaffold
 import com.hexis.bi.ui.components.AppDialog
 import com.hexis.bi.ui.components.AppOutlinedTextField
 import com.hexis.bi.ui.components.AppPrimaryButton
-import org.koin.androidx.compose.koinViewModel
 import com.hexis.bi.ui.theme.NocturnePulseTheme
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun ForgotPasswordScreen(

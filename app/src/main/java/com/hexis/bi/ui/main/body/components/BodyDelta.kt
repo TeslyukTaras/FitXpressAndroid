@@ -13,8 +13,8 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
-import com.hexis.bi.ui.theme.TitleHighlightTextStyle
 import com.hexis.bi.ui.theme.NocturnePulseTheme
+import com.hexis.bi.ui.theme.TitleHighlightTextStyle
 import java.util.Locale
 import kotlin.math.abs
 

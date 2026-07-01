@@ -23,8 +23,8 @@ import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppTabSelector
 import com.hexis.bi.ui.components.LightStatusBarIcons
-import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.main.home.recovery.components.RecoveryInfoBottomSheet
+import com.hexis.bi.ui.theme.screenBackground
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)

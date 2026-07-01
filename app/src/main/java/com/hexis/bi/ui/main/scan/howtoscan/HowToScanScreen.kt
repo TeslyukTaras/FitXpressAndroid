@@ -13,11 +13,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -49,8 +49,8 @@ import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.LightStatusBarIcons
-import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.theme.NocturnePulseTheme
+import com.hexis.bi.ui.theme.screenBackground
 
 /**
  * Single-screen "Prepare Your Scan" tutorial with [howToScanSteps] states the user pages
@@ -257,7 +257,11 @@ private fun InstructionRow(
             modifier = Modifier
                 .size(dimensionResource(R.dimen.icon_medium))
                 .clip(CircleShape)
-                .border(dimensionResource(R.dimen.border_thin), NocturnePulseTheme.extendedColors.positive, CircleShape),
+                .border(
+                    dimensionResource(R.dimen.border_thin),
+                    NocturnePulseTheme.extendedColors.positive,
+                    CircleShape
+                ),
             contentAlignment = Alignment.Center,
         ) {
             Icon(

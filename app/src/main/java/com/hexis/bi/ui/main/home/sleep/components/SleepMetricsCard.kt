@@ -34,8 +34,8 @@ import com.hexis.bi.R
 import com.hexis.bi.ui.components.AppVerticalGradientDivider
 import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.sleep.ChartPoint
-import com.hexis.bi.ui.theme.TitleHighlightTextStyle
 import com.hexis.bi.ui.theme.NocturnePulseTheme
+import com.hexis.bi.ui.theme.TitleHighlightTextStyle
 import com.hexis.bi.utils.formatHour
 import kotlin.math.floor
 import kotlin.math.log10
@@ -196,8 +196,10 @@ private fun HeartMetricsChart(
 
             val hrvBrush = Brush.verticalGradient(
                 colorStops = cssGradientStops(
-                    start = hrvFillColor.copy(alpha = HRV_FILL_ALPHA), startStop = HRV_FILL_START_STOP,
-                    end = HrvGradientEnd, endStop = HRV_FILL_END_STOP,
+                    start = hrvFillColor.copy(alpha = HRV_FILL_ALPHA),
+                    startStop = HRV_FILL_START_STOP,
+                    end = HrvGradientEnd,
+                    endStop = HRV_FILL_END_STOP,
                 ),
                 startY = 0f,
                 endY = size.height,

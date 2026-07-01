@@ -22,9 +22,9 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import com.hexis.bi.R
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.ui.theme.TitleHighlightTextStyle
-import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 internal fun BodySegmentedToggleTrack(

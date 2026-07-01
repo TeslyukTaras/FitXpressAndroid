@@ -2,8 +2,8 @@ package com.hexis.bi.data.activity
 
 import com.hexis.bi.data.terra.arrayOrNull
 import com.hexis.bi.data.terra.objectOrNull
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.floatOrNull
@@ -72,7 +72,8 @@ private object TerraActivityJsonKeys {
         const val VO2_MAX_ML_PER_MIN_PER_KG = "vo2_max_ml_per_min_per_kg"
         const val VO2MAX = "vo2max"
         const val VO2_MAX = "vo2_max"
-        val CANDIDATES = listOf(VO2MAX_ML_PER_MIN_PER_KG, VO2_MAX_ML_PER_MIN_PER_KG, VO2MAX, VO2_MAX)
+        val CANDIDATES =
+            listOf(VO2MAX_ML_PER_MIN_PER_KG, VO2_MAX_ML_PER_MIN_PER_KG, VO2MAX, VO2_MAX)
     }
 
     object Steps {
@@ -327,13 +328,23 @@ private fun JsonObject.estimateHourlyStepsFromActivitySamples(
     val metSamples = objectOrNull(TerraActivityJsonKeys.Nodes.MET_DATA)
         ?.arrayOrNull(TerraActivityJsonKeys.Samples.MET)
         .orEmpty()
-        .mapNotNull { (it as? JsonObject)?.toHourlyActivityWeight(targetDate, ActivitySampleSource.Met) }
+        .mapNotNull {
+            (it as? JsonObject)?.toHourlyActivityWeight(
+                targetDate,
+                ActivitySampleSource.Met
+            )
+        }
         .filter { it.weight > 0f }
 
     val activityLevelSamples = objectOrNull(TerraActivityJsonKeys.Nodes.ACTIVE_DURATIONS_DATA)
         ?.arrayOrNull(TerraActivityJsonKeys.Samples.ACTIVITY_LEVELS)
         .orEmpty()
-        .mapNotNull { (it as? JsonObject)?.toHourlyActivityWeight(targetDate, ActivitySampleSource.ActivityLevel) }
+        .mapNotNull {
+            (it as? JsonObject)?.toHourlyActivityWeight(
+                targetDate,
+                ActivitySampleSource.ActivityLevel
+            )
+        }
         .filter { it.weight > 0f }
 
     val weights = if (metSamples.isNotEmpty()) metSamples else activityLevelSamples
@@ -358,6 +369,7 @@ private fun JsonObject.toHourlyActivityWeight(
         ActivitySampleSource.Met ->
             (this[TerraActivityJsonKeys.Samples.MET_LEVEL] as? JsonPrimitive)
                 ?.numberAsFloatOrNull()
+
         ActivitySampleSource.ActivityLevel ->
             (this[TerraActivityJsonKeys.Samples.ACTIVITY_LEVEL] as? JsonPrimitive)
                 ?.numberAsFloatOrNull()

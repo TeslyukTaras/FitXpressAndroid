@@ -41,12 +41,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isSpecified
 import com.hexis.bi.R
 import com.hexis.bi.domain.body.BodyMeasurementRegion
-import com.hexis.bi.ui.components.AppHorizontalGradientDivider
-import com.hexis.bi.ui.components.AppVerticalGradientDivider
-import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.avatar.MetricAvatarBodyRing
 import com.hexis.bi.ui.avatar.MetricAvatarPreview
 import com.hexis.bi.ui.avatar.MetricAvatarStatusText
+import com.hexis.bi.ui.components.AppHorizontalGradientDivider
+import com.hexis.bi.ui.components.AppVerticalGradientDivider
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.theme.MeasurementValueStyle
 import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.TitleHighlightTextStyle

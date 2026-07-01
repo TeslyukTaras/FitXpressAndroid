@@ -16,8 +16,8 @@ import com.hexis.bi.utils.formatDob
 import com.hexis.bi.utils.inchesToCm
 import com.hexis.bi.utils.isMetricUnitSystem
 import com.hexis.bi.utils.lbToKg
-import com.hexis.bi.utils.persistedUserMeasurements
 import com.hexis.bi.utils.parseDob
+import com.hexis.bi.utils.persistedUserMeasurements
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update

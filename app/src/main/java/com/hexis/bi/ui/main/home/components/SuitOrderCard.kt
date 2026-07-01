@@ -23,8 +23,8 @@ import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.SuitOrderOverview
-import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.ui.theme.NocturnePulseTheme
+import com.hexis.bi.ui.theme.TitleDimTextStyle
 
 @Composable
 fun SuitOrderCard(

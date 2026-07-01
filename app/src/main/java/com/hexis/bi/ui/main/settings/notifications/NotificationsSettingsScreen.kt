@@ -45,10 +45,10 @@ import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppHorizontalGradientDivider
 import com.hexis.bi.ui.components.AppListPicker
 import com.hexis.bi.ui.components.AppScrollPicker
-import com.hexis.bi.ui.components.PickerColumnData
-import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.components.AppSwitch
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.components.PickerColumnData
 import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.utils.constants.TimeConstants
 import com.hexis.bi.utils.hour12ToHour24
@@ -259,7 +259,8 @@ private fun PickerRow(
             .padding(vertical = dimensionResource(R.dimen.spacer_xs)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val valueColor = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+        val valueColor =
+            if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge,

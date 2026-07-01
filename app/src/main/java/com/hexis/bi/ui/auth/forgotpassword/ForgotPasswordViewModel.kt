@@ -3,8 +3,8 @@ package com.hexis.bi.ui.auth.forgotpassword
 import android.app.Application
 import com.hexis.bi.R
 import com.hexis.bi.data.auth.AuthRepository
-import com.hexis.bi.utils.isValidEmail
 import com.hexis.bi.ui.base.BaseViewModel
+import com.hexis.bi.utils.isValidEmail
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

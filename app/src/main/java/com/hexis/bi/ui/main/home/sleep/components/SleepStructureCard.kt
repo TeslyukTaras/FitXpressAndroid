@@ -59,12 +59,12 @@ import com.hexis.bi.ui.main.home.sleep.DailyStructure
 import com.hexis.bi.ui.main.home.sleep.StageTrend
 import com.hexis.bi.ui.main.home.sleep.WeeklyStageData
 import com.hexis.bi.ui.main.home.sleep.nameRes
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.ui.theme.TitleHighlightTextStyle
 import com.hexis.bi.utils.constants.SleepConstants
 import kotlin.math.abs
 import kotlin.math.ceil
-import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 private const val STRUCTURE_AXIS_TICKS = 3 // labels = 0, max/3, 2·max/3, max
 private const val STRUCTURE_STATS_COLUMNS = 2 // stage stats laid out two per row
@@ -352,7 +352,11 @@ private fun StructureAxisLabels(
         modifier = modifier,
         content = {
             labels.forEach { value ->
-                Text(text = value.toString(), style = style, color = MaterialTheme.colorScheme.secondary)
+                Text(
+                    text = value.toString(),
+                    style = style,
+                    color = MaterialTheme.colorScheme.secondary
+                )
             }
         },
     ) { measurables, constraints ->

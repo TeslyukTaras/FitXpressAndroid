@@ -1,7 +1,8 @@
 package com.hexis.bi.ui.main.settings.editprofile
+
 import com.hexis.bi.domain.enums.GenderOption
-import com.hexis.bi.ui.base.UiEvent
 import com.hexis.bi.ui.base.HealthParameters
+import com.hexis.bi.ui.base.UiEvent
 import com.hexis.bi.utils.cmToInches
 import com.hexis.bi.utils.cmToRoundedFeetAndInches
 import com.hexis.bi.utils.constants.ProfileConstants
@@ -27,9 +28,9 @@ data class EditProfileState(
 ) : HealthParameters {
     val canSave: Boolean
         get() = firstName.isNotBlank() &&
-            lastName.isNotBlank() &&
-            email.isNotBlank() &&
-            dateOfBirth.isNotBlank()
+                lastName.isNotBlank() &&
+                email.isNotBlank() &&
+                dateOfBirth.isNotBlank()
 
     override val heightSliderValue: Float
         get() = if (isMetric) heightCm else heightCm.cmToInches()

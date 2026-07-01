@@ -23,16 +23,16 @@ import com.hexis.bi.domain.longevity.LongevityInputs
 import com.hexis.bi.domain.longevity.computeLongevityScore
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.constants.LongevityConstants
+import com.hexis.bi.utils.formatShortDateRange
+import com.hexis.bi.utils.formatShortMonthDay
+import com.hexis.bi.utils.formatShortMonthDayYear
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import com.hexis.bi.utils.formatShortDateRange
-import com.hexis.bi.utils.formatShortMonthDay
-import com.hexis.bi.utils.formatShortMonthDayYear
 import java.time.LocalDate
 import java.time.LocalTime
 import kotlin.math.roundToInt
@@ -93,7 +93,8 @@ class LongevityViewModel(
 
     private suspend fun renderFromRepositories() = coroutineScope {
         val today = LocalDate.now()
-        val days = (0 until DAYS_PER_WEEK).map { today.minusDays((DAYS_PER_WEEK - 1 - it).toLong()) }
+        val days =
+            (0 until DAYS_PER_WEEK).map { today.minusDays((DAYS_PER_WEEK - 1 - it).toLong()) }
         val windowStart = days.first()
 
         // Independent reads run in parallel rather than one after another.
@@ -101,12 +102,14 @@ class LongevityViewModel(
             recoveryRepository.getSnapshotsForRange(windowStart, today).getOrNull().orEmpty()
         }
         val activityDef = async {
-            activityRepository.getSummariesForRange(windowStart, today, TerraDetail.FULL).getOrNull().orEmpty()
+            activityRepository.getSummariesForRange(windowStart, today, TerraDetail.FULL)
+                .getOrNull().orEmpty()
         }
         val sleepDef = async {
             sleepRepository.getSessionsForRange(windowStart, today).getOrNull().orEmpty()
         }
-        val scansDef = async { scanHistoryRepository.getRecentScans(limit = 2).getOrNull().orEmpty() }
+        val scansDef =
+            async { scanHistoryRepository.getRecentScans(limit = 2).getOrNull().orEmpty() }
         val heightDef = async { userRepository.getUser().getOrNull()?.heightCm?.toFloat() }
 
         val recovery = recoveryDef.await()
@@ -203,7 +206,12 @@ class LongevityViewModel(
                     trend = trendFor(weeklyPoints),
                 ),
                 signals = buildSignals(latestRecovery, latestActivity, latestSleep, vo2Max),
-                statusSignals = buildStatusSignals(latestRecovery, latestScan, previousScan, heightCm),
+                statusSignals = buildStatusSignals(
+                    latestRecovery,
+                    latestScan,
+                    previousScan,
+                    heightCm
+                ),
             )
         }
     }
@@ -225,11 +233,20 @@ class LongevityViewModel(
         val vo2 = vo2Max?.takeIf { it > 0f }?.roundToInt()?.toString()
 
         return listOf(
-            LongevitySignal(R.string.longevity_signal_hrv, hrv ?: unknown, R.string.longevity_unit_ms.takeIf { hrv != null }),
-            LongevitySignal(R.string.longevity_signal_rhr, rhr ?: unknown, R.string.unit_bpm.takeIf { rhr != null }),
+            LongevitySignal(
+                R.string.longevity_signal_hrv,
+                hrv ?: unknown,
+                R.string.longevity_unit_ms.takeIf { hrv != null }),
+            LongevitySignal(
+                R.string.longevity_signal_rhr,
+                rhr ?: unknown,
+                R.string.unit_bpm.takeIf { rhr != null }),
             LongevitySignal(R.string.longevity_signal_sleep, sleepDuration ?: unknown),
             LongevitySignal(R.string.longevity_signal_recovery, recoveryScore ?: unknown),
-            LongevitySignal(R.string.longevity_signal_activity, steps ?: unknown, R.string.longevity_unit_steps.takeIf { steps != null }),
+            LongevitySignal(
+                R.string.longevity_signal_activity,
+                steps ?: unknown,
+                R.string.longevity_unit_steps.takeIf { steps != null }),
             LongevitySignal(R.string.longevity_signal_vo2_max, vo2 ?: unknown),
         )
     }
@@ -242,8 +259,10 @@ class LongevityViewModel(
     ): List<LongevitySignal> {
         val unknown = string(R.string.stat_unknown)
 
-        val waist = waistTrend(latestScan, previousScan, heightCm)?.let { string(it.labelRes) } ?: unknown
-        val physiqueDelta = latestScan?.let { comparablePhysiqueScoreDelta(it, previousScan, heightCm) }
+        val waist =
+            waistTrend(latestScan, previousScan, heightCm)?.let { string(it.labelRes) } ?: unknown
+        val physiqueDelta =
+            latestScan?.let { comparablePhysiqueScoreDelta(it, previousScan, heightCm) }
         val physique = physiqueDelta?.let { string(trendFromDelta(it).labelRes) } ?: unknown
         val stress = stressValue(recovery, unknown)
 
@@ -263,7 +282,11 @@ class LongevityViewModel(
         }
 
     /** Waist-to-height ratio trend across the two most recent scans (a lower ratio is improving). */
-    private fun waistTrend(latest: ScanRecord?, previous: ScanRecord?, heightCm: Float?): LongevityTrend? {
+    private fun waistTrend(
+        latest: ScanRecord?,
+        previous: ScanRecord?,
+        heightCm: Float?
+    ): LongevityTrend? {
         val latestRatio = waistToHeight(latest, heightCm) ?: return null
         val previousRatio = waistToHeight(previous, heightCm) ?: return null
         if (previousRatio <= 0f) return null

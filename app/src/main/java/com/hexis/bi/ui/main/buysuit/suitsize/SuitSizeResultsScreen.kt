@@ -41,12 +41,13 @@ import com.hexis.bi.domain.order.SuitSize
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppHorizontalGradientDivider
-import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.components.AppPrimaryButton
 import com.hexis.bi.ui.components.AppSlider
-import com.hexis.bi.ui.theme.screenBackground
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleChip
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleTrack
+import com.hexis.bi.ui.theme.NocturnePulseTheme
+import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.utils.cmToInches
 import com.hexis.bi.utils.cmToRoundedFeetAndInches
 import com.hexis.bi.utils.constants.ProfileConstants
@@ -55,7 +56,6 @@ import com.hexis.bi.utils.kgToLb
 import com.hexis.bi.utils.lbToKg
 import org.koin.androidx.compose.koinViewModel
 import kotlin.math.roundToInt
-import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 fun SuitSizeResultsScreen(
@@ -339,7 +339,11 @@ private fun SuitFeatureRow(text: String) {
             modifier = Modifier
                 .size(dimensionResource(R.dimen.icon_medium))
                 .clip(CircleShape)
-                .border(dimensionResource(R.dimen.border_thin), NocturnePulseTheme.extendedColors.positive, CircleShape),
+                .border(
+                    dimensionResource(R.dimen.border_thin),
+                    NocturnePulseTheme.extendedColors.positive,
+                    CircleShape
+                ),
             contentAlignment = Alignment.Center,
         ) {
             Icon(

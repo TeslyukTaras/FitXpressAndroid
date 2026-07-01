@@ -15,7 +15,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,7 +26,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -65,9 +63,9 @@ import androidx.lifecycle.withResumed
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
+import com.hexis.bi.ui.components.AppPrimaryButton
 import com.hexis.bi.ui.components.AppSlider
 import com.hexis.bi.ui.components.BodyGlassCard
-import com.hexis.bi.ui.components.AppPrimaryButton
 import com.hexis.bi.ui.main.scan.ScanPurpose
 import com.hexis.bi.ui.main.scan.components.ScanChecklistSheet
 import com.hexis.bi.ui.main.scan.processing.ScanAnalyzingContent
@@ -76,13 +74,13 @@ import com.hexis.bi.ui.main.scan.results.content.PersonalizeResultsDialog
 import com.hexis.bi.ui.main.scan.results.content.ScanResultsContent
 import com.hexis.bi.ui.main.scan.results.isDisplayable
 import com.hexis.bi.ui.main.scan.results.resultsActions
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.utils.gradientBackground
 import com.look.camera.sdk.SdkActivity
 import com.look.camera.sdk.data.LaunchOption
 import org.koin.androidx.compose.koinViewModel
 import timber.log.Timber
-import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 private const val BODY_SCAN_REVEAL_DURATION_MS = 300
 
@@ -502,7 +500,12 @@ private fun StepIndicator(
             repeat(totalSteps) { index ->
                 val isFilled = index <= currentStep - 1
                 val backgroundModifier = if (isFilled) Modifier.gradientBackground(
-                    brush = Brush.verticalGradient(listOf(NocturnePulseTheme.extendedColors.blue300, NocturnePulseTheme.extendedColors.blue200)),
+                    brush = Brush.verticalGradient(
+                        listOf(
+                            NocturnePulseTheme.extendedColors.blue300,
+                            NocturnePulseTheme.extendedColors.blue200
+                        )
+                    ),
                     shape = CircleShape,
                 )
                 else Modifier.background(

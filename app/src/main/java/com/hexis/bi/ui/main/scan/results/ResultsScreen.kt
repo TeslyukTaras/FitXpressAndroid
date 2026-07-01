@@ -3,8 +3,8 @@ package com.hexis.bi.ui.main.scan.results
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -26,10 +26,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.components.LightStatusBarIcons
-import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.main.body.components.BodyProportionInfoBottomSheet
 import com.hexis.bi.ui.main.scan.results.content.PersonalizeResultsDialog
 import com.hexis.bi.ui.main.scan.results.content.ScanResultsContent
+import com.hexis.bi.ui.theme.screenBackground
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)

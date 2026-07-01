@@ -4,9 +4,6 @@ import android.content.Context
 import android.opengl.GLES20
 import android.opengl.Matrix
 import android.os.SystemClock
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.ui.util.lerp
 import androidx.core.content.ContextCompat
 import com.hexis.bi.R

@@ -12,9 +12,9 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import com.hexis.bi.R
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.utils.constants.HomeConstants
 import kotlin.random.Random
-import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 /**
  * Hourly-steps bar chart for the Activity overview card. Bars with steps share the accent colour and

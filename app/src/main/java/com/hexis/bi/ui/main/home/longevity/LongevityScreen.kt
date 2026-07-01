@@ -26,13 +26,13 @@ import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.LightStatusBarIcons
-import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.main.home.longevity.components.LongevityInfoBottomSheet
 import com.hexis.bi.ui.main.home.longevity.components.LongevityInsightCard
 import com.hexis.bi.ui.main.home.longevity.components.LongevityScoreCard
 import com.hexis.bi.ui.main.home.longevity.components.LongevitySignalsCard
 import com.hexis.bi.ui.main.home.longevity.components.LongevityStatusCard
 import com.hexis.bi.ui.main.home.longevity.components.LongevityTrendCard
+import com.hexis.bi.ui.theme.screenBackground
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)

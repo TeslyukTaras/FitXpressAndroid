@@ -38,6 +38,10 @@ import androidx.compose.ui.unit.isSpecified
 import androidx.core.os.ConfigurationCompat
 import com.hexis.bi.R
 import com.hexis.bi.domain.body.BodyMeasurementRegion
+import com.hexis.bi.ui.avatar.CompareRotationLink
+import com.hexis.bi.ui.avatar.MetricAvatarLoading
+import com.hexis.bi.ui.avatar.MetricAvatarPreview
+import com.hexis.bi.ui.avatar.MetricAvatarStatusText
 import com.hexis.bi.ui.components.AppHorizontalGradientDivider
 import com.hexis.bi.ui.components.AppVerticalGradientDivider
 import com.hexis.bi.ui.components.BodyGlassCard
@@ -49,10 +53,6 @@ import com.hexis.bi.ui.main.body.components.MeasurementValueBlock
 import com.hexis.bi.ui.main.body.components.VisualScanDateDropdown
 import com.hexis.bi.ui.main.body.components.measurementValue
 import com.hexis.bi.ui.main.body.components.modelBlur
-import com.hexis.bi.ui.avatar.CompareRotationLink
-import com.hexis.bi.ui.avatar.MetricAvatarLoading
-import com.hexis.bi.ui.avatar.MetricAvatarPreview
-import com.hexis.bi.ui.avatar.MetricAvatarStatusText
 import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.utils.constants.BodyVisualConstants
 import com.hexis.bi.utils.constants.BodyVisualConstants.FULL_BODY_MEASUREMENT_ROWS
@@ -290,10 +290,12 @@ private fun CompareModelColumn(
                     messageRes = R.string.body_visual_color_unavailable,
                     modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
                 )
+
                 BodyVisualColorModel.Error -> MetricAvatarStatusText(
                     messageRes = R.string.body_visual_color_error,
                     modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
                 )
+
                 is BodyVisualColorModel.Ready -> Unit
             }
 

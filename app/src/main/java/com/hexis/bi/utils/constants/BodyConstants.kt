@@ -1,5 +1,6 @@
 package com.hexis.bi.utils.constants
 
+import com.hexis.bi.utils.constants.BodyConstants.CHART_FILL_END_ALPHA
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.max
@@ -58,6 +59,7 @@ internal object BodyConstants {
 
     const val CHART_MONOTONE_TANGENT_LIMIT = 3f
     const val CHART_FILL_OPACITY = 0.26f
+
     /** Drop-shadow fill alpha at the line's extreme (above/below zero); fades to [CHART_FILL_END_ALPHA] at the zero axis. */
     const val CHART_FILL_START_ALPHA = 0.83f
     const val CHART_FILL_END_ALPHA = 0.0001f

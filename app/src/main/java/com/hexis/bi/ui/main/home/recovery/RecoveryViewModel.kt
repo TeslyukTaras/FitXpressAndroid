@@ -9,15 +9,15 @@ import com.hexis.bi.data.recovery.RecoverySnapshot
 import com.hexis.bi.data.recovery.StressLevel
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.constants.SleepConstants
+import com.hexis.bi.utils.formatFullMonthDay
+import com.hexis.bi.utils.formatShortDateRange
+import com.hexis.bi.utils.formatShortMonthDay
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import com.hexis.bi.utils.formatFullMonthDay
-import com.hexis.bi.utils.formatShortDateRange
-import com.hexis.bi.utils.formatShortMonthDay
 import java.time.LocalDate
 import kotlin.math.abs
 
@@ -260,8 +260,10 @@ class RecoveryViewModel(
             ?.let(appContext::getString)
             ?: unknown
         val heartBpm = snapshot?.restingHeartRateBpm?.coerceAtLeast(0) ?: 0
-        val stressValue = snapshot?.stressLevel?.let { appContext.getString(stressLabelFor(it)) } ?: unknown
-        val loadValue = snapshot?.activityLoad?.let { appContext.getString(loadLabelFor(it)) } ?: unknown
+        val stressValue =
+            snapshot?.stressLevel?.let { appContext.getString(stressLabelFor(it)) } ?: unknown
+        val loadValue =
+            snapshot?.activityLoad?.let { appContext.getString(loadLabelFor(it)) } ?: unknown
         return listOf(
             RecoveryMetric(R.string.recovery_metric_sleep, sleepValue),
             RecoveryMetric(R.string.recovery_metric_stress, stressValue),

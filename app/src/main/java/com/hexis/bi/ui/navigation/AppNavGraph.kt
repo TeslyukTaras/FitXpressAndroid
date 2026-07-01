@@ -4,8 +4,8 @@ import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -60,8 +60,18 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
         modifier = modifier,
         enterTransition = { slideIntoContainer(SlideDirection.Left, tween(NAV_ANIM_DURATION_MS)) },
         exitTransition = { slideOutOfContainer(SlideDirection.Left, tween(NAV_ANIM_DURATION_MS)) },
-        popEnterTransition = { slideIntoContainer(SlideDirection.Right, tween(NAV_ANIM_DURATION_MS)) },
-        popExitTransition = { slideOutOfContainer(SlideDirection.Right, tween(NAV_ANIM_DURATION_MS)) },
+        popEnterTransition = {
+            slideIntoContainer(
+                SlideDirection.Right,
+                tween(NAV_ANIM_DURATION_MS)
+            )
+        },
+        popExitTransition = {
+            slideOutOfContainer(
+                SlideDirection.Right,
+                tween(NAV_ANIM_DURATION_MS)
+            )
+        },
     ) {
         composable(Route.APP_INFO) {
             AppInfoScreen(

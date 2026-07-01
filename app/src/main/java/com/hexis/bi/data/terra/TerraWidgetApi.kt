@@ -4,8 +4,8 @@ import com.google.firebase.functions.FirebaseFunctions
 import com.hexis.bi.data.firebase.toJsonElement
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 
 data class TerraAuthSession(val authUrl: String, val userId: String?)
@@ -70,7 +70,10 @@ class TerraWidgetApi(private val functions: FirebaseFunctions) {
                     .call(mapOf(FIELD_PROVIDERS to providers))
                     .await()
                     .data
-                val parsed = terraJson.decodeFromJsonElement(WidgetResponse.serializer(), data.toJsonElement())
+                val parsed = terraJson.decodeFromJsonElement(
+                    WidgetResponse.serializer(),
+                    data.toJsonElement()
+                )
                 val url = parsed.url ?: error("Terra widget returned no url")
                 Result.success(url)
             } catch (e: Exception) {

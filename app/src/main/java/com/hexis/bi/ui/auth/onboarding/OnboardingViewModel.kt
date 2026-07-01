@@ -8,8 +8,8 @@ import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.constants.MeasurementConstants
 import com.hexis.bi.utils.inchesToCm
 import com.hexis.bi.utils.lbToKg
-import com.hexis.bi.utils.persistedUserMeasurements
 import com.hexis.bi.utils.parseDob
+import com.hexis.bi.utils.persistedUserMeasurements
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update

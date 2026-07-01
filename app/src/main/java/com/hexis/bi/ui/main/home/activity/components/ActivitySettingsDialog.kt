@@ -23,10 +23,10 @@ import com.hexis.bi.ui.components.AppOutlinedButton
 import com.hexis.bi.ui.components.AppPrimaryButton
 import com.hexis.bi.ui.components.AppSlider
 import com.hexis.bi.ui.components.AppSwitch
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.utils.constants.ActivityConstants
 import java.text.NumberFormat
 import java.util.Locale
-import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 fun ActivitySettingsDialogContent(
@@ -94,7 +94,8 @@ fun ActivitySettingsDialogContent(
                 color = MaterialTheme.colorScheme.onBackground,
             )
             val unitText = stringResource(R.string.activity_unit_steps_full)
-            val stepsText = stringResource(R.string.activity_settings_steps_goal_value, fmt.format(stepsGoal))
+            val stepsText =
+                stringResource(R.string.activity_settings_steps_goal_value, fmt.format(stepsGoal))
             Text(
                 text = buildAnnotatedString {
                     append(stepsText)

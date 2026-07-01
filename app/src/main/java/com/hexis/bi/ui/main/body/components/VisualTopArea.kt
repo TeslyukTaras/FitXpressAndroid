@@ -19,12 +19,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.zIndex
 import com.hexis.bi.R
 import com.hexis.bi.domain.body.BodyMeasurementRegion
-import com.hexis.bi.ui.main.body.BodyVisualColorModel
-import com.hexis.bi.ui.main.body.BodyVisualMode
-import com.hexis.bi.ui.main.body.VisualState
 import com.hexis.bi.ui.avatar.MetricAvatarLoading
 import com.hexis.bi.ui.avatar.MetricAvatarPreview
 import com.hexis.bi.ui.avatar.MetricAvatarStatusText
+import com.hexis.bi.ui.main.body.BodyVisualColorModel
+import com.hexis.bi.ui.main.body.BodyVisualMode
+import com.hexis.bi.ui.main.body.VisualState
 import java.text.SimpleDateFormat
 
 @Composable
@@ -118,14 +118,17 @@ private fun BodyModelPreview(
                     messageRes = R.string.body_visual_color_loading,
                     modifier = Modifier.fillMaxSize(),
                 )
+
                 BodyVisualColorModel.Unavailable -> MetricAvatarStatusText(
                     messageRes = R.string.body_visual_color_unavailable,
                     modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
                 )
+
                 BodyVisualColorModel.Error -> MetricAvatarStatusText(
                     messageRes = R.string.body_visual_color_error,
                     modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
                 )
+
                 is BodyVisualColorModel.Ready -> Unit
             }
         }

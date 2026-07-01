@@ -19,7 +19,6 @@ import com.hexis.bi.ui.main.body.BodyTrendPhase.PredictedDrift
 import com.hexis.bi.utils.constants.BodyConstants
 import com.hexis.bi.utils.constants.DateFormatConstants
 import com.hexis.bi.utils.isMetricUnitSystem
-import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,6 +28,7 @@ import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
@@ -72,6 +72,7 @@ class BodyViewModel(
                     loadVisualColorMesh()
                 }
             }
+
             BodyTab.Compare -> loadCompareColorMeshesIfNeeded()
             else -> Unit
         }
@@ -82,7 +83,12 @@ class BodyViewModel(
     }
 
     fun selectTimeRange(range: BodyTimeRange) {
-        _state.update { it.copy(timeRange = range, periodPhysiqueDrift = computePeriodDrift(range)) }
+        _state.update {
+            it.copy(
+                timeRange = range,
+                periodPhysiqueDrift = computePeriodDrift(range)
+            )
+        }
         rebuildChart()
     }
 
@@ -151,6 +157,7 @@ class BodyViewModel(
                     loadVisualColorMesh()
                 }
             }
+
             BodyTab.Compare -> loadCompareColorMeshesIfNeeded()
             else -> Unit
         }
@@ -356,11 +363,13 @@ class BodyViewModel(
         when (_state.value.compare.leftColorModel) {
             BodyVisualColorModel.Idle, BodyVisualColorModel.Error ->
                 loadCompareColorMesh(isLeft = true)
+
             else -> Unit
         }
         when (_state.value.compare.rightColorModel) {
             BodyVisualColorModel.Idle, BodyVisualColorModel.Error ->
                 loadCompareColorMesh(isLeft = false)
+
             else -> Unit
         }
     }
@@ -486,7 +495,8 @@ class BodyViewModel(
 
         val series = buildSeries(scans, zone, rangeStart, rangeEnd, anchorPreviousAtStart = true)
 
-        val labelFormatter = SimpleDateFormat(DateFormatConstants.DAY_MONTH_NUMERIC, Locale.getDefault())
+        val labelFormatter =
+            SimpleDateFormat(DateFormatConstants.DAY_MONTH_NUMERIC, Locale.getDefault())
         val labels = centeredTickTimestamps(
             rangeStart,
             rangeEnd,
@@ -526,7 +536,7 @@ class BodyViewModel(
         val monthFormatter = SimpleDateFormat(DateFormatConstants.MONTH_SHORT, Locale.getDefault())
         val labels = centeredTickTimestamps(rangeStart, rangeEnd, totalMonths).mapIndexed { i, ts ->
             val showLabel = totalMonths <= BodyConstants.YEAR_LABEL_ALL_BELOW_MONTHS ||
-                i % BodyConstants.YEAR_LABEL_STEP == 0
+                    i % BodyConstants.YEAR_LABEL_STEP == 0
             BodyChartAxisLabel(
                 timestamp = ts,
                 text = if (showLabel) monthFormatter.format(Date(ts)) else "",
@@ -655,7 +665,7 @@ class BodyViewModel(
             val latestDay = LocalDate.ofInstant(Date(latest.timestamp).toInstant(), zone)
             val span = ChronoUnit.DAYS.between(previousDay, latestDay).coerceAtLeast(1).toFloat()
             ((latest.absoluteMuscle - previous.absoluteMuscle) / span) to
-                ((latest.absoluteFat - previous.absoluteFat) / span)
+                    ((latest.absoluteFat - previous.absoluteFat) / span)
         } ?: (0f to 0f)
 
         val muscleDrift = muscleStep * daysAhead
@@ -717,12 +727,18 @@ class BodyViewModel(
     }
 
     private fun formatRangeLabel(startMillis: Long, endMillis: Long): String {
-        val startFormatter = SimpleDateFormat(DateFormatConstants.DATE_RANGE_DAY_MONTH, Locale.getDefault())
-        val endFormatter = SimpleDateFormat(DateFormatConstants.DATE_RANGE_DAY_MONTH_YEAR, Locale.getDefault())
+        val startFormatter =
+            SimpleDateFormat(DateFormatConstants.DATE_RANGE_DAY_MONTH, Locale.getDefault())
+        val endFormatter =
+            SimpleDateFormat(DateFormatConstants.DATE_RANGE_DAY_MONTH_YEAR, Locale.getDefault())
         return "${startFormatter.format(Date(startMillis))} – ${endFormatter.format(Date(endMillis))}"
     }
 
-    private fun buildComposition(latest: ScanRecord, previous: ScanRecord?, heightCm: Float?): BodyComposition {
+    private fun buildComposition(
+        latest: ScanRecord,
+        previous: ScanRecord?,
+        heightCm: Float?
+    ): BodyComposition {
         val fatPct = latest.fatPercentage
         val musclePct = latest.muscleMassPercentage()
         val bis = latest.physiqueScore(heightCm)

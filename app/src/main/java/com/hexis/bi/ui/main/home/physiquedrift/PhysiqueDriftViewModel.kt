@@ -10,13 +10,13 @@ import com.hexis.bi.domain.body.PhysiqueScoreBreakdown
 import com.hexis.bi.domain.body.muscleMassPercentage
 import com.hexis.bi.domain.body.physiqueScoreBreakdown
 import com.hexis.bi.ui.base.BaseViewModel
+import com.hexis.bi.utils.millisToShortMonthDayYear
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.hexis.bi.utils.millisToShortMonthDayYear
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -46,7 +46,8 @@ class PhysiqueDriftViewModel(
     }
 
     private suspend fun renderFromRepositories() = coroutineScope {
-        val scansDef = async { scanHistoryRepository.getRecentScans(limit = 2).getOrNull().orEmpty() }
+        val scansDef =
+            async { scanHistoryRepository.getRecentScans(limit = 2).getOrNull().orEmpty() }
         val heightDef = async { userRepository.getUser().getOrNull()?.heightCm?.toFloat() }
 
         val scans = scansDef.await()

@@ -3,6 +3,8 @@ package com.hexis.bi.data.terra
 import android.os.SystemClock
 import co.tryterra.terra.TerraManager
 import co.tryterra.terra.enums.Connections
+import com.hexis.bi.data.terra.TerraSdkSync.dataSynced
+import com.hexis.bi.data.terra.TerraSdkSync.syncLinkedConnections
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow

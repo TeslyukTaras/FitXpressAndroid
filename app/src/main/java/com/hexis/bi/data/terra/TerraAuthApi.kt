@@ -4,8 +4,8 @@ import com.google.firebase.functions.FirebaseFunctions
 import com.hexis.bi.data.firebase.toJsonElement
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 
 /**
@@ -23,7 +23,8 @@ class TerraAuthApi(private val functions: FirebaseFunctions) {
                 .call()
                 .await()
                 .data
-            val parsed = terraJson.decodeFromJsonElement(TokenResponse.serializer(), data.toJsonElement())
+            val parsed =
+                terraJson.decodeFromJsonElement(TokenResponse.serializer(), data.toJsonElement())
             val token = parsed.token ?: error("Terra auth returned no token")
             Result.success(token)
         } catch (e: Exception) {

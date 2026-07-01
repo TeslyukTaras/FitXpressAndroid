@@ -1,5 +1,8 @@
 package com.hexis.bi.domain.body
 
+import com.hexis.bi.domain.body.BodyMeasurementRegion.Companion.measurementAnchorKeys
+
+
 /**
  * The single source of truth for every body part the app measures and visualises.
  *

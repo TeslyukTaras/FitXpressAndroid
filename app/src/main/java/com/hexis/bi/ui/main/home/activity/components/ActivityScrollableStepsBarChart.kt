@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -44,11 +45,10 @@ import androidx.compose.ui.unit.dp
 import com.hexis.bi.R
 import com.hexis.bi.ui.main.home.activity.BarChartEntry
 import com.hexis.bi.ui.theme.ActivityMediumTitleStyle
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.roundToInt
-import com.hexis.bi.ui.theme.NocturnePulseTheme
-import androidx.compose.ui.graphics.Color
 
 @Composable
 fun ActivityScrollableStepsBarChart(
@@ -226,7 +226,8 @@ fun ActivityScrollableStepsBarChart(
                                 .pointerInput(entries.size) {
                                     if (entries.isEmpty()) return@pointerInput
                                     detectTapGestures { tap ->
-                                        val startPaddingPx = with(density) { chartStartPadding.toPx() }
+                                        val startPaddingPx =
+                                            with(density) { chartStartPadding.toPx() }
                                         val endPaddingPx = with(density) { chartEndPadding.toPx() }
                                         val contentWidthPx =
                                             (size.width - startPaddingPx - endPaddingPx)

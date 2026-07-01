@@ -35,11 +35,11 @@ import com.hexis.bi.domain.body.BodyMeasurementRegion
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.base.UiEvent
-import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.components.AppCheckbox
 import com.hexis.bi.ui.components.AppPrimaryButton
 import com.hexis.bi.ui.components.AppRadioButton
 import com.hexis.bi.ui.components.AppSwitch
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.components.LightStatusBarIcons
 import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.utils.constants.BodyVisualConstants

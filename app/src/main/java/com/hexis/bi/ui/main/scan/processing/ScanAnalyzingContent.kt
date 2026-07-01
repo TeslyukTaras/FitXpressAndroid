@@ -33,10 +33,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.ScanAnalyzingPercentStyle
 import kotlin.math.exp
 import kotlin.math.roundToInt
-import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 private const val ANALYZING_BODY_ALPHA = 0.3f
 private const val ANALYZING_LOADER_VERTICAL_BIAS = -0.25f

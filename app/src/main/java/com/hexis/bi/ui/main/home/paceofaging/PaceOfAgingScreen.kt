@@ -26,11 +26,11 @@ import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.LightStatusBarIcons
-import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.main.home.paceofaging.components.PaceOfAgingInfoBottomSheet
 import com.hexis.bi.ui.main.home.paceofaging.components.PaceOfAgingInsightCard
 import com.hexis.bi.ui.main.home.paceofaging.components.PaceOfAgingStatsCard
 import com.hexis.bi.ui.main.home.paceofaging.components.PaceOfAgingTrendCard
+import com.hexis.bi.ui.theme.screenBackground
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)

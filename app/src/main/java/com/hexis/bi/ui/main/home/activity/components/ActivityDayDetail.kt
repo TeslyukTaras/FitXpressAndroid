@@ -12,9 +12,9 @@ import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.activity.ActivityMetric
 import com.hexis.bi.ui.main.home.activity.ActivityState
 import com.hexis.bi.ui.main.home.activity.BarChartEntry
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.utils.constants.ActivityConstants
 import com.hexis.bi.utils.constants.MeasurementConstants
-import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 fun ActivityDayDetail(

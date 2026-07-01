@@ -20,9 +20,9 @@ import com.hexis.bi.ui.main.body.components.BodySegmentedToggleChip
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleTrack
 import com.hexis.bi.ui.main.home.longevity.LongevityTab
 import com.hexis.bi.ui.main.home.longevity.LongevityTrendData
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.ui.theme.TitleHighlightTextStyle
-import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 internal fun LongevityTrendCard(

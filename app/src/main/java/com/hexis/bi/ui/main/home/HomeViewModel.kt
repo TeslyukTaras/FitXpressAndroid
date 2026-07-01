@@ -41,6 +41,8 @@ import com.hexis.bi.utils.constants.OrderConstants
 import com.hexis.bi.utils.constants.SleepConstants
 import com.hexis.bi.utils.inchesToFeetAndInches
 import com.hexis.bi.utils.isMetricUnitSystem
+import com.hexis.bi.utils.millisToOrderTimelineTimestamp
+import com.hexis.bi.utils.millisToShortMonthDay
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.BufferOverflow
@@ -54,8 +56,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
-import com.hexis.bi.utils.millisToOrderTimelineTimestamp
-import com.hexis.bi.utils.millisToShortMonthDay
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.util.Locale
@@ -228,7 +228,8 @@ class HomeViewModel(
     }
 
     private fun maskReference(reference: String): String {
-        val visible = OrderConstants.REFERENCE_MASK_PREFIX_CHARS + OrderConstants.REFERENCE_MASK_SUFFIX_CHARS
+        val visible =
+            OrderConstants.REFERENCE_MASK_PREFIX_CHARS + OrderConstants.REFERENCE_MASK_SUFFIX_CHARS
         if (reference.length <= visible) return reference
         return reference.take(OrderConstants.REFERENCE_MASK_PREFIX_CHARS) +
                 OrderConstants.REFERENCE_MASK +
@@ -283,7 +284,13 @@ class HomeViewModel(
                 val todayActivity = terra.activity.firstOrNull { it.date == today }
                 val todayRecovery = terra.recovery.firstOrNull { it.date == today }
                 val longevityScore =
-                    currentLongevityScore(window, terra.recovery, terra.activity, latestScan, heightCm)
+                    currentLongevityScore(
+                        window,
+                        terra.recovery,
+                        terra.activity,
+                        latestScan,
+                        heightCm
+                    )
                 val pace = computePaceOfAging(
                     PaceOfAgingInputs(
                         hrvMs = todayRecovery?.hrvMs,
@@ -302,7 +309,13 @@ class HomeViewModel(
                     it.copy(
                         recoveryScore = (todayRecovery?.score ?: 0).coerceAtLeast(0),
                         longevityScore = longevityScore,
-                        paceOfAgingValue = pace?.let { p -> String.format(Locale.US, PACE_FORMAT, p) },
+                        paceOfAgingValue = pace?.let { p ->
+                            String.format(
+                                Locale.US,
+                                PACE_FORMAT,
+                                p
+                            )
+                        },
                         paceOfAgingScore = pace?.let { p -> agingScore(p) },
                     )
                 }
@@ -318,10 +331,12 @@ class HomeViewModel(
         terraManagerHolder.awaitCurrentOrTimeout()
         return coroutineScope {
             val sleepDeferred = async {
-                sleepRepository.getSessionsForRange(windowStart.minusDays(1), today).getOrNull().orEmpty()
+                sleepRepository.getSessionsForRange(windowStart.minusDays(1), today).getOrNull()
+                    .orEmpty()
             }
             val activityDeferred = async {
-                activityRepository.getSummariesForRange(windowStart, today, TerraDetail.FULL).getOrNull().orEmpty()
+                activityRepository.getSummariesForRange(windowStart, today, TerraDetail.FULL)
+                    .getOrNull().orEmpty()
             }
 
             val sleep = sleepDeferred.await()
@@ -348,7 +363,8 @@ class HomeViewModel(
                 )
             }
 
-            val recovery = recoveryRepository.getSnapshotsForRange(windowStart, today).getOrNull().orEmpty()
+            val recovery =
+                recoveryRepository.getSnapshotsForRange(windowStart, today).getOrNull().orEmpty()
             TerraOverview(activity = activity, recovery = recovery)
         }
     }

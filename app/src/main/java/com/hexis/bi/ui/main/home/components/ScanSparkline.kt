@@ -11,9 +11,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import com.hexis.bi.R
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.utils.SmoothLinePath
 import com.hexis.bi.utils.constants.HomeConstants
-import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 /**
  * Compact smooth trend line for the Scan overview card. Plots [points] (oldest → newest) auto-scaled

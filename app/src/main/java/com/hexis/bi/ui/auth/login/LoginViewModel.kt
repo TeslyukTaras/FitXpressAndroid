@@ -8,9 +8,9 @@ import com.hexis.bi.R
 import com.hexis.bi.data.auth.AuthRepository
 import com.hexis.bi.data.user.UserProfile
 import com.hexis.bi.data.user.UserRepository
-import com.hexis.bi.utils.isValidEmail
 import com.hexis.bi.ui.auth.LoginEvent
 import com.hexis.bi.ui.base.BaseViewModel
+import com.hexis.bi.utils.isValidEmail
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,8 +35,11 @@ class LoginViewModel(
     val state: StateFlow<LoginUiState> = _state.asStateFlow()
 
     fun updateEmail(value: String) = _state.update { it.copy(email = value, emailError = null) }
-    fun updatePassword(value: String) = _state.update { it.copy(password = value, passwordError = null) }
-    fun togglePasswordVisibility() = _state.update { it.copy(isPasswordVisible = !it.isPasswordVisible) }
+    fun updatePassword(value: String) =
+        _state.update { it.copy(password = value, passwordError = null) }
+
+    fun togglePasswordVisibility() =
+        _state.update { it.copy(isPasswordVisible = !it.isPasswordVisible) }
 
     fun login() {
         val s = _state.value
@@ -45,7 +48,8 @@ class LoginViewModel(
             !s.email.isValidEmail() -> appContext.getString(R.string.error_email_invalid)
             else -> null
         }
-        val passwordError = if (s.password.isBlank()) appContext.getString(R.string.error_password_required) else null
+        val passwordError =
+            if (s.password.isBlank()) appContext.getString(R.string.error_password_required) else null
 
         if (emailError != null || passwordError != null) {
             _state.update { it.copy(emailError = emailError, passwordError = passwordError) }
@@ -61,14 +65,18 @@ class LoginViewModel(
 
     fun loginWithGoogle(context: Context) = launch {
         val result = authRepository.signInWithGoogle(context)
-        if (result.isFailure) { setError(result.exceptionOrNull()?.message); return@launch }
+        if (result.isFailure) {
+            setError(result.exceptionOrNull()?.message); return@launch
+        }
         provisionUserIfAbsent()
         emitEvent(LoginEvent.NavigateToHome)
     }
 
     fun loginWithApple(activity: Activity) = launch {
         val result = authRepository.signInWithApple(activity)
-        if (result.isFailure) { setError(result.exceptionOrNull()?.message); return@launch }
+        if (result.isFailure) {
+            setError(result.exceptionOrNull()?.message); return@launch
+        }
         provisionUserIfAbsent()
         emitEvent(LoginEvent.NavigateToHome)
     }

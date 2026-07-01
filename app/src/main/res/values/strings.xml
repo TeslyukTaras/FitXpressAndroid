@@ -229,7 +229,6 @@
     <!-- Delta with unit, e.g. "+ 0.4 kg": sign, magnitude, unit. -->
     <string name="delta_value_with_unit">%1$s %2$s %3$s</string>
     <string name="body_error_title">Couldn\'t load body data</string>
-    <string name="body_tab_coming_soon">Coming soon</string>
     <string name="body_my_body_subtitle">Understand your body proportions and balance.</string>
     <!-- My Body / Body Proportion -->
     <string name="body_proportion_card_title">Body Proportion</string>
@@ -655,7 +654,7 @@
     <string name="activity_metric_distance">Distance</string>
     <string name="activity_metric_steps">Steps</string>
     <string name="activity_metric_duration">Duration</string>
-    <string name="activity_unit_cal">cal</string>
+    <string name="activity_unit_cal">kcal</string>
     <string name="activity_unit_km">km</string>
     <string name="activity_unit_mi">mi</string>
     <string name="activity_unit_steps">st</string>

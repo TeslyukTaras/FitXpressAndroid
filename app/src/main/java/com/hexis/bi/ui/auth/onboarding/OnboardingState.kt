@@ -1,8 +1,8 @@
 package com.hexis.bi.ui.auth.onboarding
 
 import com.hexis.bi.domain.enums.GenderOption
-import com.hexis.bi.ui.base.UiEvent
 import com.hexis.bi.ui.base.HealthParameters
+import com.hexis.bi.ui.base.UiEvent
 import com.hexis.bi.utils.cmToInches
 import com.hexis.bi.utils.cmToRoundedFeetAndInches
 import com.hexis.bi.utils.constants.ProfileConstants

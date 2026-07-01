@@ -26,12 +26,12 @@ import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.LightStatusBarIcons
-import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.main.home.physiquedrift.components.PhysiqueCompositionCard
 import com.hexis.bi.ui.main.home.physiquedrift.components.PhysiqueContributorsCard
 import com.hexis.bi.ui.main.home.physiquedrift.components.PhysiqueDriftInfoBottomSheet
 import com.hexis.bi.ui.main.home.physiquedrift.components.PhysiqueInsightCard
 import com.hexis.bi.ui.main.home.physiquedrift.components.PhysiqueScoreCard
+import com.hexis.bi.ui.theme.screenBackground
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)

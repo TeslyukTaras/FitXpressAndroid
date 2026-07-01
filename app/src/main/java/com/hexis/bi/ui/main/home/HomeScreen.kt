@@ -29,7 +29,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.components.LightStatusBarIcons
-import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.ui.main.buysuit.orderdetails.OrderDetailsSheet
 import com.hexis.bi.ui.main.home.components.ActivityOverviewCard
 import com.hexis.bi.ui.main.home.components.HomeHeader
@@ -39,6 +38,7 @@ import com.hexis.bi.ui.main.home.components.ScanOverviewCard
 import com.hexis.bi.ui.main.home.components.SleepOverviewCard
 import com.hexis.bi.ui.main.home.components.SuitOrderCard
 import com.hexis.bi.ui.main.home.components.UserStatsCard
+import com.hexis.bi.ui.theme.screenBackground
 import org.koin.androidx.compose.koinViewModel
 
 @Composable

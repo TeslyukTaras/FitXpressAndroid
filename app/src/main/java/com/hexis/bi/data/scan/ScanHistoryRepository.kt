@@ -11,10 +11,10 @@ import com.hexis.bi.utils.constants.ScanFirestoreConstants.COLLECTION_SCANS
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.COLLECTION_USERS
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_AGE
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_BMI
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_BMR
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_BODY_PROGRESS_BEFORE_MEASUREMENT_ID
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_BODY_PROGRESS_ID
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_BODY_PROGRESS_MODEL_URL
-import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_BMR
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_COMPLETED_AT
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_CREATED_AT
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_ESTIMATED_BMI
@@ -136,16 +136,28 @@ class ScanHistoryRepository(
         batch.set(scanRef, mainData)
 
         response.circumferenceParams?.let {
-            batch.set(scanRef.collection(SUB_CIRCUMFERENCE_PARAMS).document(PARAMS_DOC_ID), jsonObjectToNumericMap(it))
+            batch.set(
+                scanRef.collection(SUB_CIRCUMFERENCE_PARAMS).document(PARAMS_DOC_ID),
+                jsonObjectToNumericMap(it)
+            )
         }
         response.frontLinearParams?.let {
-            batch.set(scanRef.collection(SUB_FRONT_LINEAR_PARAMS).document(PARAMS_DOC_ID), jsonObjectToNumericMap(it))
+            batch.set(
+                scanRef.collection(SUB_FRONT_LINEAR_PARAMS).document(PARAMS_DOC_ID),
+                jsonObjectToNumericMap(it)
+            )
         }
         response.sideLinearParams?.let {
-            batch.set(scanRef.collection(SUB_SIDE_LINEAR_PARAMS).document(PARAMS_DOC_ID), jsonObjectToNumericMap(it))
+            batch.set(
+                scanRef.collection(SUB_SIDE_LINEAR_PARAMS).document(PARAMS_DOC_ID),
+                jsonObjectToNumericMap(it)
+            )
         }
         response.subscriptionInfo?.let {
-            batch.set(scanRef.collection(SUB_SUBSCRIPTION_INFO).document(PARAMS_DOC_ID), jsonObjectToAnyMap(it))
+            batch.set(
+                scanRef.collection(SUB_SUBSCRIPTION_INFO).document(PARAMS_DOC_ID),
+                jsonObjectToAnyMap(it)
+            )
         }
 
         batch.commit().await()
@@ -174,7 +186,8 @@ class ScanHistoryRepository(
         savedAtMillis: Long,
     ): ScanRecord {
         val circumference = response.circumferenceParams?.let { jsonObjectToFloatMap(it) }.orEmpty()
-        val frontLinearParams = response.frontLinearParams?.let { jsonObjectToFloatMap(it) }.orEmpty()
+        val frontLinearParams =
+            response.frontLinearParams?.let { jsonObjectToFloatMap(it) }.orEmpty()
         val sideLinearParams = response.sideLinearParams?.let { jsonObjectToFloatMap(it) }.orEmpty()
         val measurements = MeasurementMapper.mergeMeasurementParams(
             circumference = circumference,
@@ -299,14 +312,19 @@ class ScanHistoryRepository(
                             id = doc.id,
                             timestamp = doc.savedAtMillis(),
                         )
+
                         ScanFetchProjection.LIST_SUMMARY -> ScanRecord(
                             id = doc.id,
                             timestamp = doc.savedAtMillis(),
                             measurements = loadSubNumericParams(doc, SUB_CIRCUMFERENCE_PARAMS),
                             weightKg = doc.numericField(FIELD_WEIGHT, FIELD_ESTIMATED_WEIGHT),
                             fatPercentage = doc.numericField(FIELD_FAT_PERCENTAGE),
-                            leanBodyMassKg = doc.numericField(FIELD_LEAN_BODY_MASS, FIELD_ESTIMATED_LEAN_BODY_MASS),
+                            leanBodyMassKg = doc.numericField(
+                                FIELD_LEAN_BODY_MASS,
+                                FIELD_ESTIMATED_LEAN_BODY_MASS
+                            ),
                         )
+
                         ScanFetchProjection.FULL -> buildFullScanRecord(doc)
                     }
                 }

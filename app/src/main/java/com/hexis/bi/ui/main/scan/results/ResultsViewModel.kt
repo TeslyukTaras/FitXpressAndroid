@@ -19,11 +19,11 @@ import com.hexis.bi.ui.main.body.VisualScanOption
 import com.hexis.bi.ui.main.body.VisualState
 import com.hexis.bi.ui.main.body.buildBodyProportion
 import com.hexis.bi.utils.isMetricUnitSystem
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.Date
@@ -132,7 +132,11 @@ class ResultsViewModel(
         val older = scanHistoryRepository
             .getOlderScanRecordsBefore(Timestamp(Date(cur.timestamp)), limit = 2)
             .getOrElse { emptyList() }
-        return Triple(cur, older.getOrNull(0)?.withMeasurements(), older.getOrNull(1)?.withMeasurements())
+        return Triple(
+            cur,
+            older.getOrNull(0)?.withMeasurements(),
+            older.getOrNull(1)?.withMeasurements()
+        )
     }
 
     private suspend fun loadFreshTriple(): Triple<ScanRecord?, ScanRecord?, ScanRecord?> {
@@ -147,7 +151,8 @@ class ResultsViewModel(
             }
             ?: scanHistoryRepository.getLatestScan().getOrNull()
             ?: return Triple(null, null, null)
-        val (prev, beforePrev) = scanHistoryRepository.getPreviousTwoScans().getOrElse { null to null }
+        val (prev, beforePrev) = scanHistoryRepository.getPreviousTwoScans()
+            .getOrElse { null to null }
         return Triple(cur, prev?.withMeasurements(), beforePrev?.withMeasurements())
     }
 
@@ -227,6 +232,7 @@ class ResultsViewModel(
         when (tab) {
             ResultsTab.Visual ->
                 if (_state.value.visual.colorModel !is BodyVisualColorModel.Ready) loadVisualColorMesh()
+
             ResultsTab.Compare -> loadCompareColorMeshesIfNeeded()
             ResultsTab.MyBody -> Unit
         }
@@ -255,7 +261,8 @@ class ResultsViewModel(
     private fun observeColorMode() {
         viewModelScope.launch {
             preferencesRepository.bodyVisualMode.collect { stored ->
-                val mode = BodyVisualMode.entries.firstOrNull { it.name == stored } ?: BodyVisualMode.Base
+                val mode =
+                    BodyVisualMode.entries.firstOrNull { it.name == stored } ?: BodyVisualMode.Base
                 applyColorMode(mode)
             }
         }
@@ -272,6 +279,7 @@ class ResultsViewModel(
         when (_state.value.selectedTab) {
             ResultsTab.Visual ->
                 if (_state.value.visual.colorModel !is BodyVisualColorModel.Ready) loadVisualColorMesh()
+
             ResultsTab.Compare -> loadCompareColorMeshesIfNeeded()
             ResultsTab.MyBody -> Unit
         }
@@ -300,7 +308,11 @@ class ResultsViewModel(
                 beforeMeasurementId = pair.first,
                 afterMeasurementId = pair.second,
             ).onSuccess { meshUrl ->
-                if (requestedVisualColorPair == pair) setVisualColorModel(BodyVisualColorModel.Ready(meshUrl))
+                if (requestedVisualColorPair == pair) setVisualColorModel(
+                    BodyVisualColorModel.Ready(
+                        meshUrl
+                    )
+                )
             }.onFailure {
                 if (requestedVisualColorPair == pair) setVisualColorModel(BodyVisualColorModel.Error)
             }

@@ -12,12 +12,13 @@ import com.hexis.bi.data.terra.TerraDetail
 import com.hexis.bi.data.terra.TerraRestSourceResolver
 import com.hexis.bi.data.user.FirestoreSchema
 import com.hexis.bi.data.user.UserRepository
-import com.hexis.bi.utils.constants.TerraProviders
 import com.hexis.bi.ui.base.BaseViewModel
+import com.hexis.bi.ui.main.home.sleep.SleepViewModel.Companion.MAX_CHART_POINTS
+import com.hexis.bi.utils.constants.SleepConstants
+import com.hexis.bi.utils.constants.TerraProviders
 import com.hexis.bi.utils.formatFullMonthDay
 import com.hexis.bi.utils.formatShortDateRange
 import com.hexis.bi.utils.weekDayAbbreviation
-import com.hexis.bi.utils.constants.SleepConstants
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,12 +26,12 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import timber.log.Timber
 import java.time.Duration
 import java.time.LocalDate
 import kotlin.math.roundToInt
-import timber.log.Timber
 
 class SleepViewModel(
     application: Application,
@@ -93,7 +94,12 @@ class SleepViewModel(
     }
 
     fun showSettingsDialog() {
-        _state.update { it.copy(showSettingsDialog = true, sleepGoalHoursDraft = it.sleepGoalHours) }
+        _state.update {
+            it.copy(
+                showSettingsDialog = true,
+                sleepGoalHoursDraft = it.sleepGoalHours
+            )
+        }
     }
 
     fun dismissSettingsDialog() {
@@ -315,7 +321,10 @@ class SleepViewModel(
         val points = samples
             .map { sample ->
                 val offset = Duration.between(session.bedtime, sample.time).toMinutes().toFloat()
-                ChartPoint(fraction = (offset / totalMinutes).coerceIn(0f, 1f), value = sample.value)
+                ChartPoint(
+                    fraction = (offset / totalMinutes).coerceIn(0f, 1f),
+                    value = sample.value
+                )
             }
             .sortedBy { it.fraction }
 
@@ -337,7 +346,8 @@ class SleepViewModel(
             .toFloat()
             .coerceAtLeast(1f)
         return session.stages.map { interval ->
-            val startOffset = Duration.between(session.bedtime, interval.start).toMinutes().toFloat()
+            val startOffset =
+                Duration.between(session.bedtime, interval.start).toMinutes().toFloat()
             val endOffset = Duration.between(session.bedtime, interval.end).toMinutes().toFloat()
             TimelineSegment(
                 stage = interval.stage,
@@ -479,7 +489,14 @@ class SleepViewModel(
 
     private fun List<SleepSession>.bestForTargetDay(targetDay: LocalDate): SleepSession? =
         minWithOrNull(
-            compareBy<SleepSession> { kotlin.math.abs(java.time.temporal.ChronoUnit.DAYS.between(it.wakeTime.toLocalDate(), targetDay)) }
+            compareBy<SleepSession> {
+                kotlin.math.abs(
+                    java.time.temporal.ChronoUnit.DAYS.between(
+                        it.wakeTime.toLocalDate(),
+                        targetDay
+                    )
+                )
+            }
                 .thenByDescending { it.sleepMagnitude() },
         )
 

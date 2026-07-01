@@ -22,10 +22,10 @@ import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.activity.TrendComparison
 import com.hexis.bi.ui.theme.ActivityMediumTitleStyle
 import com.hexis.bi.ui.theme.MeasurementValueStyle
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.TitleDimTextStyle
 import java.text.NumberFormat
 import java.util.Locale
-import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 fun ActivityAvgTrendRow(

@@ -2,6 +2,8 @@ package com.hexis.bi.ui.avatar
 
 import com.hexis.bi.domain.body.BodyMeasurementKeys
 import com.hexis.bi.domain.body.BodyMeasurementRegion
+import com.hexis.bi.ui.avatar.MetricAvatarFrameSolver.buildFrames
+import com.hexis.bi.ui.avatar.MetricAvatarFrameSolver.manualBounds
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin

@@ -4,18 +4,18 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import com.hexis.bi.R
+import com.hexis.bi.data.notification.NotificationInboxRepository
+import com.hexis.bi.data.preferences.UserPreferencesRepository
+import com.hexis.bi.data.reminder.ScanReminderScheduler
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanProgress
 import com.hexis.bi.data.scan.ScanResult
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.scan.ThreeDLookRepository
-import com.hexis.bi.data.notification.NotificationInboxRepository
-import com.hexis.bi.data.preferences.UserPreferencesRepository
-import com.hexis.bi.data.reminder.ScanReminderScheduler
 import com.hexis.bi.data.user.UserRepository
+import com.hexis.bi.ui.avatar.prefetchMetricAvatarModel
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.main.scan.ScanPurpose
-import com.hexis.bi.ui.avatar.prefetchMetricAvatarModel
 import com.hexis.bi.utils.calculateAge
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -163,7 +163,8 @@ class StartScanViewModel(
     private fun submitPhotos(frontUri: Uri, sideUri: Uri) = launch(
         showLoading = scanPurpose == ScanPurpose.BodyScan,
         onError = { throwable ->
-            val message = throwable.message ?: appContext.getString(R.string.scan_error_processing_failed)
+            val message =
+                throwable.message ?: appContext.getString(R.string.scan_error_processing_failed)
             if (scanPurpose == ScanPurpose.SuitSizeScan) {
                 _state.update {
                     it.copy(
@@ -291,6 +292,7 @@ class StartScanViewModel(
                             )
                             _state.update { it.copy(isComplete = true, isPreparingResults = false) }
                         }
+
                         ScanPurpose.SuitSizeScan -> {
                             _state.update { it.copy(isComplete = true, isPreparingResults = false) }
                         }

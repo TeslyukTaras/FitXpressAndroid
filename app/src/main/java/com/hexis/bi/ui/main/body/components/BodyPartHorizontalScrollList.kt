@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -66,7 +65,8 @@ internal fun BodyPartHorizontalScrollList(
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
 
-    val selectedLabelStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium)
+    val selectedLabelStyle =
+        MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium)
     val labels = regions.map { stringResource(BodyVisualConstants.visualLabelRes(it)) }
 
     val scrollDampingConnection = remember {
@@ -106,7 +106,8 @@ internal fun BodyPartHorizontalScrollList(
     // Item widths (natural label width + horizontal padding) and their cumulative
     // content-space offsets — the basis for all snap math with variable widths.
     val textMeasurer = rememberTextMeasurer()
-    val itemPaddingPx = with(density) { dimensionResource(R.dimen.body_part_selector_horizontal_item_padding).toPx() }
+    val itemPaddingPx =
+        with(density) { dimensionResource(R.dimen.body_part_selector_horizontal_item_padding).toPx() }
     val itemWidthsPx = remember(labels, selectedLabelStyle, textMeasurer, itemPaddingPx) {
         labels.map { label ->
             val textWidth = textMeasurer.measure(

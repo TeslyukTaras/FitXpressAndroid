@@ -5,8 +5,8 @@ import com.hexis.bi.data.firebase.toJsonElement
 import com.hexis.bi.utils.redactSensitiveId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -30,9 +30,15 @@ class TerraApi(private val functions: FirebaseFunctions) {
     ): Result<TerraDataListResponse> = withContext(Dispatchers.IO) {
         try {
             val payload = terraRangePayload(terraUserId, startDate, endDate, detail)
-            val data = functions.getHttpsCallable(terraFunction(FUNCTION_GET_DAILY)).call(payload).await().data
+            val data = functions.getHttpsCallable(terraFunction(FUNCTION_GET_DAILY)).call(payload)
+                .await().data
             logTerraRawJson("DAILY", terraUserId, startDate, endDate, data)
-            Result.success(terraJson.decodeFromJsonElement(TerraDataListResponse.serializer(), data.toJsonElement()))
+            Result.success(
+                terraJson.decodeFromJsonElement(
+                    TerraDataListResponse.serializer(),
+                    data.toJsonElement()
+                )
+            )
         } catch (e: Exception) {
             if (e is CancellationException) throw e
             Result.failure(e)
@@ -47,9 +53,15 @@ class TerraApi(private val functions: FirebaseFunctions) {
     ): Result<TerraDataListResponse> = withContext(Dispatchers.IO) {
         try {
             val payload = terraRangePayload(terraUserId, startDate, endDate, detail)
-            val data = functions.getHttpsCallable(terraFunction(FUNCTION_GET_SLEEP)).call(payload).await().data
+            val data = functions.getHttpsCallable(terraFunction(FUNCTION_GET_SLEEP)).call(payload)
+                .await().data
             logTerraRawJson("SLEEP", terraUserId, startDate, endDate, data)
-            Result.success(terraJson.decodeFromJsonElement(TerraDataListResponse.serializer(), data.toJsonElement()))
+            Result.success(
+                terraJson.decodeFromJsonElement(
+                    TerraDataListResponse.serializer(),
+                    data.toJsonElement()
+                )
+            )
         } catch (e: Exception) {
             if (e is CancellationException) throw e
             Result.failure(e)
@@ -69,7 +81,10 @@ class TerraApi(private val functions: FirebaseFunctions) {
                     .await()
                     .data
                 Result.success(
-                    terraJson.decodeFromJsonElement(TerraUserInfoResponse.serializer(), data.toJsonElement()),
+                    terraJson.decodeFromJsonElement(
+                        TerraUserInfoResponse.serializer(),
+                        data.toJsonElement()
+                    ),
                 )
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
@@ -149,8 +164,8 @@ data class TerraUserInfoResponse(
     /** Whether this user id represents a live, authorized connection. */
     val isConnected: Boolean
         get() = status?.equals("success", ignoreCase = true) == true &&
-            is_authenticated == true &&
-            !user?.provider.isNullOrBlank()
+                is_authenticated == true &&
+                !user?.provider.isNullOrBlank()
 }
 
 @Serializable

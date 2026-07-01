@@ -45,13 +45,13 @@ import androidx.compose.ui.unit.dp
 import com.hexis.bi.R
 import com.hexis.bi.ui.main.home.activity.BarChartEntry
 import com.hexis.bi.ui.theme.ActivityMediumTitleStyle
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.utils.constants.ActivityConstants
 import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.roundToInt
-import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 fun ActivityStepsBarChart(
@@ -228,7 +228,10 @@ fun ActivityStepsBarChart(
                                     val slotWidthPx = barWidthPx + gapPx
 
                                     fun indexForX(x: Float): Int =
-                                        ((x - startPaddingPx).coerceIn(0f, contentWidthPx) / slotWidthPx)
+                                        ((x - startPaddingPx).coerceIn(
+                                            0f,
+                                            contentWidthPx
+                                        ) / slotWidthPx)
                                             .toInt()
                                             .coerceIn(0, entries.size - 1)
 
@@ -283,7 +286,9 @@ fun ActivityStepsBarChart(
                                     val labelStartPx = xLabelStartPadding.toPx()
                                     val gridGapPx = barGap.toPx()
                                     val contentWidthPx =
-                                        (size.width - startPaddingPx - endPaddingPx).coerceAtLeast(0f)
+                                        (size.width - startPaddingPx - endPaddingPx).coerceAtLeast(
+                                            0f
+                                        )
                                     val gridBarWidthPx =
                                         (contentWidthPx - gridGapPx * (entries.size - 1)) / entries.size.toFloat()
                                     entries.forEachIndexed { index, entry ->

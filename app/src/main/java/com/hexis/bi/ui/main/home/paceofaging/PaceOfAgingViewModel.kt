@@ -22,13 +22,13 @@ import com.hexis.bi.ui.main.home.longevity.LongevityTrend
 import com.hexis.bi.ui.main.home.longevity.waistToHeightRatio
 import com.hexis.bi.utils.constants.LongevityConstants
 import com.hexis.bi.utils.constants.PaceOfAgingConstants
+import com.hexis.bi.utils.formatShortMonthDayYear
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.hexis.bi.utils.formatShortMonthDayYear
 import java.time.LocalDate
 import java.util.Locale
 import kotlin.math.abs
@@ -71,7 +71,8 @@ class PaceOfAgingViewModel(
         val today = LocalDate.now()
         val recoveryDef = async { recoveryRepository.getSnapshotForDate(today).getOrNull() }
         val activityDef = async { activityRepository.getSummaryForDate(today).getOrNull() }
-        val scansDef = async { scanHistoryRepository.getRecentScans(limit = 2).getOrNull().orEmpty() }
+        val scansDef =
+            async { scanHistoryRepository.getRecentScans(limit = 2).getOrNull().orEmpty() }
         val heightDef = async { userRepository.getUser().getOrNull()?.heightCm?.toFloat() }
 
         val recovery = recoveryDef.await()
@@ -190,9 +191,14 @@ class PaceOfAgingViewModel(
         AgingSignal.Stress -> R.string.pace_of_aging_signal_stress
     }
 
-    private fun waistTrend(latest: ScanRecord?, previous: ScanRecord?, heightCm: Float?): LongevityTrend? {
+    private fun waistTrend(
+        latest: ScanRecord?,
+        previous: ScanRecord?,
+        heightCm: Float?
+    ): LongevityTrend? {
         val latestRatio = waistToHeightRatio(latest, heightCm) ?: return null
-        val previousRatio = waistToHeightRatio(previous, heightCm)?.takeIf { it > 0f } ?: return null
+        val previousRatio =
+            waistToHeightRatio(previous, heightCm)?.takeIf { it > 0f } ?: return null
         val deltaPercent = (latestRatio - previousRatio) / previousRatio * 100f
         return when {
             deltaPercent < -LongevityConstants.TREND_FLAT_THRESHOLD -> LongevityTrend.Improving

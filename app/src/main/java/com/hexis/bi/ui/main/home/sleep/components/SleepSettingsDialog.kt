@@ -22,8 +22,8 @@ import com.hexis.bi.R
 import com.hexis.bi.ui.components.AppOutlinedButton
 import com.hexis.bi.ui.components.AppPrimaryButton
 import com.hexis.bi.ui.components.AppSlider
-import com.hexis.bi.utils.constants.SleepConstants
 import com.hexis.bi.ui.theme.NocturnePulseTheme
+import com.hexis.bi.utils.constants.SleepConstants
 
 @Composable
 fun SleepSettingsDialogContent(
@@ -71,7 +71,11 @@ fun SleepSettingsDialogContent(
                     append(goalText)
                     val unitIndex = goalText.lastIndexOf('h')
                     if (unitIndex >= 0) {
-                        addStyle(SpanStyle(color = NocturnePulseTheme.extendedColors.gray200), unitIndex, unitIndex + 1)
+                        addStyle(
+                            SpanStyle(color = NocturnePulseTheme.extendedColors.gray200),
+                            unitIndex,
+                            unitIndex + 1
+                        )
                     }
                 },
                 style = MaterialTheme.typography.bodyLarge,

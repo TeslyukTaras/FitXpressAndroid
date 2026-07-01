@@ -15,8 +15,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import timber.log.Timber
 import java.util.UUID
@@ -80,7 +80,10 @@ class ThreeDLookApi(
                 .await()
                 .data
             Result.success(
-                json.decodeFromJsonElement(CreateMeasurementResponse.serializer(), data.toJsonElement()).id,
+                json.decodeFromJsonElement(
+                    CreateMeasurementResponse.serializer(),
+                    data.toJsonElement()
+                ).id,
             )
         } catch (e: Exception) {
             if (e is CancellationException) throw e
@@ -97,7 +100,12 @@ class ThreeDLookApi(
                     .call(mapOf(FIELD_ID to id))
                     .await()
                     .data
-                Result.success(json.decodeFromJsonElement(MeasurementResponse.serializer(), data.toJsonElement()))
+                Result.success(
+                    json.decodeFromJsonElement(
+                        MeasurementResponse.serializer(),
+                        data.toJsonElement()
+                    )
+                )
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 Result.failure(e)
@@ -119,7 +127,12 @@ class ThreeDLookApi(
                 )
                 .await()
                 .data
-            Result.success(json.decodeFromJsonElement(BodyProgress3dResponse.serializer(), data.toJsonElement()).id)
+            Result.success(
+                json.decodeFromJsonElement(
+                    BodyProgress3dResponse.serializer(),
+                    data.toJsonElement()
+                ).id
+            )
         } catch (e: Exception) {
             if (e is CancellationException) throw e
             Result.failure(e)
@@ -134,7 +147,12 @@ class ThreeDLookApi(
                     .call(mapOf(FIELD_ID to id))
                     .await()
                     .data
-                Result.success(json.decodeFromJsonElement(BodyProgress3dResponse.serializer(), data.toJsonElement()))
+                Result.success(
+                    json.decodeFromJsonElement(
+                        BodyProgress3dResponse.serializer(),
+                        data.toJsonElement()
+                    )
+                )
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 Result.failure(e)

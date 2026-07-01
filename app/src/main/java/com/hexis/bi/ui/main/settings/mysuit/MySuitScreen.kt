@@ -41,16 +41,16 @@ import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppDialog
-import com.hexis.bi.ui.components.my_suit.ReconnectDialogContent
-import com.hexis.bi.ui.components.my_suit.SuitConnectedBanner
-import com.hexis.bi.ui.components.my_suit.SuitInfoRow
 import com.hexis.bi.ui.components.AppOutlinedButton
 import com.hexis.bi.ui.components.AppOutlinedTextField
 import com.hexis.bi.ui.components.AppPrimaryButton
 import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.components.my_suit.ReconnectDialogContent
+import com.hexis.bi.ui.components.my_suit.SuitConnectedBanner
+import com.hexis.bi.ui.components.my_suit.SuitInfoRow
+import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.screenBackground
 import org.koin.androidx.compose.koinViewModel
-import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 fun MySuitScreen(

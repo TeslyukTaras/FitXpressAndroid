@@ -5,10 +5,10 @@ import com.hexis.bi.data.terra.float
 import com.hexis.bi.data.terra.int
 import com.hexis.bi.data.terra.objectOrNull
 import com.hexis.bi.data.terra.parseTerraDateTimeField
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import timber.log.Timber
 import java.time.Duration
 import java.time.LocalDateTime
@@ -85,17 +85,23 @@ internal object TerraSleepJsonMapper {
             ?: metadata?.parseTerraDateTimeField("start_time_local")
             ?: obj.parseTerraDateTimeField("start_time_local")
             ?: run {
-            Timber.w("Terra sleep: missing/unparsed %s in metadata", TerraSleepJsonKeys.Metadata.START_TIME)
-            return null
-        }
+                Timber.w(
+                    "Terra sleep: missing/unparsed %s in metadata",
+                    TerraSleepJsonKeys.Metadata.START_TIME
+                )
+                return null
+            }
         val wakeTime = metadata?.parseTerraDateTimeField(TerraSleepJsonKeys.Metadata.END_TIME)
             ?: obj.parseTerraDateTimeField(TerraSleepJsonKeys.Metadata.END_TIME)
             ?: metadata?.parseTerraDateTimeField("end_time_local")
             ?: obj.parseTerraDateTimeField("end_time_local")
             ?: run {
-            Timber.w("Terra sleep: missing/unparsed %s in metadata", TerraSleepJsonKeys.Metadata.END_TIME)
-            return null
-        }
+                Timber.w(
+                    "Terra sleep: missing/unparsed %s in metadata",
+                    TerraSleepJsonKeys.Metadata.END_TIME
+                )
+                return null
+            }
 
         val durations = obj.objectOrNull(TerraSleepJsonKeys.Durations.NODE)
         val asleep = durations?.objectOrNull(TerraSleepJsonKeys.Durations.ASLEEP)
@@ -115,7 +121,8 @@ internal object TerraSleepJsonMapper {
 
         val efficiency = normalizeEfficiencyPercent(
             durations?.float(TerraSleepJsonKeys.SLEEP_EFFICIENCY)
-            ?: obj.objectOrNull(TerraSleepJsonKeys.Efficiency.NODE)?.float(TerraSleepJsonKeys.SLEEP_EFFICIENCY)
+                ?: obj.objectOrNull(TerraSleepJsonKeys.Efficiency.NODE)
+                    ?.float(TerraSleepJsonKeys.SLEEP_EFFICIENCY)
         )
 
         val heartRateNode = obj.objectOrNull(TerraSleepJsonKeys.HeartRate.NODE)
@@ -160,7 +167,10 @@ internal object TerraSleepJsonMapper {
     }
 
     /** Maps a Terra detailed sample array (`[{ timestamp, <valueField> }, …]`) to sorted samples. */
-    private fun JsonObject?.parseSamples(arrayField: String, valueField: String): List<SleepSample> {
+    private fun JsonObject?.parseSamples(
+        arrayField: String,
+        valueField: String
+    ): List<SleepSample> {
         val arr = this?.arrayOrNull(arrayField) ?: return emptyList()
         return arr.mapNotNull { el ->
             val o = el as? JsonObject ?: return@mapNotNull null
@@ -206,12 +216,17 @@ internal object TerraSleepJsonMapper {
             .orEmpty()
     }
 
-    private fun JsonObject.periods(periodField: String, stage: SleepStage): List<SleepStageInterval> {
+    private fun JsonObject.periods(
+        periodField: String,
+        stage: SleepStage
+    ): List<SleepStageInterval> {
         val arr = arrayOrNull(periodField) ?: return emptyList()
         return arr.mapNotNull { el ->
             val o = el as? JsonObject ?: return@mapNotNull null
-            val start = o.parseTerraDateTimeField(TerraSleepJsonKeys.Stages.PERIOD_START) ?: return@mapNotNull null
-            val end = o.parseTerraDateTimeField(TerraSleepJsonKeys.Stages.PERIOD_END) ?: return@mapNotNull null
+            val start = o.parseTerraDateTimeField(TerraSleepJsonKeys.Stages.PERIOD_START)
+                ?: return@mapNotNull null
+            val end = o.parseTerraDateTimeField(TerraSleepJsonKeys.Stages.PERIOD_END)
+                ?: return@mapNotNull null
             SleepStageInterval(stage = stage, start = start, end = end)
         }
     }

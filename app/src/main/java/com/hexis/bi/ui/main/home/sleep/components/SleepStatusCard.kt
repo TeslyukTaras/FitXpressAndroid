@@ -34,8 +34,8 @@ import com.hexis.bi.data.sleep.SleepStage
 import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.sleep.SleepStageData
 import com.hexis.bi.ui.main.home.sleep.nameRes
-import com.hexis.bi.utils.constants.SleepConstants
 import com.hexis.bi.ui.theme.NocturnePulseTheme
+import com.hexis.bi.utils.constants.SleepConstants
 
 /** Vertical gap (dimen res) between each stage's marker line and the HRV label below it. */
 private fun SleepStage.connectorDistanceRes(): Int = when (this) {
@@ -113,8 +113,10 @@ private fun stageHeaderValue(totalSleepMinutes: Int, sleepGoalHours: Int): Annot
     val minutes = totalSleepMinutes % 60
     val numberStyle = MaterialTheme.typography.bodyLarge.toSpanStyle().copy(color = Color.White)
     val unitStyle =
-        MaterialTheme.typography.bodyMedium.toSpanStyle().copy(color = NocturnePulseTheme.extendedColors.gray200.copy(alpha = 0.4f))
-    val goalStyle = MaterialTheme.typography.bodyMedium.toSpanStyle().copy(color = NocturnePulseTheme.extendedColors.gray200)
+        MaterialTheme.typography.bodyMedium.toSpanStyle()
+            .copy(color = NocturnePulseTheme.extendedColors.gray200.copy(alpha = 0.4f))
+    val goalStyle = MaterialTheme.typography.bodyMedium.toSpanStyle()
+        .copy(color = NocturnePulseTheme.extendedColors.gray200)
     val hourUnit = stringResource(R.string.unit_hours_short)
     val minuteUnit = stringResource(R.string.unit_minutes_short)
     val goalText = stringResource(R.string.sleep_stage_header_goal, sleepGoalHours)
@@ -134,7 +136,8 @@ private fun stageDurationValue(minutes: Int): AnnotatedString {
     val mins = safe % SleepConstants.MINUTES_PER_HOUR
     val valueStyle = MaterialTheme.typography.labelMedium.toSpanStyle()
         .copy(color = MaterialTheme.colorScheme.onBackground)
-    val unitStyle = MaterialTheme.typography.bodySmall.toSpanStyle().copy(color = NocturnePulseTheme.extendedColors.gray200)
+    val unitStyle = MaterialTheme.typography.bodySmall.toSpanStyle()
+        .copy(color = NocturnePulseTheme.extendedColors.gray200)
     val hourUnit = stringResource(R.string.unit_hours_short)
     val minuteUnit = stringResource(R.string.unit_minutes_short)
     return buildAnnotatedString {
