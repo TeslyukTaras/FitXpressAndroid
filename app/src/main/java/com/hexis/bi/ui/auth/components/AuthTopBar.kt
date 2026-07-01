@@ -59,6 +59,6 @@ internal fun AuthTopBar(
             )
         }
 
-        AppLogo(tint = MaterialTheme.colorScheme.primary)
+        AppLogo()
     }
 }

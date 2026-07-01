@@ -73,6 +73,7 @@ fun MainScreen(
     onDeleteAccount: () -> Unit,
     modifier: Modifier = Modifier,
     startDestination: String = Route.Main.HOME,
+    onExit: () -> Unit = {},
 ) {
     val navController = rememberNavController()
     val currentBackStack by navController.currentBackStackEntryAsState()
@@ -189,7 +190,7 @@ fun MainScreen(
             }
             composable(Route.Main.SUIT_SIZE_SCAN) {
                 ScanScreen(
-                    onBack = { navController.popBackStackOnce() },
+                    onBack = { if (!navController.popBackStackOnce()) onExit() },
                     onScanComplete = {
                         navController.navigate(Route.Main.SUIT_SIZE_RESULTS) {
                             popUpTo(Route.Main.SUIT_SIZE_SCAN) { inclusive = true }

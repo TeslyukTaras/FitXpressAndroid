@@ -116,6 +116,7 @@ fun OnboardingScreen(
         viewModel.events.collect { event ->
             when (event) {
                 is OnboardingEvent.Finished -> onFinish()
+                is OnboardingEvent.BuySuitScan -> onBuySuitScanRequested()
             }
         }
     }
@@ -209,8 +210,7 @@ fun OnboardingScreen(
             BuySuitDialogContent(
                 onBuySuit = {
                     showBuySuitDialog = false
-                    onBuySuitScanRequested()
-                    viewModel.finish()
+                    viewModel.buySuit()
                 },
             )
         }
@@ -298,10 +298,13 @@ private fun PersonalInfoPage(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(dimensionResource(R.dimen.spacer_5xl)),
+                    .padding(
+                        top = dimensionResource(R.dimen.spacer_2xl),
+                        bottom = dimensionResource(R.dimen.spacer_xxl),
+                    ),
                 contentAlignment = Alignment.Center,
             ) {
-                AppLogo(tint = MaterialTheme.colorScheme.primary)
+                AppLogo()
             }
 
             Spacer(Modifier.weight(1f))
