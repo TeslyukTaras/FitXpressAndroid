@@ -44,9 +44,9 @@ import com.hexis.bi.domain.body.BodyMeasurementRegion
 import com.hexis.bi.ui.components.AppHorizontalGradientDivider
 import com.hexis.bi.ui.components.AppVerticalGradientDivider
 import com.hexis.bi.ui.components.BodyGlassCard
-import com.hexis.bi.ui.main.scan.results.MetricAvatarBodyRing
-import com.hexis.bi.ui.main.scan.results.MetricAvatarPreview
-import com.hexis.bi.ui.main.scan.results.MetricAvatarStatusText
+import com.hexis.bi.ui.avatar.MetricAvatarBodyRing
+import com.hexis.bi.ui.avatar.MetricAvatarPreview
+import com.hexis.bi.ui.avatar.MetricAvatarStatusText
 import com.hexis.bi.ui.theme.MeasurementValueStyle
 import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.TitleHighlightTextStyle

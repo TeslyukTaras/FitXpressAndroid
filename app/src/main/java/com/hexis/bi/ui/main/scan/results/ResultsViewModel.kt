@@ -10,6 +10,7 @@ import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.scan.ThreeDLookRepository
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.body.BodyMeasurementRegion
+import com.hexis.bi.ui.avatar.prefetchMetricAvatarModel
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.main.body.BodyVisualColorModel
 import com.hexis.bi.ui.main.body.BodyVisualMode

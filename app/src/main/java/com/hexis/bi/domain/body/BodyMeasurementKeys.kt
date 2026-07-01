@@ -45,19 +45,5 @@ object BodyMeasurementKeys {
     fun valueFor(measurements: Map<String, Float>, region: BodyMeasurementRegion): Float? =
         valueKeys(region).firstNotNullOfOrNull { measurements[it] }
 
-    fun visualAnchorKey(region: BodyMeasurementRegion): String? = when (region) {
-        BodyMeasurementRegion.FullBody -> null
-        BodyMeasurementRegion.Neck -> Neck
-        BodyMeasurementRegion.Shoulders -> Shoulders
-        BodyMeasurementRegion.Chest -> Chest
-        BodyMeasurementRegion.Forearm -> Forearm
-        BodyMeasurementRegion.Bicep -> Bicep
-        BodyMeasurementRegion.UpperWaist -> UpperWaist
-        BodyMeasurementRegion.Waist -> Waist
-        BodyMeasurementRegion.LowerWaist -> LowerWaist
-        BodyMeasurementRegion.HipsGlutes -> LowHips
-        BodyMeasurementRegion.Thigh -> Thigh
-        BodyMeasurementRegion.Calf -> Calf
-        BodyMeasurementRegion.Ankle -> Ankle
-    }
+    fun visualAnchorKey(region: BodyMeasurementRegion): String? = region.anchorKey
 }
