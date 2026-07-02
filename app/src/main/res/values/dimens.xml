@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Spacers -->
+    <dimen name="spacer_3xs">2dp</dimen>
+    <dimen name="spacer_xxs">4dp</dimen>
+    <dimen name="spacer_2xs">6dp</dimen>
+    <dimen name="spacer_xs">8dp</dimen>
+    <dimen name="spacer_s">10dp</dimen>
+    <dimen name="spacer_m">12dp</dimen>
+    <dimen name="spacer_l">16dp</dimen>
+    <dimen name="spacer_xl">20dp</dimen>
+    <dimen name="spacer_2xl">24dp</dimen>
+    <dimen name="spacer_xxl">32dp</dimen>
+    <dimen name="spacer_3xl">48dp</dimen>
+    <dimen name="spacer_4xl">56dp</dimen>
+    <dimen name="spacer_5xl">64dp</dimen>
+    <dimen name="spacer_6xl">72dp</dimen>
+
+    <!-- Icons -->
+    <dimen name="icon_small">16dp</dimen>
+    <dimen name="icon_medium_small">20dp</dimen>
+    <dimen name="icon_medium">24dp</dimen>
+    <dimen name="icon_large">32dp</dimen>
+    <dimen name="icon_normalized">40dp</dimen>
+    <dimen name="logo_width">128dp</dimen>
+    <dimen name="flag_circle_small">22dp</dimen>
+    <dimen name="timeline_dot_size">16dp</dimen>
+    <dimen name="timeline_connector_width">0.5dp</dimen>
+    <dimen name="timeline_dash">1.66dp</dimen>
+
+    <!-- Padding -->
+    <dimen name="padding_small">8dp</dimen>
+    <dimen name="padding_medium">16dp</dimen>
+    <dimen name="padding_large">24dp</dimen>
+    <dimen name="padding_top">20dp</dimen>
+    <dimen name="padding_auth_vertical">40dp</dimen>
+    <dimen name="padding_forgot_password_bottom_button">94dp</dimen>
+
+    <dimen name="sleep_timeline_stage_height">48dp</dimen>
+    <dimen name="sleep_stage_line_height">3dp</dimen>
+    <dimen name="sleep_stage_dash_stroke">0.5dp</dimen>
+    <dimen name="sleep_stage_dash_segment">5dp</dimen>
+    <dimen name="sleep_stage_dist_light">56dp</dimen>
+    <dimen name="sleep_stage_dist_deep">32dp</dimen>
+    <dimen name="suit_size_image_height">275dp</dimen>
+    <dimen name="sleep_stage_dist_rem">76dp</dimen>
+    <dimen name="sleep_stage_dist_awake">38dp</dimen>
+    <dimen name="sleep_heart_chart_height">220dp</dimen>
+    <dimen name="sleep_heart_line_width">2dp</dimen>
+    <dimen name="sleep_heart_line_corner">4dp</dimen>
+    <dimen name="sleep_heart_grid_width">0.5dp</dimen>
+    <dimen name="sleep_heart_grid_dash">3dp</dimen>
+    <dimen name="sleep_bar_chart_height">200dp</dimen>
+    <dimen name="sleep_structure_bar_corner">4dp</dimen>
+    <dimen name="sleep_structure_bar_gap">10dp</dimen>
+    <dimen name="sleep_structure_bar_inset">16dp</dimen>
+    <dimen name="sleep_structure_grid_width">0.5dp</dimen>
+    <dimen name="sleep_structure_selection_border">0.5dp</dimen>
+    <dimen name="sleep_structure_grid_dash">5dp</dimen>
+    <dimen name="sleep_legend_dot">8dp</dimen>
+    <dimen name="sleep_bar_stripe_width">1dp</dimen>
+
+    <dimen name="sleep_timeline_line_width">1dp</dimen>
+    <dimen name="sleep_timeline_shadow_height">24dp</dimen>
+    <dimen name="sleep_timeline_plateau_grid_offset">2dp</dimen>
+    <dimen name="sleep_timeline_corner_radius">2dp</dimen>
+
+    <!-- Recovery -->
+    <dimen name="recovery_arc_width">130dp</dimen>
+    <dimen name="recovery_arc_height">108dp</dimen>
+    <dimen name="recovery_arc_stroke_width">8dp</dimen>
+    <dimen name="recovery_bar_chart_height">200dp</dimen>
+
+    <!-- Activity -->
+    <dimen name="activity_arc_size">130dp</dimen>
+    <dimen name="activity_arc_stroke_width">6dp</dimen>
+    <dimen name="activity_arc_ring_gap">6dp</dimen>
+    <dimen name="activity_chart_vgrid_dash">1.7dp</dimen>
+    <dimen name="activity_chart_vgrid_width">0.5dp</dimen>
+    <dimen name="activity_day_gauge_width">35dp</dimen>
+    <dimen name="activity_day_gauge_height">20dp</dimen>
+    <dimen name="activity_day_gauge_stroke">3dp</dimen>
+    <dimen name="activity_steps_chart_height">180dp</dimen>
+    <dimen name="activity_year_bar_width">20dp</dimen>
+    <dimen name="activity_trend_padding">34dp</dimen>
+    <dimen name="activity_chart_pointer_vertical_padding">5dp</dimen>
+    <dimen name="activity_chart_bar_gap_compact">6dp</dimen>
+    <dimen name="activity_chart_bar_gap_expanded">20dp</dimen>
+    <dimen name="activity_chart_start_padding_compact">8dp</dimen>
+    <dimen name="activity_chart_start_padding_expanded">16dp</dimen>
+    <dimen name="activity_chart_end_padding">4dp</dimen>
+    <dimen name="activity_chart_tooltip_padding_vertical">6dp</dimen>
+    <dimen name="activity_chart_tooltip_padding_horizontal">12dp</dimen>
+    <dimen name="chart_bar_min_height">1dp</dimen>
+
+    <!-- Scan -->
+    <dimen name="scan_corner_length">68dp</dimen>
+    <dimen name="scan_corner_stroke_width">4dp</dimen>
+    <dimen name="scan_corner_radius">6dp</dimen>
+    <dimen name="scanner_line_stroke_width">3dp</dimen>
+    <dimen name="scan_analyzing_loader_size">160dp</dimen>
+    <dimen name="scan_analyzing_loader_stroke">7dp</dimen>
+    <dimen name="scan_analyzing_bottom_spacer">50dp</dimen>
+    <dimen name="app_date_picker_dialog_max_width">560dp</dimen>
+    <dimen name="app_date_range_picker_max_height">430dp</dimen>
+    <!-- Measurement leader overlay (3D preview pills + leader strokes). -->
+    <dimen name="metric_avatar_retry_button_height">40dp</dimen>
+    <dimen name="metric_avatar_retry_icon_size">18dp</dimen>
+    <dimen name="metric_avatar_text_max_width">140dp</dimen>
+
+    <!-- Component sizes -->
+    <dimen name="size_indicator">4dp</dimen>
+    <dimen name="size_indicator_bigger">6dp</dimen>
+    <dimen name="size_social_button">48dp</dimen>
+    <dimen name="height_button">48dp</dimen>
+    <dimen name="size_loading_indicator">20dp</dimen>
+    <dimen name="size_avatar_button">28dp</dimen>
+    <dimen name="size_avatar">50dp</dimen>
+    <dimen name="size_avatar_large">100dp</dimen>
+    <dimen name="size_tick_icon">44dp</dimen>
+    <dimen name="size_bottom_nav_center">56dp</dimen>
+    <!-- Body Visual tab layout. model_top 0 = the 3D model runs up to the tabs. -->
+    <dimen name="body_visual_bottom_spacer">86dp</dimen>
+    <dimen name="body_visual_model_blur_top_radius">2dp</dimen>
+    <dimen name="body_visual_model_blur_bottom_radius">2.5dp</dimen>
+    <!-- Body Visual tab — body-part selector ruler -->
+    <dimen name="body_part_selector_scale_width">32dp</dimen>
+    <dimen name="body_part_selector_label_gap">16dp</dimen>
+    <dimen name="body_part_selector_item_height">50dp</dimen>
+    <dimen name="body_part_selector_tick_full">32dp</dimen>
+    <dimen name="body_part_selector_tick_inner">14dp</dimen>
+    <dimen name="body_part_selector_tick_spacing">10dp</dimen>
+    <dimen name="body_part_selector_tick_stroke">1dp</dimen>
+    <!-- Body Compare tab — horizontal body-part selector -->
+    <dimen name="body_part_selector_horizontal_height">54dp</dimen>
+    <dimen name="body_part_selector_horizontal_item_padding">12dp</dimen>
+    <dimen name="promo_button_width">120dp</dimen>
+    <dimen name="promo_button_height">32dp</dimen>
+    <dimen name="dark_slider_track_height">4dp</dimen>
+    <dimen name="switch_track_width">45dp</dimen>
+    <dimen name="switch_track_height">24dp</dimen>
+    <dimen name="switch_thumb_size">18dp</dimen>
+    <dimen name="dark_switch_thumb_shadow_blur">4.5dp</dimen>
+
+    <!-- Radio button / checkbox (Scan Preference) -->
+    <dimen name="radio_button_size">22dp</dimen>
+    <dimen name="checkbox_size">22dp</dimen>
+    <dimen name="picker_height">200dp</dimen>
+    <dimen name="picker_highlight_height">45dp</dimen>
+    <dimen name="picker_item_padding">80dp</dimen>
+    <dimen name="date_navigator_label_min_width">120dp</dimen>
+
+    <!-- Corner radii -->
+    <dimen name="corner_sheet">24dp</dimen>
+    <dimen name="drag_sheet">22dp</dimen>
+
+    <!-- Borders -->
+    <dimen name="border_thin">1dp</dimen>
+    <dimen name="border_line">0.2dp</dimen>
+    <dimen name="border_hairline">0.5dp</dimen>
+
+    <!-- Elevation -->
+    <dimen name="elevation_none">0dp</dimen>
+
+    <!-- Effects -->
+    <dimen name="blur_dialog_backdrop">2dp</dimen>
+    <dimen name="glass_background_blur">5dp</dimen>
+    <dimen name="glass_rim_width">0.25dp</dimen>
+
+    <!-- Dividers -->
+
+    <!-- Effects -->
+    <dimen name="dash_width">5dp</dimen>
+
+    <!-- Body screen -->
+    <dimen name="body_chart_height">220dp</dimen>
+    <dimen name="body_chart_dash_width">6dp</dimen>
+    <dimen name="body_chart_legend_line_width">20dp</dimen>
+    <dimen name="body_toggle_height">22dp</dimen>
+    <dimen name="edit_profile_units_toggle_chip_width">68dp</dimen>
+    <dimen name="body_chart_point_radius">5dp</dimen>
+    <dimen name="body_chart_line_stroke">1dp</dimen>
+    <dimen name="body_chart_grid_dash">1.5dp</dimen>
+    <dimen name="body_switch_button_width">40dp</dimen>
+
+    <!-- Longevity screen -->
+    <dimen name="longevity_chart_height">180dp</dimen>
+    <dimen name="longevity_chart_line_stroke">2dp</dimen>
+    <dimen name="longevity_chart_grid_stroke">0.5dp</dimen>
+    <dimen name="longevity_toggle_chip_width">50dp</dimen>
+
+    <!-- Home overview cards -->
+    <dimen name="home_activity_chart_height">56dp</dimen>
+    <dimen name="home_activity_bar_corner">2dp</dimen>
+    <dimen name="home_activity_bar_spacing">3.5dp</dimen>
+    <dimen name="home_sleep_progress_height">4dp</dimen>
+    <dimen name="home_sparkline_height">72dp</dimen>
+    <dimen name="home_sparkline_stroke">2dp</dimen>
+    <dimen name="home_sparkline_marker_size">7.5dp</dimen>
+    <dimen name="home_sparkline_marker_border">1.5dp</dimen>
+    <dimen name="home_intelligence_gauge_stroke">5.5dp</dimen>
+    <dimen name="home_scan_spacer">40dp</dimen>
+    <dimen name="pace_meter_bar_height">5.5dp</dimen>
+
+    <!-- My Body — proportion scale indicator -->
+    <dimen name="proportion_indicator_height">14dp</dimen>
+    <dimen name="proportion_indicator_track_height">4dp</dimen>
+    <dimen name="proportion_indicator_marker_inset">5dp</dimen>
+    <dimen name="proportion_indicator_marker_half_width">4dp</dimen>
+    <dimen name="proportion_indicator_marker_height">6dp</dimen>
+    <dimen name="proportion_indicator_marker_gap">2dp</dimen>
+
+</resources>

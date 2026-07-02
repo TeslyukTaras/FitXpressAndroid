@@ -1,3 +1,1018 @@
 <resources>
-    <string name="app_name">FitXpress</string>
+    <!-- app_name is provided per-flavor via resValue (see app/build.gradle.kts) -->
+
+    <!-- Content descriptions -->
+    <string name="cd_back">Back</string>
+    <string name="cd_close">Close</string>
+    <string name="colon">:</string>
+    <string name="space">" "</string>
+    <string name="slash">/</string>
+
+    <!-- Actions -->
+    <string name="action_skip">Skip</string>
+    <string name="action_next">Next</string>
+    <string name="action_start">Start</string>
+    <string name="action_get_started">Get Started</string>
+    <string name="action_login">Log In</string>
+    <string name="action_signup">Sign Up</string>
+    <string name="action_forgot_password">Forgot Password?</string>
+    <string name="action_got_it">Got it</string>
+    <string name="action_reset">Reset</string>
+
+    <!-- Auth screens -->
+    <string name="login_title">Log In</string>
+    <string name="login_subtitle">Welcome back!</string>
+    <string name="signup_title">Sign Up</string>
+    <string name="signup_subtitle">Create an account to continue!</string>
+    <string name="label_first_name">First Name</string>
+    <string name="label_last_name">Last Name</string>
+    <string name="label_email">Email</string>
+    <string name="label_password">Password</string>
+    <string name="label_confirm_password">Confirm Password</string>
+    <string name="placeholder_first_name">Your First Name</string>
+    <string name="placeholder_last_name">Your Last Name</string>
+    <string name="placeholder_email">Your Email</string>
+    <string name="placeholder_password">Your Password</string>
+    <string name="placeholder_confirm_password">Confirm Your Password</string>
+    <string name="or_continue_with">Or Continue with</string>
+    <string name="terms_text">I agree with the</string>
+    <string name="terms_link">Terms</string>
+    <string name="terms_and">and</string>
+    <string name="privacy_link">Privacy Policy</string>
+    <string name="no_account">Don\'t have an account?</string>
+    <string name="have_account">Already have an account?</string>
+    <string name="cd_toggle_password">Toggle password visibility</string>
+    <string name="cd_google_signin">Sign in with Google</string>
+
+    <!-- Notifications screen -->
+    <string name="screen_notifications">Notifications</string>
+    <string name="notification_settings_title">Notifications</string>
+    <string name="notifications_mark_all_read">Mark all as read</string>
+    <string name="notifications_time_just_now">Just now</string>
+    <string name="notifications_time_ago">%1$s ago</string>
+    <string name="notif_next_scheduled_scan_title">Next scheduled scan</string>
+    <string name="notif_next_scheduled_scan_body">Your next scan is on %1$s</string>
+    <string name="notif_scan_today_title">Scan today</string>
+    <string name="notif_scan_today_body">It\'s time for your scheduled body scan.</string>
+    <string name="notif_finish_scan_today_title">It\'s time for your scheduled body scan.</string>
+    <string name="notif_finish_scan_today_body">Finish your body scan today to keep your progress on track.</string>
+    <string name="notif_missed_title">You missed this week\'s scan</string>
+    <string name="notif_missed_body">Come back next %1$s for your next scheduled scan.</string>
+    <string name="notif_body_scan_done_title">Body scan completed</string>
+    <string name="notif_body_scan_done_body">Your scan was saved successfully.</string>
+    <string name="notifications_empty">No notifications yet</string>
+    <string name="notifications_toggle">Notifications</string>
+    <string name="notifications_voice">Voice</string>
+    <string name="notifications_remind_to_scan">Remind Me To Scan</string>
+    <string name="notifications_remind_to_scan_subtitle">Get reminders to do your next body scan.</string>
+    <string name="notifications_day">Day:</string>
+    <string name="notifications_time">Time:</string>
+    <string name="notifications_select_time">Select time</string>
+    <string name="error_notifications_permission_denied">Enable notifications in system settings to receive scan reminders.</string>
+
+    <!-- Days of the week -->
+    <string name="day_monday">Monday</string>
+    <string name="day_tuesday">Tuesday</string>
+    <string name="day_wednesday">Wednesday</string>
+    <string name="day_thursday">Thursday</string>
+    <string name="day_friday">Friday</string>
+    <string name="day_saturday">Saturday</string>
+    <string name="day_sunday">Sunday</string>
+
+    <!-- Edit profile screen -->
+    <string name="edit_profile_title">Edit Profile</string>
+    <string name="edit_profile_personal_info">Personal Information</string>
+    <string name="edit_profile_units">Units</string>
+    <string name="edit_profile_metric">Metric</string>
+    <string name="edit_profile_imperial">Imperial</string>
+    <string name="edit_profile_height">Height</string>
+    <string name="edit_profile_weight">Weight</string>
+    <string name="label_date_of_birth">Date of Birth</string>
+    <string name="placeholder_date_of_birth">00/00/0000</string>
+    <string name="label_gender">Gender</string>
+    <string name="gender_male">Male</string>
+    <string name="gender_female">Female</string>
+    <string name="gender_other">Other</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+
+    <!-- Scan preferences screen -->
+    <string name="scan_preferences_title">Scan Preference</string>
+    <string name="scan_preferences_units">Units</string>
+    <string name="scan_preferences_units_subtitle">Choose your default measurement units.</string>
+    <string name="scan_preferences_metric">Metric</string>
+    <string name="scan_preferences_imperial">Imperial</string>
+    <string name="scan_preferences_voice_guidance">Voice guidance</string>
+    <string name="scan_preferences_voice_guidance_subtitle">Choose whether voice instructions play automatically during scans.</string>
+    <string name="scan_preferences_zones_title">Measurement Zones</string>
+    <string name="scan_preferences_zones_subtitle">Choose which body zones appear in your measurement tables.</string>
+    <string name="scan_preferences_zone_all">All</string>
+
+    <!-- My Suit screen -->
+    <string name="my_suit_title">My Suit</string>
+    <string name="my_suit_connect_title">Connect Your Hexis-BI Suit</string>
+    <string name="my_suit_connect_subtitle">Your scanning suit provides the most accurate body measurements.</string>
+    <string name="label_suit_id">Suit ID</string>
+    <string name="my_suit_id_hint">You can find the ID on your suit tag or packaging</string>
+    <string name="action_connect">Connect</string>
+    <string name="my_suit_no_suit">No scanning suit yet? </string>
+    <string name="my_suit_buy_one">Buy one</string>
+    <string name="my_suit_connected_banner_title">Hexis-BI Suit Connected</string>
+    <string name="my_suit_connected_banner_body">Your scanning suit is successfully linked to your profile.</string>
+    <string name="my_suit_status">Status</string>
+    <string name="action_reconnect_suit">Reconnect Suit</string>
+    <string name="my_suit_reconnect_dialog_title">Reconnect Suit?</string>
+    <string name="my_suit_reconnect_dialog_body">This will disconnect the suit from your profile.</string>
+    <string name="my_suit_reconnect_dialog_note">Your progress and scan history\nwill stay saved.</string>
+    <string name="action_reconnect">Reconnect</string>
+    <string name="cd_suit_connected">Suit connected</string>
+    <string name="buy_suit_dialog_title">Get Your Scan Suit</string>
+    <string name="buy_suit_dialog_body">Start a size scan and we’ll recommend\nyour best fit.</string>
+    <string name="buy_suit_dialog_note">After delivery, enter your Suit ID\nto activate the suit.</string>
+    <string name="action_buy_suit_title_case">Buy Suit</string>
+
+    <!-- Settings screen -->
+    <string name="screen_settings">Settings</string>
+    <string name="settings_group_account">Account</string>
+    <string name="settings_edit_profile">Edit Profile</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_health_connections">Health Connections</string>
+    <string name="settings_group_suit_scanning">Suit &amp; Scanning</string>
+    <string name="settings_my_suit">My Suit</string>
+    <string name="settings_scan_preferences">Scan Preference</string>
+    <string name="settings_group_support_about">Support &amp; About</string>
+    <string name="settings_how_scanning_works">How Scanning Works</string>
+    <string name="settings_help">Help &amp; Support</string>
+    <string name="settings_terms_privacy">Terms &amp; Privacy</string>
+    <string name="settings_report_problem">Report a Problem</string>
+    <string name="support_email_address" translatable="false">support@hexis-bi.com</string>
+    <string name="support_email_subject">Hexis-BI Support Request</string>
+    <string name="problem_report_email_subject">Hexis-BI Problem Report</string>
+    <string name="support_email_body">Please describe the problem:\n\nSteps to reproduce:\n1. \n2. \n3. \n\nExpected result:\n\nActual result:\n\n---\nApp version: %1$s (%2$d)\nEnvironment: %3$s\nDevice model: %4$s\nOperating system: Android %5$s (API %6$d)</string>
+    <string name="error_no_email_app">No email application found</string>
+    <string name="settings_group_actions">Actions</string>
+    <string name="settings_delete_account">Delete Account</string>
+    <string name="settings_logout">Log Out</string>
+    <string name="delete_account_dialog_title">Delete account?</string>
+    <string name="delete_account_dialog_body_password">For security reasons, enter your password to continue.</string>
+    <string name="delete_account_dialog_body_confirm">Are you sure you want to delete your account? This action cannot be undone.</string>
+    <string name="delete_account_dialog_action_delete">Delete</string>
+
+    <!-- Home screen -->
+    <string name="home_latest_scan">Latest Scan · %1$s</string>
+    <string name="home_stat_weight">Weight</string>
+    <string name="home_stat_height">Height</string>
+    <string name="home_stat_age">Age</string>
+    <string name="home_banner_title">Smarter\nBody Scans</string>
+    <string name="home_banner_body">Your body knows before you do</string>
+    <string name="home_action_buy_suit">Buy Suit</string>
+    <string name="home_overview_title">Overview</string>
+    <string name="home_intelligence_title">Body Intelligence</string>
+    <string name="intelligence_recovery">Recovery</string>
+    <string name="intelligence_physique_drift">Physique Drift</string>
+    <string name="intelligence_longevity">Longevity</string>
+    <string name="intelligence_pace_of_aging">Pace of Aging</string>
+    <string name="intelligence_coming">Coming</string>
+    <string name="home_card_sleep">Sleep</string>
+    <string name="home_card_activity">Activity</string>
+    <!-- Activity mini bar chart day-range labels. -->
+    <string name="home_activity_start_label">12 am</string>
+    <string name="home_activity_end_label">11:59 pm</string>
+    <string name="home_card_scan">Scan</string>
+    <!-- Home "Scan" overview card. -->
+    <string name="home_scan_no_data">No scans yet</string>
+    <string name="home_scan_last_scan">Last scan</string>
+    <!-- Subtitle with the scan date, e.g. "Key Change · Dec 15". -->
+    <string name="home_scan_key_change">Key Change · %1$s</string>
+    <!-- valueLabel: arrow + body part, e.g. "↓ Mid Waist". -->
+    <string name="home_scan_change_label">%1$s %2$s</string>
+    <string name="home_scan_arrow_down">↓</string>
+    <string name="home_scan_arrow_up">↑</string>
+    <string name="home_nav_home">Home</string>
+    <string name="home_nav_body">Body</string>
+    <string name="body_scan_history_empty">No saved scans yet. Complete a scan to see history.</string>
+    <string name="body_screen_title">My Body Results</string>
+    <string name="body_tab_stats">Stats</string>
+    <string name="body_tab_visual">Visual</string>
+    <string name="body_tab_my_body">My Body</string>
+    <string name="body_tab_compare">Compare</string>
+    <string name="cd_body_history">Scan history</string>
+    <string name="cd_body_bis_info">About Physique Balance</string>
+    <string name="cd_body_physique_balance">Open Physique Balance</string>
+    <string name="body_composition_title">Body Composition</string>
+    <string name="body_physique_balance_title">Physique Balance</string>
+    <string name="body_metric_body_fat">Body Fat</string>
+    <string name="body_metric_muscle_mass">Lean Body Mass</string>
+    <string name="body_metric_weight">Weight</string>
+    <string name="body_metric_bis">Physique</string>
+    <string name="body_range_week">W</string>
+    <string name="body_range_month">M</string>
+    <string name="body_range_year">Y</string>
+    <string name="body_chart_legend_muscle">Lean Advantage</string>
+    <string name="body_chart_legend_fat">Fat Advantage</string>
+    <string name="body_chart_legend_confirmed_scan">Confirmed\nScan</string>
+    <string name="body_chart_legend_predicted_drift">Predicted\nDrift</string>
+    <string name="body_chart_legend_future_estimate">Future\nEstimate</string>
+    <string name="body_physique_drift">Physique Drift</string>
+    <string name="body_physique_drift_period_week">this week</string>
+    <string name="body_physique_drift_period_month">this month</string>
+    <string name="body_physique_drift_period_year">this year</string>
+    <string name="body_next_scan">Next Scan</string>
+    <string name="body_next_scan_days_suffix">days</string>
+    <string name="body_next_scan_estimate">Next Scan\nEstimate</string>
+    <string name="body_physique_fit">Fit</string>
+    <!-- Signed delta — sign and magnitude are separate placeholders so the sign can be coloured. -->
+    <string name="delta_sign_positive">+</string>
+    <string name="delta_sign_negative">−</string>
+    <!-- Delta, e.g. "+ 0.6": sign, magnitude. -->
+    <string name="delta_value">%1$s %2$s</string>
+    <!-- Delta with unit, e.g. "+ 0.4 kg": sign, magnitude, unit. -->
+    <string name="delta_value_with_unit">%1$s %2$s %3$s</string>
+    <string name="body_error_title">Couldn\'t load body data</string>
+    <string name="body_my_body_subtitle">Understand your body proportions and balance.</string>
+    <!-- My Body / Body Proportion -->
+    <string name="body_proportion_card_title">Body Proportion</string>
+    <string name="body_proportion_empty">Complete a scan to see your body proportions.</string>
+    <string name="body_proportion_value_empty">--</string>
+    <string name="body_proportion_group_upper">Upper Body - Structure</string>
+    <string name="body_proportion_group_mid">Mid Section - Metabolic</string>
+    <string name="body_proportion_group_lower">Lower Body - Foundation</string>
+    <string name="body_proportion_label_shoulder_waist">Shoulder : Waist</string>
+    <string name="body_proportion_label_shoulder_hip">Shoulder : Hip</string>
+    <string name="body_proportion_label_waist_hip">Waist : Hip</string>
+    <string name="body_proportion_label_hip_shoulder">Hip : Shoulder</string>
+    <string name="body_proportion_label_waist_height">Waist : Height</string>
+    <string name="body_proportion_label_thigh_waist">Thigh : Waist</string>
+    <string name="body_proportion_label_calf_thigh">Calf : Thigh</string>
+    <string name="body_proportion_status_not_available">Not available</string>
+    <string name="body_proportion_status_developing">Developing</string>
+    <string name="body_proportion_status_athletic">Athletic</string>
+    <string name="body_proportion_status_balanced">Balanced</string>
+    <string name="body_proportion_status_excellent">Excellent</string>
+    <string name="body_proportion_status_healthy">Healthy</string>
+    <string name="body_proportion_status_needs_attention">Needs attention</string>
+    <string name="body_proportion_status_elite_vtaper">Elite V-Taper</string>
+    <string name="body_proportion_status_good">Good</string>
+    <string name="body_proportion_status_athletic_frame">Athletic Frame</string>
+    <string name="body_proportion_status_upper_dominant">Upper dominant</string>
+    <string name="body_proportion_status_very_muscular">Very muscular</string>
+    <string name="body_proportion_status_fit">Fit</string>
+    <string name="body_proportion_status_strong_calves">Strong calves</string>
+    <string name="body_proportion_status_hourglass">Hourglass</string>
+    <string name="body_proportion_status_pear">Pear</string>
+    <string name="body_proportion_status_inverted_triangle">Inverted Triangle</string>
+    <!-- Body Proportion info sheet -->
+    <string name="body_proportion_info_title">Body Proportion</string>
+    <string name="body_proportion_info_intro">See how your upper body, midsection, and lower body compare using ratios from your latest scan. Each value is shown against a reference range to help you understand your current proportions.</string>
+    <string name="body_proportion_info_upper_heading">1. Upper Body</string>
+    <string name="body_proportion_info_shoulder_waist_body">Shows the relationship between shoulder width and waist size. For male profiles, this helps describe the V-taper.</string>
+    <string name="body_proportion_info_shoulder_hip_body">Shows the balance between shoulder and hip width and helps indicate upper-body dominance.</string>
+    <string name="body_proportion_info_hip_shoulder_body">Shows the balance between hip and shoulder size and helps describe the overall body shape.</string>
+    <string name="body_proportion_info_mid_heading">2. Mid Section</string>
+    <string name="body_proportion_info_waist_height_body">Shows your waist size relative to your height and provides an indication of midsection balance.</string>
+    <string name="body_proportion_info_waist_hip_body">Shows the relationship between the waist and hips, including the glute area. This ratio helps describe female body shape.</string>
+    <string name="body_proportion_info_lower_heading">3. Lower Body</string>
+    <string name="body_proportion_info_thigh_waist_body">Shows thigh development relative to waist size.</string>
+    <string name="body_proportion_info_calf_thigh_body">Shows the balance between calf and thigh measurements.</string>
+    <string name="body_proportion_info_note_heading">Note:</string>
+    <string name="body_proportion_info_note_body">Body proportions may change over time due to training, body composition, posture, and other factors.</string>
+    <!-- Visual tab -->
+    <string name="body_visual_latest_scan">Latest scan</string>
+    <string name="body_visual_current_scan">Current scan</string>
+    <string name="body_visual_previous_scan">Previous scan</string>
+    <string name="body_visual_mode_base">Base</string>
+    <string name="body_visual_mode_color">Color</string>
+    <string name="body_part_full_body">Full Body</string>
+    <string name="body_part_neck">Neck</string>
+    <string name="body_part_shoulders">Shoulders</string>
+    <string name="body_part_chest">Chest</string>
+    <string name="body_part_forearms">Forearms</string>
+    <string name="body_part_biceps_upper_arm">Biceps -\nUpper Arm</string>
+    <string name="body_part_biceps_upper_arm_single_line">Biceps - Upper Arm</string>
+    <string name="body_part_upper_waist">Upper Waist</string>
+    <string name="body_part_mid_waist">Mid Waist</string>
+    <string name="body_part_lower_waist">Lower Waist</string>
+    <string name="body_part_hips_glutes">Hips - Glutes</string>
+    <string name="body_part_thighs">Thighs</string>
+    <string name="body_part_calves">Calves</string>
+    <string name="body_part_ankles">Ankles</string>
+    <string name="body_visual_model_placeholder">3D model</string>
+    <string name="body_visual_no_data">No scans yet. Complete a scan to see your measurements here.</string>
+    <string name="body_visual_color_loading">Improving color model…</string>
+    <string name="body_visual_color_unavailable">Color view needs two completed scans to compare.</string>
+    <string name="body_visual_color_error">Couldn\'t load color view for this comparison.</string>
+    <string name="body_visual_value_missing">—</string>
+    <string name="body_visual_part_bullet">—</string>
+    <string name="body_visual_delta_increase">+ %1$s %2$s ↑</string>
+    <string name="body_visual_delta_decrease">− %1$s %2$s ↓</string>
+    <!-- Compare tab -->
+    <string name="body_compare_subtitle_latest">Body Evolution – comparing latest scans</string>
+    <string name="body_compare_subtitle">Body Evolution – comparing selected scans</string>
+    <string name="body_compare_left_scan">Left Scan</string>
+    <string name="body_compare_right_scan">Right Scan</string>
+    <string name="body_bis_sheet_title">How Physique Balance works</string>
+    <string name="body_bis_sheet_body">Physique Balance shows how your body is changing between scans.\nIt combines your scan results with activity, sleep, recovery, and weight trends to estimate your physique direction over time.</string>
+    <string name="body_bis_sheet_heading_drift">1. Physique Drift</string>
+    <string name="body_bis_sheet_body_drift">Shows the direction your physique is trending this week.\nA positive value means your trend is improving.</string>
+    <string name="body_bis_sheet_heading_next_scan">2. Next Scan</string>
+    <string name="body_bis_sheet_body_next_scan">Shows how many days remain until your next scan.\nStay consistent to improve your trend.</string>
+    <string name="body_bis_sheet_heading_next_scan_estimate">3. Next Scan Estimate</string>
+    <string name="body_bis_sheet_body_next_scan_estimate">Predicts your next Physique Score if your current trend continues.</string>
+    <string name="unit_kg">kg</string>
+    <string name="unit_lb">lb</string>
+    <string name="scan_history_title">Scan History</string>
+    <string name="scan_history_top_change_prefix">Top change:</string>
+    <string name="scan_history_top_change_dash">—</string>
+    <string name="cd_scan_history_calendar">Pick date range</string>
+    <string name="scan_history_date_range_limit">Select a range of %1$d days or less.</string>
+    <string name="scan_history_empty_for_range">No scans in the selected date range.</string>
+    <string name="cd_avatar">User avatar</string>
+    <string name="cd_notification">Notifications</string>
+    <string name="cd_settings">Settings</string>
+    <string name="cd_scan_action">Scan</string>
+    <string name="cd_info">Info</string>
+    <string name="cd_clear_selection">Clear selection</string>
+
+    <!-- Sleep screen -->
+    <string name="sleep_screen_title">Sleep</string>
+    <string name="sleep_stages_title">Sleep Stages</string>
+    <string name="sleep_stage_deep">Deep</string>
+    <string name="sleep_stage_rem">REM</string>
+    <string name="sleep_stage_light">Light</string>
+    <string name="sleep_stage_awake">Awake</string>
+    <string name="sleep_quality_good">Good</string>
+    <string name="sleep_quality_fair">Fair</string>
+    <string name="sleep_quality_poor">Poor</string>
+    <string name="sleep_duration_hours_minutes">%1$d h %2$02d m</string>
+    <string name="sleep_duration_minutes">%1$02d m</string>
+    <string name="sleep_goal_hours">Goal: %1$d h</string>
+    <string name="sleep_stage_header_goal"> / %1$d h</string>
+    <string name="sleep_time_am">%1$d am</string>
+    <string name="sleep_time_pm">%1$d pm</string>
+    <string name="health_provider_google_health">Google Health</string>
+    <string name="health_provider_apple_health">Apple Health</string>
+    <string name="unit_hours_short">h</string>
+    <string name="unit_minutes_short">m</string>
+    <string name="unit_percent">%</string>
+    <string name="unit_ms">ms</string>
+    <string name="unit_bpm">bpm</string>
+    <string name="sleep_heart_metrics_title">Heart Metrics</string>
+    <string name="sleep_last_night">Last Night</string>
+    <string name="sleep_metric_hrv">HRV</string>
+    <string name="sleep_metric_hrv_unit">HRV (ms)</string>
+    <string name="sleep_metric_rhr_short">RHR</string>
+    <string name="sleep_metric_rhr_unit">RHR (bpm)</string>
+    <string name="sleep_metric_value_unit">%1$d %2$s</string>
+    <string name="sleep_timeline_title">Sleep Timeline</string>
+    <string name="sleep_recovery_title">Sleep &amp; Body Recovery</string>
+    <string name="sleep_recovery_subtitle">Better sleep consistency may support improved recovery over time.</string>
+    <string name="sleep_insight_good">Solid sleep score — your body got the recovery it needed last night.</string>
+    <string name="sleep_insight_fair">Decent rest. Slightly longer or more consistent sleep would boost recovery.</string>
+    <string name="sleep_insight_poor">Short or fragmented sleep detected. Prioritize a longer, steadier night to support recovery.</string>
+    <string name="sleep_error_title">Couldn\'t load sleep data</string>
+    <string name="action_retry">Retry</string>
+    <string name="sleep_settings_title">Sleep Settings</string>
+    <string name="sleep_settings_goal">Sleep Goal</string>
+    <string name="sleep_settings_data_source">Data Source</string>
+    <string name="sleep_summary_last_7_days">Last 7 Days</string>
+    <string name="sleep_summary_trend_note">Arrows indicate changes compared to the previous week.</string>
+    <string name="sleep_structure_title">Sleep Structure</string>
+    <string name="sleep_recovery_sheet_title">Sleep and Recovery</string>
+    <string name="sleep_recovery_sheet_intro">Sleep affects how your body restores, recovers, and adapts. Consistent sleep may support better recovery, HRV, and resting heart rate.</string>
+    <string name="sleep_recovery_sheet_heading_status">1. Sleep Status</string>
+    <string name="sleep_recovery_sheet_body_status">Shows your total sleep time and time spent in each sleep stage.</string>
+    <string name="sleep_recovery_sheet_heading_timeline">2. Sleep Timeline</string>
+    <string name="sleep_recovery_sheet_body_timeline">Visualizes how your sleep stages changed through the night.</string>
+    <string name="sleep_recovery_sheet_heading_stages">3. Sleep Stages</string>
+    <string name="sleep_recovery_sheet_body_stages">Deep sleep - supports physical recovery and restoration.\nLight sleep - supports relaxation and recovery balance.\nREM - supports cognitive and emotional recovery.\nAwake - shows brief interruptions during sleep.</string>
+    <string name="sleep_recovery_sheet_heading_metrics">4. Sleep Metrics</string>
+    <string name="sleep_recovery_sheet_body_metrics">Key recovery signals including restfulness, HRV, and resting heart rate.</string>
+    <string name="sleep_recovery_sheet_heading_hrv">5. HRV</string>
+    <string name="sleep_recovery_sheet_body_hrv">Heart Rate Variability reflects how well your body is recovering and adapting to stress and activity</string>
+    <string name="sleep_recovery_sheet_heading_rhr">6. RHR</string>
+    <string name="sleep_recovery_sheet_body_rhr">Resting Heart Rate reflects how calm your body is during rest. Lower values are often linked to better recovery and cardiovascular fitness.</string>
+    <string name="sleep_recovery_sheet_heading_weekly">7. Weekly Summary</string>
+    <string name="sleep_recovery_sheet_body_weekly">Highlights your sleep and recovery trends over time.</string>
+
+    <!-- Forgot password screen -->
+    <string name="forgot_password_title">Forgot password?</string>
+    <string name="forgot_password_subtitle">Type your email and we\'ll send you a reset code.</string>
+    <string name="action_send_code">Send code</string>
+    <string name="forgot_password_success_title">Check your email</string>
+    <string name="forgot_password_success_body">We\'ve sent you a link to reset your password.</string>
+    <string name="cd_close_dialog">Close</string>
+
+    <!-- Generic stat placeholder shown before data loads or when value is unavailable -->
+    <string name="stat_unknown">—</string>
+
+    <!-- Measurement unit format strings -->
+    <string name="unit_height_cm">%1$d cm</string>
+    <string name="unit_height_ft_in">%1$d ft %2$d in</string>
+    <string name="unit_weight_kg">%1$d kg</string>
+    <string name="unit_weight_lb">%1$d lb</string>
+
+    <!-- Validation errors -->
+    <string name="error_email_required">Email is required</string>
+    <string name="error_email_invalid">Enter a valid email address</string>
+    <string name="error_password_required">Password is required</string>
+    <string name="error_first_name_required">First name is required</string>
+    <string name="error_last_name_required">Last name is required</string>
+    <string name="error_confirm_password_required">Please confirm your password</string>
+    <string name="error_passwords_do_not_match">Passwords do not match</string>
+    <string name="error_terms_not_accepted">Please accept the Terms &amp; Privacy Policy to continue</string>
+    <string name="error_phone_required">Phone number is required</string>
+    <string name="error_phone_invalid">Enter a valid phone number</string>
+    <string name="error_address_required">Address is required</string>
+    <string name="error_city_required">City is required</string>
+    <string name="error_field_required">%1$s is required</string>
+    <string name="error_place_order_failed">Couldn’t place your order. Please try again.</string>
+    <string name="error_postal_code_invalid">Enter a valid postal code</string>
+
+    <!-- Password strength errors -->
+    <string name="error_password_too_short">Must be at least 8 characters</string>
+    <string name="error_password_no_uppercase">Must contain an uppercase letter</string>
+    <string name="error_password_no_lowercase">Must contain a lowercase letter</string>
+    <string name="error_password_no_digit">Must contain a number</string>
+    <string name="error_password_no_special">Must contain a special character</string>
+
+    <!-- Data layer errors -->
+    <string name="error_session_expired">Session expired. Please sign in again.</string>
+    <string name="error_no_email_on_account">No email address is linked to this account.</string>
+    <string name="error_no_google_credential">No Google account available on this device. Add one in system settings and try again.</string>
+    <string name="error_google_sign_in_cancelled">Google sign-in was cancelled.</string>
+    <string name="error_profile_not_found">Your profile could not be found.</string>
+
+    <!-- Firebase auth errors -->
+    <string name="error_auth_invalid_email">Please enter a valid email address</string>
+    <string name="error_auth_wrong_password">Incorrect email or password</string>
+    <string name="error_auth_user_not_found">No account found with this email</string>
+    <string name="error_auth_email_in_use">An account with this email already exists</string>
+    <string name="error_auth_weak_password">Password must be at least 8 characters</string>
+    <string name="error_auth_user_disabled">This account has been disabled. Contact support</string>
+    <string name="error_auth_too_many_requests">Too many attempts. Please try again later</string>
+    <string name="error_auth_network">Network error. Check your connection and try again</string>
+    <string name="error_auth_operation_not_allowed">This sign-in method is not enabled</string>
+
+    <!-- Success messages -->
+
+    <!-- App info screen -->
+    <string name="app_info_page_indicator">%1$d/%2$d</string>
+    <string name="app_info_title_accent">Your Body\nKnows</string>
+    <string name="app_info_title_rest">Before You Do</string>
+    <string name="app_info_subtitle">Understand your body through visual intelligence.</string>
+
+    <string name="screen_health_connections">Health Connections</string>
+    <string name="health_connections_subtitle">Sync sleep, recovery, and activity for insights.</string>
+    <string name="health_connection_dummy">Terra Dummy</string>
+    <string name="health_connection_status_connected">Connected</string>
+    <string name="health_connection_status_not_connected">Not connected</string>
+    <string name="health_connections_empty_search_message">No results found for &quot;%1$s&quot;</string>
+    <string name="search_placeholder">Search</string>
+
+    <!-- Terra provider labels -->
+    <string name="provider_health_connect">Health Connect</string>
+    <string name="provider_oura">Oura</string>
+    <string name="provider_whoop">Whoop</string>
+    <string name="provider_fitbit">Fitbit</string>
+    <string name="provider_garmin">Garmin</string>
+    <string name="provider_polar">Polar</string>
+    <string name="provider_suunto">Suunto</string>
+    <string name="provider_withings">Withings</string>
+    <string name="provider_zepp">Zepp</string>
+    <string name="provider_biostrap">Biostrap</string>
+    <string name="provider_healthgauge">Health Gauge</string>
+    <string name="provider_inbody">InBody</string>
+    <string name="provider_somnofy">Somnofy</string>
+    <string name="provider_pul">Pul</string>
+    <string name="provider_omroneu">Omron EU</string>
+    <string name="provider_omronus">Omron US</string>
+    <string name="provider_aktiia">Aktiia</string>
+    <string name="provider_huawei">Huawei</string>
+    <string name="provider_dexcom">Dexcom</string>
+    <string name="provider_dexcomeu">Dexcom (EU)</string>
+    <string name="provider_google">Google</string>
+    <string name="provider_hammerhead">Hammerhead</string>
+    <string name="provider_xoss">Xoss</string>
+    <string name="provider_lezyne">Lezyne</string>
+    <string name="provider_technogym">Technogym</string>
+    <string name="provider_concept2">Concept2</string>
+    <string name="provider_decathlon">Decathlon</string>
+    <string name="provider_catapultone">Catapult One</string>
+    <string name="provider_ultrahuman">Ultrahuman</string>
+    <string name="provider_trainingpeaks">TrainingPeaks</string>
+    <string name="provider_elitehrv">EliteHRV</string>
+    <string name="provider_hevy">Hevy</string>
+    <string name="provider_trainxhale">TrainXhale</string>
+    <string name="provider_trainasone">TrainAsOne</string>
+    <string name="provider_ridewithgps">RideWithGPS</string>
+    <string name="provider_mapmytracks">Map My Tracks</string>
+    <string name="provider_velohero">VeloHero</string>
+    <string name="provider_xert">Xert</string>
+    <string name="provider_clue">Clue</string>
+    <string name="provider_wger">Wger</string>
+    <string name="provider_nutracheck">Nutracheck</string>
+    <string name="provider_macrosfirst">MacrosFirst</string>
+    <string name="provider_mymacrosplus">My Macros+</string>
+    <string name="provider_fatsecret">Fatsecret</string>
+    <string name="provider_eatthismuch">EatThisMuch</string>
+    <string name="provider_ketomojoeu">Ketomojo EU</string>
+    <string name="provider_ketomojous">Ketomojo US</string>
+    <string name="provider_boditrax">Boditrax</string>
+    <string name="provider_nolio">Nolio</string>
+    <string name="provider_virtuagym">Virtuagym</string>
+    <string name="provider_strava">Strava</string>
+    <string name="provider_zwift">Zwift</string>
+    <string name="provider_cronometer">Cronometer</string>
+    <string name="provider_moxy">Moxy Monitor</string>
+    <string name="provider_mapmyfitness">MapMyFitness</string>
+    <string name="provider_core">Core</string>
+    <string name="provider_cardiomood">Cardiomood</string>
+    <string name="provider_rouvy">Rouvy</string>
+    <string name="provider_finalsurge">FinalSurge</string>
+    <string name="provider_brytonsport">Bryton Sport</string>
+    <string name="provider_komoot">Komoot</string>
+    <string name="provider_trainerroad">TrainerRoad</string>
+    <string name="provider_cyclinganalytics">Cycling Analytics</string>
+    <string name="provider_underarmour">Under Armour</string>
+    <string name="provider_flo">Flo</string>
+    <string name="provider_tredict">Tredict</string>
+    <string name="provider_tridot">Tridot</string>
+    <string name="provider_myfitnesspal">MyFitnessPal</string>
+
+    <!-- Health connection errors & messages -->
+    <string name="error_sign_in_required">Sign in to connect a wearable</string>
+    <string name="error_health_connect_failed">Couldn\'t connect Health Connect. Make sure it\'s installed and try again.</string>
+    <string name="error_terra_invalid_dev_id">Terra rejected the developer credentials. Check terra.dev.id / terra.api.key.</string>
+    <string name="error_terra_invalid_token">Terra session expired. Please try again.</string>
+    <string name="error_terra_user_limit">Terra account user limit reached. Contact support.</string>
+    <string name="error_terra_no_internet">No internet connection. Check your network and try again.</string>
+    <string name="error_terra_provider_not_enabled">Health Connect isn\'t enabled for this app yet. Enable it in the Terra dashboard.</string>
+    <string name="error_wearable_start_failed">Couldn\'t start wearable connection. Please try again.</string>
+    <string name="error_connection_save_failed">Couldn\'t save your connection. Please try again.</string>
+    <string name="error_connection_callback_invalid">Received an invalid response from the connection service.</string>
+    <string name="error_wearable_connect_failed">Wearable connection failed: %1$s</string>
+    <string name="msg_health_connect_connected">Health Connect connected</string>
+    <string name="msg_health_connect_disconnected">Health Connect disconnected from Terra</string>
+    <string name="msg_health_connect_nothing_to_disconnect">Nothing to disconnect</string>
+    <string name="msg_wearable_connected">%1$s connected</string>
+    <string name="msg_wearable_disconnected">%1$s disconnected from Terra</string>
+
+    <!-- Profile onboarding screen -->
+    <string name="onboarding_personal_info_title">Personal information</string>
+    <string name="onboarding_personal_info_subtitle">This helps personalize your results\nand progress tracking.</string>
+    <string name="onboarding_suit_connect_title">Connect Your Hexis-BI Suit</string>
+    <string name="onboarding_suit_connect_subtitle">If you already have a suit, connect it now.\nYou can also do this later in Settings.</string>
+    <string name="onboarding_suit_id_hint">You can find the ID on your suit tag or packaging</string>
+    <string name="onboarding_no_suit">No scanning suit yet?</string>
+    <string name="onboarding_buy_one">Buy one</string>
+    <string name="action_back">Back</string>
+
+    <!-- Suit care (shown after connecting a suit) -->
+    <string name="suit_care_title">Suit Care</string>
+    <string name="suit_care_intro">Please review these care instructions before using your suit. This step is required to continue.</string>
+    <string name="suit_care_instructions_label">Care instructions</string>
+    <string name="suit_care_footer">Proper care helps protect the suit markers and keeps future scans accurate.</string>
+    <string name="suit_care_confirm">I have read and understood these instructions</string>
+    <string name="action_continue">Continue</string>
+    <string-array name="suit_care_instructions">
+        <item>Cold hand wash or gentle machine wash</item>
+        <item>Wash separately</item>
+        <item>Do not bleach</item>
+        <item>Do not tumble dry</item>
+        <item>Do not iron</item>
+        <item>Air dry only</item>
+        <item>Avoid excessive heat</item>
+    </string-array>
+
+    <!-- Profile incomplete dialog (shown before scan) -->
+    <string name="profile_incomplete_dialog_title">Complete your profile</string>
+    <string name="profile_incomplete_dialog_body">Please fill in your height, weight, and date of birth before starting a scan.</string>
+    <string name="profile_incomplete_dialog_action">Edit profile</string>
+
+    <!-- Recovery screen -->
+    <string name="recovery_screen_title">Recovery</string>
+    <string name="recovery_tab_day">Day</string>
+    <string name="recovery_tab_summary">Summary</string>
+    <string name="recovery_state_title">Recovery State</string>
+    <string name="recovery_status_ready">Ready</string>
+    <string name="recovery_status_recovering">Recovering</string>
+    <string name="recovery_status_low">Low</string>
+    <string name="recovery_metric_sleep">Sleep</string>
+    <string name="recovery_metric_resting_hr">Resting Heart Rate</string>
+    <string name="recovery_metric_stress">Stress</string>
+    <string name="recovery_metric_activity_load">Activity load</string>
+    <string name="recovery_stress_low">Low</string>
+    <string name="recovery_stress_medium">Medium</string>
+    <string name="recovery_stress_high">High</string>
+    <string name="recovery_load_light">Light</string>
+    <string name="recovery_load_moderate">Moderate</string>
+    <string name="recovery_load_heavy">Heavy</string>
+    <string name="recovery_trend_up">Improving</string>
+    <string name="recovery_trend_down">Decreasing</string>
+    <string name="recovery_trend_flat">Stability</string>
+    <string name="recovery_trend_up_description">Your recovery improved this week.</string>
+    <string name="recovery_trend_down_description">Your recovery decreased this week.</string>
+    <string name="recovery_trend_flat_description">Your recovery remained stable this week.</string>
+    <string name="recovery_info_title">Recovery and Adaptation</string>
+    <string name="recovery_info_body">Recovery reflects how ready your body is based on recent signals.</string>
+    <string name="recovery_last_7_days">Last 7 Days</string>
+    <string name="recovery_avg_score">Average Recovery Score</string>
+    <string name="recovery_avg_score_value">%1$d/100</string>
+    <string name="recovery_score_unit">/100</string>
+    <string name="recovery_trend_label">Recovery:</string>
+
+    <!-- HRV Details card -->
+    <string name="recovery_hrv_title">HRV Details</string>
+    <string name="recovery_hrv_full">Heart Rate Variability</string>
+    <string name="recovery_hrv_rmssd">RMSSD</string>
+    <string name="recovery_hrv_rmssd_caption">Recovery response</string>
+    <string name="recovery_hrv_sdnn">SDNN</string>
+    <string name="recovery_hrv_sdnn_caption">Overall variability</string>
+
+    <!-- Recovery and Adaptation info sheet -->
+    <string name="recovery_info_sheet_title">Recovery and Adaptation</string>
+    <string name="recovery_info_sheet_intro">Recovery reflects how prepared your body is to restore, adapt, and perform based on recent signals.</string>
+    <string name="recovery_info_sheet_heading_1">1. Recovery Score</string>
+    <string name="recovery_info_sheet_body_1">Shows your overall readiness for the selected day.</string>
+    <string name="recovery_info_sheet_heading_2">2. Key Recovery Signals</string>
+    <string name="recovery_info_sheet_body_2">Sleep, stress, activity load, and resting heart rate help explain your recovery state.</string>
+    <string name="recovery_info_sheet_heading_3">3. HRV Details</string>
+    <string name="recovery_info_sheet_body_3">RMSSD and SDNN show how your nervous system is responding to recovery, stress, and activity.</string>
+    <string name="recovery_info_sheet_heading_4">4. Body Connection</string>
+    <string name="recovery_info_sheet_body_4">Consistent recovery may support better sleep, stronger activity readiness, and improved body progress over time.</string>
+
+    <!-- Activity screen -->
+    <string name="activity_screen_title">Activity</string>
+    <string name="activity_error_title">Couldn\'t load activity data</string>
+    <string name="activity_tab_day">Day</string>
+    <string name="activity_tab_week">Week</string>
+    <string name="activity_tab_month">Month</string>
+    <string name="activity_tab_year">Year</string>
+    <string name="activity_goal_value_suffix"> / %1$s</string>
+    <string name="activity_progress_title">Activity Progress</string>
+    <string name="activity_metric_calories">Calories</string>
+    <string name="activity_metric_distance">Distance</string>
+    <string name="activity_metric_steps">Steps</string>
+    <string name="activity_metric_duration">Duration</string>
+    <string name="activity_unit_cal">kcal</string>
+    <string name="activity_unit_km">km</string>
+    <string name="activity_unit_mi">mi</string>
+    <string name="activity_unit_steps">st</string>
+    <string name="activity_unit_steps_full">steps</string>
+    <string name="activity_unit_hours_short">h</string>
+    <string name="activity_unit_minutes_short">m</string>
+    <string name="activity_unit_seconds_short">s</string>
+    <string name="activity_steps_timeline">Steps Timeline</string>
+    <string name="activity_time_start">12 am</string>
+    <string name="activity_time_end">11:59 pm</string>
+    <string name="activity_info_sheet_title">Activity Progress Score</string>
+    <string name="activity_info_heading_1">1. What This Score Means</string>
+    <string name="activity_info_body_1">Activity progress shows how close you are to your daily steps goal.</string>
+    <string name="activity_info_heading_2">2. What You See On The Screen</string>
+    <string name="activity_info_body_2">Along with steps, we also show distance and active calories to give more context for your day.</string>
+    <string name="activity_info_heading_3">3. Why It May Differ</string>
+    <string name="activity_info_body_3">Numbers can vary depending on which device tracked your activity and whether it was carried during the day.</string>
+    <string name="activity_info_heading_4">4. Why Daily Activity Matters</string>
+    <string name="activity_info_body_4">Regular movement supports energy levels, recovery, and long-term health. Over time, it can also contribute to changes in body composition.</string>
+
+    <!-- Activity period tabs (Week/Month/Year) -->
+    <string name="activity_total_steps">Total Steps</string>
+    <string name="activity_avg_steps_per_day">Average Daily Steps</string>
+    <string name="activity_trend_label_week">Activity Trend</string>
+    <string name="activity_trend_label_month">Monthly Trend</string>
+    <string name="activity_trend_label_year">Yearly Trend</string>
+    <string name="activity_summary_steps">Steps</string>
+    <string name="activity_summary_distance">Distance</string>
+    <string name="activity_trend_insight_week">Consistent activity may positively support Physique Drift over time.</string>
+    <string name="activity_trend_none_week">Not enough data to compare with last week yet.</string>
+    <string name="activity_trend_up_month">This month you walked more than last month.</string>
+    <string name="activity_trend_down_month">This month you walked less than last month.</string>
+    <string name="activity_trend_flat_month">This month you walked about the same as last month.</string>
+    <string name="activity_trend_none_month">Not enough data to compare with last month yet.</string>
+    <string name="activity_trend_up_year">This year you walked more than last year.</string>
+    <string name="activity_trend_down_year">This year you walked less than last year.</string>
+    <string name="activity_trend_flat_year">This year you walked about the same as last year.</string>
+    <string name="activity_trend_none_year">Not enough data to compare with last year yet.</string>
+    <string name="activity_trend_percent_signed">%1$+d%%</string>
+    <string name="activity_trend_none_symbol">—</string>
+
+    <!-- Activity settings dialog -->
+    <string name="activity_settings_title">Activity Settings</string>
+    <string name="activity_settings_steps_goal">Steps Goal</string>
+    <string name="activity_settings_steps_goal_value">%1$s steps</string>
+    <string name="activity_settings_show_active_calories">Show Active Calories</string>
+    <string name="activity_settings_data_source">Data Source</string>
+
+    <!-- Scan screen -->
+    <string name="scan_title">Scan</string>
+    <string name="scan_size_title">Find your size</string>
+    <string name="scan_size_results_title">Your size results</string>
+    <string name="scan_size_subtitle">Scan your body to get a size recommendation in seconds.</string>
+    <string name="scan_size_complete_title">Scan complete</string>
+    <string name="scan_size_complete_body">Your scan was successful.\nWe’re generating your results now.</string>
+    <string name="scan_size_error_title">Scan failed</string>
+    <string name="scan_checklist_title">Before you scan</string>
+    <string name="scan_checklist_body">Follow these steps for the most accurate size recommendation.</string>
+    <string name="scan_checklist_label">Checklist:</string>
+    <string name="scan_checklist_fitted_clothing">Wear fitted clothing</string>
+    <string name="scan_checklist_good_lighting">Use good lighting</string>
+    <string name="scan_checklist_clean_background">Stand in front of a clean background</string>
+    <string name="scan_checklist_volume_on">Turn volume on</string>
+    <string name="scan_checklist_voice_guidance">Follow voice guidance</string>
+    <string name="scan_checklist_front_left_photos">Take front and left-side photos</string>
+    <string name="scan_checklist_footer">You can find these tips again from the info icon.</string>
+    <string name="suit_size_confirm_body">Please confirm your height and weight. Accurate values improve your suit size recommendation.</string>
+    <string name="suit_size_feature_lightweight">Lightweight second-skin comfort</string>
+    <string name="suit_size_feature_tracking">Designed for precision body tracking</string>
+    <string name="suit_size_label">HEXIS-BI Suit Size:</string>
+    <string name="suit_size_proceed_to_order">Proceed to Order</string>
+    <string name="suit_size_x_small">X-Small</string>
+    <string name="suit_size_small">Small</string>
+    <string name="suit_size_medium">Medium</string>
+    <string name="suit_size_large">Large</string>
+    <string name="suit_size_x_large">X-Large</string>
+    <string name="suit_size_xx_large">XX-Large</string>
+    <string name="suit_size_error_no_scan">No scan found. Please complete a scan to get a size recommendation.</string>
+    <string name="shipping_details_title">Shipping details</string>
+    <string name="shipping_phone_number">Phone number</string>
+    <string name="shipping_phone_placeholder">(00) 000 00 00</string>
+    <string name="shipping_optional_label">%1$s (optional)</string>
+    <string name="shipping_select_country">Select country</string>
+    <string name="shipping_search_country">Search country or code</string>
+    <string name="shipping_address_title">Address</string>
+    <string name="shipping_country_region">Country/region</string>
+    <string name="shipping_company">Company</string>
+    <string name="shipping_address">Address</string>
+    <string name="shipping_city">City</string>
+    <string name="shipping_apartment">Apartment, suite, etc</string>
+    <string name="shipping_note">Note</string>
+    <string name="shipping_region_generic">State / Province / Region</string>
+    <string name="shipping_region_province">Province</string>
+    <string name="shipping_region_state">State</string>
+    <string name="shipping_region_state_territory">State / Territory</string>
+    <string name="shipping_region_province_territory">Province / Territory</string>
+    <string name="shipping_region_prefecture">Prefecture</string>
+    <string name="shipping_region_region">Region</string>
+    <string name="shipping_region_emirate">Emirate</string>
+    <string name="shipping_region_department">Department</string>
+    <string name="shipping_region_county">County</string>
+    <string name="shipping_region_voivodeship">Voivodeship</string>
+    <string name="shipping_postal_generic">Postal code</string>
+    <string name="shipping_postal_zip">ZIP code</string>
+    <string name="shipping_postal_postcode">Postcode</string>
+    <string name="shipping_place_order">Place Order</string>
+    <string name="shipping_thanks_title">Thanks for your order!</string>
+    <string name="shipping_thanks_subtitle">Your HEXIS-BI Suit Is Being Prepared</string>
+    <string name="shipping_thanks_body">You’ll receive shipping and setup updates once your suit is ready.\nYou can also track your suit status in Orders.</string>
+    <string name="action_ok">Ok</string>
+    <string name="home_suit_order_title">Suit order</string>
+    <string name="home_suit_order_tracking_label">Tracking:</string>
+    <string name="home_suit_order_number_label">Order:</string>
+    <string name="home_suit_order_eta_label">ETA:</string>
+    <string name="home_suit_order_eta_estimating">Estimating</string>
+    <string name="order_status_placed">Placed</string>
+    <string name="order_status_confirmed">Confirmed</string>
+    <string name="order_status_in_production">In production</string>
+    <string name="order_status_shipped">Shipped</string>
+    <string name="order_status_delivered">Delivered</string>
+    <string name="order_status_cancelled">Cancelled</string>
+    <string name="order_details_title">Order Details</string>
+    <string name="order_details_number_label">Order number</string>
+    <string name="order_details_tracking_label">Tracking number</string>
+    <string name="order_details_address_label">Address:</string>
+    <string name="order_details_got_it">Got it</string>
+    <string name="order_details_address_change_pending">Change requested</string>
+    <string name="edit_address_title">Change address</string>
+    <string name="edit_address_save">Save changes</string>
+    <string name="edit_address_notice">Your new address will be sent to our team to update before your order ships.</string>
+    <string name="error_address_change_failed">Couldn\'t submit your address change. Please try again.</string>
+    <string name="cd_copy_order_number">Copy order number</string>
+    <string name="cd_copy_tracking_number">Copy tracking number</string>
+    <string name="cd_edit_address">Edit address</string>
+    <string name="scan_results_title">My Body Results</string>
+    <string name="scan_personalize_title">Personalize your results</string>
+    <string name="scan_personalize_message">You can choose which body zones appear in your measurement tables from\nScan Preference Settings.</string>
+    <string name="scan_personalize_go_to_settings">Go to Settings</string>
+    <string name="scan_analyzing_title">Transforming your scan into\nbody intelligence</string>
+    <string name="scan_analyzing_subtitle">We’re processing your scan and building your\nbody insights.</string>
+    <string name="scan_suit_not_detected_title">Suit is not detected</string>
+    <string name="scan_suit_not_detected_body">You’re not wearing the suit right now. Put it on to continue, or switch to Regular Scan.</string>
+    <string name="action_connect_suit">Connect suit</string>
+    <string name="action_buy_suit">Buy suit</string>
+    <string name="scan_voice_guidance_auto">Voice guidance plays automatically during scans</string>
+    <string name="scan_step_label">Step</string>
+    <string name="scan_step_1_a">Place your phone at a 90° angle.</string>
+    <string name="scan_step_1_b">Keep your whole body in the frame</string>
+    <string name="scan_step_2_a">Stand facing the camera</string>
+    <string name="scan_step_2_b">Keep arms slightly away from your body</string>
+    <string name="scan_step_3_a">Turn to Your Left Side, Feet Together.</string>
+    <string name="scan_step_3_b">Hold still while your body scan is being captured.</string>
+    <string name="action_results">Results</string>
+    <string name="action_rescan">Rescan</string>
+
+    <!-- How to scan (Prepare Your Scan) flow -->
+    <string name="how_to_scan_title">Prepare Your Scan</string>
+    <string name="how_to_scan_subtitle_default">Follow these steps for the best results.</string>
+    <string name="how_to_scan_subtitle_phone">Place Your Phone Correctly For Teh Best Scan</string>
+    <string name="how_to_scan_step_counter">%1$d/%2$d</string>
+    <string name="action_finish">Finish</string>
+    <string name="cd_how_to_scan_illustration">Scan preparation illustration</string>
+
+    <string name="how_to_scan_step_1_header">Space &amp; background</string>
+    <string name="how_to_scan_step_1_a">Use Bright, Even Lighting</string>
+    <string name="how_to_scan_step_1_b">Choose a Clear, Uncluttered Area</string>
+    <string name="how_to_scan_step_1_c">Keep your full body in frame</string>
+
+    <string name="how_to_scan_step_2_header">What to wear</string>
+    <string name="how_to_scan_step_2_a">Put On The Hexis-Bi Suit</string>
+    <string name="how_to_scan_step_2_b">No Belts or Accessories</string>
+    <string name="how_to_scan_step_2_c">Tie Long Hair Up</string>
+
+    <string name="how_to_scan_step_3_header">Phone setup</string>
+    <string name="how_to_scan_step_3_a">Adjust the Volume to hear the Voice Instructions</string>
+    <string name="how_to_scan_step_3_b">Place your phone at a 90° angle, facing you</string>
+    <string name="how_to_scan_step_3_c">Make Sure Your Full Body Fits in The Frame</string>
+
+    <string name="how_to_scan_step_4_header">During the scan</string>
+    <string name="how_to_scan_step_4_a">Adjust the voice volume</string>
+    <string name="how_to_scan_step_4_b">Standing Forward and Follow the Voice Commands</string>
+    <string name="how_to_scan_step_4_c">Transforming your Scan Into Body Intelligence</string>
+    <string name="cd_scan_warning">Warning</string>
+    <string name="scan_results_tab_visual">Visual</string>
+    <string name="scan_results_tab_my_body">My Body</string>
+    <string name="scan_results_tab_compare">Compare</string>
+    <string name="scan_results_avatar_loading">Preparing Body Evolution View</string>
+    <string name="unit_cm">cm</string>
+    <string name="unit_in">in</string>
+    <string name="format_delta_up">%1$+.1f %2$s ↑</string>
+    <string name="format_delta_down">%1$+.1f %2$s ↓</string>
+    <string name="format_delta_neutral">%1$+.1f %2$s</string>
+    <string name="format_percentage">%1$d%%</string>
+    <string name="scan_measurement_neck">Neck</string>
+    <string name="scan_measurement_shoulders">Shoulders</string>
+    <string name="scan_measurement_chest">Chest</string>
+    <string name="scan_measurement_forearms">Forearms</string>
+    <string name="scan_measurement_biceps">Biceps (Upper arm)</string>
+    <string name="scan_measurement_upper_waist">Upper Waist</string>
+    <string name="scan_measurement_mid_waist">Mid Waist</string>
+    <string name="scan_measurement_lower_waist">Lower Waist</string>
+    <string name="scan_measurement_hips_glutes">Hips / Glutes</string>
+    <string name="scan_measurement_thigh">Thigh</string>
+    <string name="scan_measurement_calf">Calf</string>
+    <string name="scan_measurement_ankles">Ankles</string>
+
+    <!-- Scan error messages -->
+    <string name="scan_error_profile_load">Failed to load profile: %1$s</string>
+    <string name="scan_error_missing_height">Height is required for scanning. Please update your profile.</string>
+    <string name="scan_error_missing_weight">Weight is required for scanning. Please update your profile.</string>
+    <string name="scan_error_missing_gender">Gender is required for scanning. Please update your profile.</string>
+    <string name="scan_error_missing_age">Date of birth is required for scanning. Please update your profile.</string>
+    <string name="scan_error_submit_failed">Failed to submit scan</string>
+    <string name="scan_error_retrieve_failed">Failed to retrieve scan results</string>
+    <string name="scan_error_processing_failed">Scan processing failed</string>
+    <string name="scan_error_timeout">Scan timed out. Please try again.</string>
+    <string name="scan_error_with_detail">%1$s: %2$s</string>
+
+    <!-- Physique Drift screen -->
+    <string name="physique_drift_screen_title_short">Physique</string>
+    <string name="physique_drift_score_title">Physique Drift</string>
+    <string name="physique_drift_score_scale">/ 10</string>
+    <string name="physique_drift_score_body">Physique Drift shows your body composition, shape, and proportions.</string>
+    <string name="physique_drift_latest_scan_format">Based on your latest scan - %1$s</string>
+    <string name="physique_drift_latest_scan_unknown">Based on your latest scan</string>
+    <string name="physique_drift_no_data">Complete a body scan to see your physique score.</string>
+    <string name="physique_drift_level_athletic">Athletic</string>
+    <string name="physique_drift_level_improving">Improving</string>
+    <string name="physique_drift_level_needs_work">Needs Work</string>
+    <string name="physique_drift_level_athletic_desc">Lean and Balanced</string>
+    <string name="physique_drift_level_improving_desc">Average / Improving</string>
+    <string name="physique_drift_level_needs_work_desc">Higher fat / lower conditioning</string>
+    <string name="physique_drift_body_composition">Body Composition</string>
+    <string name="physique_drift_body_fat">Body Fat</string>
+    <string name="physique_drift_lean_body">Lean Body Mass</string>
+    <string name="physique_drift_contributors">Physique Contributors</string>
+    <string name="physique_drift_waist_profile">Waist Profile</string>
+    <string name="physique_drift_proportions">Proportions</string>
+    <string name="physique_drift_symmetry">Symmetry</string>
+    <string name="physique_drift_shoulder_waist_ratio">Shoulder to Waist Ratio</string>
+    <string name="physique_drift_improving">Improving</string>
+    <string name="physique_drift_balanced">Balanced</string>
+    <string name="physique_drift_well_balanced">Well Balanced</string>
+    <string name="physique_drift_developing">Developing</string>
+    <string name="physique_drift_needs_work">Needs Work</string>
+    <string name="physique_drift_insight_title">Physique Insight</string>
+    <string name="physique_drift_insight_athletic">Your body composition looks balanced, and your waist shape is improving. Symmetry and proportions also support a strong physique drift.</string>
+    <string name="physique_drift_insight_improving">Your physique is improving. Reducing body fat while preserving lean mass can move the score toward the athletic range.</string>
+    <string name="physique_drift_insight_needs_work">Your score has room to improve. Focus on sustainable fat loss, lean mass, waist profile, and balanced proportions.</string>
+    <string name="physique_drift_insight_no_data">Complete a scan to see how body fat, lean mass, waist shape, and proportions affect your score.</string>
+    <string name="physique_drift_info_title">How Physique Drift works</string>
+    <string name="physique_drift_info_intro">Physique Drift shows your overall body shape on a 1-10 scale.</string>
+    <string name="physique_drift_info_heading_1">1. Body Fat</string>
+    <string name="physique_drift_info_body_1">The main factor. Lower body fat can improve the score, but only within a healthy range.</string>
+    <string name="physique_drift_info_heading_2">2. Lean Body</string>
+    <string name="physique_drift_info_body_2">More lean mass can support a stronger and more athletic body shape.</string>
+    <string name="physique_drift_info_heading_3">3. Waist Profile</string>
+    <string name="physique_drift_info_body_3">A smaller waist relative to height can improve the physique score.</string>
+    <string name="physique_drift_info_heading_4">4. Proportions</string>
+    <string name="physique_drift_info_body_4">Shoulder-to-waist ratio, symmetry, and overall shape help define the final result.</string>
+    <string name="physique_drift_info_heading_5">5. Total Score</string>
+    <string name="physique_drift_info_body_5">8-10 means lean / athletic, 5-7 means average / improving, and below 5 suggests more room for body composition improvement.</string>
+
+    <!-- Pace of Aging screen -->
+    <string name="pace_of_aging_screen_title">Pace of Aging</string>
+    <string name="pace_of_aging_trend_title">Aging Trend</string>
+    <string name="pace_of_aging_than_average">than average</string>
+    <string name="pace_of_aging_slower_format">%1$d%% slower</string>
+    <string name="pace_of_aging_faster_format">%1$d%% faster</string>
+    <string name="pace_of_aging_on_pace">On pace</string>
+    <string name="pace_of_aging_desc_slower">Your body is aging more slowly than average.</string>
+    <string name="pace_of_aging_desc_normal">Your body is aging at a normal rate.</string>
+    <string name="pace_of_aging_desc_faster">Your body is aging faster than average.</string>
+    <string name="pace_of_aging_synced_format">Based on your latest synced data - %1$s</string>
+    <string name="pace_of_aging_no_data">Connect a wearable and sync to see your aging trend.</string>
+    <string name="pace_of_aging_stat_waist">Waist Profile</string>
+    <string name="pace_of_aging_stat_body_fat">Body Fat</string>
+    <string name="pace_of_aging_insight_title">Body Aging Insight</string>
+    <string name="pace_of_aging_insight_slower">Your body is aging slower than average. %1$s is helping the most.</string>
+    <string name="pace_of_aging_insight_normal">Your body is aging at a normal rate. %1$s is the strongest signal.</string>
+    <string name="pace_of_aging_insight_faster">Your body is aging faster than average. %1$s is adding the most load.</string>
+    <string name="pace_of_aging_insight_generic">Sync your health data to see what\'s driving your aging pace.</string>
+    <string name="pace_of_aging_signal_hrv">HRV</string>
+    <string name="pace_of_aging_signal_rhr">resting heart rate</string>
+    <string name="pace_of_aging_signal_sleep">sleep</string>
+    <string name="pace_of_aging_signal_recovery">recovery</string>
+    <string name="pace_of_aging_signal_activity">activity</string>
+    <string name="pace_of_aging_signal_body_fat">body fat</string>
+    <string name="pace_of_aging_signal_waist">waist</string>
+    <string name="pace_of_aging_signal_vo2">VO2 Max</string>
+    <string name="pace_of_aging_signal_stress">stress</string>
+    <string name="pace_of_aging_info_title">How Body Age works</string>
+    <string name="pace_of_aging_info_intro">Body Age shows how fast your body is aging compared to a normal aging rate.</string>
+    <string name="pace_of_aging_info_heading_1">1. Pace of Aging</string>
+    <string name="pace_of_aging_info_body_1">A value below 1.0 means your body is aging slower than average. A value above 1.0 means faster aging.</string>
+    <string name="pace_of_aging_info_heading_2">2. Lower is Better</string>
+    <string name="pace_of_aging_info_body_2">Below 0.95 means slower aging.\n0.96–1.05 means normal aging.\nAbove 1.05 means faster aging.</string>
+    <string name="pace_of_aging_info_heading_3">3. What Lowers Aging Speed</string>
+    <string name="pace_of_aging_info_body_3">High HRV, good sleep, strong VO2 Max, and good recovery help reduce aging load.</string>
+    <string name="pace_of_aging_info_heading_4">4. What Increases Aging Speed</string>
+    <string name="pace_of_aging_info_body_4">Poor sleep, high stress, high abdominal fat, poor recovery, and low activity can increase aging load.</string>
+    <string name="pace_of_aging_info_heading_5">5. Why It Changes</string>
+    <string name="pace_of_aging_info_body_5">Your result can change as your sleep, recovery, stress, activity, body fat, and fitness levels change.</string>
+
+    <!-- Longevity screen -->
+    <string name="longevity_screen_title">Longevity</string>
+    <string name="longevity_score_card_title">Healthy Aging Score</string>
+    <string name="longevity_score_value">%1$d</string>
+    <string name="longevity_score_max">/ 100</string>
+    <string name="longevity_score_description">Your Longevity Score shows how well your body is aging based on key health signals.</string>
+    <string name="longevity_synced_format">Based on your latest synced data · %1$s</string>
+    <string name="longevity_trend_title">Longevity Trend</string>
+    <string name="longevity_tab_daily">Daily</string>
+    <string name="longevity_tab_weekly">Weekly</string>
+    <string name="longevity_trend_today_label">Today\'s Trend</string>
+    <string name="longevity_trend_weekly_label">Weekly Trend</string>
+    <string name="longevity_daily_axis_start">12 am</string>
+    <string name="longevity_daily_axis_end">11:59 pm</string>
+    <string name="longevity_trend_improving">Improving</string>
+    <string name="longevity_trend_stable">Stable</string>
+    <string name="longevity_trend_decreasing">Decreasing</string>
+
+    <!-- Longevity signals -->
+    <string name="longevity_signals_title">Longevity Signals</string>
+    <string name="longevity_signal_hrv">HRV</string>
+    <string name="longevity_signal_rhr">RHR</string>
+    <string name="longevity_signal_sleep">Sleep</string>
+    <string name="longevity_signal_recovery">Recovery</string>
+    <string name="longevity_signal_activity">Activity</string>
+    <string name="longevity_signal_vo2_max">VO2 Max</string>
+    <string name="longevity_signal_waist_profile">Waist Profile</string>
+    <string name="longevity_signal_physique_trend">Physique Trend</string>
+    <string name="longevity_signal_stress_load">Stress Load</string>
+    <string name="longevity_unit_ms">ms</string>
+    <string name="longevity_unit_steps">st</string>
+
+    <!-- Longevity insight -->
+    <string name="longevity_insight_title">Longevity Insight</string>
+    <string name="longevity_insight_body">Your recovery and activity trends are improving, which may support better long-term health and body resilience.</string>
+
+    <!-- Longevity info sheet -->
+    <string name="longevity_info_sheet_intro">Longevity shows how well your body is aging based on key health signals.</string>
+    <string name="longevity_info_sheet_heading_1">1. HRV</string>
+    <string name="longevity_info_sheet_body_1">Shows recovery and nervous system balance. Higher is usually better.</string>
+    <string name="longevity_info_sheet_heading_2">2. Resting Heart Rate</string>
+    <string name="longevity_info_sheet_body_2">Shows your heart rate at rest. Lower is usually better.</string>
+    <string name="longevity_info_sheet_heading_3">3. Sleep</string>
+    <string name="longevity_info_sheet_body_3">Good sleep supports recovery and long-term health.</string>
+    <string name="longevity_info_sheet_heading_4">4. Activity</string>
+    <string name="longevity_info_sheet_body_4">Steps, workouts, and movement consistency support longevity.</string>
+    <string name="longevity_info_sheet_heading_5">5. Recovery</string>
+    <string name="longevity_info_sheet_body_5">Shows how ready your body is based on sleep, stress, activity load, heart rate, and HRV.</string>
+    <string name="longevity_info_sheet_heading_6">6. Waist Profile</string>
+    <string name="longevity_info_sheet_body_6">Shows body composition and abdominal fat trends.</string>
+    <string name="longevity_info_sheet_heading_7">7. VO2 Max</string>
+    <string name="longevity_info_sheet_body_7">Shows cardio fitness and how well your body uses oxygen.</string>
+    <string name="longevity_info_sheet_heading_8">8. Total Score</string>
+    <string name="longevity_info_sheet_body_8">Combines these signals into one healthy aging score.</string>
+    <string name="longevity_info_sheet_heading_9">9. Stress Load</string>
+    <string name="longevity_info_sheet_body_9">Shows how daily physical and nervous system strain may affect recovery, resilience, and long-term health over time.</string>
 </resources>

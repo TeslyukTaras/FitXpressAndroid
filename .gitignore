@@ -27,3 +27,8 @@ app/build
 
 # Kotlin cache
 .kotlin/
+
+# Firebase / Secrets
+google-services.json
+/github.properties
+

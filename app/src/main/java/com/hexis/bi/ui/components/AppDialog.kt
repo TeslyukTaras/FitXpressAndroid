@@ -1,0 +1,98 @@
+package com.hexis.bi.ui.components
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import com.hexis.bi.R
+import com.hexis.bi.ui.theme.overlayBorder
+
+/**
+ * Standard full-screen dialog overlay used across the app.
+ *
+ * Renders a dimmed backdrop covering the full screen and a centered [Card] with
+ * the app's background color. Supports keyboard insets via [imePadding].
+ *
+ * The blur effect on the underlying screen content is intentionally NOT handled here —
+ * each screen is responsible for blurring its own content when a dialog is visible,
+ * since some screens may have composables rendered outside [BaseScreen].
+ */
+@Composable
+fun AppDialog(
+    modifier: Modifier = Modifier,
+    hasCloseButton: Boolean = true,
+    onDismiss: (() -> Unit)? = null,
+    content: @Composable () -> Unit,
+) {
+    val backdropInteractionSource = remember { MutableInteractionSource() }
+    val cardInteractionSource = remember { MutableInteractionSource() }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.scrim)
+            .then(
+                if (onDismiss != null) {
+                    Modifier.clickable(
+                        interactionSource = backdropInteractionSource,
+                        indication = null,
+                        onClick = onDismiss,
+                    )
+                } else Modifier
+            )
+            .imePadding(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Card(
+            shape = MaterialTheme.shapes.medium,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+            // 0.5px edge: contrasting on dark, blends with the card background on light.
+            border = BorderStroke(
+                dimensionResource(R.dimen.border_line),
+                MaterialTheme.colorScheme.overlayBorder(),
+            ),
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(horizontal = dimensionResource(R.dimen.padding_medium))
+                .clickable(
+                    interactionSource = cardInteractionSource,
+                    indication = null,
+                    onClick = {},
+                ),
+        ) {
+            Box {
+                content()
+                if (hasCloseButton && onDismiss != null) {
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.align(Alignment.TopEnd),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_cross),
+                            contentDescription = stringResource(R.string.cd_close_dialog),
+                            tint = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}

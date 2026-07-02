@@ -1,0 +1,78 @@
+package com.hexis.bi.data.activity
+
+import com.hexis.bi.data.terra.TerraApi
+import com.hexis.bi.data.terra.TerraDetail
+import com.hexis.bi.data.terra.TerraRangeJsonFetcher
+import com.hexis.bi.data.terra.TerraRestSourceResolver
+import com.hexis.bi.data.terra.TerraSdkSync
+import com.hexis.bi.data.terra.TtlCache
+import com.hexis.bi.data.terra.fetchMergedFromAllSources
+import com.hexis.bi.utils.constants.TerraCacheConstants
+import kotlinx.serialization.json.JsonElement
+import java.time.LocalDate
+
+private object ActivityRepositoryConstants {
+    const val DAY_LOOKBACK_DAYS = 1L
+    const val DAY_LOOKAHEAD_DAYS = 1L
+}
+
+class TerraApiActivityRepository(
+    private val api: TerraApi,
+    private val sourceResolver: TerraRestSourceResolver,
+) : ActivityRepository {
+
+    private val rangeCache = TtlCache<Triple<LocalDate, LocalDate, TerraDetail>, List<ActivitySummary>>(
+        ttlMs = TerraCacheConstants.RANGE_CACHE_TTL_MS,
+        generation = { TerraSdkSync.syncGeneration },
+    )
+
+    override suspend fun getSummaryForDate(date: LocalDate): Result<ActivitySummary?> =
+        sourceResolver.fetchMergedFromAllSources(
+            start = date.minusDays(ActivityRepositoryConstants.DAY_LOOKBACK_DAYS),
+            end = date.plusDays(ActivityRepositoryConstants.DAY_LOOKAHEAD_DAYS),
+            fetchJson = { terraUserId, start, end -> fetchJsonForUser(terraUserId, start, end, TerraDetail.FULL) },
+            parse = { rows -> rows.mapNotNull { TerraActivityJsonMapper.summaryOrNull(it, fallbackDate = date) } },
+            merge = ::mergeGapFillByDate,
+        ).map { rows ->
+            rows.minByOrNull { kotlin.math.abs(java.time.temporal.ChronoUnit.DAYS.between(it.date, date)) }
+        }
+
+    override suspend fun getSummariesForRange(
+        start: LocalDate,
+        end: LocalDate,
+        detail: TerraDetail,
+    ): Result<List<ActivitySummary>> {
+        val key = Triple(start, end, detail)
+        rangeCache.get(key)?.let { return Result.success(it) }
+        return sourceResolver.fetchMergedFromAllSources(
+            start = start,
+            end = end,
+            fetchJson = { terraUserId, rangeStart, rangeEnd ->
+                fetchJsonForUser(terraUserId, rangeStart, rangeEnd, detail)
+            },
+            parse = { rows -> rows.mapNotNull(TerraActivityJsonMapper::summaryOrNull) },
+            merge = ::mergeGapFillByDate,
+        ).map { summaries ->
+            summaries.filter { summary -> !summary.date.isBefore(start) && !summary.date.isAfter(end) }
+        }.onSuccess { rangeCache.put(key, it) }
+    }
+
+    private suspend fun fetchJsonForUser(
+        terraUserId: String,
+        start: LocalDate,
+        end: LocalDate,
+        detail: TerraDetail,
+    ): Result<List<JsonElement>> = TerraRangeJsonFetcher.fetchJsonRows(start, end.plusDays(1)) { rs, re ->
+        api.getDaily(terraUserId = terraUserId, startDate = rs, endDate = re, detail = detail)
+    }
+
+    private fun mergeGapFillByDate(perSource: List<List<ActivitySummary>>): List<ActivitySummary> {
+        val byDate = LinkedHashMap<LocalDate, ActivitySummary>()
+        for (rows in perSource) {
+            for (summary in rows.sortedByDescending { it.date }) {
+                if (summary.date !in byDate) byDate[summary.date] = summary
+            }
+        }
+        return byDate.values.sortedBy { it.date }
+    }
+}
