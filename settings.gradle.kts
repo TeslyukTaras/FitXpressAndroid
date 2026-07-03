@@ -29,7 +29,7 @@ dependencyResolutionManagement {
         mavenCentral()
         maven {
             name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/3dlook-me/android_sdk_public")
+            url = uri("https://maven.pkg.github.com/3dlook-me/android_sdk_pkg")
             credentials {
                 username = githubProperties["gpr.usr"] as String? ?: System.getenv("GPR_USER")
                 password = githubProperties["gpr.key"] as String? ?: System.getenv("GPR_API_KEY")

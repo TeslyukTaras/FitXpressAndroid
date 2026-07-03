@@ -32,3 +32,4 @@ app/build
 google-services.json
 /github.properties
 
+/firebase-debug.log
