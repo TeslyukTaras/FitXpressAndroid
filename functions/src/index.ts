@@ -1,9 +1,11 @@
 import { initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
+import { FieldValue, getFirestore, Timestamp } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { CallableRequest, HttpsError, onCall } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
+import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 
 initializeApp();
 
@@ -18,6 +20,14 @@ const terraBaseUrl = "https://api.tryterra.co/v2";
 const threeDLookBaseUrl = "https://backend.fitxpress.3dlook.me/api/1.0";
 const terraSuccessRedirectUrl = "fitxpress://terra/success";
 const terraFailureRedirectUrl = "fitxpress://terra/failure";
+
+const emailVerificationCollection = "emailVerifications";
+// Must match the "Trigger Email from Firestore" extension's configured collection.
+const emailMailCollection = "mail";
+const emailCodeLength = 5;
+const emailCodeTtlMs = 10 * 60 * 1000;
+const emailResendCooldownMs = 30 * 1000;
+const emailMaxVerifyAttempts = 5;
 
 // App Check rollout plan:
 // Add `enforceAppCheck: true` to these callable options only after both Android and iOS
@@ -270,6 +280,118 @@ export const threeDLookGetBodyProgress = onCall(threeDLookSecretOptions, async (
   });
   return parseJsonResponse(response, "3DLook getBodyProgress");
 });
+
+export const sendEmailVerificationCode = onCall(callableOptions, async (request) => {
+  const uid = requireAuth(request.auth?.uid);
+  const token = request.auth?.token;
+  const email = typeof token?.email === "string" ? token.email : undefined;
+  if (!email) {
+    throw new HttpsError("failed-precondition", "No email is associated with this account");
+  }
+  if (token?.email_verified === true) {
+    return { alreadyVerified: true };
+  }
+
+  const ref = getFirestore().collection(emailVerificationCollection).doc(uid);
+  const now = Date.now();
+
+  const snapshot = await ref.get();
+  if (snapshot.exists) {
+    const lastSentAt = snapshot.get("lastSentAt") as Timestamp | undefined;
+    if (lastSentAt && now - lastSentAt.toMillis() < emailResendCooldownMs) {
+      throw new HttpsError("failed-precondition", "Please wait before requesting a new code");
+    }
+  }
+
+  const code = generateVerificationCode();
+  await ref.set({
+    codeHash: hashVerificationCode(uid, code),
+    email,
+    attempts: 0,
+    expiresAt: Timestamp.fromMillis(now + emailCodeTtlMs),
+    lastSentAt: Timestamp.fromMillis(now),
+    createdAt: FieldValue.serverTimestamp(),
+  });
+
+  await enqueueVerificationEmail(email, code);
+  return { ok: true };
+});
+
+// On success, flips Firebase Auth's `emailVerified` (the app's single source of truth).
+export const verifyEmailCode = onCall(callableOptions, async (request) => {
+  const uid = requireAuth(request.auth?.uid);
+  const code = requireString(request.data?.code, "code");
+  if (!new RegExp(`^\\d{${emailCodeLength}}$`).test(code)) {
+    throw new HttpsError("invalid-argument", `Code must be ${emailCodeLength} digits`);
+  }
+
+  const ref = getFirestore().collection(emailVerificationCollection).doc(uid);
+  const snapshot = await ref.get();
+  if (!snapshot.exists) {
+    throw new HttpsError("not-found", "No verification is in progress. Request a new code");
+  }
+
+  const expiresAt = snapshot.get("expiresAt") as Timestamp | undefined;
+  if (!expiresAt || expiresAt.toMillis() < Date.now()) {
+    await ref.delete();
+    throw new HttpsError("deadline-exceeded", "This code has expired. Request a new code");
+  }
+
+  const attempts = (snapshot.get("attempts") as number | undefined) ?? 0;
+  if (attempts >= emailMaxVerifyAttempts) {
+    await ref.delete();
+    throw new HttpsError("resource-exhausted", "Too many attempts. Request a new code");
+  }
+
+  const storedHash = snapshot.get("codeHash") as string | undefined;
+  if (!storedHash || !verificationCodeMatches(storedHash, hashVerificationCode(uid, code))) {
+    await ref.update({ attempts: FieldValue.increment(1) });
+    throw new HttpsError("invalid-argument", "Invalid code. Please try again");
+  }
+
+  await getAuth().updateUser(uid, { emailVerified: true });
+  await ref.delete();
+  return { verified: true };
+});
+
+function generateVerificationCode(): string {
+  return randomInt(0, 10 ** emailCodeLength).toString().padStart(emailCodeLength, "0");
+}
+
+function hashVerificationCode(uid: string, code: string): string {
+  return createHash("sha256").update(`${uid}:${code}`).digest("hex");
+}
+
+function verificationCodeMatches(a: string, b: string): boolean {
+  const bufferA = Buffer.from(a);
+  const bufferB = Buffer.from(b);
+  return bufferA.length === bufferB.length && timingSafeEqual(bufferA, bufferB);
+}
+
+async function enqueueVerificationEmail(email: string, code: string): Promise<void> {
+  await getFirestore().collection(emailMailCollection).add({
+    to: [email],
+    message: {
+      subject: "Your HEXIS-BI verification code",
+      text: `Your HEXIS-BI verification code is ${code}. It expires in 10 minutes. `
+        + "If you didn't request this, you can ignore this email.",
+      html: verificationEmailHtml(code),
+    },
+  });
+}
+
+function verificationEmailHtml(code: string): string {
+  return `
+    <div style="font-family: Arial, Helvetica, sans-serif; color: #0f172a;">
+      <h2 style="margin: 0 0 8px;">Verify your email</h2>
+      <p style="margin: 0 0 16px; color: #475569;">Enter this code to confirm your email address:</p>
+      <p style="font-size: 32px; font-weight: 700; letter-spacing: 8px; margin: 0 0 16px;">${code}</p>
+      <p style="margin: 0; color: #94a3b8; font-size: 13px;">
+        This code expires in 10 minutes. If you didn't request it, you can ignore this email.
+      </p>
+    </div>
+  `;
+}
 
 function terraDataUrl(path: "/daily" | "/sleep", data: unknown): URL {
   const payload = asRecord(data);

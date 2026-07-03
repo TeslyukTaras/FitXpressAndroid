@@ -8,6 +8,7 @@ import com.google.firebase.storage.FirebaseStorage
 import com.hexis.bi.data.activity.ActivityRepository
 import com.hexis.bi.data.activity.TerraApiActivityRepository
 import com.hexis.bi.data.auth.AuthRepository
+import com.hexis.bi.data.auth.EmailVerificationApi
 import com.hexis.bi.data.auth.FirebaseAuthRepository
 import com.hexis.bi.data.auth.SessionCleaner
 import com.hexis.bi.data.healthconnections.FirestoreHealthConnectionsRepository
@@ -46,6 +47,7 @@ import com.hexis.bi.ui.auth.forgotpassword.ForgotPasswordViewModel
 import com.hexis.bi.ui.auth.login.LoginViewModel
 import com.hexis.bi.ui.auth.onboarding.OnboardingViewModel
 import com.hexis.bi.ui.auth.signup.SignUpViewModel
+import com.hexis.bi.ui.auth.verifyemail.VerifyEmailViewModel
 import com.hexis.bi.ui.main.body.BodyViewModel
 import com.hexis.bi.ui.main.buysuit.editaddress.EditAddressViewModel
 import com.hexis.bi.ui.main.buysuit.shipping.ShippingDetailsViewModel
@@ -99,7 +101,8 @@ val appModule = module {
     }
     single<ScanReminderScheduler> { ScanReminderSchedulerImpl(androidContext(), get(), get()) }
     single { NotificationPermissionCoordinator(androidContext(), get(), get(), get(), get()) }
-    single<AuthRepository> { FirebaseAuthRepository(get(), get(), androidContext()) }
+    single { EmailVerificationApi(get()) }
+    single<AuthRepository> { FirebaseAuthRepository(get(), get(), get(), androidContext()) }
     single { SessionCleaner(get(), get(), get(), get(), get()) }
     single<SuitRepository> { MockSuitRepository(get()) }
     single<UserRepository> { FirestoreUserRepository(get(), get(), androidContext()) }
@@ -155,6 +158,7 @@ val appModule = module {
     }
     viewModel { EditProfileViewModel(androidApplication(), get(), get(), get()) }
     viewModel { ForgotPasswordViewModel(get(), androidApplication()) }
+    viewModel { VerifyEmailViewModel(get(), androidApplication()) }
     viewModel { ScanPreferencesViewModel(androidApplication(), get(), get()) }
     viewModel {
         HealthConnectionsViewModel(
