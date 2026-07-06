@@ -6,6 +6,7 @@ import { CallableRequest, HttpsError, onCall } from "firebase-functions/v2/https
 import { defineSecret } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
 import { createHash, randomInt, timingSafeEqual } from "node:crypto";
+import { isDemoUid, syntheticDailyResponse, syntheticSleepResponse } from "./demoData";
 
 initializeApp();
 
@@ -133,6 +134,13 @@ function terraHandlers(secrets: TerraSecrets) {
 
     getDaily: async (request: CallableRequest) => {
       const uid = requireAuth(request.auth?.uid);
+      if (isDemoUid(uid)) {
+        const payload = asRecord(request.data);
+        return syntheticDailyResponse(
+          requireIsoDate(payload.startDate, "startDate"),
+          requireIsoDate(payload.endDate, "endDate"),
+        );
+      }
       const terraUserId = requireString(request.data?.terraUserId, "terraUserId");
       await requireTerraConnection(uid, terraUserId, secrets.environment);
 
@@ -144,6 +152,13 @@ function terraHandlers(secrets: TerraSecrets) {
 
     getSleep: async (request: CallableRequest) => {
       const uid = requireAuth(request.auth?.uid);
+      if (isDemoUid(uid)) {
+        const payload = asRecord(request.data);
+        return syntheticSleepResponse(
+          requireIsoDate(payload.startDate, "startDate"),
+          requireIsoDate(payload.endDate, "endDate"),
+        );
+      }
       const terraUserId = requireString(request.data?.terraUserId, "terraUserId");
       await requireTerraConnection(uid, terraUserId, secrets.environment);
 
