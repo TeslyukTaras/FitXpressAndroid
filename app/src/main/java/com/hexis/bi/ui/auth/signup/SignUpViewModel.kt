@@ -118,7 +118,9 @@ class SignUpViewModel(
                 setError(createResult.exceptionOrNull()?.message)
                 return@launch
             }
-            emitEvent(SignUpEvent.NavigateToHome)
+            // A send failure still routes to verification — the user can resend there.
+            authRepository.sendEmailVerificationCode()
+            emitEvent(SignUpEvent.NavigateToVerifyEmail)
         }
     }
 

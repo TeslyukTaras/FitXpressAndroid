@@ -58,7 +58,14 @@ class LoginViewModel(
 
         launch {
             authRepository.signInWithEmail(s.email, s.password)
-                .onSuccess { emitEvent(LoginEvent.NavigateToHome) }
+                .onSuccess {
+                    if (authRepository.isEmailVerified) {
+                        emitEvent(LoginEvent.NavigateToHome)
+                    } else {
+                        authRepository.sendEmailVerificationCode()
+                        emitEvent(LoginEvent.NavigateToVerifyEmail)
+                    }
+                }
                 .onFailure { setError(it.message) }
         }
     }

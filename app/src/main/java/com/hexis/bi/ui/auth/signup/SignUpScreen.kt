@@ -46,6 +46,7 @@ import org.koin.androidx.compose.koinViewModel
 fun SignUpScreen(
     onNavigateToLogin: () -> Unit,
     onSignUpSuccess: () -> Unit,
+    onNavigateToVerifyEmail: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SignUpViewModel = koinViewModel(),
 ) {
@@ -59,6 +60,7 @@ fun SignUpScreen(
             when (event) {
                 is SignUpEvent.NavigateToHome -> onSignUpSuccess()
                 is SignUpEvent.NavigateToLogin -> onNavigateToLogin()
+                is SignUpEvent.NavigateToVerifyEmail -> onNavigateToVerifyEmail()
                 else -> Unit
             }
         }

@@ -7,6 +7,7 @@ internal object Route {
     const val MAIN = "main"
     const val PROFILE_ONBOARDING = "profile_onboarding"
     const val FORGOT_PASSWORD = "forgot_password"
+    const val VERIFY_EMAIL = "verify_email"
 
     object Main {
         const val HOME = "main/home"
