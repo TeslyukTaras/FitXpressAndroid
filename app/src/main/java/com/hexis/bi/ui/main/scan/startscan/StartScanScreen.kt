@@ -149,7 +149,7 @@ fun StartScanScreen(
     LaunchedEffect(state.shouldLaunchCamera) {
         if (state.shouldLaunchCamera) {
             viewModel.onCameraLaunched()
-            val intent = SdkActivity.start(context, LaunchOption.FRONT_AND_SIDE_ONLY)
+            val intent = SdkActivity.start(context, LaunchOption.POSE_RECOGNITION_BY_MYSELF)
             cameraLauncher.launch(intent)
         }
     }

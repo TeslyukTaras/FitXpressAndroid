@@ -1,6 +1,5 @@
 package com.hexis.bi.ui.auth.forgotpassword
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -19,7 +17,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -120,19 +117,12 @@ private fun ForgotPasswordSuccessDialogContent(email: String) {
             .padding(dimensionResource(R.dimen.padding_large)),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(
-            Modifier
-                .size(dimensionResource(R.dimen.size_tick_icon))
-                .clip(CircleShape)
-                .background(NocturnePulseTheme.extendedColors.green)
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_tick),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.background,
-                modifier = Modifier.size(dimensionResource(R.dimen.size_tick_icon)),
-            )
-        }
+        Icon(
+            painter = painterResource(R.drawable.ic_done_verification),
+            contentDescription = null,
+            tint = NocturnePulseTheme.extendedColors.positive,
+            modifier = Modifier.size(dimensionResource(R.dimen.size_tick_icon)),
+        )
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
 

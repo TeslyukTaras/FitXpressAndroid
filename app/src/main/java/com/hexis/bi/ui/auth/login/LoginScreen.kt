@@ -44,6 +44,7 @@ fun LoginScreen(
     onNavigateToSignUp: () -> Unit,
     onLoginSuccess: () -> Unit,
     onForgotPassword: () -> Unit,
+    onNavigateToVerifyEmail: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LoginViewModel = koinViewModel(),
 ) {
@@ -58,6 +59,7 @@ fun LoginScreen(
             when (event) {
                 is LoginEvent.NavigateToHome -> onLoginSuccess()
                 is LoginEvent.NavigateToSignUp -> onNavigateToSignUp()
+                is LoginEvent.NavigateToVerifyEmail -> onNavigateToVerifyEmail()
                 else -> Unit
             }
         }

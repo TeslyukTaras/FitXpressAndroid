@@ -402,6 +402,25 @@
     <string name="forgot_password_success_body">We\'ve sent you a link to reset your password.</string>
     <string name="cd_close_dialog">Close</string>
 
+    <!-- Verify email screen -->
+    <string name="verify_email_title">Verify your email</string>
+    <string name="verify_email_subtitle">We sent a verification code to\nyour email address.</string>
+    <string name="verify_email_subtitle_resent">A new verification code has been sent to\nyour email.</string>
+    <string name="verify_email_hint">Please check your inbox or spam folder.</string>
+    <string name="action_verify">Verify</string>
+    <string name="verify_email_resend_prompt">Didn\'t receive the code?</string>
+    <string name="action_resend_code">Resend</string>
+    <string name="action_resend_code_full">Resend code</string>
+    <string name="verify_email_resend_countdown_prefix">Resend code in</string>
+    <string name="verify_email_resend_seconds">%1$ds</string>
+    <string name="verify_email_success_title">Email verified successfully</string>
+    <string name="verify_email_success_body">Your email has been confirmed.</string>
+    <string name="error_verify_invalid_code">Invalid code. Please try again.</string>
+    <string name="error_verify_code_expired">This code has expired. Request a new code.</string>
+    <string name="error_verify_too_many_attempts">Too many attempts. Request a new code.</string>
+    <string name="error_verify_no_code">No verification in progress. Request a new code.</string>
+    <string name="error_verify_resend_cooldown">Please wait before requesting a new code.</string>
+
     <!-- Generic stat placeholder shown before data loads or when value is unavailable -->
     <string name="stat_unknown">—</string>
 

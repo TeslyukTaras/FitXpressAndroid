@@ -15,6 +15,7 @@ import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.OAuthProvider
 import com.google.firebase.auth.UserProfileChangeRequest
+import com.google.firebase.functions.FirebaseFunctionsException
 import com.hexis.bi.R
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +25,7 @@ import kotlinx.coroutines.tasks.await
 class FirebaseAuthRepository(
     private val auth: FirebaseAuth,
     private val credentialManager: CredentialManager,
+    private val emailVerificationApi: EmailVerificationApi,
     private val context: Context,
 ) : AuthRepository {
 
@@ -32,6 +34,12 @@ class FirebaseAuthRepository(
         auth.addAuthStateListener(listener)
         awaitClose { auth.removeAuthStateListener(listener) }
     }
+
+    override val isEmailVerified: Boolean
+        get() = auth.currentUser?.isEmailVerified == true
+
+    override val currentUserEmail: String?
+        get() = auth.currentUser?.email
 
     override suspend fun signInWithEmail(email: String, password: String): Result<Unit> =
         runCatching {
@@ -77,6 +85,23 @@ class FirebaseAuthRepository(
     override suspend fun sendPasswordResetEmail(email: String): Result<Unit> = runCatching {
         auth.sendPasswordResetEmail(email).await()
         Unit
+    }.mapAuthError(context)
+
+    override suspend fun sendEmailVerificationCode(): Result<Unit> =
+        emailVerificationApi.sendCode().mapAuthError(context)
+
+    override suspend fun verifyEmailCode(code: String): Result<Unit> {
+        val result = emailVerificationApi.verifyCode(code)
+        // Refresh the local token so isEmailVerified / the auth gate see the server-side change.
+        if (result.isSuccess) runCatching { auth.currentUser?.reload()?.await() }
+        return result.mapAuthError(context)
+    }
+
+    override suspend fun reloadUser(): Result<Boolean> = runCatching {
+        val user = auth.currentUser
+            ?: throw FirebaseAuthCodeException(FirebaseAuthErrorCodes.NO_CURRENT_USER)
+        user.reload().await()
+        user.isEmailVerified
     }.mapAuthError(context)
 
     override suspend fun deleteAccountWithPassword(password: String): Result<Unit> = runCatching {
@@ -140,6 +165,9 @@ class FirebaseAuthRepository(
 
 private fun <T> Result<T>.mapAuthError(context: Context): Result<T> {
     val error = exceptionOrNull() ?: return this
+    if (error is FirebaseFunctionsException) {
+        return Result.failure(Exception(error.friendlyMessage(context)))
+    }
     val errorCode = when (error) {
         is FirebaseAuthException -> error.errorCode
         is FirebaseAuthCodeException -> error.errorCode
@@ -164,4 +192,17 @@ private fun <T> Result<T>.mapAuthError(context: Context): Result<T> {
         else -> return this
     }
     return Result.failure(Exception(friendly))
+}
+
+private fun FirebaseFunctionsException.friendlyMessage(context: Context): String {
+    val resId = when (code) {
+        FirebaseFunctionsException.Code.INVALID_ARGUMENT -> R.string.error_verify_invalid_code
+        FirebaseFunctionsException.Code.DEADLINE_EXCEEDED -> R.string.error_verify_code_expired
+        FirebaseFunctionsException.Code.RESOURCE_EXHAUSTED -> R.string.error_verify_too_many_attempts
+        FirebaseFunctionsException.Code.NOT_FOUND -> R.string.error_verify_no_code
+        FirebaseFunctionsException.Code.FAILED_PRECONDITION -> R.string.error_verify_resend_cooldown
+        FirebaseFunctionsException.Code.UNAUTHENTICATED -> R.string.error_session_expired
+        else -> R.string.error_auth_network
+    }
+    return context.getString(resId)
 }

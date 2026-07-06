@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -21,6 +22,7 @@ import com.hexis.bi.ui.auth.info.AppInfoScreen
 import com.hexis.bi.ui.auth.login.LoginScreen
 import com.hexis.bi.ui.auth.onboarding.OnboardingScreen
 import com.hexis.bi.ui.auth.signup.SignUpScreen
+import com.hexis.bi.ui.auth.verifyemail.VerifyEmailScreen
 import com.hexis.bi.ui.main.MainScreen
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.take
@@ -42,6 +44,7 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
         ) { onboardingShown, isSignedIn ->
             when {
                 !onboardingShown -> Route.APP_INFO
+                isSignedIn && !authRepository.isEmailVerified -> Route.VERIFY_EMAIL
                 isSignedIn -> Route.MAIN
                 else -> Route.LOGIN
             }
@@ -53,6 +56,8 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
     var mainStartDestination by remember { mutableStateOf(Route.Main.HOME) }
+    // PROFILE_ONBOARDING for a fresh sign-up, MAIN when resuming verification.
+    var postVerifyDestination by remember { mutableStateOf(Route.MAIN) }
 
     NavHost(
         navController = navController,
@@ -108,6 +113,10 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
                     }
                 },
                 onForgotPassword = { navController.navigate(Route.FORGOT_PASSWORD) },
+                onNavigateToVerifyEmail = {
+                    postVerifyDestination = Route.MAIN
+                    navController.navigate(Route.VERIFY_EMAIL)
+                },
             )
         }
         composable(Route.FORGOT_PASSWORD) {
@@ -121,6 +130,30 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
                 onSignUpSuccess = {
                     mainStartDestination = Route.Main.HOME
                     navController.navigate(Route.PROFILE_ONBOARDING) {
+                        popUpTo(Route.LOGIN) { inclusive = true }
+                    }
+                },
+                // Keep Sign Up on the back stack so the user can return to it from verification.
+                onNavigateToVerifyEmail = {
+                    postVerifyDestination = Route.PROFILE_ONBOARDING
+                    navController.navigate(Route.VERIFY_EMAIL)
+                },
+            )
+        }
+        composable(Route.VERIFY_EMAIL) {
+            VerifyEmailScreen(
+                onNavigateBack = {
+                    // Leaving verification drops the unverified session and always returns to
+                    // Login (the account still exists — signing in again resumes verification).
+                    // Clear the whole stack so we land on a single fresh Login in every entry path.
+                    scope.launch { sessionCleaner.signOut() }
+                    navController.navigate(Route.LOGIN) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onVerified = {
+                    navController.navigate(postVerifyDestination) {
                         popUpTo(Route.LOGIN) { inclusive = true }
                     }
                 },
