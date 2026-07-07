@@ -105,8 +105,7 @@ fun VerifyEmailScreen(
             Text(
                 text = state.inlineError ?: stringResource(R.string.verify_email_hint),
                 style = TitleDimTextStyle,
-                color = if (state.inlineError != null) MaterialTheme.colorScheme.error
-                else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
 
@@ -115,7 +114,7 @@ fun VerifyEmailScreen(
             AppPrimaryButton(
                 text = stringResource(R.string.action_verify),
                 onClick = viewModel::verify,
-                enabled = state.isCodeComplete,
+                enabled = state.isCodeComplete && !state.isCodeError,
                 isLoading = isLoading,
                 modifier = Modifier.fillMaxWidth(),
             )

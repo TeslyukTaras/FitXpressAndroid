@@ -38,7 +38,8 @@ import com.hexis.bi.ui.base.UiEvent
 import com.hexis.bi.ui.components.AppCheckbox
 import com.hexis.bi.ui.components.AppPrimaryButton
 import com.hexis.bi.ui.components.AppRadioButton
-import com.hexis.bi.ui.components.AppSwitch
+// TODO(scan-mute): re-enable together with VoiceGuidanceCard once the 3DLook SDK exposes a sound toggle.
+// import com.hexis.bi.ui.components.AppSwitch
 import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.components.LightStatusBarIcons
 import com.hexis.bi.ui.theme.screenBackground
@@ -115,12 +116,17 @@ fun ScanPreferencesScreen(
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-            VoiceGuidanceCard(
-                enabled = state.voiceGuidanceEnabled,
-                onToggle = viewModel::toggleVoiceGuidance,
-            )
-
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+            // TODO(scan-mute): The 3DLook camera SDK (look-camera-sdk-private:0.0.6) plays voice
+            // guidance internally and exposes no mute/sound option on SdkActivity.start(...), and the
+            // only device-side alternative (muting the media stream via AudioManager) would silence
+            // the whole phone. Hidden until the SDK supports muting; the voiceGuidanceEnabled setting
+            // + persistence are kept so this can be re-enabled by uncommenting.
+            // VoiceGuidanceCard(
+            //     enabled = state.voiceGuidanceEnabled,
+            //     onToggle = viewModel::toggleVoiceGuidance,
+            // )
+            //
+            // Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
             MeasurementZonesCard(
                 allSelected = state.allZonesSelected,
@@ -213,24 +219,25 @@ private fun UnitOption(
     }
 }
 
-@Composable
-private fun VoiceGuidanceCard(
-    enabled: Boolean,
-    onToggle: (Boolean) -> Unit,
-) {
-    BodyGlassCard {
-        Row(verticalAlignment = Alignment.Top) {
-            Column(modifier = Modifier.weight(1f)) {
-                SectionHeader(
-                    title = stringResource(R.string.scan_preferences_voice_guidance),
-                    subtitle = stringResource(R.string.scan_preferences_voice_guidance_subtitle),
-                )
-            }
-            Spacer(Modifier.width(dimensionResource(R.dimen.spacer_2xl)))
-            AppSwitch(checked = enabled, onCheckedChange = onToggle)
-        }
-    }
-}
+// TODO(scan-mute): re-enable once the 3DLook SDK supports muting (see call site in the screen body).
+// @Composable
+// private fun VoiceGuidanceCard(
+//     enabled: Boolean,
+//     onToggle: (Boolean) -> Unit,
+// ) {
+//     BodyGlassCard {
+//         Row(verticalAlignment = Alignment.Top) {
+//             Column(modifier = Modifier.weight(1f)) {
+//                 SectionHeader(
+//                     title = stringResource(R.string.scan_preferences_voice_guidance),
+//                     subtitle = stringResource(R.string.scan_preferences_voice_guidance_subtitle),
+//                 )
+//             }
+//             Spacer(Modifier.width(dimensionResource(R.dimen.spacer_2xl)))
+//             AppSwitch(checked = enabled, onCheckedChange = onToggle)
+//         }
+//     }
+// }
 
 @Composable
 private fun MeasurementZonesCard(
