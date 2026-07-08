@@ -3,10 +3,12 @@ package com.hexis.bi.ui.auth.onboarding
 import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.ui.base.HealthParameters
 import com.hexis.bi.ui.base.UiEvent
+import com.hexis.bi.utils.calculateAge
 import com.hexis.bi.utils.cmToInches
 import com.hexis.bi.utils.cmToRoundedFeetAndInches
 import com.hexis.bi.utils.constants.ProfileConstants
 import com.hexis.bi.utils.kgToLb
+import com.hexis.bi.utils.parseDob
 import kotlin.math.roundToInt
 
 sealed interface OnboardingEvent : UiEvent {
@@ -32,6 +34,15 @@ data class OnboardingState(
     val showSuitCareSheet: Boolean = false,
     val careInstructionsAccepted: Boolean = false,
 ) : HealthParameters {
+    private val age: Int?
+        get() = dateOfBirth.parseDob()?.calculateAge()
+
+    val isDobUnderage: Boolean
+        get() = age?.let { it < ProfileConstants.MIN_AGE_YEARS } == true
+
+    val isPersonalInfoValid: Boolean
+        get() = age?.let { it >= ProfileConstants.MIN_AGE_YEARS } == true
+
     override val heightSliderValue: Float
         get() = if (isMetric) heightCm else heightCm.cmToInches()
 

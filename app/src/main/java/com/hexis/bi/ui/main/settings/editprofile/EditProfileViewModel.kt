@@ -5,6 +5,7 @@ import android.net.Uri
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageMetadata
+import com.hexis.bi.R
 import com.hexis.bi.data.user.UserProfile
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.enums.GenderOption
@@ -94,9 +95,15 @@ class EditProfileViewModel(
     }
 
     fun save() = launch {
-        if (!_state.value.canSave) return@launch
+        val current = _state.value
+        // Guard against saving an under-age profile even if the UI somehow allowed it.
+        if (!current.isAgeValid) {
+            setError(R.string.dob_min_age_error, ProfileConstants.MIN_AGE_YEARS)
+            return@launch
+        }
+        if (!current.canSave) return@launch
         val uid = firebaseAuth.currentUser?.uid ?: return@launch
-        userRepository.updateUser(_state.value.toUserProfile(uid))
+        userRepository.updateUser(current.toUserProfile(uid))
             .onSuccess { emitEvent(EditProfileEvent.SaveSuccess) }
             .onFailure { setError(it.message) }
     }
