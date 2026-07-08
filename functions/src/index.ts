@@ -214,7 +214,7 @@ export const threeDLookCreateMeasurement = onCall(threeDLookSecretOptions, async
   const frontPath = requireTempScanPath(uid, request.data?.frontPath, "frontPath");
   const sidePath = requireTempScanPath(uid, request.data?.sidePath, "sidePath");
   const heightCm = requireNumber(request.data?.heightCm, "heightCm");
-  const gender = requireString(request.data?.gender, "gender");
+  const gender = normalizeThreeDLookGender(requireString(request.data?.gender, "gender"));
   const age = requireNumber(request.data?.age, "age");
   const weightKg = optionalNumber(request.data?.weightKg, "weightKg");
 
@@ -450,7 +450,59 @@ function throwProviderError(status: number, label: string, body: string): never 
     body: body.slice(0, 1000),
   });
   const code = status === 401 || status === 403 ? "permission-denied" : "internal";
-  throw new HttpsError(code, `${label} failed with HTTP ${status}`);
+  const detail = providerErrorDetail(body);
+  throw new HttpsError(
+    code,
+    detail
+      ? `${label} failed with HTTP ${status}: ${detail}`
+      : `${label} failed with HTTP ${status}`,
+  );
+}
+
+function providerErrorDetail(body: string): string | undefined {
+  const trimmed = body.trim();
+  if (!trimmed) return undefined;
+  try {
+    const parsed = JSON.parse(trimmed) as unknown;
+    return findErrorMessage(parsed);
+  } catch {
+    return trimmed.replace(/\s+/g, " ").slice(0, 300);
+  }
+}
+
+function findErrorMessage(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    return value.trim() || undefined;
+  }
+  if (Array.isArray(value)) {
+    return value.map(findErrorMessage).filter(Boolean).join("; ") || undefined;
+  }
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+  const record = value as Record<string, unknown>;
+  for (const key of ["detail", "message", "error", "errors", "non_field_errors"]) {
+    const message = findErrorMessage(record[key]);
+    if (message) return message;
+  }
+  const fieldMessages = Object.entries(record)
+    .map(([key, fieldValue]) => {
+      const message = findErrorMessage(fieldValue);
+      return message ? `${key}: ${message}` : undefined;
+    })
+    .filter(Boolean);
+  if (fieldMessages.length > 0) {
+    return fieldMessages.join("; ");
+  }
+  return undefined;
+}
+
+function normalizeThreeDLookGender(raw: string): "male" | "female" {
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === "female") return "female";
+  if (normalized === "male") return "male";
+  logger.warn("Unsupported 3DLook gender; falling back to male", { gender: raw });
+  return "male";
 }
 
 function requireAuth(uid: string | undefined): string {

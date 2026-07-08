@@ -102,7 +102,7 @@ private fun scanMode(scanPurpose: ScanPurpose, state: StartScanState): ScanMode 
             ScanMode.SuitIntro
         }
 
-    state.isProcessing || state.isComplete -> ScanMode.BodyRunning
+    state.isProcessing || state.isComplete || state.scanErrorMessage != null -> ScanMode.BodyRunning
     else -> ScanMode.Idle
 }
 
@@ -235,6 +235,9 @@ fun StartScanScreen(
                         ScanAnalyzingContent(
                             modifier = Modifier.fillMaxSize(),
                             isComplete = state.isComplete,
+                            errorMessage = state.scanErrorMessage,
+                            canRetake = state.retakeOnErrorDismiss,
+                            onErrorAction = { viewModel.onErrorDismissed() },
                             onProgressFinished = { bodyProgressComplete = true },
                         )
                     }

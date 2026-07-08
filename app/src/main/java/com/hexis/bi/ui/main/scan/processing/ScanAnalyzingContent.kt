@@ -33,6 +33,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
+import com.hexis.bi.ui.components.AppPrimaryButton
 import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.ScanAnalyzingPercentStyle
 import kotlin.math.exp
@@ -53,10 +54,15 @@ private const val ANALYZING_FINISH_DURATION_MS = 3_000
 internal fun ScanAnalyzingContent(
     isComplete: Boolean,
     modifier: Modifier = Modifier,
+    errorMessage: String? = null,
+    canRetake: Boolean = false,
+    onErrorAction: () -> Unit = {},
     onProgressFinished: () -> Unit = {},
 ) {
     val progress = remember { Animatable(0f) }
-    LaunchedEffect(isComplete) {
+    val hasError = errorMessage != null
+    LaunchedEffect(isComplete, hasError) {
+        if (hasError) return@LaunchedEffect
         if (isComplete) {
             progress.animateTo(
                 targetValue = 1f,
@@ -95,16 +101,21 @@ internal fun ScanAnalyzingContent(
                     .fillMaxSize()
                     .alpha(ANALYZING_BODY_ALPHA),
             )
-            AnalyzingLoader(
-                progress = progress.value,
-                modifier = Modifier.align(BiasAlignment(0f, ANALYZING_LOADER_VERTICAL_BIAS)),
-            )
+            if (!hasError) {
+                AnalyzingLoader(
+                    progress = progress.value,
+                    modifier = Modifier.align(BiasAlignment(0f, ANALYZING_LOADER_VERTICAL_BIAS)),
+                )
+            }
         }
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
 
         Text(
-            text = stringResource(R.string.scan_analyzing_title),
+            text = stringResource(
+                if (hasError) R.string.scan_analyzing_error_title
+                else R.string.scan_analyzing_title,
+            ),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
@@ -116,7 +127,7 @@ internal fun ScanAnalyzingContent(
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
 
         Text(
-            text = stringResource(R.string.scan_analyzing_subtitle),
+            text = errorMessage ?: stringResource(R.string.scan_analyzing_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -124,6 +135,19 @@ internal fun ScanAnalyzingContent(
                 .fillMaxWidth()
                 .padding(horizontal = dimensionResource(R.dimen.padding_large)),
         )
+
+        if (hasError) {
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+            AppPrimaryButton(
+                text = stringResource(
+                    if (canRetake) R.string.action_rescan else R.string.action_back,
+                ),
+                onClick = onErrorAction,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = dimensionResource(R.dimen.padding_large)),
+            )
+        }
 
         Spacer(Modifier.height(dimensionResource(R.dimen.scan_analyzing_bottom_spacer)))
     }

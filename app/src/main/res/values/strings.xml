@@ -813,6 +813,7 @@
     <string name="scan_personalize_message">You can choose which body zones appear in your measurement tables from\nScan Preference Settings.</string>
     <string name="scan_personalize_go_to_settings">Go to Settings</string>
     <string name="scan_analyzing_title">Transforming your scan into\nbody intelligence</string>
+    <string name="scan_analyzing_error_title">Scan failed</string>
     <string name="scan_analyzing_subtitle">We’re processing your scan and building your\nbody insights.</string>
     <string name="scan_suit_not_detected_title">Suit is not detected</string>
     <string name="scan_suit_not_detected_body">You’re not wearing the suit right now. Put it on to continue, or switch to Regular Scan.</string>

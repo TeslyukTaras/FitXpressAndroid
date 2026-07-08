@@ -83,7 +83,6 @@ internal class MetricAvatarTextureView(
     private var renderFailureListener: (() -> Unit)? = null
     private var onFirstFrameRendered: (() -> Unit)? = null
     private var pendingFirstFrameNotify = false
-    private var awaitingRevealFrame = false
     private var animationFrameScheduled = false
     private val pendingEvents = mutableListOf<() -> Unit>()
     private val compareRenderNotify: () -> Unit = { requestRenderOnThread() }
@@ -167,17 +166,14 @@ internal class MetricAvatarTextureView(
     }
 
     override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
-        when {
-            pendingFirstFrameNotify -> {
-                pendingFirstFrameNotify = false
-                awaitingRevealFrame = true
-                requestRenderOnThread()
-            }
-
-            awaitingRevealFrame -> {
-                awaitingRevealFrame = false
-                onFirstFrameRendered?.invoke()
-            }
+        // The queued render event for a newly loaded mesh sets the mesh and draws in one shot, so
+        // the first presented frame already contains it. Reveal immediately rather than waiting for
+        // a second surface update — while the GL layer is still alpha 0 the platform may not draw
+        // (and therefore not deliver) that second update until an unrelated invalidation (a touch),
+        // which left the loader stuck on screen until the user interacted with it.
+        if (pendingFirstFrameNotify) {
+            pendingFirstFrameNotify = false
+            onFirstFrameRendered?.invoke()
         }
     }
 
@@ -383,7 +379,6 @@ internal class MetricAvatarTextureView(
 
     override fun applyLoadedMesh(mesh: ObjMesh, yawDeg: Float, pitchDeg: Float) {
         pendingFirstFrameNotify = true
-        awaitingRevealFrame = false
         queueRenderEvent {
             avatarRenderer.setRotationLink(null)
             avatarRenderer.setBaseOrientation(yawDeg, pitchDeg)
@@ -394,7 +389,6 @@ internal class MetricAvatarTextureView(
 
     override fun applyLoadedMeshForCompare(mesh: ObjMesh) {
         pendingFirstFrameNotify = true
-        awaitingRevealFrame = false
         queueRenderEvent {
             avatarRenderer.setMesh(mesh)
             drawFrame()
