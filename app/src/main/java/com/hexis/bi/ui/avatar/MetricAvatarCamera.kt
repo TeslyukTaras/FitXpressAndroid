@@ -13,7 +13,7 @@ import kotlin.math.tan
 internal object MetricAvatarCamera {
     const val MATRIX_SIZE = 16
     const val INITIAL_VIEW_DISTANCE = 3.2f
-    const val FOV_DEG = 42f
+    const val FOV_DEG = 26f
     const val FRUSTUM_NEAR = 0.1f
     const val FRUSTUM_FAR = 100f
     const val MIN_TAN_HALF_FOV = 0.001f
@@ -29,6 +29,12 @@ internal object MetricAvatarCamera {
 
     /** Camera distance multiplier — lower = closer camera / larger figure in the preview. */
     const val PREVIEW_DISTANCE_SCALE = 0.82f
+
+    /**
+     * Half-width the figure may occupy before the camera pulls back. Only binds on the narrow Compare
+     * columns; at 1 the two figures' hands meet over the divider.
+     */
+    const val FULL_BODY_WIDTH_FIT_FRACTION = 0.95f
 
     /** User pinch-zoom bounds, as a multiplier on the figure's on-screen size (1 = default framing). */
     const val MIN_USER_ZOOM = 1f

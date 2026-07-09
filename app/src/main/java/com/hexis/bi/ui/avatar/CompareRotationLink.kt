@@ -4,10 +4,14 @@ import android.os.SystemClock
 import androidx.compose.ui.util.lerp
 import java.util.concurrent.CopyOnWriteArrayList
 
+private const val NOT_ANIMATING = 0L
+
 /**
  * Shared orientation / zoom / pan state that links two [MetricAvatarPreview]s (the Compare tab) so
- * they rotate together, with an eased reset back to defaults when the framed part changes. Thread-safe:
- * mutated from the GL touch thread and read from render threads.
+ * they rotate together, with an eased reset back to defaults when the framed part changes.
+ *
+ * Mutated from the touch thread, read from two render threads: a reset must snapshot every field as
+ * one consistent pose, so they are guarded by the instance lock and not just `@Volatile`.
  */
 internal class CompareRotationLink {
     @Volatile
@@ -25,10 +29,10 @@ internal class CompareRotationLink {
     @Volatile
     var panY: Float = 0f
 
-    // Animated reset of user yaw-spin / zoom / pan back to defaults when the framed part changes.
-    private var resetAnimating = false
-    private var resetStartMs = 0L
+    /** Guarded by `this`. */
+    private var resetStartMs = NOT_ANIMATING
     private var fromYaw = 0f
+    private var fromPitch = INITIAL_PITCH_DEG
     private var fromZoom = MetricAvatarCamera.MIN_USER_ZOOM
     private var fromPanX = 0f
     private var fromPanY = 0f
@@ -43,49 +47,29 @@ internal class CompareRotationLink {
         invalidateCallbacks.remove(callback)
     }
 
-    fun applyZoomFactor(factor: Float) {
-        synchronized(this) {
-            resetAnimating = false
-            zoom = (zoom * factor).coerceIn(
-                MetricAvatarCamera.MIN_USER_ZOOM,
-                MetricAvatarCamera.MAX_USER_ZOOM,
-            )
-        }
+    private fun notifyInvalidate() {
         invalidateCallbacks.forEach { it() }
     }
 
-    fun applyPanDelta(dxWorld: Float, dyWorld: Float, maxX: Float, maxY: Float) {
-        synchronized(this) {
-            resetAnimating = false
-            panX = (panX + dxWorld).coerceIn(-maxX, maxX)
-            panY = (panY + dyWorld).coerceIn(-maxY, maxY)
-        }
-        invalidateCallbacks.forEach { it() }
+    /** Answered from the clock: a preview whose mesh never draws would otherwise never retire it. */
+    fun isResetAnimating(): Boolean = synchronized(this) {
+        isResetAnimatingLocked(SystemClock.uptimeMillis())
     }
 
-    fun clampPan(maxX: Float, maxY: Float) {
-        synchronized(this) {
-            panX = panX.coerceIn(-maxX, maxX)
-            panY = panY.coerceIn(-maxY, maxY)
-        }
-        invalidateCallbacks.forEach { it() }
-    }
+    private fun isResetAnimatingLocked(now: Long): Boolean =
+        resetStartMs != NOT_ANIMATING && now - resetStartMs < FRAME_ANIMATION_DURATION_MS
 
-    /**
-     * Animate the user's yaw-spin / zoom / pan back to defaults (used when the framed part changes).
-     * Safe to call from both linked models for the same transition — only the first snapshots the
-     * starting values; the [displayYaw]/[displayZoom]/[displayPan] getters interpolate to default.
-     */
+    /** Both previews call this for one change; only the first snapshots, or it would ease from zero. */
     fun beginResetAnimation() {
         synchronized(this) {
             val now = SystemClock.uptimeMillis()
-            if (!resetAnimating || now - resetStartMs >= FRAME_ANIMATION_DURATION_MS) {
+            if (!isResetAnimatingLocked(now)) {
                 fromYaw = yaw
+                fromPitch = pitch
                 fromZoom = zoom
                 fromPanX = panX
                 fromPanY = panY
                 resetStartMs = now
-                resetAnimating = true
             }
             yaw = 0f
             pitch = INITIAL_PITCH_DEG
@@ -93,56 +77,56 @@ internal class CompareRotationLink {
             panX = 0f
             panY = 0f
         }
-        invalidateCallbacks.forEach { it() }
+        notifyInvalidate()
     }
 
     fun resetAdjustmentsImmediate() {
         synchronized(this) {
-            resetAnimating = false
+            resetStartMs = NOT_ANIMATING
             yaw = 0f
             pitch = INITIAL_PITCH_DEG
             zoom = MetricAvatarCamera.MIN_USER_ZOOM
             panX = 0f
             panY = 0f
         }
-        invalidateCallbacks.forEach { it() }
+        notifyInvalidate()
     }
 
-    /** Eased reset progress in [0,1]; clears the animation flag once complete. */
-    private fun resetProgress(): Float {
-        if (!resetAnimating) return 1f
-        val linear =
-            (SystemClock.uptimeMillis() - resetStartMs).toFloat() / FRAME_ANIMATION_DURATION_MS
-        if (linear >= 1f) {
-            resetAnimating = false
-            return 1f
+    fun applyZoomFactor(factor: Float) {
+        synchronized(this) {
+            resetStartMs = NOT_ANIMATING
+            zoom = (zoom * factor).coerceIn(
+                MetricAvatarCamera.MIN_USER_ZOOM,
+                MetricAvatarCamera.MAX_USER_ZOOM,
+            )
         }
-        return easeInOutSine(linear)
+        notifyInvalidate()
     }
 
-    fun displayYaw(): Float = synchronized(this) {
-        if (!resetAnimating) yaw else lerpAngleDegrees(fromYaw, yaw, resetProgress())
-    }
-
-    fun displayZoom(): Float = synchronized(this) {
-        if (!resetAnimating) zoom else lerp(fromZoom, zoom, resetProgress())
-    }
-
-    fun displayPanX(): Float = synchronized(this) {
-        if (!resetAnimating) panX else lerp(fromPanX, panX, resetProgress())
-    }
-
-    fun displayPanY(): Float = synchronized(this) {
-        if (!resetAnimating) panY else lerp(fromPanY, panY, resetProgress())
+    fun applyPanDelta(dxWorld: Float, dyWorld: Float, maxX: Float, maxY: Float) {
+        synchronized(this) {
+            resetStartMs = NOT_ANIMATING
+            panX = (panX + dxWorld).coerceIn(-maxX, maxX)
+            panY = (panY + dyWorld).coerceIn(-maxY, maxY)
+        }
+        notifyInvalidate()
     }
 
     fun applyRotationDelta(dyaw: Float, dpitch: Float) {
         synchronized(this) {
-            resetAnimating = false
+            resetStartMs = NOT_ANIMATING
             yaw += dyaw
             pitch = (pitch + dpitch).coerceIn(MIN_PITCH_DEG, MAX_PITCH_DEG)
         }
-        invalidateCallbacks.forEach { it() }
+        notifyInvalidate()
+    }
+
+    fun clampPan(maxX: Float, maxY: Float) {
+        synchronized(this) {
+            panX = panX.coerceIn(-maxX, maxX)
+            panY = panY.coerceIn(-maxY, maxY)
+        }
+        notifyInvalidate()
     }
 
     fun replaceOrientation(yawDeg: Float, pitchDeg: Float) {
@@ -150,6 +134,43 @@ internal class CompareRotationLink {
             yaw = yawDeg
             pitch = pitchDeg.coerceIn(MIN_PITCH_DEG, MAX_PITCH_DEG)
         }
-        invalidateCallbacks.forEach { it() }
+        notifyInvalidate()
+    }
+
+    /** Call under `this`. */
+    private fun resetProgress(): Float {
+        if (resetStartMs == NOT_ANIMATING) return 1f
+        val linear =
+            (SystemClock.uptimeMillis() - resetStartMs).toFloat() / FRAME_ANIMATION_DURATION_MS
+        if (linear >= 1f) {
+            resetStartMs = NOT_ANIMATING
+            return 1f
+        }
+        return easeInOutSine(linear)
+    }
+
+    fun displayYaw(): Float = synchronized(this) {
+        val progress = resetProgress()
+        if (progress >= 1f) yaw else lerpAngleDegrees(fromYaw, yaw, progress)
+    }
+
+    fun displayPitch(): Float = synchronized(this) {
+        val progress = resetProgress()
+        if (progress >= 1f) pitch else lerp(fromPitch, pitch, progress)
+    }
+
+    fun displayZoom(): Float = synchronized(this) {
+        val progress = resetProgress()
+        if (progress >= 1f) zoom else lerp(fromZoom, zoom, progress)
+    }
+
+    fun displayPanX(): Float = synchronized(this) {
+        val progress = resetProgress()
+        if (progress >= 1f) panX else lerp(fromPanX, panX, progress)
+    }
+
+    fun displayPanY(): Float = synchronized(this) {
+        val progress = resetProgress()
+        if (progress >= 1f) panY else lerp(fromPanY, panY, progress)
     }
 }

@@ -124,6 +124,8 @@
     <dimen name="size_bottom_nav_center">56dp</dimen>
     <!-- Body Visual tab layout. model_top 0 = the 3D model runs up to the tabs. -->
     <dimen name="body_visual_bottom_spacer">86dp</dimen>
+    <!-- Floor for the model panel on short screens; below this the tab scrolls instead. -->
+    <dimen name="body_model_min_height">320dp</dimen>
     <dimen name="body_visual_model_blur_top_radius">2dp</dimen>
     <dimen name="body_visual_model_blur_bottom_radius">2.5dp</dimen>
     <!-- Body Visual tab — body-part selector ruler -->

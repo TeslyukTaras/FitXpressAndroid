@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -90,7 +91,7 @@ internal fun BodyPartScrollList(
                 available
         }
     }
-    val latestSelected by rememberUpdatedState(selected)
+    val latestSelected = rememberUpdatedState(selected)
     val latestOnSelect by rememberUpdatedState(onSelect)
     var programmaticScrollTarget by remember { mutableStateOf<Int?>(null) }
     val labelStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium)
@@ -165,7 +166,7 @@ internal fun BodyPartScrollList(
                     if (index == null) return@collect
                     if (programmaticScrollTarget != null) return@collect
                     val region = BodyMeasurementRegion.entries[index]
-                    if (region != latestSelected) {
+                    if (region != latestSelected.value) {
                         haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         latestOnSelect(region)
                     }
@@ -206,7 +207,10 @@ internal fun BodyPartScrollList(
                 .nestedScroll(scrollDampingConnection),
         ) {
             items(BodyMeasurementRegion.entries.size) { index ->
-                val isSelected = BodyMeasurementRegion.entries[index] == selected
+                val region = BodyMeasurementRegion.entries[index]
+                val isSelected by remember(region) {
+                    derivedStateOf { latestSelected.value == region }
+                }
                 BodyPartScrollItem(
                     label = labels[index],
                     isSelected = isSelected,
@@ -215,8 +219,7 @@ internal fun BodyPartScrollList(
                     drawTrailingTicks = index < BodyMeasurementRegion.entries.lastIndex,
                     onClick = {
                         scope.launch {
-                            val region = BodyMeasurementRegion.entries[index]
-                            if (region != latestSelected) latestOnSelect(region)
+                            if (region != latestSelected.value) latestOnSelect(region)
                             animateToBodyPart(index)
                         }
                     },

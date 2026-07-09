@@ -86,9 +86,15 @@ internal class MetricAvatarRenderer {
     /** User drag-rotation applied on top of the active frame's yaw; reset when the part changes. */
     private var framingYawOffsetDeg = 0f
 
+    private var framingPitchOffsetDeg = 0f
+
+    private var framePitchDeg = INITIAL_PITCH_DEG
+
+    private var fullBodyCenterY = DEFAULT_FULL_BODY_CENTER_Y
+
     private var userZoom = MetricAvatarCamera.MIN_USER_ZOOM
 
-    private var baseDistanceScale = 1f
+    private var fullBodyFigureHeightPx = 0f
 
     private var userPanX = 0f
     private var userPanY = 0f
@@ -100,6 +106,9 @@ internal class MetricAvatarRenderer {
 
     private var viewportWidth = 0
     private var viewportHeight = 0
+
+    private var zoomLevelListener: ((Float) -> Unit)? = null
+    private var lastNotifiedZoom = Float.NaN
 
     fun setPreviewGradientFromResources(context: Context) {
         val inner = ContextCompat.getColor(context, R.color.metric_avatar_preview_gradient_inner)
@@ -218,13 +227,16 @@ internal class MetricAvatarRenderer {
     fun setFramingRegion(region: BodyMeasurementRegion?) {
         if (framingRegion == region) return
 
-        val startFrame = currentAvatarFrame()
+        val startFrame = currentAvatarFrame()?.withUserAdjustments()
         framingRegion = region
         framingYawOffsetDeg = 0f
+        framingPitchOffsetDeg = 0f
         resetUserView()
         val targetFrame = targetAvatarFrame()
         if (startFrame == null || targetFrame == null) {
-            rotationLink?.resetAdjustmentsImmediate()
+            // The link is shared: only snap it if the other column has not begun easing the pair.
+            val link = rotationLink
+            if (link != null && !link.isResetAnimating()) link.resetAdjustmentsImmediate()
             animatedFrame = targetFrame
             frameAnimationStart = null
             frameAnimationTarget = null
@@ -237,6 +249,21 @@ internal class MetricAvatarRenderer {
         frameAnimationStart = startFrame
         frameAnimationTarget = targetFrame
         frameAnimationStartTimeMs = SystemClock.uptimeMillis()
+    }
+
+    /**
+     * Folds the user's spin / tilt / zoom / pan into the frame so a region change eases from what is
+     * on screen. Linked previews are skipped: the link eases the same values and would double-count.
+     */
+    private fun AvatarFrame.withUserAdjustments(): AvatarFrame {
+        if (rotationLink != null) return this
+        return copy(
+            yawDeg = yawDeg + framingYawOffsetDeg,
+            pitchDeg = (pitchDeg + framingPitchOffsetDeg).coerceIn(MIN_PITCH_DEG, MAX_PITCH_DEG),
+            distanceScale = distanceScale / userZoom.coerceAtLeast(MetricAvatarCamera.MIN_USER_ZOOM),
+            translateX = translateX + userPanX,
+            translateY = translateY + userPanY,
+        )
     }
 
     fun setCenterFraming(enabled: Boolean) {
@@ -268,7 +295,11 @@ internal class MetricAvatarRenderer {
         val link = rotationLink
         when {
             link != null -> link.applyRotationDelta(dyaw, dpitch)
-            framingRegion != null -> framingYawOffsetDeg += dyaw
+            framingRegion != null -> {
+                framingYawOffsetDeg += dyaw
+                framingPitchOffsetDeg = clampFramingPitchOffset(framingPitchOffsetDeg + dpitch)
+            }
+
             else -> {
                 yaw += dyaw
                 pitch = (pitch + dpitch).coerceIn(MIN_PITCH_DEG, MAX_PITCH_DEG)
@@ -276,8 +307,37 @@ internal class MetricAvatarRenderer {
         }
     }
 
-    fun setBaseDistanceScale(scale: Float) {
-        baseDistanceScale = scale
+    fun setFullBodyFigureHeightPx(heightPx: Float) {
+        if (fullBodyFigureHeightPx == heightPx) return
+        fullBodyFigureHeightPx = heightPx
+        rebuildFrameCache()
+    }
+
+    /** Distance (× [viewDistance]) that lands the mesh bbox [fullBodyFigureHeightPx] tall on screen. */
+    private fun solveFullBodyDistanceScale(bounds: ModelBounds): Float {
+        if (fullBodyFigureHeightPx <= 0f || viewportHeight <= 0 || viewDistance <= 0f) return 1f
+        val tanHalfFov = MetricAvatarCamera.HALF_FOV_TAN
+        val targetPx = fullBodyFigureHeightPx * RENDER_SUPERSAMPLE
+        val distanceForHeight = bounds.spanY * viewportHeight / (2f * tanHalfFov * targetPx)
+
+        val aspect = viewportWidth.toFloat() / viewportHeight.toFloat().coerceAtLeast(1f)
+        val widestSpan = maxOf(bounds.spanX, bounds.spanZ)
+        val distanceForWidth = widestSpan /
+                (2f * tanHalfFov * aspect * MetricAvatarCamera.FULL_BODY_WIDTH_FIT_FRACTION)
+
+        return maxOf(distanceForHeight, distanceForWidth) / viewDistance
+    }
+
+    fun setFramePitch(pitchDeg: Float) {
+        if (framePitchDeg == pitchDeg) return
+        framePitchDeg = pitchDeg
+        rebuildFrameCache()
+    }
+
+    fun setFullBodyCenterY(centerY: Float) {
+        if (fullBodyCenterY == centerY) return
+        fullBodyCenterY = centerY
+        rebuildFrameCache()
     }
 
     fun zoomBy(factor: Float) {
@@ -313,8 +373,31 @@ internal class MetricAvatarRenderer {
         }
     }
 
-    private fun currentDrawDistance(): Float =
-        viewDistance * (animatedFrame?.distanceScale ?: baseDistanceScale) / modelZoom()
+    private fun drawDistanceFor(frame: AvatarFrame?): Float =
+        viewDistance * (frame?.distanceScale ?: 1f) / modelZoom()
+
+    private fun currentDrawDistance(): Float = drawDistanceFor(animatedFrame)
+
+    private fun currentZoomLevel(): Float {
+        val fullBody = frameCache[BodyMeasurementRegion.FullBody] ?: return 1f
+        val frame = animatedFrame ?: return 1f
+        if (frame.distanceScale <= 0f) return 1f
+        return fullBody.distanceScale * modelZoom() / frame.distanceScale
+    }
+
+    private fun notifyZoomLevel() {
+        val listener = zoomLevelListener ?: return
+        val zoom = currentZoomLevel()
+        if (lastNotifiedZoom.isNaN() || abs(zoom - lastNotifiedZoom) > ZOOM_NOTIFY_EPSILON) {
+            lastNotifiedZoom = zoom
+            listener(zoom)
+        }
+    }
+
+    fun setZoomLevelListener(listener: ((Float) -> Unit)?) {
+        zoomLevelListener = listener
+        lastNotifiedZoom = Float.NaN
+    }
 
     // Keep panning inside model bounds as zoom changes the visible area.
     private fun panBoundsWorld(): Pair<Float, Float> {
@@ -341,6 +424,15 @@ internal class MetricAvatarRenderer {
         val link = rotationLink
         return link?.displayYaw() ?: framingYawOffsetDeg
     }
+
+    /** The link stores pitch absolutely, seeded at [INITIAL_PITCH_DEG]; the frame wants the offset. */
+    private fun framingSpinPitch(): Float {
+        val link = rotationLink ?: return framingPitchOffsetDeg
+        return link.displayPitch() - INITIAL_PITCH_DEG
+    }
+
+    private fun clampFramingPitchOffset(offset: Float): Float =
+        offset.coerceIn(MIN_PITCH_DEG - framePitchDeg, MAX_PITCH_DEG - framePitchDeg)
 
     private fun modelPitch(): Float {
         val link = rotationLink
@@ -376,7 +468,14 @@ internal class MetricAvatarRenderer {
             return
         }
 
-        frameCache = buildFrames(mesh.measurementGuide, mesh.bounds, centered = centerFraming)
+        frameCache = buildFrames(
+            guide = mesh.measurementGuide,
+            fullBodyBounds = mesh.bounds,
+            centered = centerFraming,
+            fullBodyDistanceScale = solveFullBodyDistanceScale(mesh.bounds),
+            basePitchDeg = framePitchDeg,
+            fullBodyCenterY = fullBodyCenterY,
+        )
         animatedFrame = targetAvatarFrame()
         frameAnimationStart = null
         frameAnimationTarget = null
@@ -481,6 +580,7 @@ internal class MetricAvatarRenderer {
 
         GLES20.glUseProgram(program)
         updateAvatarMatrices(currentAvatarFrame())
+        notifyZoomLevel()
         bindAvatarUniforms()
         drawAvatarBody(m)
         drawBodyRings(m)
@@ -497,8 +597,10 @@ internal class MetricAvatarRenderer {
         GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT)
     }
 
+    /** The link's reset counts: a column with nothing of its own to animate must still keep drawing. */
     fun isFrameAnimationRunning(): Boolean =
-        frameAnimationStart != null && frameAnimationTarget != null
+        (frameAnimationStart != null && frameAnimationTarget != null) ||
+                rotationLink?.isResetAnimating() == true
 
     private fun targetAvatarFrame(): AvatarFrame? =
         framingRegion?.let { frameCache[it] }
@@ -526,8 +628,12 @@ internal class MetricAvatarRenderer {
 
     private fun updateAvatarMatrices(frame: AvatarFrame?) {
         val drawYaw = if (frame != null) frame.yawDeg + framingSpinYaw() else modelYaw()
-        val drawPitch = frame?.pitchDeg ?: modelPitch()
-        val drawDistance = viewDistance * (frame?.distanceScale ?: baseDistanceScale) / modelZoom()
+        val drawPitch = if (frame != null) {
+            (frame.pitchDeg + framingSpinPitch()).coerceIn(MIN_PITCH_DEG, MAX_PITCH_DEG)
+        } else {
+            modelPitch()
+        }
+        val drawDistance = drawDistanceFor(frame)
         val drawTranslateX = (frame?.translateX ?: 0f) + modelPanX()
         val drawTranslateY = (frame?.translateY ?: 0f) + modelPanY()
         val drawEyeHeight = frame?.eyeHeight ?: MetricAvatarCamera.EYE_HEIGHT
@@ -698,7 +804,12 @@ internal class MetricAvatarRenderer {
         val y = bounds.centerY + mesh.bounds.spanY * ring.verticalOffsetFraction
         val radiusScale = ring.radiusScale.coerceAtLeast(0.1f)
         val section = when (ring.region) {
-            BodyMeasurementRegion.Waist -> waistTorsoExtrema(mesh, y)
+            // The guide's slice already rejects the arms. Re-deriving it needs an |x| window, and no
+            // window suits every body: too narrow clips a heavy belly, too wide swallows the arms.
+            BodyMeasurementRegion.Waist -> bounds.copy(
+                minY = bounds.minY + (y - bounds.centerY),
+                maxY = bounds.maxY + (y - bounds.centerY),
+            )
             else -> meshExtremaAtY(
                 mesh = mesh,
                 y = y,
@@ -826,39 +937,6 @@ internal class MetricAvatarRenderer {
         } else {
             ringBounds(mesh, region) ?: mesh.bounds
         }
-    }
-
-    private fun waistTorsoExtrema(mesh: ObjMesh, y: Float): ModelBounds {
-        val bandHalfHeight = mesh.bounds.spanY * 0.035f
-        val midX = mesh.bounds.centerX
-        val maxHalfWindow = mesh.bounds.spanX * WAIST_RING_TORSO_HALF_WIDTH_FRACTION
-        val buffer = mesh.vertexBuffer.duplicate()
-        buffer.position(0)
-        var halfWidth = 0f
-        var minZ = Float.MAX_VALUE
-        var maxZ = -Float.MAX_VALUE
-        var found = false
-        repeat(mesh.vertexCount) {
-            val x = buffer.get()
-            val vy = buffer.get()
-            val z = buffer.get()
-            buffer.position(buffer.position() + FLOATS_PER_INTERLEAVED_VERTEX - FLOATS_PER_ATTRIB)
-            val dx = abs(x - midX)
-            if (abs(vy - y) <= bandHalfHeight && dx <= maxHalfWindow) {
-                found = true
-                halfWidth = maxOf(halfWidth, dx)
-                minZ = minOf(minZ, z); maxZ = maxOf(maxZ, z)
-            }
-        }
-        if (!found) return ringBounds(mesh, BodyMeasurementRegion.Waist) ?: mesh.bounds
-        return ModelBounds(
-            minX = midX - halfWidth,
-            maxX = midX + halfWidth,
-            minY = y - bandHalfHeight,
-            maxY = y + bandHalfHeight,
-            minZ = minZ,
-            maxZ = maxZ,
-        )
     }
 
     private fun ringBounds(
@@ -1010,6 +1088,8 @@ internal class MetricAvatarRenderer {
     }
 
     private companion object {
+        private const val ZOOM_NOTIFY_EPSILON = 0.002f
+
         private const val SKIN_R = 0.090f
         private const val SKIN_G = 0.871f
         private const val SKIN_B = 1f
@@ -1032,7 +1112,6 @@ internal class MetricAvatarRenderer {
         private const val BODY_RING_VERTEX_STRIDE_BYTES = BODY_RING_FLOATS_PER_VERTEX * 4
         private const val BODY_RING_TRANSPARENT_STOP = 0.1571f
         private const val BODY_RING_BACK_ALPHA = 0.16f
-        private const val WAIST_RING_TORSO_HALF_WIDTH_FRACTION = 0.18f
         private const val BODY_RING_PADDING_FRACTION = 0.045f
         private const val BODY_RING_DEPTH_PADDING_FRACTION = 0.06f
         private const val BODY_RING_MIN_DEPTH_RADIUS_FRACTION = 0.16f

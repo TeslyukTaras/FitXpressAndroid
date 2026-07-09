@@ -79,7 +79,7 @@ internal const val VERTEX_SHADER = """
     }
 """
 
-internal const val FRAGMENT_SHADER = """
+internal val FRAGMENT_SHADER = """
     #extension GL_OES_standard_derivatives : enable
     #ifdef GL_FRAGMENT_PRECISION_HIGH
     precision highp float;
@@ -92,9 +92,14 @@ internal const val FRAGMENT_SHADER = """
     uniform float uShowSkin; uniform mat4 uModelView; uniform float uUseVertexColor;
     uniform float uMeshGlow;
 
-    const float WIRE_WIDTH = 0.7;
+    const float WIRE_WIDTH = ${WIRE_WIDTH_VIEW_PX * RENDER_SUPERSAMPLE};
     const float WIRE_GLOW_RIM_POWER = 3.5;
     const float WIRE_INTENSITY = 0.46;
+    // Wire takes the same key light as the fill; the ambient floor keeps back-facing contours visible.
+    const float WIRE_AMBIENT = 0.52;
+    const float WIRE_DIFFUSE = 0.66;
+    const float WIRE_SPECULAR = 1.20;
+    const float WIRE_SPECULAR_POWER = 64.0;
     const float ANALYSIS_WIRE_INTENSITY_BOOST = 0.08;
     const float STITCH_START = 0.91;
     const float STITCH_END = 0.985;
@@ -132,10 +137,11 @@ internal const val FRAGMENT_SHADER = """
         return 1.0 - min(min(edgeVec.x, edgeVec.y), edgeVec.z);
     }
 
-    vec3 flatWireColor(vec3 viewNormal, vec3 lightDir) {
+    vec3 shadedWireColor(vec3 viewNormal, vec3 lightDir, float falloff) {
         vec3 halfDir = normalize(lightDir + vec3(0.0, 0.0, 1.0));
-        float spec = pow(max(dot(viewNormal, halfDir), 0.0), 64.0);
-        return min(vec3(1.0), uMeshColor.rgb * (1.10 + spec * 1.20));
+        float spec = pow(max(dot(viewNormal, halfDir), 0.0), WIRE_SPECULAR_POWER);
+        float level = WIRE_AMBIENT + WIRE_DIFFUSE * falloff + spec * WIRE_SPECULAR;
+        return min(vec3(1.0), uMeshColor.rgb * level);
     }
 
     vec3 colorAnalysisWire(vec3 tealWire, vec3 analysisColor) {
@@ -161,7 +167,7 @@ internal const val FRAGMENT_SHADER = """
     }
 
     vec3 applyJunctionStitch(vec3 baseColor, vec3 wireColor, vec3 bary) {
-        // Junction stitch: not a highlight/glow. It uses the same flat wire color to
+        // Junction stitch: not a highlight/glow. It uses the same shaded wire color to
         // cover tiny barycentric gaps where mesh edges meet at triangle vertices.
         float maxBaryForStitch = max(max(bary.x, bary.y), bary.z);
         float vertexStitch = smoothstep(STITCH_START, STITCH_END, maxBaryForStitch);
@@ -190,7 +196,7 @@ internal const val FRAGMENT_SHADER = """
 
         vec3 body = bodyBaseColor(falloff);
         float edge = meshEdgeCoverage(vBary, vEdgeMask);
-        vec3 wireCol = flatWireColor(nView, lightDir);
+        vec3 wireCol = shadedWireColor(nView, lightDir, falloff);
         wireCol = colorAnalysisWire(wireCol, vColor);
         vec3 finalBodyCol = applyMeshWire(body, wireCol, edge, uUseVertexColor);
         finalBodyCol = applyJunctionStitch(finalBodyCol, wireCol, vBary);

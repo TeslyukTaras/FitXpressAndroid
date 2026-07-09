@@ -1,7 +1,6 @@
 package com.hexis.bi.ui.main.body
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -19,6 +19,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -26,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -46,6 +47,7 @@ import com.hexis.bi.ui.components.AppHorizontalGradientDivider
 import com.hexis.bi.ui.components.AppVerticalGradientDivider
 import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.body.components.BodyPartHorizontalScrollList
+import com.hexis.bi.ui.main.body.components.BodyTabLayout
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleChip
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleTrack
 import com.hexis.bi.ui.main.body.components.MeasurementDateHeader
@@ -53,6 +55,7 @@ import com.hexis.bi.ui.main.body.components.MeasurementValueBlock
 import com.hexis.bi.ui.main.body.components.VisualScanDateDropdown
 import com.hexis.bi.ui.main.body.components.measurementValue
 import com.hexis.bi.ui.main.body.components.modelBlur
+import com.hexis.bi.ui.main.body.components.rememberModelBlurProgress
 import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.utils.constants.BodyVisualConstants
 import com.hexis.bi.utils.constants.BodyVisualConstants.FULL_BODY_MEASUREMENT_ROWS
@@ -65,7 +68,6 @@ import java.util.Locale
 @Composable
 internal fun CompareContent(
     state: CompareState,
-    cardHeightPx: Int,
     isMetric: Boolean,
     onSelectLeftScan: (Long) -> Unit,
     onSelectRightScan: (Long) -> Unit,
@@ -100,13 +102,23 @@ internal fun CompareContent(
     val shortDateFormatter = remember(locale) { shortMonthDayFormatter(locale) }
     val usesLatestAndPreviousScans = state.usesLatestAndPreviousScans()
 
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        val density = LocalDensity.current
-        val cardHeight = with(density) { cardHeightPx.toDp() }
-        val selectorHeight = dimensionResource(R.dimen.body_part_selector_horizontal_height)
-        val cardTop = maxHeight - navClearance - cardHeight
-        val modelAreaHeight = (cardTop - selectorHeight).coerceAtLeast(0.dp)
+    val selectorHeight = dimensionResource(R.dimen.body_part_selector_horizontal_height)
 
+    BodyTabLayout(
+        modifier = modifier,
+        navClearance = navClearance,
+        cardHorizontalPadding = horizontalPadding,
+        reservedBelowModel = selectorHeight,
+        compactCard = {
+            CompareSummaryCard(
+                state = compactCardSampleState(state),
+                usesLatestAndPreviousScans = usesLatestAndPreviousScans,
+                shortDateFormatter = shortDateFormatter,
+                isMetric = isMetric,
+                onModeSelected = {},
+            )
+        },
+    ) { modelAreaHeight, compactCardHeight, fullBodyFigureHeight ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -116,6 +128,7 @@ internal fun CompareContent(
                 state = state,
                 usesLatestAndPreviousScans = usesLatestAndPreviousScans,
                 modelAreaHeight = modelAreaHeight,
+                fullBodyFigureHeight = fullBodyFigureHeight,
                 dateFormatter = fullDateFormatter,
                 onSelectLeftScan = onSelectLeftScan,
                 onSelectRightScan = onSelectRightScan,
@@ -137,11 +150,24 @@ internal fun CompareContent(
                 shortDateFormatter = shortDateFormatter,
                 isMetric = isMetric,
                 onModeSelected = onModeSelected,
-                modifier = Modifier.padding(horizontal = horizontalPadding),
+                modifier = Modifier
+                    .padding(horizontal = horizontalPadding)
+                    .heightIn(min = compactCardHeight),
             )
             Spacer(Modifier.height(dimensionResource(R.dimen.body_visual_bottom_spacer)))
         }
     }
+}
+
+/** [BodyMeasurementRegion.Bicep] is the tallest single-part card, so the card never grows. */
+@Composable
+private fun compactCardSampleState(state: CompareState): CompareState = remember(
+    state.mode,
+    state.leftScanTimestamp,
+    state.rightScanTimestamp,
+    state.visibleRegions,
+) {
+    state.copy(selectedBodyPart = BodyMeasurementRegion.Bicep)
 }
 
 @Composable
@@ -149,6 +175,7 @@ private fun CompareTopArea(
     state: CompareState,
     usesLatestAndPreviousScans: Boolean,
     modelAreaHeight: Dp,
+    fullBodyFigureHeight: Dp,
     dateFormatter: SimpleDateFormat,
     onSelectLeftScan: (Long) -> Unit,
     onSelectRightScan: (Long) -> Unit,
@@ -160,6 +187,7 @@ private fun CompareTopArea(
             CompareModelsPanel(
                 state = state,
                 framingRegion = state.selectedBodyPart,
+                fullBodyFigureHeight = fullBodyFigureHeight,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(modelAreaHeight)
@@ -213,6 +241,7 @@ private fun CompareTopArea(
 private fun CompareModelsPanel(
     state: CompareState,
     framingRegion: BodyMeasurementRegion,
+    fullBodyFigureHeight: Dp,
     modifier: Modifier = Modifier,
 ) {
     val rotationLink =
@@ -221,6 +250,8 @@ private fun CompareModelsPanel(
     val rightTs = state.rightScanTimestamp
     val leftIsCurrent = leftTs != null && (rightTs == null || leftTs >= rightTs)
     val rightIsCurrent = rightTs != null && (leftTs == null || rightTs > leftTs)
+    val zoomLevel = remember { mutableFloatStateOf(1f) }
+    val blurProgress = rememberModelBlurProgress(zoomLevel)
     Row(modifier = modifier) {
         CompareModelColumn(
             baseModelUrl = state.leftModel3dUrl,
@@ -228,6 +259,9 @@ private fun CompareModelsPanel(
             mode = state.mode,
             rotationLink = rotationLink,
             framingRegion = framingRegion,
+            fullBodyFigureHeight = fullBodyFigureHeight,
+            blurProgress = blurProgress,
+            onZoomChanged = { zoomLevel.floatValue = it },
             meshGlow = if (leftIsCurrent) BodyVisualConstants.CURRENT_SCAN_MESH_GLOW else 0f,
             modifier = Modifier
                 .weight(1f)
@@ -245,6 +279,9 @@ private fun CompareModelsPanel(
             mode = state.mode,
             rotationLink = rotationLink,
             framingRegion = framingRegion,
+            fullBodyFigureHeight = fullBodyFigureHeight,
+            blurProgress = blurProgress,
+            onZoomChanged = { zoomLevel.floatValue = it },
             meshGlow = if (rightIsCurrent) BodyVisualConstants.CURRENT_SCAN_MESH_GLOW else 0f,
             modifier = Modifier
                 .weight(1f)
@@ -260,6 +297,9 @@ private fun CompareModelColumn(
     mode: BodyVisualMode,
     rotationLink: CompareRotationLink,
     framingRegion: BodyMeasurementRegion,
+    fullBodyFigureHeight: Dp,
+    blurProgress: State<Float>,
+    onZoomChanged: (Float) -> Unit,
     meshGlow: Float,
     modifier: Modifier = Modifier,
 ) {
@@ -271,7 +311,7 @@ private fun CompareModelColumn(
         modifier = modifier
             .clip(RectangleShape)
             .modelBlur(
-                blurEnabled = true,
+                blurProgress = blurProgress,
                 topBlurBandFraction = BodyVisualConstants.COMPARE_MODEL_BLUR_TOP_BAND_FRACTION,
                 darkenTopOpacity = 0f,
                 darkenBottomOpacity = 0f,
@@ -316,7 +356,10 @@ private fun CompareModelColumn(
                     zoomPanEnabled = true,
                     framingRegion = framingRegion,
                     centerFraming = true,
-                    baseDistanceScale = BodyVisualConstants.COMPARE_MODEL_DISTANCE_SCALE,
+                    initialPitchDegrees = BodyVisualConstants.UPRIGHT_MODEL_PITCH_DEG,
+                    fullBodyCenterY = BodyVisualConstants.COMPARE_MODEL_CENTER_Y,
+                    fullBodyFigureHeight = fullBodyFigureHeight,
+                    onZoomChanged = onZoomChanged,
                     meshGlow = meshGlow,
                     loadingMessageRes = if (showColor) R.string.body_visual_color_loading
                     else R.string.scan_results_avatar_loading,
@@ -397,7 +440,8 @@ private fun CompareSummaryCard(
             rightDate = state.rightScanTimestamp?.let { shortDateFormatter.format(Date(it)) },
         )
 
-        val rows = if (state.selectedBodyPart == BodyMeasurementRegion.FullBody) {
+        val isFullBody = state.selectedBodyPart == BodyMeasurementRegion.FullBody
+        val rows = if (isFullBody) {
             FULL_BODY_MEASUREMENT_ROWS.filter { it.region in state.visibleRegions }
         } else {
             FULL_BODY_MEASUREMENT_ROWS.filter { it.region == state.selectedBodyPart }
@@ -410,6 +454,8 @@ private fun CompareSummaryCard(
             CompareMeasurementRow(
                 region = row.region,
                 label = stringResource(row.labelRes),
+                // The header already names the single part; only the full-body card needs row labels.
+                showLabel = isFullBody,
                 leftCm = measurementValue(state.leftMeasurements, row.region),
                 leftPreviousCm = measurementValue(state.leftPreviousMeasurements, row.region),
                 rightCm = measurementValue(state.rightMeasurements, row.region),
@@ -431,6 +477,7 @@ private fun CompareState.usesLatestAndPreviousScans(): Boolean {
 private fun CompareMeasurementRow(
     region: BodyMeasurementRegion,
     label: String,
+    showLabel: Boolean,
     leftCm: Float?,
     leftPreviousCm: Float?,
     rightCm: Float?,
@@ -439,20 +486,22 @@ private fun CompareMeasurementRow(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = stringResource(R.string.body_visual_part_bullet),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.width(dimensionResource(R.dimen.spacer_xs)))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
+        if (showLabel) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.body_visual_part_bullet),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.width(dimensionResource(R.dimen.spacer_xs)))
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+            }
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
         }
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
         Row(
             modifier = Modifier
                 .fillMaxWidth()

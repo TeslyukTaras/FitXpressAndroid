@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -41,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isSpecified
 import com.hexis.bi.R
 import com.hexis.bi.domain.body.BodyMeasurementRegion
+import com.hexis.bi.ui.main.body.components.BodyTabLayout
 import com.hexis.bi.ui.avatar.MetricAvatarBodyRing
 import com.hexis.bi.ui.avatar.MetricAvatarPreview
 import com.hexis.bi.ui.avatar.MetricAvatarStatusText
@@ -50,13 +50,14 @@ import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.theme.MeasurementValueStyle
 import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.TitleHighlightTextStyle
+import com.hexis.bi.utils.constants.BodyVisualConstants
 import java.util.Locale
 
 @Composable
 internal fun MyBodyContent(
     visualState: VisualState,
     proportionState: BodyProportionState,
-    cardHeightPx: Int,
+    isMetric: Boolean,
     modifier: Modifier = Modifier,
     bottomClearance: Dp = Dp.Unspecified,
     onAvatarReady: () -> Unit = {},
@@ -68,12 +69,16 @@ internal fun MyBodyContent(
         else dimensionResource(R.dimen.size_bottom_nav_center) +
                 dimensionResource(R.dimen.spacer_l) +
                 dimensionResource(R.dimen.spacer_l)
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        val density = LocalDensity.current
-        val cardHeight = with(density) { cardHeightPx.toDp() }
-        val modelAreaHeight = (maxHeight - navClearance - cardHeight)
-            .coerceAtLeast(0.dp)
 
+    BodyTabLayout(
+        modifier = modifier,
+        navClearance = navClearance,
+        cardHorizontalPadding = horizontalPadding,
+        // No compact form of this card exists; it reserves half the Visual card and scrolls.
+        compactCard = { VisualCompactSummaryCard(state = visualState, isMetric = isMetric) },
+        cardHeightFraction = BodyVisualConstants.MY_BODY_CARD_HEIGHT_FRACTION,
+        figureHeightFraction = BodyVisualConstants.MY_BODY_FIGURE_HEIGHT_FRACTION,
+    ) { modelAreaHeight, _, fullBodyFigureHeight ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -85,6 +90,7 @@ internal fun MyBodyContent(
                 visualState = visualState,
                 proportionState = proportionState,
                 height = modelAreaHeight,
+                fullBodyFigureHeight = fullBodyFigureHeight,
                 onAvatarReady = onAvatarReady,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -102,6 +108,7 @@ private fun MyBodyModelArea(
     visualState: VisualState,
     proportionState: BodyProportionState,
     height: Dp,
+    fullBodyFigureHeight: Dp,
     onAvatarReady: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -121,6 +128,7 @@ private fun MyBodyModelArea(
         BodyProportionModel(
             visualState = visualState,
             proportionState = proportionState,
+            fullBodyFigureHeight = fullBodyFigureHeight,
             onAvatarReady = onAvatarReady,
             modifier = Modifier
                 .fillMaxWidth()
@@ -133,6 +141,7 @@ private fun MyBodyModelArea(
 private fun BodyProportionModel(
     visualState: VisualState,
     proportionState: BodyProportionState,
+    fullBodyFigureHeight: Dp,
     onAvatarReady: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -160,7 +169,9 @@ private fun BodyProportionModel(
                     showSkinAreas = false,
                     framingRegion = BodyMeasurementRegion.FullBody,
                     centerFraming = true,
-                    baseDistanceScale = 1.08f,
+                    fullBodyFigureHeight = fullBodyFigureHeight,
+                    fullBodyCenterY = BodyVisualConstants.MY_BODY_MODEL_CENTER_Y,
+                    initialPitchDegrees = BodyVisualConstants.MY_BODY_MODEL_PITCH_DEG,
                     meshGlow = 0.22f,
                     bodyRings = if (proportionState.hasData) {
                         bodyRingSpecs(proportionState)

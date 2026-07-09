@@ -32,13 +32,12 @@ internal fun Modifier.screenBackground(
 
 private fun DrawScope.drawScreenMesh() {
     val (meshStart, meshEnd) = gradientEndpoints(size, BackgroundConstants.MESH_GRADIENT_ANGLE_DEG)
-    val line = Offset(meshEnd.x - meshStart.x, meshEnd.y - meshStart.y)
-    val extra = BackgroundConstants.MESH_GRADIENT_LINE_LENGTH_FACTOR - 1f
-    val startExtended = Offset(meshStart.x - line.x * extra, meshStart.y - line.y * extra)
     drawRect(
         brush = Brush.linearGradient(
-            listOf(MeshTop, MeshBottom),
-            start = startExtended,
+            0f to MeshTop,
+            BackgroundConstants.MESH_GRADIENT_HOLD_FRACTION to MeshTop,
+            1f to MeshBottom,
+            start = meshStart,
             end = meshEnd,
         ),
     )
