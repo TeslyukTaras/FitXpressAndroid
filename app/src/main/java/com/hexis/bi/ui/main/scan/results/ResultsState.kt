@@ -48,7 +48,6 @@ data class ResultsState(
     val visual: VisualState = VisualState(),
     val compare: CompareState = CompareState(),
     val bodyProportion: BodyProportionState = BodyProportionState(),
-    val modelCardHeightPx: Int = 0,
     val showPersonalizeResultsHint: Boolean = false,
     val showBodyProportionInfo: Boolean = false,
 )

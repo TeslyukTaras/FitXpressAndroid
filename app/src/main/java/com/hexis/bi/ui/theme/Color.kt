@@ -41,7 +41,7 @@ internal val SliderActiveTrack = Color(0xFF1DC4B3)
 internal val SliderInactiveTrack = Color(0x38797979)
 internal val GradientDividerEdge = Color(0x00BDBEC0)
 internal val GradientDividerCenter = GridLineLightGray
-internal val MeshTop = Color(0xFF163131)
+internal val MeshTop = Color(0xFF142A2A)
 internal val MeshBottom = Color(0xFF030909)
 
 internal val BodyGlassGreen = Color(0x38244A49)

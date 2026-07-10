@@ -130,7 +130,6 @@ fun BodyScreen(
 
                 BodyTab.Visual -> VisualContent(
                     state = state.visual,
-                    cardHeightPx = state.modelCardHeightPx,
                     isMetric = state.isMetric,
                     onBodyPartSelected = viewModel::selectBodyPart,
                     onModeSelected = viewModel::selectMode,
@@ -140,7 +139,6 @@ fun BodyScreen(
 
                 BodyTab.Compare -> CompareContent(
                     state = state.compare,
-                    cardHeightPx = state.modelCardHeightPx,
                     isMetric = state.isMetric,
                     onSelectLeftScan = viewModel::selectCompareLeftScan,
                     onSelectRightScan = viewModel::selectCompareRightScan,
@@ -152,17 +150,12 @@ fun BodyScreen(
                 BodyTab.MyBody -> MyBodyContent(
                     visualState = state.visual,
                     proportionState = state.bodyProportion,
-                    cardHeightPx = state.modelCardHeightPx,
+                    isMetric = state.isMetric,
                     onInfoClick = viewModel::showBodyProportionInfo,
                     modifier = Modifier.weight(1f),
                 )
             }
 
-            CompactSummaryCardHeight(
-                state = state.visual,
-                isMetric = state.isMetric,
-                onMeasured = viewModel::setModelCardHeight,
-            )
         }
     }
 

@@ -29,7 +29,6 @@ internal object FirestoreSchema {
         const val TERRA_USER_ID = "terraUserId"
         const val PROVIDER = "provider"
         const val SOURCE = "source"
-        const val ENVIRONMENT = "environment"
         const val CONNECTED_AT = "connectedAt"
         const val ACTIVE = "active"
     }

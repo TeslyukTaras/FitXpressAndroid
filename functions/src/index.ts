@@ -6,6 +6,7 @@ import { CallableRequest, HttpsError, onCall } from "firebase-functions/v2/https
 import { defineSecret } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
 import { createHash, randomInt, timingSafeEqual } from "node:crypto";
+import { isDemoUid, syntheticDailyResponse, syntheticSleepResponse } from "./demoData";
 
 initializeApp();
 
@@ -133,8 +134,15 @@ function terraHandlers(secrets: TerraSecrets) {
 
     getDaily: async (request: CallableRequest) => {
       const uid = requireAuth(request.auth?.uid);
+      if (isDemoUid(uid)) {
+        const payload = asRecord(request.data);
+        return syntheticDailyResponse(
+          requireIsoDate(payload.startDate, "startDate"),
+          requireIsoDate(payload.endDate, "endDate"),
+        );
+      }
       const terraUserId = requireString(request.data?.terraUserId, "terraUserId");
-      await requireTerraConnection(uid, terraUserId, secrets.environment);
+      await requireTerraConnection(uid, terraUserId);
 
       const url = terraDataUrl("/daily", request.data);
       const response = await terraFetch(secrets, url, { method: "GET" });
@@ -144,8 +152,15 @@ function terraHandlers(secrets: TerraSecrets) {
 
     getSleep: async (request: CallableRequest) => {
       const uid = requireAuth(request.auth?.uid);
+      if (isDemoUid(uid)) {
+        const payload = asRecord(request.data);
+        return syntheticSleepResponse(
+          requireIsoDate(payload.startDate, "startDate"),
+          requireIsoDate(payload.endDate, "endDate"),
+        );
+      }
       const terraUserId = requireString(request.data?.terraUserId, "terraUserId");
-      await requireTerraConnection(uid, terraUserId, secrets.environment);
+      await requireTerraConnection(uid, terraUserId);
 
       const url = terraDataUrl("/sleep", request.data);
       const response = await terraFetch(secrets, url, { method: "GET" });
@@ -168,7 +183,7 @@ function terraHandlers(secrets: TerraSecrets) {
     deauthenticateUser: async (request: CallableRequest) => {
       const uid = requireAuth(request.auth?.uid);
       const terraUserId = requireString(request.data?.terraUserId, "terraUserId");
-      await requireTerraConnection(uid, terraUserId, secrets.environment);
+      await requireTerraConnection(uid, terraUserId);
 
       const url = new URL(`${terraBaseUrl}/auth/deauthenticateUser`);
       url.searchParams.set("user_id", terraUserId);
@@ -512,11 +527,7 @@ function requireAuth(uid: string | undefined): string {
   return uid;
 }
 
-async function requireTerraConnection(
-  uid: string,
-  terraUserId: string,
-  environment: TerraEnvironment,
-): Promise<void> {
+async function requireTerraConnection(uid: string, terraUserId: string): Promise<void> {
   const snapshot = await getFirestore()
     .collection("users")
     .doc(uid)
@@ -526,12 +537,7 @@ async function requireTerraConnection(
     .doc(terraUserId)
     .get();
 
-  const storedEnvironment = snapshot.get("environment");
-  if (
-    !snapshot.exists ||
-    snapshot.get("active") !== true ||
-    (typeof storedEnvironment === "string" && storedEnvironment !== environment)
-  ) {
+  if (!snapshot.exists || snapshot.get("active") !== true) {
     throw new HttpsError("permission-denied", "Terra connection is not active for this user");
   }
 }

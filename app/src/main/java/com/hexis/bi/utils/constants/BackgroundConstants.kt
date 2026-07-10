@@ -5,7 +5,9 @@ import androidx.compose.ui.graphics.Color
 internal object BackgroundConstants {
 
     const val MESH_GRADIENT_ANGLE_DEG = 190.26f
-    const val MESH_GRADIENT_LINE_LENGTH_FACTOR = 1.2323f
+
+    /** Holds the top teal before the fall-off, so mid-screen stays flat instead of decaying. */
+    const val MESH_GRADIENT_HOLD_FRACTION = 0.65f
 
     const val CARD_FILL_GRADIENT_ANGLE_DEG = 183.87f
     const val CARD_FILL_STOP_START = 0.0372f
@@ -15,8 +17,8 @@ internal object BackgroundConstants {
     const val PROMO_BANNER_STOP_START = 0.0557f
     const val PROMO_BANNER_STOP_END = 0.8058f
 
-    const val TOP_SCRIM_HEIGHT_FRACTION = 0.18f
-    const val TOP_SCRIM_HOLD_FRACTION = 0.2f
+    const val TOP_SCRIM_HEIGHT_FRACTION = 0.22f
+    const val TOP_SCRIM_HOLD_FRACTION = 0.25f
     const val BOTTOM_SCRIM_HEIGHT_FRACTION = 0.20f
     val BOTTOM_SCRIM_START: Color = Color(8 / 255f, 8 / 255f, 8 / 255f, 0f)
     val BOTTOM_SCRIM_END: Color = Color(8 / 255f, 8 / 255f, 8 / 255f, 0.5f)

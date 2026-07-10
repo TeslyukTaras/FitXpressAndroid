@@ -246,11 +246,6 @@ class ResultsViewModel(
         _state.update { it.copy(compare = it.compare.copy(selectedBodyPart = region)) }
     }
 
-    fun setModelCardHeight(px: Int) {
-        if (_state.value.modelCardHeightPx != px) {
-            _state.update { it.copy(modelCardHeightPx = px) }
-        }
-    }
 
     /** Base/Color is shared with My Body via [UserPreferencesRepository] so the choice persists. */
     fun selectMode(mode: BodyVisualMode) {

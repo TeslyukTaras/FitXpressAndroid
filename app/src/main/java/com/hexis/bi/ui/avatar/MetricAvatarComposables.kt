@@ -38,11 +38,14 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.viewinterop.AndroidView
 import com.hexis.bi.R
 import com.hexis.bi.domain.body.BodyMeasurementRegion
@@ -79,7 +82,9 @@ internal fun MetricAvatarPreview(
     drawBackground: Boolean = true,
     touchRotationEnabled: Boolean = true,
     zoomPanEnabled: Boolean = false,
-    baseDistanceScale: Float = 1f,
+    /** Bounding-box height for the full-body figure; the renderer solves the distance from it. */
+    fullBodyFigureHeight: Dp = Dp.Unspecified,
+    fullBodyCenterY: Float = DEFAULT_FULL_BODY_CENTER_Y,
     meshGlow: Float = 0f,
     /** When false, the parent already drew [metricAvatarPreviewGradientBackground]. */
     useGradientBackground: Boolean = true,
@@ -88,6 +93,7 @@ internal fun MetricAvatarPreview(
     compareRotationLink: CompareRotationLink? = null,
     /** Invoked on the main thread when the mesh is loaded and the GL surface is visible (opaque). */
     onAvatarReady: (() -> Unit)? = null,
+    onZoomChanged: ((Float) -> Unit)? = null,
     /** Visual tab: model-space auto-framing region. Null keeps the default camera/orientation behavior. */
     framingRegion: BodyMeasurementRegion? = null,
     /** When true, framing keeps the figure horizontally centered (Compare) instead of right-shifted (Visual). */
@@ -98,6 +104,7 @@ internal fun MetricAvatarPreview(
     val context = LocalContext.current
     val latestOnInteraction by rememberUpdatedState(onInteractionChanged)
     val latestOnAvatarReady by rememberUpdatedState(onAvatarReady)
+    val latestOnZoomChanged by rememberUpdatedState(onZoomChanged)
     val renderHost = remember(context) {
         MetricAvatarTextureView(context) { latestOnInteraction(it) }
     }
@@ -117,21 +124,27 @@ internal fun MetricAvatarPreview(
         )
     }
     LaunchedEffect(renderHost, zoomPanEnabled) { renderHost.setZoomPanEnabled(zoomPanEnabled) }
-    LaunchedEffect(renderHost, baseDistanceScale) {
-        renderHost.setBaseDistanceScale(
-            baseDistanceScale
-        )
+    val density = LocalDensity.current
+    val fullBodyFigureHeightPx = remember(density, fullBodyFigureHeight) {
+        if (fullBodyFigureHeight.isSpecified) with(density) { fullBodyFigureHeight.toPx() } else 0f
+    }
+    LaunchedEffect(renderHost, fullBodyFigureHeightPx) {
+        renderHost.setFullBodyFigureHeightPx(fullBodyFigureHeightPx)
     }
     LaunchedEffect(renderHost, meshGlow) { renderHost.setMeshGlow(meshGlow) }
+    LaunchedEffect(renderHost, initialPitchDegrees) { renderHost.setFramePitch(initialPitchDegrees) }
+    LaunchedEffect(renderHost, fullBodyCenterY) { renderHost.setFullBodyCenterY(fullBodyCenterY) }
     LaunchedEffect(renderHost, framingRegion) { renderHost.setFramingRegion(framingRegion) }
     LaunchedEffect(renderHost, centerFraming) { renderHost.setCenterFraming(centerFraming) }
     LaunchedEffect(renderHost, bodyRings) { renderHost.setBodyRings(bodyRings) }
 
     DisposableEffect(renderHost) {
+        renderHost.setZoomLevelListener { latestOnZoomChanged?.invoke(it) }
         renderHost.setRenderFailureListener { latestRenderFailure() }
         renderHost.setOnFirstFrameRendered { firstFrameReady = true }
         renderHost.onResumeHost()
         onDispose {
+            renderHost.setZoomLevelListener(null)
             renderHost.setRenderFailureListener(null)
             renderHost.setOnFirstFrameRendered(null)
             renderHost.onPauseHost()

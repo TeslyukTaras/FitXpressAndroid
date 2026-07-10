@@ -14,7 +14,6 @@ import com.hexis.bi.R
 import com.hexis.bi.domain.body.BodyMeasurementRegion
 import com.hexis.bi.ui.components.AppTabSelector
 import com.hexis.bi.ui.main.body.BodyVisualMode
-import com.hexis.bi.ui.main.body.CompactSummaryCardHeight
 import com.hexis.bi.ui.main.body.CompareContent
 import com.hexis.bi.ui.main.body.MyBodyContent
 import com.hexis.bi.ui.main.body.VisualContent
@@ -29,7 +28,6 @@ internal data class ScanResultsActions(
     val onVisualScanSelected: (Long) -> Unit,
     val onCompareLeftScanSelected: (Long) -> Unit,
     val onCompareRightScanSelected: (Long) -> Unit,
-    val onModelCardMeasured: (Int) -> Unit,
     val onInfoClick: () -> Unit,
 )
 
@@ -58,7 +56,6 @@ internal fun ScanResultsContent(
         when (state.selectedTab) {
             ResultsTab.Visual -> VisualContent(
                 state = state.visual,
-                cardHeightPx = state.modelCardHeightPx,
                 isMetric = state.isMetric,
                 onBodyPartSelected = actions.onVisualBodyPartSelected,
                 onModeSelected = actions.onModeSelected,
@@ -71,7 +68,6 @@ internal fun ScanResultsContent(
 
             ResultsTab.Compare -> CompareContent(
                 state = state.compare,
-                cardHeightPx = state.modelCardHeightPx,
                 isMetric = state.isMetric,
                 onSelectLeftScan = actions.onCompareLeftScanSelected,
                 onSelectRightScan = actions.onCompareRightScanSelected,
@@ -85,7 +81,7 @@ internal fun ScanResultsContent(
             ResultsTab.MyBody -> MyBodyContent(
                 visualState = state.visual,
                 proportionState = state.bodyProportion,
-                cardHeightPx = state.modelCardHeightPx,
+                isMetric = state.isMetric,
                 bottomClearance = bottomClearance,
                 onAvatarReady = onAvatarReady,
                 onInfoClick = actions.onInfoClick,
@@ -93,10 +89,5 @@ internal fun ScanResultsContent(
             )
         }
 
-        CompactSummaryCardHeight(
-            state = state.visual,
-            isMetric = state.isMetric,
-            onMeasured = actions.onModelCardMeasured,
-        )
     }
 }

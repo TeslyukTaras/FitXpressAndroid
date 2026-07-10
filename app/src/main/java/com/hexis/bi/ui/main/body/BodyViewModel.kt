@@ -106,11 +106,6 @@ class BodyViewModel(
         _state.update { it.copy(compare = it.compare.copy(selectedBodyPart = region)) }
     }
 
-    fun setModelCardHeight(px: Int) {
-        if (_state.value.modelCardHeightPx != px) {
-            _state.update { it.copy(modelCardHeightPx = px) }
-        }
-    }
 
     fun selectMode(mode: BodyVisualMode) {
         applyColorMode(mode)
