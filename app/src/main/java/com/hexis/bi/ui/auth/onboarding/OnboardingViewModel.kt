@@ -1,11 +1,13 @@
 package com.hexis.bi.ui.auth.onboarding
 
 import android.app.Application
+import com.hexis.bi.R
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.domain.suit.SuitRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.constants.MeasurementConstants
+import com.hexis.bi.utils.constants.ProfileConstants
 import com.hexis.bi.utils.inchesToCm
 import com.hexis.bi.utils.lbToKg
 import com.hexis.bi.utils.parseDob
@@ -89,8 +91,17 @@ class OnboardingViewModel(
             .onFailure { setError(it.message) }
     }
 
+
     private suspend fun saveProfile(): Result<Unit> {
         val s = _state.value
+        // Guard against saving an under-age profile even if the UI somehow allowed it.
+        if (!s.isPersonalInfoValid) {
+            return Result.failure(
+                IllegalStateException(
+                    appContext.getString(R.string.dob_min_age_error, ProfileConstants.MIN_AGE_YEARS),
+                ),
+            )
+        }
         val measurements = persistedUserMeasurements(s.heightCm, s.weightKg)
         val fields = mutableMapOf<String, Any?>(
             "gender" to s.gender.name,
@@ -106,9 +117,5 @@ class OnboardingViewModel(
             fields["suitId"] = s.connectedSuitId
         }
         return userRepository.updateFields(fields)
-    }
-
-    fun skip() {
-        emitEvent(OnboardingEvent.Finished)
     }
 }

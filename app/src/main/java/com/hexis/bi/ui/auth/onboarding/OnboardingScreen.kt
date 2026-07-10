@@ -28,6 +28,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -76,9 +77,11 @@ import com.hexis.bi.ui.main.body.components.BodySegmentedToggleTrack
 import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.utils.constants.AuthFlowConstants
+import com.hexis.bi.utils.constants.ProfileConstants
 import com.hexis.bi.utils.parseDob
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import java.time.LocalDate
 
 private const val PAGE_PERSONAL_INFO = 0
 private const val PAGE_MY_SUIT = 1
@@ -121,7 +124,16 @@ fun OnboardingScreen(
         }
     }
 
-    val datePickerState = rememberDatePickerState()
+    val currentYear = remember { LocalDate.now().year }
+    val datePickerState = rememberDatePickerState(
+        // A date of birth can never be in the future.
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+                utcTimeMillis <= System.currentTimeMillis()
+
+            override fun isSelectableYear(year: Int): Boolean = year <= currentYear
+        },
+    )
     LaunchedEffect(state.dateOfBirth) {
         if (state.dateOfBirth.isNotEmpty()) {
             datePickerState.selectedDateMillis = state.dateOfBirth.parseDob()?.time
@@ -169,7 +181,7 @@ fun OnboardingScreen(
                         currentPage = pagerState.currentPage,
                         pageCount = PAGE_COUNT,
                         isLastPage = isLastPage,
-                        onSkip = if (!isLastPage) ({ viewModel.skip() }) else null,
+                        nextEnabled = isLastPage || state.isPersonalInfoValid,
                         onBack = if (isLastPage) ({ goToPage(PAGE_PERSONAL_INFO) }) else null,
                         onNext = { goToPage(pagerState.currentPage + 1) },
                         onFinish = viewModel::finish,
@@ -222,7 +234,7 @@ private fun OnboardingBottomBar(
     currentPage: Int,
     pageCount: Int,
     isLastPage: Boolean,
-    onSkip: (() -> Unit)?,
+    nextEnabled: Boolean,
     onBack: (() -> Unit)?,
     onNext: () -> Unit,
     onFinish: () -> Unit,
@@ -239,19 +251,14 @@ private fun OnboardingBottomBar(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (onSkip != null) TextButton(onClick = onSkip) {
-            Text(
-                text = stringResource(R.string.action_skip),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        else if (onBack != null) TextButton(onClick = onBack) {
-            Text(
-                text = stringResource(R.string.action_back),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+            if (onBack != null) TextButton(onClick = onBack) {
+                Text(
+                    text = stringResource(R.string.action_back),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
 
         Text(
@@ -260,20 +267,28 @@ private fun OnboardingBottomBar(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        TextButton(onClick = if (isLastPage) onFinish else onNext) {
-            Text(
-                text = if (isLastPage) stringResource(R.string.action_start) else stringResource(R.string.action_next),
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Icon(
-                painter = painterResource(R.drawable.ic_arrow),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .padding(start = dimensionResource(R.dimen.spacer_xs))
-                    .size(dimensionResource(R.dimen.icon_medium)),
-            )
+        val nextTint =
+            if (nextEnabled) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+            TextButton(
+                onClick = if (isLastPage) onFinish else onNext,
+                enabled = nextEnabled,
+            ) {
+                Text(
+                    text = if (isLastPage) stringResource(R.string.action_start) else stringResource(R.string.action_next),
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                    color = nextTint,
+                )
+                Icon(
+                    painter = painterResource(R.drawable.ic_arrow),
+                    contentDescription = null,
+                    tint = nextTint,
+                    modifier = Modifier
+                        .padding(start = dimensionResource(R.dimen.spacer_xs))
+                        .size(dimensionResource(R.dimen.icon_medium)),
+                )
+            }
         }
     }
 }
@@ -339,6 +354,14 @@ private fun PersonalInfoPage(
                         readOnly = true,
                         label = stringResource(R.string.label_date_of_birth),
                         placeholder = stringResource(R.string.placeholder_date_of_birth),
+                        error = if (state.isDobUnderage) {
+                            stringResource(
+                                R.string.dob_min_age_error,
+                                ProfileConstants.MIN_AGE_YEARS,
+                            )
+                        } else {
+                            null
+                        },
                         trailingIcon = {
                             Icon(
                                 painter = painterResource(R.drawable.ic_calendar),
