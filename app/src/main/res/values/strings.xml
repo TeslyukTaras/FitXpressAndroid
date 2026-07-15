@@ -170,6 +170,7 @@
     <string name="home_overview_title">Overview</string>
     <string name="home_intelligence_title">Body Intelligence</string>
     <string name="intelligence_recovery">Recovery</string>
+    <string name="intelligence_recomposition">Recomposition</string>
     <string name="intelligence_physique_drift">Physique Drift</string>
     <string name="intelligence_longevity">Longevity</string>
     <string name="intelligence_pace_of_aging">Pace of Aging</string>
@@ -938,6 +939,34 @@
     <string name="physique_drift_info_body_4">Shoulder-to-waist ratio, symmetry, and overall shape help define the final result.</string>
     <string name="physique_drift_info_heading_5">5. Total Score</string>
     <string name="physique_drift_info_body_5">8-10 means lean / athletic, 5-7 means average / improving, and below 5 suggests more room for body composition improvement.</string>
+
+    <!-- Recomposition screen -->
+    <string name="recomposition_screen_title">Recomposition</string>
+    <string name="recomposition_subtitle">Track body composition changes over time.</string>
+    <string name="recomposition_window_4w">Last 4 Weeks</string>
+    <string name="recomposition_window_6m">Last 6 Months</string>
+    <string name="recomposition_window_1y">Last 12 Months</string>
+    <string name="recomposition_recomposed">Recomposed</string>
+    <string name="recomposition_weight_change">Weight Change</string>
+    <string name="recomposition_fat_mass">Fat Mass</string>
+    <string name="recomposition_lean_mass">Lean Mass</string>
+    <string name="recomposition_kg_suffix"> kg</string>
+    <string name="recomposition_signed_value">%1$s%2$.1f</string>
+    <string name="recomposition_trend_improving">Improving</string>
+    <string name="recomposition_trend_stable">Stable</string>
+    <string name="recomposition_error_load">Couldn’t load recomposition data. Please try again.</string>
+    <string name="recomposition_info_title">Recomposition</string>
+    <string name="recomposition_info_intro">Recomposition shows how your body composition is changing over time based on your valid body scans.</string>
+    <string name="recomposition_info_heading_1">1. Recomposed Amount</string>
+    <string name="recomposition_info_body_1">Shows the amount of change where fat mass trends down and lean mass trends up during the same period.</string>
+    <string name="recomposition_info_heading_2">2. Fat Mass</string>
+    <string name="recomposition_info_body_2">Shows the estimated change in fat mass across the selected time period.</string>
+    <string name="recomposition_info_heading_3">3. Lean Mass</string>
+    <string name="recomposition_info_body_3">Shows the estimated change in lean mass across the selected time period.</string>
+    <string name="recomposition_info_heading_4">4. Weight Change</string>
+    <string name="recomposition_info_body_4">Shows how your total body weight changed during the same period.</string>
+    <string name="recomposition_info_heading_5">5. Time Periods</string>
+    <string name="recomposition_info_body_5">4 Weeks, 6 Months, and 1 Year are calculated from valid scans within each time window.</string>
 
     <!-- Pace of Aging screen -->
     <string name="pace_of_aging_screen_title">Pace of Aging</string>

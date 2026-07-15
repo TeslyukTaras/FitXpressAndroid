@@ -48,7 +48,7 @@ data class ScanOverview(
     val trend: List<Float> = emptyList(),
 )
 
-enum class IntelligenceScoreKey { RECOVERY, PHYSIQUE_DRIFT, LONGEVITY, PACE_OF_AGING }
+enum class IntelligenceScoreKey { RECOMPOSITION, PHYSIQUE_DRIFT, LONGEVITY, PACE_OF_AGING }
 
 data class IntelligenceScoreData(
     val key: IntelligenceScoreKey,
@@ -78,6 +78,8 @@ data class HomeState(
     val activity: ActivityOverview = ActivityOverview(),
     val sleep: SleepOverview = SleepOverview(),
     val scan: ScanOverview = ScanOverview(),
+    val recompositionValue: String = "0",
+    val recompositionFraction: Float = 0f,
     val recoveryScore: Int? = null,
     val physiqueScore: Float? = null,
     val longevityScore: Int? = null,
@@ -85,15 +87,23 @@ data class HomeState(
     val paceOfAgingScore: Int? = null,
 ) {
     /**
-     * The four "Body Intelligence" gauges. Recovery and Longevity use 0-100 scores; Physique Drift
-     * uses a 1-10 score; Pace of Aging displays the pace multiplier with a derived 0-100 fill.
+     * The four "Body Intelligence" gauges. Longevity uses a 0-100 score; Physique Drift uses a
+     * 1-10 score; Pace of Aging displays the pace multiplier with a derived 0-100 fill.
      */
     val intelligenceScores: List<IntelligenceScoreData>
         get() = listOf(
-            scoreGauge(IntelligenceScoreKey.RECOVERY, R.string.intelligence_recovery, recoveryScore),
+            recompositionGauge(),
             physiqueGauge(),
             scoreGauge(IntelligenceScoreKey.LONGEVITY, R.string.intelligence_longevity, longevityScore),
             paceGauge(),
+        )
+
+    private fun recompositionGauge(): IntelligenceScoreData =
+        IntelligenceScoreData(
+            key = IntelligenceScoreKey.RECOMPOSITION,
+            titleRes = R.string.intelligence_recomposition,
+            value = recompositionValue,
+            fraction = recompositionFraction.coerceIn(0f, 1f),
         )
 
     private fun scoreGauge(key: IntelligenceScoreKey, @StringRes titleRes: Int, score: Int?): IntelligenceScoreData {
