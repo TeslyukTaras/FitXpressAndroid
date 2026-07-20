@@ -1,5 +1,6 @@
 package com.hexis.bi.ui.main.home.longevity.components
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -34,48 +35,10 @@ fun LongevityInfoBottomSheet(
                 .weight(1f)
                 .verticalScroll(rememberScrollState()),
         ) {
-            Text(
-                text = stringResource(R.string.longevity_info_sheet_intro),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            InfoSection(
-                R.string.longevity_info_sheet_heading_1,
-                R.string.longevity_info_sheet_body_1
-            )
-            InfoSection(
-                R.string.longevity_info_sheet_heading_2,
-                R.string.longevity_info_sheet_body_2
-            )
-            InfoSection(
-                R.string.longevity_info_sheet_heading_3,
-                R.string.longevity_info_sheet_body_3
-            )
-            InfoSection(
-                R.string.longevity_info_sheet_heading_4,
-                R.string.longevity_info_sheet_body_4
-            )
-            InfoSection(
-                R.string.longevity_info_sheet_heading_5,
-                R.string.longevity_info_sheet_body_5
-            )
-            InfoSection(
-                R.string.longevity_info_sheet_heading_6,
-                R.string.longevity_info_sheet_body_6
-            )
-            InfoSection(
-                R.string.longevity_info_sheet_heading_7,
-                R.string.longevity_info_sheet_body_7
-            )
-            InfoSection(
-                R.string.longevity_info_sheet_heading_8,
-                R.string.longevity_info_sheet_body_8
-            )
-            InfoSection(
-                R.string.longevity_info_sheet_heading_9,
-                R.string.longevity_info_sheet_body_9
-            )
+            InfoParagraph(R.string.longevity_info_sheet_what)
+            InfoParagraph(R.string.longevity_info_sheet_inputs)
+            InfoParagraph(R.string.longevity_info_sheet_windows)
+            InfoParagraph(R.string.longevity_info_sheet_limits)
         }
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
@@ -94,17 +57,11 @@ fun LongevityInfoBottomSheet(
 }
 
 @Composable
-private fun InfoSection(heading: Int, body: Int) {
-    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
-    Text(
-        text = stringResource(heading),
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.onBackground,
-    )
-    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
+private fun InfoParagraph(@StringRes body: Int) {
     Text(
         text = stringResource(body),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 }

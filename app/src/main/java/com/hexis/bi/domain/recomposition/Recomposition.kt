@@ -1,6 +1,8 @@
 package com.hexis.bi.domain.recomposition
 
 import com.hexis.bi.data.scan.ScanRecord
+import com.hexis.bi.domain.trend.TrendPoint
+import com.hexis.bi.domain.trend.linearTrendChange
 import com.hexis.bi.utils.constants.RecompositionConstants
 import java.time.Instant
 import java.time.LocalDate
@@ -60,10 +62,9 @@ object RecompositionCalculator {
         val leanChange: Float
         val weightChange: Float
         if (samples.size >= RecompositionConstants.MIN_SCANS_FOR_TREND) {
-            val spanDays = (last.timeDays - first.timeDays).toFloat()
-            fatChange = trendChange(samples, spanDays) { it.fatMassKg }
-            leanChange = trendChange(samples, spanDays) { it.leanMassKg }
-            weightChange = trendChange(samples, spanDays) { it.weightKg }
+            fatChange = linearTrendChange(samples.map { TrendPoint(it.timeDays, it.fatMassKg) })
+            leanChange = linearTrendChange(samples.map { TrendPoint(it.timeDays, it.leanMassKg) })
+            weightChange = linearTrendChange(samples.map { TrendPoint(it.timeDays, it.weightKg) })
         } else {
             fatChange = last.fatMassKg - first.fatMassKg
             leanChange = last.leanMassKg - first.leanMassKg
@@ -92,26 +93,6 @@ object RecompositionCalculator {
         else -> CompositionState.CompositionShift
     }
 
-    private inline fun trendChange(
-        samples: List<CompositionSample>,
-        spanDays: Float,
-        selector: (CompositionSample) -> Float,
-    ): Float {
-        if (spanDays <= 0f) return selector(samples.last()) - selector(samples.first())
-        val n = samples.size
-        val meanX = samples.sumOf { it.timeDays } / n
-        val meanY = samples.sumOf { selector(it).toDouble() } / n
-        var numerator = 0.0
-        var denominator = 0.0
-        for (s in samples) {
-            val dx = s.timeDays - meanX
-            numerator += dx * (selector(s) - meanY)
-            denominator += dx * dx
-        }
-        if (denominator == 0.0) return selector(samples.last()) - selector(samples.first())
-        val slope = numerator / denominator
-        return (slope * spanDays).toFloat()
-    }
 }
 
 private fun ScanRecord.toCompositionSample(zoneId: ZoneId): CompositionSample? {
