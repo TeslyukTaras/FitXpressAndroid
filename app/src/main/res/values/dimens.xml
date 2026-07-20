@@ -189,10 +189,6 @@
     <dimen name="body_switch_button_width">40dp</dimen>
 
     <!-- Longevity screen -->
-    <dimen name="longevity_chart_height">180dp</dimen>
-    <dimen name="longevity_chart_line_stroke">2dp</dimen>
-    <dimen name="longevity_chart_grid_stroke">0.5dp</dimen>
-    <dimen name="longevity_toggle_chip_width">50dp</dimen>
 
     <!-- Home overview cards -->
     <dimen name="home_activity_chart_height">56dp</dimen>

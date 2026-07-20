@@ -149,7 +149,7 @@ val Typography = Typography(
         fontFamily = Urbanist,
         fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
-        lineHeight = 16.sp,
+        lineHeight = 18.sp,
         letterSpacing = 0.sp,
     ),
     // Light - 12
