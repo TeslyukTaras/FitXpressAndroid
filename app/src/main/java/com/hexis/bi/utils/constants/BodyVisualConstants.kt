@@ -8,7 +8,25 @@ internal object BodyVisualConstants {
 
     const val MEASUREMENT_VALUE_FORMAT = "%.1f"
 
-    const val COMPARE_MODEL_DISTANCE_SCALE = 1.45f
+    /** Figure height as a fraction of the tab's height; the renderer solves the distance from it. */
+    const val FULL_BODY_FIGURE_HEIGHT_FRACTION = 0.554f
+
+    /** My Body reserves only half a card, so its panel is taller and takes a taller figure. */
+    const val MY_BODY_FIGURE_HEIGHT_FRACTION = 0.68f
+
+    /** Negative sits lower on screen; each panel carries a different amount of chrome above it. */
+    const val VISUAL_MODEL_CENTER_Y = -0.12f
+    const val COMPARE_MODEL_CENTER_Y = -0.30f
+    const val MY_BODY_MODEL_CENTER_Y = 0.0f
+
+    const val MY_BODY_CARD_HEIGHT_FRACTION = 0.5f
+
+    /** My Body looks slightly down on the model, which opens out its horizontal body rings. */
+    const val UPRIGHT_MODEL_PITCH_DEG = 0f
+    const val MY_BODY_MODEL_PITCH_DEG = 10f
+
+    const val MODEL_BLUR_ZOOM_START = 1.05f
+    const val MODEL_BLUR_ZOOM_MAX = 3.50f
 
     const val CURRENT_SCAN_MESH_GLOW = 0.01f
 
@@ -30,6 +48,7 @@ internal object BodyVisualConstants {
     const val BODY_PART_SELECTOR_SCROLL_SPEED = 0.34f
     const val BODY_PART_SELECTOR_PRE_CONSUMED_SCROLL_RATIO =
         1f - BODY_PART_SELECTOR_SCROLL_SPEED
+
     /** Horizontal (Compare) selector damps less than the vertical one so it scrolls more freely. */
     const val BODY_PART_SELECTOR_HORIZONTAL_SCROLL_SPEED = 0.5f
     const val BODY_PART_SELECTOR_HORIZONTAL_PRE_CONSUMED_SCROLL_RATIO =

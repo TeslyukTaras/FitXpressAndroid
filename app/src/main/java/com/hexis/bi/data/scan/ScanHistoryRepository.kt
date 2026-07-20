@@ -80,6 +80,7 @@ data class ScanRecord(
     /** Side-view linear / ANFA-style params (from API `side_linear_params`). */
     val sideLinearParams: Map<String, Float> = emptyMap(),
     val weightKg: Float? = null,
+    val estimatedWeightKg: Float? = null,
     val bmi: Float? = null,
     val fatPercentage: Float? = null,
     val leanBodyMassKg: Float? = null,
@@ -204,6 +205,7 @@ class ScanHistoryRepository(
             frontLinearParams = frontLinearParams,
             sideLinearParams = sideLinearParams,
             weightKg = response.weight?.toFloat() ?: response.estimatedWeight?.toFloat(),
+            estimatedWeightKg = response.estimatedWeight?.toFloat(),
             bmi = response.bmi?.toFloat() ?: response.estimatedBmi?.toFloat(),
             fatPercentage = response.fatPercentage?.toFloat(),
             leanBodyMassKg = response.leanBodyMass?.toFloat()
@@ -218,6 +220,12 @@ class ScanHistoryRepository(
         projection: ScanFetchProjection = ScanFetchProjection.FULL,
     ): Result<List<ScanRecord>> =
         fetchRecentScans(limit = limit, projection = projection)
+
+    suspend fun getScansSavedSince(
+        savedAtMillisInclusive: Long,
+        projection: ScanFetchProjection = ScanFetchProjection.FULL,
+    ): Result<List<ScanRecord>> =
+        fetchScansSavedSince(savedAtMillisInclusive = savedAtMillisInclusive, projection = projection)
 
     suspend fun getBodyProgressCache(
         beforeMeasurementId: String,
@@ -304,32 +312,49 @@ class ScanHistoryRepository(
             .get()
             .await()
 
-        coroutineScope {
-            snapshot.documents.map { doc ->
-                async {
-                    when (projection) {
-                        ScanFetchProjection.TIMESTAMPS_ONLY -> ScanRecord(
-                            id = doc.id,
-                            timestamp = doc.savedAtMillis(),
-                        )
+        buildProjectedScanRecords(snapshot.documents, projection)
+    }
 
-                        ScanFetchProjection.LIST_SUMMARY -> ScanRecord(
-                            id = doc.id,
-                            timestamp = doc.savedAtMillis(),
-                            measurements = loadSubNumericParams(doc, SUB_CIRCUMFERENCE_PARAMS),
-                            weightKg = doc.numericField(FIELD_WEIGHT, FIELD_ESTIMATED_WEIGHT),
-                            fatPercentage = doc.numericField(FIELD_FAT_PERCENTAGE),
-                            leanBodyMassKg = doc.numericField(
-                                FIELD_LEAN_BODY_MASS,
-                                FIELD_ESTIMATED_LEAN_BODY_MASS
-                            ),
-                        )
+    private suspend fun fetchScansSavedSince(
+        savedAtMillisInclusive: Long,
+        projection: ScanFetchProjection,
+    ): Result<List<ScanRecord>> = runCatching {
+        val snapshot = scansCollection()
+            .whereGreaterThanOrEqualTo(FIELD_SAVED_AT, Timestamp(Date(savedAtMillisInclusive)))
+            .orderBy(FIELD_SAVED_AT, Query.Direction.DESCENDING)
+            .get()
+            .await()
 
-                        ScanFetchProjection.FULL -> buildFullScanRecord(doc)
-                    }
+        buildProjectedScanRecords(snapshot.documents, projection)
+    }
+
+    private suspend fun buildProjectedScanRecords(
+        documents: List<DocumentSnapshot>,
+        projection: ScanFetchProjection,
+    ): List<ScanRecord> = coroutineScope {
+        documents.map { doc ->
+            async {
+                when (projection) {
+                    ScanFetchProjection.TIMESTAMPS_ONLY -> ScanRecord(
+                        id = doc.id,
+                        timestamp = doc.savedAtMillis(),
+                    )
+
+                    ScanFetchProjection.LIST_SUMMARY -> ScanRecord(
+                        id = doc.id,
+                        timestamp = doc.savedAtMillis(),
+                        measurements = loadSubNumericParams(doc, SUB_CIRCUMFERENCE_PARAMS),
+                        weightKg = doc.numericField(FIELD_WEIGHT, FIELD_ESTIMATED_WEIGHT),
+                        estimatedWeightKg = doc.numericField(FIELD_ESTIMATED_WEIGHT),
+                        fatPercentage = doc.numericField(FIELD_FAT_PERCENTAGE),
+                        leanBodyMassKg = doc.numericField(FIELD_LEAN_BODY_MASS),
+                        fatBodyMassKg = doc.numericField(FIELD_FAT_BODY_MASS),
+                    )
+
+                    ScanFetchProjection.FULL -> buildFullScanRecord(doc)
                 }
-            }.awaitAll()
-        }
+            }
+        }.awaitAll()
     }
 
     private suspend fun scanDocumentByMeasurementId(measurementId: String): DocumentSnapshot? =
@@ -366,10 +391,11 @@ class ScanHistoryRepository(
             frontLinearParams = frontLinearParams,
             sideLinearParams = sideLinearParams,
             weightKg = doc.numericField(FIELD_WEIGHT, FIELD_ESTIMATED_WEIGHT),
+            estimatedWeightKg = doc.numericField(FIELD_ESTIMATED_WEIGHT),
             bmi = doc.numericField(FIELD_BMI, FIELD_ESTIMATED_BMI),
             fatPercentage = doc.numericField(FIELD_FAT_PERCENTAGE),
-            leanBodyMassKg = doc.numericField(FIELD_LEAN_BODY_MASS, FIELD_ESTIMATED_LEAN_BODY_MASS),
-            fatBodyMassKg = doc.numericField(FIELD_FAT_BODY_MASS, FIELD_ESTIMATED_FAT_BODY_MASS),
+            leanBodyMassKg = doc.numericField(FIELD_LEAN_BODY_MASS),
+            fatBodyMassKg = doc.numericField(FIELD_FAT_BODY_MASS),
         )
     }
 

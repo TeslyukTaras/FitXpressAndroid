@@ -34,7 +34,7 @@ class LoginViewModel(
     private val _state = MutableStateFlow(LoginUiState())
     val state: StateFlow<LoginUiState> = _state.asStateFlow()
 
-    fun updateEmail(value: String) = _state.update { it.copy(email = value, emailError = null) }
+    fun updateEmail(value: String) = _state.update { it.copy(email = value.trim(), emailError = null) }
     fun updatePassword(value: String) =
         _state.update { it.copy(password = value, passwordError = null) }
 
@@ -57,7 +57,7 @@ class LoginViewModel(
         }
 
         launch {
-            authRepository.signInWithEmail(s.email, s.password)
+            authRepository.signInWithEmail(s.email.trim(), s.password)
                 .onSuccess {
                     if (authRepository.isEmailVerified) {
                         emitEvent(LoginEvent.NavigateToHome)

@@ -16,7 +16,7 @@ import com.hexis.bi.data.healthconnections.HealthConnection
 import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
 import com.hexis.bi.data.terra.TerraApi
 import com.hexis.bi.data.terra.TerraCallbackHandler
-import com.hexis.bi.data.terra.TerraConfig
+import com.hexis.bi.data.terra.TerraConnectionReconciler
 import com.hexis.bi.data.terra.TerraConnector
 import com.hexis.bi.data.terra.TerraManagerHolder
 import com.hexis.bi.data.terra.TerraSdkSync
@@ -49,6 +49,7 @@ class HealthConnectionsViewModel(
     private val firebaseAuth: FirebaseAuth,
     private val terraApi: TerraApi,
     private val terraManagerHolder: TerraManagerHolder,
+    private val terraConnectionReconciler: TerraConnectionReconciler,
 ) : BaseViewModel(application, initialLoading = true) {
 
     private val _state = MutableStateFlow(HealthConnectionsState())
@@ -188,6 +189,13 @@ class HealthConnectionsViewModel(
             .onEach(::handleCallbackOutcome)
             .launchIn(viewModelScope)
 
+        launch(
+            showLoading = false,
+            onError = { Timber.w(it, "Terra reconcile on open failed") },
+        ) {
+            terraConnectionReconciler.reconcile()
+        }
+
         setLoading(false)
     }
 
@@ -299,7 +307,6 @@ class HealthConnectionsViewModel(
                 _state.update {
                     it.copy(
                         widgetUrl = session.authUrl,
-                        pendingAuthUserId = session.userId,
                         pendingAuthProvider = resource,
                     )
                 }
@@ -308,49 +315,37 @@ class HealthConnectionsViewModel(
     }
 
     /**
-     * On return from the OAuth Custom Tab, confirm the pending connection with Terra and persist
-     * it — the redirect can't be relied on to reopen the app. Polls a few times since Terra may
-     * lag a moment behind the completed OAuth.
+     * Terra does not redirect back into the app when the OAuth page finishes — it shows its own
+     * success page and the user returns by hand — so coming back to this screen is the only cue
+     * the app reliably gets. Reconcile against Terra on every resume, retrying briefly while an
+     * auth is pending since Terra can lag a moment behind the completed OAuth.
      */
     fun onScreenResumed() {
-        val userId = _state.value.pendingAuthUserId ?: return
-        val provider = _state.value.pendingAuthProvider ?: return
         if (verifyJob?.isActive == true) return
+        val pendingProvider = _state.value.pendingAuthProvider
         verifyJob = launch(showLoading = false, onError = { clearPendingAuth() }) {
-            repeat(VERIFY_MAX_ATTEMPTS) {
-                val info = terraApi.getUserInfo(userId).getOrNull()
-                if (info?.isConnected == true) {
-                    persistVerifiedConnection(userId, info.user?.provider ?: provider)
+            if (pendingProvider == null) {
+                terraConnectionReconciler.reconcile()
+                return@launch
+            }
+            repeat(VERIFY_MAX_ATTEMPTS) { attempt ->
+                val recovered = terraConnectionReconciler.reconcile().getOrElse { emptySet() }
+                if (recovered.any { TerraProviders.storedMatchesUi(it, pendingProvider) }) {
                     clearPendingAuth()
+                    setMessage(
+                        R.string.msg_wearable_connected,
+                        pendingProvider.replaceFirstChar { it.titlecase() },
+                    )
                     return@launch
                 }
-                delay(VERIFY_RETRY_DELAY_MS)
+                if (attempt < VERIFY_MAX_ATTEMPTS - 1) delay(VERIFY_RETRY_DELAY_MS)
             }
-            // No connection after retries — the user likely cancelled; drop it silently.
             clearPendingAuth()
         }
     }
 
-    private suspend fun persistVerifiedConnection(userId: String, provider: String) {
-        healthConnectionsRepository.upsertConnection(
-            HealthConnection(
-                terraUserId = userId,
-                provider = provider.uppercase(),
-                source = HealthConnection.SOURCE_API,
-                environment = TerraConfig.environment,
-                connectedAt = Timestamp.now(),
-                active = true,
-            ),
-        ).onSuccess {
-            TerraSdkSync.invalidateCachesAndNotify()
-            setMessage(R.string.msg_wearable_connected, provider.replaceFirstChar { it.titlecase() })
-        }.onFailure {
-            setError(R.string.error_connection_save_failed)
-        }
-    }
-
     private fun clearPendingAuth() {
-        _state.update { it.copy(pendingAuthUserId = null, pendingAuthProvider = null) }
+        _state.update { it.copy(pendingAuthProvider = null) }
     }
 
     private fun startWidgetSession(providers: String) = launch(
@@ -474,7 +469,6 @@ class HealthConnectionsViewModel(
                 terraUserId = terraUserId,
                 provider = provider,
                 source = HealthConnection.SOURCE_SDK,
-                environment = TerraConfig.environment,
                 connectedAt = Timestamp.now(),
                 active = true,
             ),

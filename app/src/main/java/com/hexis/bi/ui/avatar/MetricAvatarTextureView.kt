@@ -10,20 +10,38 @@ import android.opengl.EGLSurface
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
+import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.TextureView
+import android.view.VelocityTracker
 import android.view.View
 import com.hexis.bi.domain.body.BodyMeasurementRegion
 import timber.log.Timber
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.pow
 
-private const val TOUCH_YAW_SENSITIVITY = 0.25f
-private const val TOUCH_PITCH_SENSITIVITY = 0.2f
+private const val TOUCH_YAW_SENSITIVITY = 0.15f
+private const val TOUCH_PITCH_SENSITIVITY = 0.11f
 
-private const val TWO_FINGER_ZOOM_SENSITIVITY = 0.7f
+private const val TWO_FINGER_ZOOM_SENSITIVITY = 0.5f
 private const val FRAME_ANIMATION_FRAME_DELAY_MS = 16L
 private const val RENDER_THREAD_JOIN_TIMEOUT_MS = 250L
+
+private const val FLING_VELOCITY_UNITS = 1000
+
+/** Fraction of the spin velocity surviving one second of coasting. */
+private const val FLING_VELOCITY_RETAINED_PER_SECOND = 0.0008f
+
+/** Damping the lift-off velocity is what reads as a heavier model. */
+private const val FLING_RELEASE_DAMPING = 0.35f
+
+private const val FLING_MIN_DEG_PER_SECOND = 12f
+
+/** Caps the coast's frame delta so a stall cannot jump the model. */
+private const val FLING_MAX_FRAME_SECONDS = 0.032f
+private const val MILLIS_PER_SECOND = 1000f
 
 private const val EGL_CONTEXT_CLIENT_VERSION = 2
 private const val EGL_COLOR_CHANNEL_BITS = 8
@@ -51,11 +69,14 @@ private interface MetricAvatarRenderHost {
     fun setDrawBackground(draw: Boolean)
     fun setTouchRotationEnabled(enabled: Boolean)
     fun setZoomPanEnabled(enabled: Boolean)
-    fun setBaseDistanceScale(scale: Float)
+    fun setFullBodyFigureHeightPx(heightPx: Float)
+    fun setFramePitch(pitchDeg: Float)
+    fun setFullBodyCenterY(centerY: Float)
     fun setBaseOrientation(yawDeg: Float, pitchDeg: Float)
     fun setFramingRegion(region: BodyMeasurementRegion?)
     fun setCenterFraming(enabled: Boolean)
     fun setBodyRings(rings: List<MetricAvatarBodyRing>)
+    fun setZoomLevelListener(listener: ((Float) -> Unit)?)
     fun setRenderFailureListener(listener: (() -> Unit)?)
     fun setOnFirstFrameRendered(listener: (() -> Unit)?)
 }
@@ -83,11 +104,22 @@ internal class MetricAvatarTextureView(
     private var renderFailureListener: (() -> Unit)? = null
     private var onFirstFrameRendered: (() -> Unit)? = null
     private var pendingFirstFrameNotify = false
-    private var awaitingRevealFrame = false
     private var animationFrameScheduled = false
     private val pendingEvents = mutableListOf<() -> Unit>()
     private val compareRenderNotify: () -> Unit = { requestRenderOnThread() }
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    private val renderPending = AtomicBoolean(false)
+
+    private val pendingRotationLock = Any()
+    private var pendingDeltaYawDeg = 0f
+    private var pendingDeltaPitchDeg = 0f
+
+    private var velocityTracker: VelocityTracker? = null
+    private var flingYawDegPerSecond = 0f
+    private var flingPitchDegPerSecond = 0f
+    private var flingLastFrameMs = 0L
+    private val flingStep = Runnable { stepFling() }
     private val eglConfigProfiles = listOf(
         EglConfigProfile(
             name = "rgba8888-depth16-msaa4",
@@ -147,18 +179,39 @@ internal class MetricAvatarTextureView(
     override fun onResumeHost() = Unit
 
     override fun onPauseHost() {
+        cancelFling()
+        endVelocityTracking()
         stopRenderThread()
     }
 
+    override fun onDetachedFromWindow() {
+        cancelFling()
+        endVelocityTracking()
+        super.onDetachedFromWindow()
+    }
+
     override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
-        startRenderThread(surface, width, height)
+        val (renderWidth, renderHeight) = applySupersampledBufferSize(surface, width, height)
+        startRenderThread(surface, renderWidth, renderHeight)
     }
 
     override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {
+        val (renderWidth, renderHeight) = applySupersampledBufferSize(surface, width, height)
         queueRenderEvent {
-            avatarRenderer.onSurfaceChanged(width, height)
+            avatarRenderer.onSurfaceChanged(renderWidth, renderHeight)
             drawFrame()
         }
+    }
+
+    private fun applySupersampledBufferSize(
+        surface: SurfaceTexture,
+        width: Int,
+        height: Int,
+    ): Pair<Int, Int> {
+        val renderWidth = (width * RENDER_SUPERSAMPLE).toInt().coerceAtLeast(1)
+        val renderHeight = (height * RENDER_SUPERSAMPLE).toInt().coerceAtLeast(1)
+        surface.setDefaultBufferSize(renderWidth, renderHeight)
+        return renderWidth to renderHeight
     }
 
     override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
@@ -167,17 +220,14 @@ internal class MetricAvatarTextureView(
     }
 
     override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
-        when {
-            pendingFirstFrameNotify -> {
-                pendingFirstFrameNotify = false
-                awaitingRevealFrame = true
-                requestRenderOnThread()
-            }
-
-            awaitingRevealFrame -> {
-                awaitingRevealFrame = false
-                onFirstFrameRendered?.invoke()
-            }
+        // The queued render event for a newly loaded mesh sets the mesh and draws in one shot, so
+        // the first presented frame already contains it. Reveal immediately rather than waiting for
+        // a second surface update — while the GL layer is still alpha 0 the platform may not draw
+        // (and therefore not deliver) that second update until an unrelated invalidation (a touch),
+        // which left the loader stuck on screen until the user interacted with it.
+        if (pendingFirstFrameNotify) {
+            pendingFirstFrameNotify = false
+            onFirstFrameRendered?.invoke()
         }
     }
 
@@ -207,6 +257,7 @@ internal class MetricAvatarTextureView(
         val thread = renderThread
         renderHandler = null
         renderThread = null
+        renderPending.set(false)
         handler.post {
             releaseEgl()
             thread?.quitSafely()
@@ -232,14 +283,46 @@ internal class MetricAvatarTextureView(
         }
     }
 
+    /**
+     * Coalesced: touch samples outpace [EGL14.eglSwapBuffers], so one draw per sample backs the queue
+     * up and the model trails the finger. State is written on the touch thread; one draw is queued.
+     */
     private fun requestRenderOnThread() {
-        queueRenderEvent { drawFrame() }
+        val handler = renderHandler ?: return
+        if (!renderPending.compareAndSet(false, true)) return
+        val posted = handler.post {
+            renderPending.set(false)
+            drawFrame()
+        }
+        // A quitting looper rejects the post; a stuck flag would wedge the view into never redrawing.
+        if (!posted) renderPending.set(false)
+    }
+
+    private fun clearPendingRotation() {
+        synchronized(pendingRotationLock) {
+            pendingDeltaYawDeg = 0f
+            pendingDeltaPitchDeg = 0f
+        }
+    }
+
+    /** Render thread. */
+    private fun drainPendingRotation() {
+        var dyaw: Float
+        var dpitch: Float
+        synchronized(pendingRotationLock) {
+            dyaw = pendingDeltaYawDeg
+            dpitch = pendingDeltaPitchDeg
+            pendingDeltaYawDeg = 0f
+            pendingDeltaPitchDeg = 0f
+        }
+        if (dyaw != 0f || dpitch != 0f) avatarRenderer.rotateBy(dyaw, dpitch)
     }
 
     private fun drawFrame() {
         animationFrameScheduled = false
         val display = eglDisplay ?: return
         val surface = eglSurface ?: return
+        drainPendingRotation()
         avatarRenderer.onDrawFrame()
         if (!EGL14.eglSwapBuffers(display, surface)) {
             Timber.w("Metric avatar EGL swap failed: error=%s", eglErrorString())
@@ -383,7 +466,6 @@ internal class MetricAvatarTextureView(
 
     override fun applyLoadedMesh(mesh: ObjMesh, yawDeg: Float, pitchDeg: Float) {
         pendingFirstFrameNotify = true
-        awaitingRevealFrame = false
         queueRenderEvent {
             avatarRenderer.setRotationLink(null)
             avatarRenderer.setBaseOrientation(yawDeg, pitchDeg)
@@ -394,7 +476,6 @@ internal class MetricAvatarTextureView(
 
     override fun applyLoadedMeshForCompare(mesh: ObjMesh) {
         pendingFirstFrameNotify = true
-        awaitingRevealFrame = false
         queueRenderEvent {
             avatarRenderer.setMesh(mesh)
             drawFrame()
@@ -437,9 +518,23 @@ internal class MetricAvatarTextureView(
         zoomPanEnabled = enabled
     }
 
-    override fun setBaseDistanceScale(scale: Float) {
+    override fun setFullBodyFigureHeightPx(heightPx: Float) {
         queueRenderEvent {
-            avatarRenderer.setBaseDistanceScale(scale)
+            avatarRenderer.setFullBodyFigureHeightPx(heightPx)
+            drawFrame()
+        }
+    }
+
+    override fun setFramePitch(pitchDeg: Float) {
+        queueRenderEvent {
+            avatarRenderer.setFramePitch(pitchDeg)
+            drawFrame()
+        }
+    }
+
+    override fun setFullBodyCenterY(centerY: Float) {
+        queueRenderEvent {
+            avatarRenderer.setFullBodyCenterY(centerY)
             drawFrame()
         }
     }
@@ -452,6 +547,10 @@ internal class MetricAvatarTextureView(
     }
 
     override fun setFramingRegion(region: BodyMeasurementRegion?) {
+        // The part list is a sibling view, so tapping it never reaches onTouchEvent. A coast left
+        // running would feed a delta in and cancel the eased reset this change just started.
+        cancelFling()
+        clearPendingRotation()
         queueRenderEvent {
             avatarRenderer.setFramingRegion(region)
             drawFrame()
@@ -472,6 +571,14 @@ internal class MetricAvatarTextureView(
         }
     }
 
+    override fun setZoomLevelListener(listener: ((Float) -> Unit)?) {
+        queueRenderEvent {
+            avatarRenderer.setZoomLevelListener(
+                listener?.let { target -> { zoom -> mainHandler.post { target(zoom) } } },
+            )
+        }
+    }
+
     override fun setRenderFailureListener(listener: (() -> Unit)?) {
         renderFailureListener = listener
     }
@@ -487,6 +594,12 @@ internal class MetricAvatarTextureView(
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (!touchRotationEnabled) return false
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+            cancelFling()
+            beginVelocityTracking(event)
+        } else {
+            velocityTracker?.addMovement(event)
+        }
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 // Avoid parent scroll intercept during model dragging.
@@ -514,40 +627,110 @@ internal class MetricAvatarTextureView(
                 if (zoomPanEnabled && twoFingerActive && event.pointerCount >= 2) {
                     handleTwoFingerMove(event)
                 } else if (!twoFingerActive) {
-                    val dx = event.x - lastX
-                    val dy = event.y - lastY
-                    val link = boundCompareLink
-                    if (link != null) {
-                        link.applyRotationDelta(
-                            dx * TOUCH_YAW_SENSITIVITY,
-                            dy * TOUCH_PITCH_SENSITIVITY
-                        )
-                    } else {
-                        queueRenderEvent {
-                            avatarRenderer.rotateBy(
-                                dyaw = dx * TOUCH_YAW_SENSITIVITY,
-                                dpitch = dy * TOUCH_PITCH_SENSITIVITY,
-                            )
-                            drawFrame()
+                    // A move event batches samples; replay them all or the spin under-reads the drag.
+                    if (event.pointerCount == 1) {
+                        for (i in 0 until event.historySize) {
+                            dragTo(event.getHistoricalX(i), event.getHistoricalY(i))
                         }
                     }
-                    lastX = event.x
-                    lastY = event.y
+                    dragTo(event.x, event.y)
                 }
             }
 
             MotionEvent.ACTION_UP -> {
                 performClick()
+                if (!twoFingerActive) startFlingFromVelocity()
+                endVelocityTracking()
                 onInteractionChanged(false)
                 twoFingerActive = false
             }
 
             MotionEvent.ACTION_CANCEL -> {
+                endVelocityTracking()
                 onInteractionChanged(false)
                 twoFingerActive = false
             }
         }
         return true
+    }
+
+    private fun dragTo(x: Float, y: Float) {
+        applyRotationDelta(
+            dyaw = (x - lastX) * TOUCH_YAW_SENSITIVITY,
+            dpitch = (y - lastY) * TOUCH_PITCH_SENSITIVITY,
+        )
+        lastX = x
+        lastY = y
+    }
+
+    /** The single funnel for drag and coast. A linked pair routes through the link; others park it. */
+    private fun applyRotationDelta(dyaw: Float, dpitch: Float) {
+        if (dyaw == 0f && dpitch == 0f) return
+        val link = boundCompareLink
+        if (link != null) {
+            link.applyRotationDelta(dyaw, dpitch)
+            return
+        }
+        synchronized(pendingRotationLock) {
+            pendingDeltaYawDeg += dyaw
+            pendingDeltaPitchDeg += dpitch
+        }
+        requestRenderOnThread()
+    }
+
+    private fun beginVelocityTracking(event: MotionEvent) {
+        velocityTracker?.recycle()
+        velocityTracker = VelocityTracker.obtain().apply { addMovement(event) }
+    }
+
+    private fun endVelocityTracking() {
+        velocityTracker?.recycle()
+        velocityTracker = null
+    }
+
+    private fun startFlingFromVelocity() {
+        val tracker = velocityTracker ?: return
+        tracker.computeCurrentVelocity(FLING_VELOCITY_UNITS)
+        val yawVelocity = tracker.xVelocity * TOUCH_YAW_SENSITIVITY * FLING_RELEASE_DAMPING
+        val pitchVelocity = tracker.yVelocity * TOUCH_PITCH_SENSITIVITY * FLING_RELEASE_DAMPING
+        if (abs(yawVelocity) < FLING_MIN_DEG_PER_SECOND &&
+            abs(pitchVelocity) < FLING_MIN_DEG_PER_SECOND
+        ) {
+            return
+        }
+        flingYawDegPerSecond = yawVelocity
+        flingPitchDegPerSecond = pitchVelocity
+        flingLastFrameMs = SystemClock.uptimeMillis()
+        postOnAnimation(flingStep)
+    }
+
+    private fun stepFling() {
+        val now = SystemClock.uptimeMillis()
+        val frameSeconds = ((now - flingLastFrameMs) / MILLIS_PER_SECOND)
+            .coerceIn(0f, FLING_MAX_FRAME_SECONDS)
+        flingLastFrameMs = now
+
+        applyRotationDelta(
+            dyaw = flingYawDegPerSecond * frameSeconds,
+            dpitch = flingPitchDegPerSecond * frameSeconds,
+        )
+
+        val retained = FLING_VELOCITY_RETAINED_PER_SECOND.pow(frameSeconds)
+        flingYawDegPerSecond *= retained
+        flingPitchDegPerSecond *= retained
+        if (abs(flingYawDegPerSecond) < FLING_MIN_DEG_PER_SECOND &&
+            abs(flingPitchDegPerSecond) < FLING_MIN_DEG_PER_SECOND
+        ) {
+            cancelFling()
+            return
+        }
+        postOnAnimation(flingStep)
+    }
+
+    private fun cancelFling() {
+        removeCallbacks(flingStep)
+        flingYawDegPerSecond = 0f
+        flingPitchDegPerSecond = 0f
     }
 
     private fun beginTwoFinger(event: MotionEvent) {
@@ -596,9 +779,11 @@ internal class MetricAvatarTextureView(
         val zoom = if (zoomFactor != 1f) zoomFactor.pow(TWO_FINGER_ZOOM_SENSITIVITY) else 1f
         val hasPan = panDx != 0f || panDy != 0f
         if (zoom == 1f && !hasPan) return
+        val renderPanDx = panDx * RENDER_SUPERSAMPLE
+        val renderPanDy = panDy * RENDER_SUPERSAMPLE
         queueRenderEvent {
             if (zoom != 1f) avatarRenderer.zoomBy(zoom)
-            if (hasPan) avatarRenderer.panBy(panDx, panDy)
+            if (hasPan) avatarRenderer.panBy(renderPanDx, renderPanDy)
             if (boundCompareLink == null) drawFrame()
         }
     }

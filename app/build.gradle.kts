@@ -12,6 +12,22 @@ val localProps = Properties()
 val localPropsFile: File = rootProject.file("local.properties")
 if (localPropsFile.exists()) localProps.load(localPropsFile.inputStream())
 
+fun terraDevId(key: String): String =
+    localProps.getProperty(key)
+        ?: providers.environmentVariable(key.replace('.', '_').uppercase()).orNull
+        ?: ""
+
+val buildsProdFlavor = gradle.startParameter.taskNames.any { it.contains("prod", ignoreCase = true) }
+
+val prodTerraDevId: String = terraDevId("terra.prod.dev.id").also {
+    if (buildsProdFlavor && it.isBlank()) {
+        error(
+            "terra.prod.dev.id is not set. Add it to local.properties (or TERRA_PROD_DEV_ID in the " +
+                "environment). It must equal the PROD_TERRA_DEV_ID Firebase secret."
+        )
+    }
+}
+
 android {
     namespace = "com.hexis.bi"
     compileSdk = 37
@@ -21,7 +37,7 @@ android {
         // Terra Android SDK requires minSdk 28 (Samsung Health / Health Connect).
         minSdk = 28
         targetSdk = 37
-        versionCode = 10
+        versionCode = 11
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -30,12 +46,6 @@ android {
             // x86_64 excluded to eliminate the 16KB-page-size (4KB-aligned .so) warning.
             abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86"))
         }
-
-        buildConfigField(
-            "String",
-            "TERRA_DEV_ID",
-            "\"${localProps.getProperty("terra.dev.id", "")}\""
-        )
     }
 
     flavorDimensions += "env"
@@ -48,6 +58,7 @@ android {
             buildConfigField("String", "ENVIRONMENT", "\"dev\"")
             buildConfigField("String", "API_BASE_URL", "\"https://api.dev.hexis.bi/\"")
             buildConfigField("String", "TERRA_FUNCTION_PREFIX", "\"terraDev\"")
+            buildConfigField("String", "TERRA_DEV_ID", "\"${terraDevId("terra.dev.id")}\"")
             buildConfigField("boolean", "TERRA_INCLUDE_DUMMY_PROVIDER", "true")
         }
         create("stage") {
@@ -58,6 +69,7 @@ android {
             buildConfigField("String", "ENVIRONMENT", "\"stage\"")
             buildConfigField("String", "API_BASE_URL", "\"https://api.stage.hexis.bi/\"")
             buildConfigField("String", "TERRA_FUNCTION_PREFIX", "\"terraDev\"")
+            buildConfigField("String", "TERRA_DEV_ID", "\"${terraDevId("terra.dev.id")}\"")
             buildConfigField("boolean", "TERRA_INCLUDE_DUMMY_PROVIDER", "false")
         }
         create("prod") {
@@ -66,6 +78,7 @@ android {
             buildConfigField("String", "ENVIRONMENT", "\"prod\"")
             buildConfigField("String", "API_BASE_URL", "\"https://api.hexis.bi/\"")
             buildConfigField("String", "TERRA_FUNCTION_PREFIX", "\"terraProd\"")
+            buildConfigField("String", "TERRA_DEV_ID", "\"${prodTerraDevId}\"")
             buildConfigField("boolean", "TERRA_INCLUDE_DUMMY_PROVIDER", "false")
         }
     }

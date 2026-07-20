@@ -28,6 +28,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
@@ -65,8 +66,10 @@ import com.hexis.bi.ui.main.body.components.BodySegmentedToggleChip
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleTrack
 import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.screenBackground
+import com.hexis.bi.utils.constants.ProfileConstants
 import com.hexis.bi.utils.parseDob
 import org.koin.androidx.compose.koinViewModel
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,7 +97,16 @@ fun EditProfileScreen(
         contract = ActivityResultContracts.PickVisualMedia(),
     ) { uri -> if (uri != null) viewModel.uploadAvatar(uri) }
 
-    val datePickerState = rememberDatePickerState()
+    val currentYear = remember { LocalDate.now().year }
+    val datePickerState = rememberDatePickerState(
+        // A date of birth can never be in the future.
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+                utcTimeMillis <= System.currentTimeMillis()
+
+            override fun isSelectableYear(year: Int): Boolean = year <= currentYear
+        },
+    )
     LaunchedEffect(state.dateOfBirth) {
         if (state.dateOfBirth.isNotEmpty()) {
             datePickerState.selectedDateMillis = state.dateOfBirth.parseDob()?.time
@@ -186,6 +198,14 @@ fun EditProfileScreen(
                         readOnly = true,
                         label = stringResource(R.string.label_date_of_birth),
                         placeholder = stringResource(R.string.placeholder_date_of_birth),
+                        error = if (state.isDobUnderage) {
+                            stringResource(
+                                R.string.dob_min_age_error,
+                                ProfileConstants.MIN_AGE_YEARS,
+                            )
+                        } else {
+                            null
+                        },
                         trailingIcon = {
                             Icon(
                                 painter = painterResource(R.drawable.ic_calendar),

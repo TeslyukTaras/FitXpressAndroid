@@ -7,6 +7,8 @@ object ProfileConstants {
 
     const val PASSWORD_MIN_LENGTH = 8
 
+    const val MIN_AGE_YEARS = 18
+
     const val HEIGHT_CM_MIN = 130f
     const val HEIGHT_CM_MAX = 230f
     const val HEIGHT_IN_MIN = HEIGHT_CM_MIN / CM_TO_IN

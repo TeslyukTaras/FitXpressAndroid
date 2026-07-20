@@ -37,11 +37,12 @@ internal object MetricAvatarFrameSolver {
      */
     private const val MIN_DISTANCE_SCALE = 0.28f
     private const val MAX_DISTANCE_SCALE = 1.12f
-    private const val FULL_BODY_DISTANCE_SCALE = 1.56f
 
     /** Horizontal offset (at `distanceScale` 1) that keeps the part clear of the part list. */
     private const val RIGHT_WINDOW_CENTER_X = 0.46f
-    private const val FULL_BODY_RIGHT_EDGE_X = 1.42f
+
+    /** Right edge as a fraction of the half-window, which scales with distance — so this must too. */
+    private const val FULL_BODY_RIGHT_EDGE_WINDOW_X = 0.91f
     private const val FRAME_CENTER_Y = -0.02f
     private const val DEGREES_TO_RADIANS = (Math.PI / 180.0).toFloat()
 
@@ -118,10 +119,14 @@ internal object MetricAvatarFrameSolver {
         BodyMeasurementRegion.Calf to RegionBoundsPadding(0.20f, 0.30f, 0.18f),
     )
 
+    /** The full-body args must not reach the region frames: those size themselves via `targetSpan`. */
     fun buildFrames(
         guide: MetricAvatarMeasurementGuide,
         fullBodyBounds: ModelBounds,
         centered: Boolean = false,
+        fullBodyDistanceScale: Float = 1f,
+        basePitchDeg: Float = INITIAL_PITCH_DEG,
+        fullBodyCenterY: Float = DEFAULT_FULL_BODY_CENTER_Y,
     ): Map<BodyMeasurementRegion, AvatarFrame> {
         // Visual frames push the figure to the right to clear the left selector ruler;
         // centered framing (Compare) keeps the figure horizontally centered instead.
@@ -149,10 +154,10 @@ internal object MetricAvatarFrameSolver {
             // distanceScale so every part lands at the same on-screen position regardless
             // of how far the camera pulled back.
             val (rotatedCenterX, rotatedCenterY) =
-                rotatedCenter(bounds, yaw, INITIAL_PITCH_DEG)
+                rotatedCenter(bounds, yaw, basePitchDeg)
             return region to AvatarFrame(
                 yawDeg = yaw,
-                pitchDeg = INITIAL_PITCH_DEG,
+                pitchDeg = basePitchDeg,
                 distanceScale = distanceScale,
                 translateX = (windowCenterX + extraPanX) * distanceScale - rotatedCenterX,
                 translateY = (FRAME_CENTER_Y + extraPanY) * distanceScale - rotatedCenterY,
@@ -161,13 +166,14 @@ internal object MetricAvatarFrameSolver {
         }
 
         val frames = LinkedHashMap<BodyMeasurementRegion, AvatarFrame>()
+        val fullBodyScale = fullBodyDistanceScale
         frames[BodyMeasurementRegion.FullBody] = AvatarFrame(
             yawDeg = 0f,
-            pitchDeg = INITIAL_PITCH_DEG,
-            distanceScale = FULL_BODY_DISTANCE_SCALE,
+            pitchDeg = basePitchDeg,
+            distanceScale = fullBodyScale,
             translateX = if (centered) -fullBodyBounds.centerX
-            else FULL_BODY_RIGHT_EDGE_X - fullBodyBounds.maxX,
-            translateY = FRAME_CENTER_Y - fullBodyBounds.centerY,
+            else FULL_BODY_RIGHT_EDGE_WINDOW_X * fullBodyScale - fullBodyBounds.maxX,
+            translateY = fullBodyCenterY - fullBodyBounds.centerY,
             eyeHeight = MetricAvatarCamera.EYE_HEIGHT,
         )
 

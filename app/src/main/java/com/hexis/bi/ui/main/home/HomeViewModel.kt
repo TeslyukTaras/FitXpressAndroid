@@ -25,6 +25,7 @@ import com.hexis.bi.domain.order.Order
 import com.hexis.bi.domain.order.OrderRepository
 import com.hexis.bi.domain.order.OrderShippingAddress
 import com.hexis.bi.domain.order.OrderStatus
+import com.hexis.bi.domain.recomposition.RecompositionCalculator
 import com.hexis.bi.domain.suit.SuitRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.base.UiEvent
@@ -38,6 +39,7 @@ import com.hexis.bi.utils.calculateAge
 import com.hexis.bi.utils.cmToInches
 import com.hexis.bi.utils.constants.ActivityConstants
 import com.hexis.bi.utils.constants.OrderConstants
+import com.hexis.bi.utils.constants.RecompositionConstants
 import com.hexis.bi.utils.constants.SleepConstants
 import com.hexis.bi.utils.inchesToFeetAndInches
 import com.hexis.bi.utils.isMetricUnitSystem
@@ -57,6 +59,7 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 import kotlin.math.abs
@@ -263,6 +266,16 @@ class HomeViewModel(
                         .getRecentScans(SCAN_TREND_LIMIT, ScanFetchProjection.LIST_SUMMARY)
                         .getOrNull()
                 }
+                val recompositionScansDeferred = async {
+                    val windowStartMillis = today
+                        .minusYears(RecompositionConstants.WINDOW_YEARS_LONG)
+                        .atStartOfDay(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli()
+                    scanHistoryRepository
+                        .getScansSavedSince(windowStartMillis, ScanFetchProjection.LIST_SUMMARY)
+                        .getOrNull()
+                }
                 val terraDeferred = async {
                     loadTerraOverview(today, windowStart)
                 }
@@ -271,7 +284,9 @@ class HomeViewModel(
                 val isMetric = profile?.unitSystem.isMetricUnitSystem()
                 val heightCm = profile?.heightCm?.toFloat()
                 val scans = scanListDeferred.await()
+                val recompositionScans = recompositionScansDeferred.await()
                 publishScanOverview(scans, isMetric)
+                publishRecompositionOverview(recompositionScans, today)
                 // physiqueScore needs a FULL scan: shoulders comes from front_linear_params, so the
                 // LIST_SUMMARY `scans` record (circumference only) would drop the Proportion component
                 // and yield a different score than the Physique Drift screen. Refetch the latest in full.
@@ -411,11 +426,27 @@ class HomeViewModel(
     private fun scanTrend(scans: List<ScanRecord>, region: BodyMeasurementRegion): List<Float> =
         scans.reversed().mapNotNull { BodyMeasurementKeys.valueFor(it.measurements, region) }
 
+    private fun publishRecompositionOverview(scans: List<ScanRecord>?, today: LocalDate) {
+        val result = RecompositionCalculator.buildWindow(
+            scans = scans.orEmpty(),
+            windowStart = today.minusYears(RecompositionConstants.WINDOW_YEARS_LONG),
+            windowEnd = today,
+        )
+        val recomposedKg = result.recomposedKg?.takeIf { it > 0f } ?: 0f
+        _state.update {
+            it.copy(
+                recompositionValue = String.format(Locale.US, RECOMPOSITION_FORMAT, recomposedKg),
+                recompositionFraction = recomposedKg / RecompositionConstants.HOME_GAUGE_NORMALIZATION_KG,
+            )
+        }
+    }
+
     private fun formatSteps(steps: Int): String = "%,d".format(steps.coerceAtLeast(0))
 
     private companion object {
         const val SCAN_TREND_LIMIT = 8L
         const val PACE_FORMAT = "%.2fx"
+        const val RECOMPOSITION_FORMAT = "%.1f"
     }
 
     private data class TerraOverview(

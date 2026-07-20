@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -25,6 +27,7 @@ import com.hexis.bi.ui.avatar.MetricAvatarStatusText
 import com.hexis.bi.ui.main.body.BodyVisualColorModel
 import com.hexis.bi.ui.main.body.BodyVisualMode
 import com.hexis.bi.ui.main.body.VisualState
+import com.hexis.bi.utils.constants.BodyVisualConstants
 import java.text.SimpleDateFormat
 
 @Composable
@@ -33,6 +36,7 @@ internal fun VisualTopArea(
     selectedScanLabel: String,
     dateFormatter: SimpleDateFormat,
     modelAreaHeight: Dp,
+    fullBodyFigureHeight: Dp,
     onBodyPartSelected: (BodyMeasurementRegion) -> Unit,
     onScanSelected: (Long) -> Unit,
     modifier: Modifier = Modifier,
@@ -42,6 +46,7 @@ internal fun VisualTopArea(
     Box(modifier = modifier) {
         BodyModelPreview(
             state = state,
+            fullBodyFigureHeight = fullBodyFigureHeight,
             onAvatarReady = onAvatarReady,
             modifier = Modifier
                 .fillMaxWidth()
@@ -82,33 +87,40 @@ internal fun VisualTopArea(
 @Composable
 private fun BodyModelPreview(
     state: VisualState,
+    fullBodyFigureHeight: Dp,
     onAvatarReady: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val coloredModel = state.colorModel as? BodyVisualColorModel.Ready
     val showBaseModel = state.mode == BodyVisualMode.Base
     val showColorModel = state.mode == BodyVisualMode.Color && coloredModel != null
+    val zoomLevel = remember { mutableFloatStateOf(1f) }
+    val blurProgress = rememberModelBlurProgress(zoomLevel)
 
     Box(
         modifier = modifier
             .clip(RectangleShape)
-            .modelBlur(blurEnabled = state.selectedBodyPart != BodyMeasurementRegion.FullBody),
+            .modelBlur(blurProgress = blurProgress),
         contentAlignment = Alignment.Center,
     ) {
         ModelPreview(
             modelUrl = state.latestModel3dUrl,
             selectedBodyPart = state.selectedBodyPart,
+            fullBodyFigureHeight = fullBodyFigureHeight,
             visible = showBaseModel,
             onAvatarReady = onAvatarReady,
+            onZoomChanged = { zoomLevel.floatValue = it },
         )
         coloredModel?.let { model ->
             ModelPreview(
                 modelUrl = model.coloredModelUrl,
                 useModelVertexColors = true,
                 selectedBodyPart = state.selectedBodyPart,
+                fullBodyFigureHeight = fullBodyFigureHeight,
                 loadingMessageRes = R.string.body_visual_color_loading,
                 visible = showColorModel,
                 onAvatarReady = onAvatarReady,
+                onZoomChanged = { zoomLevel.floatValue = it },
             )
         }
         if (state.mode == BodyVisualMode.Color && coloredModel == null) {
@@ -139,10 +151,12 @@ private fun BodyModelPreview(
 private fun BoxScope.ModelPreview(
     modelUrl: String?,
     selectedBodyPart: BodyMeasurementRegion,
+    fullBodyFigureHeight: Dp,
     useModelVertexColors: Boolean = false,
     loadingMessageRes: Int = R.string.scan_results_avatar_loading,
     visible: Boolean = true,
     onAvatarReady: () -> Unit = {},
+    onZoomChanged: (Float) -> Unit = {},
 ) {
     val modifier = Modifier
         .fillMaxSize()
@@ -158,9 +172,13 @@ private fun BoxScope.ModelPreview(
         drawBackground = false,
         touchRotationEnabled = visible,
         useGradientBackground = false,
+        initialPitchDegrees = BodyVisualConstants.UPRIGHT_MODEL_PITCH_DEG,
+        fullBodyCenterY = BodyVisualConstants.VISUAL_MODEL_CENTER_Y,
+        fullBodyFigureHeight = fullBodyFigureHeight,
         framingRegion = selectedBodyPart,
         loadingMessageRes = loadingMessageRes,
         onAvatarReady = if (visible) onAvatarReady else null,
+        onZoomChanged = if (visible) onZoomChanged else null,
     )
 }
 

@@ -34,6 +34,7 @@ import com.hexis.bi.data.suit.MockSuitRepository
 import com.hexis.bi.data.terra.TerraApi
 import com.hexis.bi.data.terra.TerraAuthApi
 import com.hexis.bi.data.terra.TerraCallbackHandler
+import com.hexis.bi.data.terra.TerraConnectionReconciler
 import com.hexis.bi.data.terra.TerraConnector
 import com.hexis.bi.data.terra.TerraManagerHolder
 import com.hexis.bi.data.terra.TerraRestSourceResolver
@@ -57,6 +58,7 @@ import com.hexis.bi.ui.main.home.activity.ActivityViewModel
 import com.hexis.bi.ui.main.home.longevity.LongevityViewModel
 import com.hexis.bi.ui.main.home.paceofaging.PaceOfAgingViewModel
 import com.hexis.bi.ui.main.home.physiquedrift.PhysiqueDriftViewModel
+import com.hexis.bi.ui.main.home.recomposition.RecompositionViewModel
 import com.hexis.bi.ui.main.home.recovery.RecoveryViewModel
 import com.hexis.bi.ui.main.home.sleep.SleepViewModel
 import com.hexis.bi.ui.main.notifications.NotificationsViewModel
@@ -131,6 +133,7 @@ val appModule = module {
     }
     single { TerraManagerHolder() }
     single { TerraRestSourceResolver(get(), get()) }
+    single { TerraConnectionReconciler(get(), get()) }
     single { TerraCallbackHandler(get()) }
     single { TerraWidgetApi(get()) }
     single { TerraConnector(get(), get()) }
@@ -169,6 +172,7 @@ val appModule = module {
             get(),
             get(),
             get(),
+            get(),
             get()
         )
     }
@@ -182,6 +186,7 @@ val appModule = module {
     viewModel { LongevityViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { PaceOfAgingViewModel(androidApplication(), get(), get(), get(), get(), get()) }
     viewModel { PhysiqueDriftViewModel(androidApplication(), get(), get()) }
+    viewModel { RecompositionViewModel(androidApplication(), get()) }
     viewModel { ScanViewModel(androidApplication(), get()) }
     viewModel { StartScanViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { ResultsViewModel(androidApplication(), get(), get(), get(), get(), get()) }

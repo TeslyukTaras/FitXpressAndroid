@@ -3,10 +3,12 @@ package com.hexis.bi.ui.main.settings.editprofile
 import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.ui.base.HealthParameters
 import com.hexis.bi.ui.base.UiEvent
+import com.hexis.bi.utils.calculateAge
 import com.hexis.bi.utils.cmToInches
 import com.hexis.bi.utils.cmToRoundedFeetAndInches
 import com.hexis.bi.utils.constants.ProfileConstants
 import com.hexis.bi.utils.kgToLb
+import com.hexis.bi.utils.parseDob
 import kotlin.math.roundToInt
 
 sealed interface EditProfileEvent : UiEvent {
@@ -26,11 +28,20 @@ data class EditProfileState(
     val isGenderDropdownOpen: Boolean = false,
     val showDatePicker: Boolean = false,
 ) : HealthParameters {
+    private val age: Int?
+        get() = dateOfBirth.parseDob()?.calculateAge()
+
+    val isDobUnderage: Boolean
+        get() = age?.let { it < ProfileConstants.MIN_AGE_YEARS } == true
+
+    val isAgeValid: Boolean
+        get() = age?.let { it >= ProfileConstants.MIN_AGE_YEARS } == true
+
     val canSave: Boolean
         get() = firstName.isNotBlank() &&
                 lastName.isNotBlank() &&
                 email.isNotBlank() &&
-                dateOfBirth.isNotBlank()
+                isAgeValid
 
     override val heightSliderValue: Float
         get() = if (isMetric) heightCm else heightCm.cmToInches()

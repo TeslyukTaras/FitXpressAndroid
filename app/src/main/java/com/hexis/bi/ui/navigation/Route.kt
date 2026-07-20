@@ -22,6 +22,7 @@ internal object Route {
         const val MY_SUIT = "main/my_suit"
         const val SLEEP = "main/sleep"
         const val RECOVERY = "main/recovery"
+        const val RECOMPOSITION = "main/recomposition"
         const val LONGEVITY = "main/longevity"
         const val PHYSIQUE_DRIFT = "main/physique_drift"
         const val PACE_OF_AGING = "main/pace_of_aging"

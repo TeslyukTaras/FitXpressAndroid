@@ -2,6 +2,7 @@ package com.hexis.bi.data.scan
 
 import android.net.Uri
 import androidx.annotation.StringRes
+import com.google.firebase.functions.FirebaseFunctionsException
 import com.hexis.bi.R
 import com.hexis.bi.data.scan.api.MeasurementResponse
 import com.hexis.bi.data.scan.api.ThreeDLookApi
@@ -57,7 +58,7 @@ class ThreeDLookRepository(
             age = age,
         ).getOrElse { e ->
             Timber.e(e, "submitScan: createMeasurement failed")
-            emit(ScanProgress.Failed(R.string.scan_error_submit_failed, e.message))
+            emit(ScanProgress.Failed(R.string.scan_error_submit_failed, e.scanFailureDetail()))
             return@flow
         }
         Timber.d("submitScan: created measurement id=%s", id)
@@ -71,7 +72,7 @@ class ThreeDLookRepository(
 
             val measurement = api.getMeasurement(id).getOrElse { e ->
                 Timber.e(e, "submitScan: poll #%d failed", attempts)
-                emit(ScanProgress.Failed(R.string.scan_error_retrieve_failed, e.message))
+                emit(ScanProgress.Failed(R.string.scan_error_retrieve_failed, e.scanFailureDetail()))
                 return@flow
             }
 
@@ -95,6 +96,24 @@ class ThreeDLookRepository(
         }
         Timber.e("submitScan: timed out after %d polls", MAX_POLL_ATTEMPTS)
         emit(ScanProgress.Failed(R.string.scan_error_timeout))
+    }
+
+    private fun Throwable.scanFailureDetail(): String? {
+        if (this is FirebaseFunctionsException) {
+            val detail = details as? String
+            return listOfNotNull(detail, message, localizedMessage)
+                .firstOrNull { it.isMeaningfulScanDetail() }
+        }
+        return listOfNotNull(message, localizedMessage)
+            .firstOrNull { it.isMeaningfulScanDetail() }
+    }
+
+    private fun String.isMeaningfulScanDetail(): Boolean {
+        val normalized = trim()
+        return normalized.isNotEmpty() &&
+                normalized != "INTERNAL" &&
+                normalized != "UNKNOWN" &&
+                normalized != "UNAVAILABLE"
     }
 
     /** Loads the cached body-progress colored mesh for two measurements, or generates it once. */

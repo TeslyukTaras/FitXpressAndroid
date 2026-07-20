@@ -70,7 +70,6 @@ class TerraRestSourceResolver(
                         terraUserId = sdkHc,
                         provider = TerraProviders.HEALTH_CONNECT,
                         source = HealthConnection.SOURCE_SDK,
-                        environment = TerraConfig.environment,
                         connectedAt = Timestamp.now(),
                         active = true,
                     ),

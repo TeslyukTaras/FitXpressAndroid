@@ -3,6 +3,7 @@ package com.hexis.bi
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
+import android.os.Process
 import android.view.WindowManager
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.hexis.bi.data.notification.NotificationInboxRepository
@@ -18,6 +19,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import org.koin.core.context.startKoin
 import timber.log.Timber
+import kotlin.system.exitProcess
 
 class App : Application(), KoinComponent {
     fun scanReminderWorkRunner(): ScanReminderWorkRunner = get<ScanReminderWorkRunner>()
@@ -29,6 +31,7 @@ class App : Application(), KoinComponent {
 
     override fun onCreate() {
         super.onCreate()
+        installTerraSdkCrashShield()
         FirebaseCrashlytics.getInstance().isCrashlyticsCollectionEnabled = !BuildConfig.DEBUG
         if (BuildConfig.DEBUG) Timber.plant(Timber.DebugTree())
         else Timber.plant(CrashlyticsTree())
@@ -41,6 +44,33 @@ class App : Application(), KoinComponent {
         SystemNotificationHelper.createChannels(this)
         scanReminderScheduler().onNotificationSettingsOrScanChanged()
         registerActivityLifecycleCallbacks(KeepScreenOn)
+    }
+
+    private fun installTerraSdkCrashShield() {
+        val previous = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            if (throwable.isTerraHealthConnectMissingUserIdCrash()) {
+                Timber.e(throwable, "Swallowed Terra SDK Health Connect missing user_id crash")
+                FirebaseCrashlytics.getInstance().recordException(throwable)
+                return@setDefaultUncaughtExceptionHandler
+            }
+            if (previous != null) {
+                previous.uncaughtException(thread, throwable)
+            } else {
+                Process.killProcess(Process.myPid())
+                exitProcess(10)
+            }
+        }
+    }
+
+    private fun Throwable.isTerraHealthConnectMissingUserIdCrash(): Boolean {
+        val rootCause = cause
+        return this::class.java.name == "kotlinx.coroutines.CompletionHandlerException" &&
+            rootCause is NullPointerException &&
+            rootCause.stackTrace.any {
+                it.className == "co.tryterra.terra.TerraManager" &&
+                    it.methodName.contains("initHealthConnect")
+            }
     }
 }
 

@@ -42,13 +42,12 @@ data class MeasurementRow(
  * opened-from-history) scan and its neighbours — there is no scan picker here.
  */
 data class ResultsState(
-    val selectedTab: ResultsTab = ResultsTab.MyBody,
+    val selectedTab: ResultsTab = ResultsTab.Visual,
     val isMetric: Boolean = true,
     val isLoading: Boolean = true,
     val visual: VisualState = VisualState(),
     val compare: CompareState = CompareState(),
     val bodyProportion: BodyProportionState = BodyProportionState(),
-    val modelCardHeightPx: Int = 0,
     val showPersonalizeResultsHint: Boolean = false,
     val showBodyProportionInfo: Boolean = false,
 )

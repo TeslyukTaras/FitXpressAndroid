@@ -153,6 +153,7 @@ class StartScanViewModel(
             it.copy(
                 retakeOnErrorDismiss = false,
                 scanProgress = null,
+                scanErrorMessage = null,
                 isPreparingResults = false,
                 shouldLaunchCamera = retake,
                 shouldNavigateBack = !retake,
@@ -179,9 +180,10 @@ class StartScanViewModel(
                     it.copy(
                         scanProgress = null,
                         isPreparingResults = false,
+                        scanErrorMessage = cleanScanErrorDetail(message),
+                        retakeOnErrorDismiss = true,
                     )
                 }
-                setError(message)
             }
         },
     ) {
@@ -264,10 +266,10 @@ class StartScanViewModel(
                                 it.copy(
                                     scanProgress = null,
                                     isPreparingResults = false,
+                                    scanErrorMessage = message,
                                     retakeOnErrorDismiss = false,
                                 )
                             }
-                            setError(message)
                         }
                         return@collect
                     }
@@ -313,11 +315,12 @@ class StartScanViewModel(
                     } else {
                         _state.update {
                             it.copy(
+                                scanProgress = null,
                                 isPreparingResults = false,
+                                scanErrorMessage = message,
                                 retakeOnErrorDismiss = true,
                             )
                         }
-                        setError(message)
                     }
                 }
 
@@ -343,18 +346,42 @@ class StartScanViewModel(
         } else {
             _state.update {
                 it.copy(
+                    scanProgress = null,
                     isPreparingResults = false,
+                    scanErrorMessage = message,
                     retakeOnErrorDismiss = false,
                 )
             }
-            setError(message)
         }
     }
 
     private fun resolveFailureMessage(failure: ScanProgress.Failed): String {
         val base = appContext.getString(failure.messageRes)
-        val detail = failure.detail?.takeIf { it.isNotBlank() } ?: return base
+        val detail = failure.detail
+            ?.let(::cleanScanErrorDetail)
+            ?.takeIf { it.isNotBlank() }
+            ?: return base
         return appContext.getString(R.string.scan_error_with_detail, base, detail)
+    }
+
+    private fun cleanScanErrorDetail(raw: String): String {
+        val trimmed = raw.trim()
+        if (trimmed.isEmpty()) return trimmed
+        val withoutException = trimmed
+            .substringAfterLast("Exception: ", trimmed)
+            .substringAfterLast("FirebaseFunctionsException: ", trimmed)
+        val withoutCodePrefix = withoutException.replace(
+            Regex("^(INTERNAL|INVALID_ARGUMENT|FAILED_PRECONDITION|UNAVAILABLE|UNKNOWN):\\s*"),
+            "",
+        )
+        val withoutProviderPrefix = withoutCodePrefix
+            .replace(
+                Regex("^3DLook (createMeasurement|getMeasurement) failed with HTTP \\d+:\\s*"),
+                "",
+            )
+        return withoutProviderPrefix
+            .replace(Regex("\\s+"), " ")
+            .trim()
     }
 
     private fun prewarmResultModelInBackground(modelUrl: String?) {

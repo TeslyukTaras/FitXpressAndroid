@@ -6,6 +6,7 @@ import { CallableRequest, HttpsError, onCall } from "firebase-functions/v2/https
 import { defineSecret } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
 import { createHash, randomInt, timingSafeEqual } from "node:crypto";
+import { isDemoUid, syntheticDailyResponse, syntheticSleepResponse } from "./demoData";
 
 initializeApp();
 
@@ -133,8 +134,15 @@ function terraHandlers(secrets: TerraSecrets) {
 
     getDaily: async (request: CallableRequest) => {
       const uid = requireAuth(request.auth?.uid);
+      if (isDemoUid(uid)) {
+        const payload = asRecord(request.data);
+        return syntheticDailyResponse(
+          requireIsoDate(payload.startDate, "startDate"),
+          requireIsoDate(payload.endDate, "endDate"),
+        );
+      }
       const terraUserId = requireString(request.data?.terraUserId, "terraUserId");
-      await requireTerraConnection(uid, terraUserId, secrets.environment);
+      await requireTerraConnection(uid, terraUserId);
 
       const url = terraDataUrl("/daily", request.data);
       const response = await terraFetch(secrets, url, { method: "GET" });
@@ -144,8 +152,15 @@ function terraHandlers(secrets: TerraSecrets) {
 
     getSleep: async (request: CallableRequest) => {
       const uid = requireAuth(request.auth?.uid);
+      if (isDemoUid(uid)) {
+        const payload = asRecord(request.data);
+        return syntheticSleepResponse(
+          requireIsoDate(payload.startDate, "startDate"),
+          requireIsoDate(payload.endDate, "endDate"),
+        );
+      }
       const terraUserId = requireString(request.data?.terraUserId, "terraUserId");
-      await requireTerraConnection(uid, terraUserId, secrets.environment);
+      await requireTerraConnection(uid, terraUserId);
 
       const url = terraDataUrl("/sleep", request.data);
       const response = await terraFetch(secrets, url, { method: "GET" });
@@ -165,10 +180,26 @@ function terraHandlers(secrets: TerraSecrets) {
       return json;
     },
 
+    /**
+     * Every Terra user registered under the caller's `reference_id` (their Firebase uid).
+     *
+     * The client reconciles its stored connections from this: the OAuth redirect back into the
+     * app cannot be relied on, so a connection can complete at Terra while the app never learns
+     * of it. `reference_id` is forced to the caller's uid, so a caller can only ever see its own.
+     */
+    listConnections: async (request: CallableRequest) => {
+      const uid = requireAuth(request.auth?.uid);
+
+      const url = new URL(`${terraBaseUrl}/userInfo`);
+      url.searchParams.set("reference_id", uid);
+      const response = await terraFetch(secrets, url, { method: "GET" });
+      return await parseJsonResponse(response, `Terra ${secrets.environment} listConnections`);
+    },
+
     deauthenticateUser: async (request: CallableRequest) => {
       const uid = requireAuth(request.auth?.uid);
       const terraUserId = requireString(request.data?.terraUserId, "terraUserId");
-      await requireTerraConnection(uid, terraUserId, secrets.environment);
+      await requireTerraConnection(uid, terraUserId);
 
       const url = new URL(`${terraBaseUrl}/auth/deauthenticateUser`);
       url.searchParams.set("user_id", terraUserId);
@@ -199,6 +230,7 @@ export const terraDevGenerateWidgetSession = onCall(devTerraSecretOptions, devTe
 export const terraDevGetDaily = onCall(devTerraSecretOptions, devTerra.getDaily);
 export const terraDevGetSleep = onCall(devTerraSecretOptions, devTerra.getSleep);
 export const terraDevGetUserInfo = onCall(devTerraSecretOptions, devTerra.getUserInfo);
+export const terraDevListConnections = onCall(devTerraSecretOptions, devTerra.listConnections);
 export const terraDevDeauthenticateUser = onCall(devTerraSecretOptions, devTerra.deauthenticateUser);
 
 export const terraProdGenerateAuthToken = onCall(prodTerraSecretOptions, prodTerra.generateAuthToken);
@@ -207,6 +239,7 @@ export const terraProdGenerateWidgetSession = onCall(prodTerraSecretOptions, pro
 export const terraProdGetDaily = onCall(prodTerraSecretOptions, prodTerra.getDaily);
 export const terraProdGetSleep = onCall(prodTerraSecretOptions, prodTerra.getSleep);
 export const terraProdGetUserInfo = onCall(prodTerraSecretOptions, prodTerra.getUserInfo);
+export const terraProdListConnections = onCall(prodTerraSecretOptions, prodTerra.listConnections);
 export const terraProdDeauthenticateUser = onCall(prodTerraSecretOptions, prodTerra.deauthenticateUser);
 
 export const threeDLookCreateMeasurement = onCall(threeDLookSecretOptions, async (request) => {
@@ -214,7 +247,7 @@ export const threeDLookCreateMeasurement = onCall(threeDLookSecretOptions, async
   const frontPath = requireTempScanPath(uid, request.data?.frontPath, "frontPath");
   const sidePath = requireTempScanPath(uid, request.data?.sidePath, "sidePath");
   const heightCm = requireNumber(request.data?.heightCm, "heightCm");
-  const gender = requireString(request.data?.gender, "gender");
+  const gender = normalizeThreeDLookGender(requireString(request.data?.gender, "gender"));
   const age = requireNumber(request.data?.age, "age");
   const weightKg = optionalNumber(request.data?.weightKg, "weightKg");
 
@@ -450,7 +483,59 @@ function throwProviderError(status: number, label: string, body: string): never 
     body: body.slice(0, 1000),
   });
   const code = status === 401 || status === 403 ? "permission-denied" : "internal";
-  throw new HttpsError(code, `${label} failed with HTTP ${status}`);
+  const detail = providerErrorDetail(body);
+  throw new HttpsError(
+    code,
+    detail
+      ? `${label} failed with HTTP ${status}: ${detail}`
+      : `${label} failed with HTTP ${status}`,
+  );
+}
+
+function providerErrorDetail(body: string): string | undefined {
+  const trimmed = body.trim();
+  if (!trimmed) return undefined;
+  try {
+    const parsed = JSON.parse(trimmed) as unknown;
+    return findErrorMessage(parsed);
+  } catch {
+    return trimmed.replace(/\s+/g, " ").slice(0, 300);
+  }
+}
+
+function findErrorMessage(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    return value.trim() || undefined;
+  }
+  if (Array.isArray(value)) {
+    return value.map(findErrorMessage).filter(Boolean).join("; ") || undefined;
+  }
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+  const record = value as Record<string, unknown>;
+  for (const key of ["detail", "message", "error", "errors", "non_field_errors"]) {
+    const message = findErrorMessage(record[key]);
+    if (message) return message;
+  }
+  const fieldMessages = Object.entries(record)
+    .map(([key, fieldValue]) => {
+      const message = findErrorMessage(fieldValue);
+      return message ? `${key}: ${message}` : undefined;
+    })
+    .filter(Boolean);
+  if (fieldMessages.length > 0) {
+    return fieldMessages.join("; ");
+  }
+  return undefined;
+}
+
+function normalizeThreeDLookGender(raw: string): "male" | "female" {
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === "female") return "female";
+  if (normalized === "male") return "male";
+  logger.warn("Unsupported 3DLook gender; falling back to male", { gender: raw });
+  return "male";
 }
 
 function requireAuth(uid: string | undefined): string {
@@ -460,11 +545,7 @@ function requireAuth(uid: string | undefined): string {
   return uid;
 }
 
-async function requireTerraConnection(
-  uid: string,
-  terraUserId: string,
-  environment: TerraEnvironment,
-): Promise<void> {
+async function requireTerraConnection(uid: string, terraUserId: string): Promise<void> {
   const snapshot = await getFirestore()
     .collection("users")
     .doc(uid)
@@ -474,12 +555,7 @@ async function requireTerraConnection(
     .doc(terraUserId)
     .get();
 
-  const storedEnvironment = snapshot.get("environment");
-  if (
-    !snapshot.exists ||
-    snapshot.get("active") !== true ||
-    (typeof storedEnvironment === "string" && storedEnvironment !== environment)
-  ) {
+  if (!snapshot.exists || snapshot.get("active") !== true) {
     throw new HttpsError("permission-denied", "Terra connection is not active for this user");
   }
 }

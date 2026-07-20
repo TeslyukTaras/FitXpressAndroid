@@ -198,5 +198,4 @@ data class BodyState(
     val visual: VisualState = VisualState(),
     val compare: CompareState = CompareState(),
     val bodyProportion: BodyProportionState = BodyProportionState(),
-    val modelCardHeightPx: Int = 0,
 )

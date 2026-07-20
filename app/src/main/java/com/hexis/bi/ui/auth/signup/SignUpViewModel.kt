@@ -46,7 +46,7 @@ class SignUpViewModel(
 
     fun updateFirstName(v: String) = _state.update { it.copy(firstName = v, firstNameError = null) }
     fun updateLastName(v: String) = _state.update { it.copy(lastName = v, lastNameError = null) }
-    fun updateEmail(v: String) = _state.update { it.copy(email = v, emailError = null) }
+    fun updateEmail(v: String) = _state.update { it.copy(email = v.trim(), emailError = null) }
     fun updatePassword(v: String) = _state.update { it.copy(password = v, passwordError = null) }
     fun updateConfirmPassword(v: String) =
         _state.update { it.copy(confirmPassword = v, confirmPasswordError = null) }
@@ -100,7 +100,7 @@ class SignUpViewModel(
 
         launch {
             val authResult =
-                authRepository.signUpWithEmail(s.firstName, s.lastName, s.email, s.password)
+                authRepository.signUpWithEmail(s.firstName, s.lastName, s.email.trim(), s.password)
             if (authResult.isFailure) {
                 setError(authResult.exceptionOrNull()?.message)
                 return@launch
@@ -111,7 +111,7 @@ class SignUpViewModel(
                     uid = uid,
                     firstName = s.firstName,
                     lastName = s.lastName,
-                    email = s.email
+                    email = s.email.trim()
                 )
             )
             if (createResult.isFailure) {
