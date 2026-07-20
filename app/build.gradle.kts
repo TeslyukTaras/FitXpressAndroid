@@ -17,13 +17,14 @@ fun terraDevId(key: String): String =
         ?: providers.environmentVariable(key.replace('.', '_').uppercase()).orNull
         ?: ""
 
-val buildsProdFlavor = gradle.startParameter.taskNames.any { it.contains("prod", ignoreCase = true) }
+val buildsProdFlavor =
+    gradle.startParameter.taskNames.any { it.contains("prod", ignoreCase = true) }
 
 val prodTerraDevId: String = terraDevId("terra.prod.dev.id").also {
     if (buildsProdFlavor && it.isBlank()) {
         error(
             "terra.prod.dev.id is not set. Add it to local.properties (or TERRA_PROD_DEV_ID in the " +
-                "environment). It must equal the PROD_TERRA_DEV_ID Firebase secret."
+                    "environment). It must equal the PROD_TERRA_DEV_ID Firebase secret."
         )
     }
 }
@@ -37,7 +38,7 @@ android {
         // Terra Android SDK requires minSdk 28 (Samsung Health / Health Connect).
         minSdk = 28
         targetSdk = 37
-        versionCode = 11
+        versionCode = 12
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

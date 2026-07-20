@@ -68,6 +68,7 @@ private interface MetricAvatarRenderHost {
     fun setMeshGlow(glow: Float)
     fun setDrawBackground(draw: Boolean)
     fun setTouchRotationEnabled(enabled: Boolean)
+    fun setYawOnlyRotation(enabled: Boolean)
     fun setZoomPanEnabled(enabled: Boolean)
     fun setFullBodyFigureHeightPx(heightPx: Float)
     fun setFramePitch(pitchDeg: Float)
@@ -88,6 +89,7 @@ internal class MetricAvatarTextureView(
 ) : TextureView(context), TextureView.SurfaceTextureListener, MetricAvatarRenderHost {
     private val avatarRenderer = MetricAvatarRenderer()
     private var touchRotationEnabled = true
+    private var yawOnlyRotation = false
     private var zoomPanEnabled = false
     private var lastX = 0f
     private var lastY = 0f
@@ -514,6 +516,10 @@ internal class MetricAvatarTextureView(
         touchRotationEnabled = enabled
     }
 
+    override fun setYawOnlyRotation(enabled: Boolean) {
+        yawOnlyRotation = enabled
+    }
+
     override fun setZoomPanEnabled(enabled: Boolean) {
         zoomPanEnabled = enabled
     }
@@ -657,7 +663,7 @@ internal class MetricAvatarTextureView(
     private fun dragTo(x: Float, y: Float) {
         applyRotationDelta(
             dyaw = (x - lastX) * TOUCH_YAW_SENSITIVITY,
-            dpitch = (y - lastY) * TOUCH_PITCH_SENSITIVITY,
+            dpitch = if (yawOnlyRotation) 0f else (y - lastY) * TOUCH_PITCH_SENSITIVITY,
         )
         lastX = x
         lastY = y
@@ -692,7 +698,9 @@ internal class MetricAvatarTextureView(
         val tracker = velocityTracker ?: return
         tracker.computeCurrentVelocity(FLING_VELOCITY_UNITS)
         val yawVelocity = tracker.xVelocity * TOUCH_YAW_SENSITIVITY * FLING_RELEASE_DAMPING
-        val pitchVelocity = tracker.yVelocity * TOUCH_PITCH_SENSITIVITY * FLING_RELEASE_DAMPING
+        val pitchVelocity =
+            if (yawOnlyRotation) 0f
+            else tracker.yVelocity * TOUCH_PITCH_SENSITIVITY * FLING_RELEASE_DAMPING
         if (abs(yawVelocity) < FLING_MIN_DEG_PER_SECOND &&
             abs(pitchVelocity) < FLING_MIN_DEG_PER_SECOND
         ) {

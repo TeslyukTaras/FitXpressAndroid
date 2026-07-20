@@ -171,6 +171,7 @@ private fun BoxScope.ModelPreview(
         showSkinAreas = false,
         drawBackground = false,
         touchRotationEnabled = visible,
+        yawOnlyRotation = true,
         useGradientBackground = false,
         initialPitchDegrees = BodyVisualConstants.UPRIGHT_MODEL_PITCH_DEG,
         fullBodyCenterY = BodyVisualConstants.VISUAL_MODEL_CENTER_Y,
