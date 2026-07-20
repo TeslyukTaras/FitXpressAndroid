@@ -180,6 +180,22 @@ function terraHandlers(secrets: TerraSecrets) {
       return json;
     },
 
+    /**
+     * Every Terra user registered under the caller's `reference_id` (their Firebase uid).
+     *
+     * The client reconciles its stored connections from this: the OAuth redirect back into the
+     * app cannot be relied on, so a connection can complete at Terra while the app never learns
+     * of it. `reference_id` is forced to the caller's uid, so a caller can only ever see its own.
+     */
+    listConnections: async (request: CallableRequest) => {
+      const uid = requireAuth(request.auth?.uid);
+
+      const url = new URL(`${terraBaseUrl}/userInfo`);
+      url.searchParams.set("reference_id", uid);
+      const response = await terraFetch(secrets, url, { method: "GET" });
+      return await parseJsonResponse(response, `Terra ${secrets.environment} listConnections`);
+    },
+
     deauthenticateUser: async (request: CallableRequest) => {
       const uid = requireAuth(request.auth?.uid);
       const terraUserId = requireString(request.data?.terraUserId, "terraUserId");
@@ -214,6 +230,7 @@ export const terraDevGenerateWidgetSession = onCall(devTerraSecretOptions, devTe
 export const terraDevGetDaily = onCall(devTerraSecretOptions, devTerra.getDaily);
 export const terraDevGetSleep = onCall(devTerraSecretOptions, devTerra.getSleep);
 export const terraDevGetUserInfo = onCall(devTerraSecretOptions, devTerra.getUserInfo);
+export const terraDevListConnections = onCall(devTerraSecretOptions, devTerra.listConnections);
 export const terraDevDeauthenticateUser = onCall(devTerraSecretOptions, devTerra.deauthenticateUser);
 
 export const terraProdGenerateAuthToken = onCall(prodTerraSecretOptions, prodTerra.generateAuthToken);
@@ -222,6 +239,7 @@ export const terraProdGenerateWidgetSession = onCall(prodTerraSecretOptions, pro
 export const terraProdGetDaily = onCall(prodTerraSecretOptions, prodTerra.getDaily);
 export const terraProdGetSleep = onCall(prodTerraSecretOptions, prodTerra.getSleep);
 export const terraProdGetUserInfo = onCall(prodTerraSecretOptions, prodTerra.getUserInfo);
+export const terraProdListConnections = onCall(prodTerraSecretOptions, prodTerra.listConnections);
 export const terraProdDeauthenticateUser = onCall(prodTerraSecretOptions, prodTerra.deauthenticateUser);
 
 export const threeDLookCreateMeasurement = onCall(threeDLookSecretOptions, async (request) => {

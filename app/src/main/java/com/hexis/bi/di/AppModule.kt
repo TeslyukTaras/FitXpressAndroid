@@ -34,6 +34,7 @@ import com.hexis.bi.data.suit.MockSuitRepository
 import com.hexis.bi.data.terra.TerraApi
 import com.hexis.bi.data.terra.TerraAuthApi
 import com.hexis.bi.data.terra.TerraCallbackHandler
+import com.hexis.bi.data.terra.TerraConnectionReconciler
 import com.hexis.bi.data.terra.TerraConnector
 import com.hexis.bi.data.terra.TerraManagerHolder
 import com.hexis.bi.data.terra.TerraRestSourceResolver
@@ -131,6 +132,7 @@ val appModule = module {
     }
     single { TerraManagerHolder() }
     single { TerraRestSourceResolver(get(), get()) }
+    single { TerraConnectionReconciler(get(), get()) }
     single { TerraCallbackHandler(get()) }
     single { TerraWidgetApi(get()) }
     single { TerraConnector(get(), get()) }
@@ -163,6 +165,7 @@ val appModule = module {
     viewModel {
         HealthConnectionsViewModel(
             androidApplication(),
+            get(),
             get(),
             get(),
             get(),

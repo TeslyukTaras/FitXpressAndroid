@@ -1,5 +1,6 @@
 package com.hexis.bi.data.terra
 
+import com.google.firebase.Timestamp
 import com.google.firebase.functions.FirebaseFunctions
 import com.hexis.bi.data.firebase.toJsonElement
 import com.hexis.bi.utils.redactSensitiveId
@@ -11,8 +12,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import timber.log.Timber
+import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Date
 
 /**
  * Thin REST client for Terra's server-side data endpoints.
@@ -92,6 +95,33 @@ class TerraApi(private val functions: FirebaseFunctions) {
             }
         }
 
+    /**
+     * Every Terra connection registered against the signed-in user (`reference_id` = Firebase uid).
+     * The backend scopes the lookup to the caller, so this needs no argument.
+     *
+     * This is the source of truth for what the user actually authorised — see
+     * [TerraConnectionReconciler] for why the OAuth redirect cannot be relied on.
+     */
+    suspend fun listConnections(): Result<TerraConnectionsResponse> = withContext(Dispatchers.IO) {
+        try {
+            val data = functions
+                .getHttpsCallable(terraFunction(FUNCTION_LIST_CONNECTIONS))
+                .call()
+                .await()
+                .data
+            Result.success(
+                terraJson.decodeFromJsonElement(
+                    TerraConnectionsResponse.serializer(),
+                    data.toJsonElement(),
+                ),
+            )
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            Timber.w(e, "Terra listConnections failed")
+            Result.failure(e)
+        }
+    }
+
     /** `DELETE /v2/auth/deauthenticateUser?user_id=…` — revokes Terra’s access for that user id. */
     suspend fun deauthenticateUser(terraUserId: String): Result<Unit> =
         withContext(Dispatchers.IO) {
@@ -111,6 +141,7 @@ class TerraApi(private val functions: FirebaseFunctions) {
         private const val FUNCTION_GET_DAILY = "GetDaily"
         private const val FUNCTION_GET_SLEEP = "GetSleep"
         private const val FUNCTION_GET_USER_INFO = "GetUserInfo"
+        private const val FUNCTION_LIST_CONNECTIONS = "ListConnections"
         private const val FUNCTION_DEAUTHENTICATE_USER = "DeauthenticateUser"
         private const val FIELD_TERRA_USER_ID = "terraUserId"
     }
@@ -168,7 +199,21 @@ data class TerraUserInfoResponse(
                 !user?.provider.isNullOrBlank()
 }
 
+/** `GET /v2/userInfo?reference_id=…` — every Terra user registered against one Firebase uid. */
+@Serializable
+data class TerraConnectionsResponse(
+    val status: String? = null,
+    val message: String? = null,
+    val users: List<TerraUserInfo> = emptyList(),
+)
+
 @Serializable
 data class TerraUserInfo(
+    val user_id: String? = null,
     val provider: String? = null,
-)
+    val active: Boolean = true,
+    val created_at: String? = null,
+) {
+    fun createdAtTimestamp(): Timestamp? =
+        created_at?.let { runCatching { Timestamp(Date.from(Instant.parse(it))) }.getOrNull() }
+}
