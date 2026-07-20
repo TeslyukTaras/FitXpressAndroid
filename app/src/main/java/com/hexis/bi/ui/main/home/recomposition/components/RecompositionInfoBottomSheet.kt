@@ -1,4 +1,4 @@
-package com.hexis.bi.ui.main.home.longevity.components
+package com.hexis.bi.ui.main.home.recomposition.components
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
@@ -21,12 +21,12 @@ import com.hexis.bi.ui.base.BaseBottomSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LongevityInfoBottomSheet(
+fun RecompositionInfoBottomSheet(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     BaseBottomSheet(
-        title = stringResource(R.string.longevity_screen_title),
+        title = stringResource(R.string.recomposition_info_title),
         onDismiss = onDismiss,
         modifier = modifier.fillMaxHeight(0.8f),
     ) {
@@ -35,13 +35,19 @@ fun LongevityInfoBottomSheet(
                 .weight(1f)
                 .verticalScroll(rememberScrollState()),
         ) {
-            InfoParagraph(R.string.longevity_info_sheet_what)
-            InfoParagraph(R.string.longevity_info_sheet_inputs)
-            InfoParagraph(R.string.longevity_info_sheet_windows)
-            InfoParagraph(R.string.longevity_info_sheet_limits)
-        }
+            Text(
+                text = stringResource(R.string.recomposition_info_intro),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
 
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+            InfoSection(R.string.recomposition_info_heading_1, R.string.recomposition_info_body_1)
+            InfoSection(R.string.recomposition_info_heading_2, R.string.recomposition_info_body_2)
+            InfoSection(R.string.recomposition_info_heading_3, R.string.recomposition_info_body_3)
+            InfoSection(R.string.recomposition_info_heading_4, R.string.recomposition_info_body_4)
+            InfoSection(R.string.recomposition_info_heading_5, R.string.recomposition_info_body_5)
+        }
 
         TextButton(
             onClick = onDismiss,
@@ -57,7 +63,13 @@ fun LongevityInfoBottomSheet(
 }
 
 @Composable
-private fun InfoParagraph(@StringRes body: Int) {
+private fun InfoSection(@StringRes heading: Int, @StringRes body: Int) {
+    Text(
+        text = stringResource(heading),
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onBackground,
+    )
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
     Text(
         text = stringResource(body),
         style = MaterialTheme.typography.bodyMedium,

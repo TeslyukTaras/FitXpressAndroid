@@ -4,6 +4,7 @@ import android.app.Activity
 import co.tryterra.terra.enums.Connections
 import co.tryterra.terra.enums.CustomPermissions
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 import kotlin.coroutines.resume
 
@@ -32,27 +33,31 @@ class TerraConnector(
 
         val permissions = if (connection == Connections.HEALTH_CONNECT) HEALTH_CONNECT_PERMISSIONS else emptySet()
 
-        return suspendCancellableCoroutine { cont ->
-            manager.initConnection(
-                connection = connection,
-                token = token,
-                context = activity,
-                customPermissions = permissions,
-                schedulerOn = true,
-                startIntent = null,
-            ) { success, error ->
-                if (error != null) {
-                    Timber.e(error, "Terra initConnection failed: connection=%s", connection)
-                    if (cont.isActive) cont.resume(Result.failure(error))
-                } else {
-                    Timber.d("Terra initConnection success=%s connection=%s", success, connection)
-                    if (cont.isActive) cont.resume(Result.success(success))
+        return withTimeoutOrNull(INIT_CONNECTION_TIMEOUT_MS) {
+            suspendCancellableCoroutine { cont ->
+                manager.initConnection(
+                    connection = connection,
+                    token = token,
+                    context = activity,
+                    customPermissions = permissions,
+                    schedulerOn = true,
+                    startIntent = null,
+                ) { success, error ->
+                    if (error != null) {
+                        Timber.e(error, "Terra initConnection failed: connection=%s", connection)
+                        if (cont.isActive) cont.resume(Result.failure(error))
+                    } else {
+                        Timber.d("Terra initConnection success=%s connection=%s", success, connection)
+                        if (cont.isActive) cont.resume(Result.success(success))
+                    }
                 }
             }
-        }
+        } ?: Result.failure(IllegalStateException("Terra initConnection timed out"))
     }
 
     companion object {
+        private const val INIT_CONNECTION_TIMEOUT_MS = 30_000L
+
         // Matches the <uses-permission android:name="android.permission.health.READ_*"> block in
         // AndroidManifest.xml. Passing these to initConnection ensures Terra requests the full set
         // at the Health Connect permission prompt, instead of its smaller default.

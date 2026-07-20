@@ -1,10 +1,9 @@
-package com.hexis.bi.ui.main.home.longevity
+package com.hexis.bi.ui.main.home.recomposition
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -26,20 +25,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
-import com.hexis.bi.ui.components.AppTabSelector
 import com.hexis.bi.ui.components.LightStatusBarIcons
-import com.hexis.bi.ui.main.home.longevity.components.LongevityDirectionCard
-import com.hexis.bi.ui.main.home.longevity.components.LongevityFoundationCard
-import com.hexis.bi.ui.main.home.longevity.components.LongevityInfoBottomSheet
+import com.hexis.bi.ui.main.home.recomposition.components.RecompositionCard
+import com.hexis.bi.ui.main.home.recomposition.components.RecompositionInfoBottomSheet
 import com.hexis.bi.ui.theme.screenBackground
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LongevityScreen(
+fun RecompositionScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: LongevityViewModel = koinViewModel(),
+    viewModel: RecompositionViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
@@ -62,7 +59,7 @@ fun LongevityScreen(
             onDismissError = viewModel::clearError,
             topBar = {
                 BaseTopBar(
-                    title = stringResource(R.string.longevity_screen_title),
+                    title = stringResource(R.string.recomposition_screen_title),
                     onBack = onBack,
                     background = Color.Transparent,
                     actions = {
@@ -86,27 +83,15 @@ fun LongevityScreen(
             ) {
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
 
-                AppTabSelector(
-                    tabs = LongevityWindow.entries,
-                    selectedTab = state.selectedWindow,
-                    onTabSelected = viewModel::selectWindow,
-                    modifier = Modifier.fillMaxWidth(),
-                    tabLabel = { stringResource(it.labelRes) },
-                )
-
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
-
-                LongevityDirectionCard(direction = state.direction)
-
-                state.foundations.forEach { foundation ->
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-                    LongevityFoundationCard(foundation = foundation)
+                state.cards.forEachIndexed { index, card ->
+                    if (index > 0) Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+                    RecompositionCard(card = card)
                 }
 
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
             }
         }
 
-        if (state.showInfoSheet) LongevityInfoBottomSheet(onDismiss = viewModel::dismissInfoSheet)
+        if (state.showInfoSheet) RecompositionInfoBottomSheet(onDismiss = viewModel::dismissInfoSheet)
     }
 }

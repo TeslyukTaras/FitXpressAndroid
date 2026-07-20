@@ -47,6 +47,7 @@ import com.hexis.bi.ui.main.home.activity.ActivityScreen
 import com.hexis.bi.ui.main.home.longevity.LongevityScreen
 import com.hexis.bi.ui.main.home.paceofaging.PaceOfAgingScreen
 import com.hexis.bi.ui.main.home.physiquedrift.PhysiqueDriftScreen
+import com.hexis.bi.ui.main.home.recomposition.RecompositionScreen
 import com.hexis.bi.ui.main.home.recovery.RecoveryScreen
 import com.hexis.bi.ui.main.home.sleep.SleepScreen
 import com.hexis.bi.ui.main.notifications.NotificationsScreen
@@ -144,7 +145,7 @@ fun MainScreen(
                     onNotificationClick = { navController.navigate(Route.Main.NOTIFICATIONS) },
                     onSettingsClick = { navController.navigate(Route.Main.SETTINGS) },
                     onSleepClick = { navController.navigate(Route.Main.SLEEP) },
-                    onRecoveryClick = { navController.navigate(Route.Main.RECOVERY) },
+                    onRecompositionClick = { navController.navigate(Route.Main.RECOMPOSITION) },
                     onLongevityClick = { navController.navigate(Route.Main.LONGEVITY) },
                     onPhysiqueDriftClick = { navController.navigate(Route.Main.PHYSIQUE_DRIFT) },
                     onPaceOfAgingClick = { navController.navigate(Route.Main.PACE_OF_AGING) },
@@ -161,6 +162,9 @@ fun MainScreen(
             }
             composable(Route.Main.RECOVERY) {
                 RecoveryScreen(onBack = { navController.popBackStackOnce() })
+            }
+            composable(Route.Main.RECOMPOSITION) {
+                RecompositionScreen(onBack = { navController.popBackStackOnce() })
             }
             composable(Route.Main.LONGEVITY) {
                 LongevityScreen(onBack = { navController.popBackStackOnce() })

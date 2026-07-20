@@ -170,6 +170,7 @@
     <string name="home_overview_title">Overview</string>
     <string name="home_intelligence_title">Body Intelligence</string>
     <string name="intelligence_recovery">Recovery</string>
+    <string name="intelligence_recomposition">Recomposition</string>
     <string name="intelligence_physique_drift">Physique Drift</string>
     <string name="intelligence_longevity">Longevity</string>
     <string name="intelligence_pace_of_aging">Pace of Aging</string>
@@ -939,6 +940,34 @@
     <string name="physique_drift_info_heading_5">5. Total Score</string>
     <string name="physique_drift_info_body_5">8-10 means lean / athletic, 5-7 means average / improving, and below 5 suggests more room for body composition improvement.</string>
 
+    <!-- Recomposition screen -->
+    <string name="recomposition_screen_title">Recomposition</string>
+    <string name="recomposition_subtitle">Track body composition changes over time.</string>
+    <string name="recomposition_window_4w">Last 4 Weeks</string>
+    <string name="recomposition_window_6m">Last 6 Months</string>
+    <string name="recomposition_window_1y">Last 12 Months</string>
+    <string name="recomposition_recomposed">Recomposed</string>
+    <string name="recomposition_weight_change">Weight Change</string>
+    <string name="recomposition_fat_mass">Fat Mass</string>
+    <string name="recomposition_lean_mass">Lean Mass</string>
+    <string name="recomposition_kg_suffix"> kg</string>
+    <string name="recomposition_signed_value">%1$s%2$.1f</string>
+    <string name="recomposition_trend_improving">Improving</string>
+    <string name="recomposition_trend_stable">Stable</string>
+    <string name="recomposition_error_load">Couldn’t load recomposition data. Please try again.</string>
+    <string name="recomposition_info_title">Recomposition</string>
+    <string name="recomposition_info_intro">Recomposition shows how your body composition is changing over time based on your valid body scans.</string>
+    <string name="recomposition_info_heading_1">1. Recomposed Amount</string>
+    <string name="recomposition_info_body_1">Shows the amount of change where fat mass trends down and lean mass trends up during the same period.</string>
+    <string name="recomposition_info_heading_2">2. Fat Mass</string>
+    <string name="recomposition_info_body_2">Shows the estimated change in fat mass across the selected time period.</string>
+    <string name="recomposition_info_heading_3">3. Lean Mass</string>
+    <string name="recomposition_info_body_3">Shows the estimated change in lean mass across the selected time period.</string>
+    <string name="recomposition_info_heading_4">4. Weight Change</string>
+    <string name="recomposition_info_body_4">Shows how your total body weight changed during the same period.</string>
+    <string name="recomposition_info_heading_5">5. Time Periods</string>
+    <string name="recomposition_info_body_5">4 Weeks, 6 Months, and 1 Year are calculated from valid scans within each time window.</string>
+
     <!-- Pace of Aging screen -->
     <string name="pace_of_aging_screen_title">Pace of Aging</string>
     <string name="pace_of_aging_trend_title">Aging Trend</string>
@@ -982,58 +1011,55 @@
 
     <!-- Longevity screen -->
     <string name="longevity_screen_title">Longevity</string>
-    <string name="longevity_score_card_title">Healthy Aging Score</string>
-    <string name="longevity_score_value">%1$d</string>
-    <string name="longevity_score_max">/ 100</string>
-    <string name="longevity_score_description">Your Longevity Score shows how well your body is aging based on key health signals.</string>
-    <string name="longevity_synced_format">Based on your latest synced data · %1$s</string>
-    <string name="longevity_trend_title">Longevity Trend</string>
-    <string name="longevity_tab_daily">Daily</string>
-    <string name="longevity_tab_weekly">Weekly</string>
-    <string name="longevity_trend_today_label">Today\'s Trend</string>
-    <string name="longevity_trend_weekly_label">Weekly Trend</string>
-    <string name="longevity_daily_axis_start">12 am</string>
-    <string name="longevity_daily_axis_end">11:59 pm</string>
+    <string name="longevity_window_4w">4 Weeks</string>
+    <string name="longevity_window_6m">6 Months</string>
+    <string name="longevity_window_1y">1 Year</string>
+
+    <string name="longevity_direction_title">Longevity Direction</string>
+    <string name="longevity_direction_strengthening">Strengthening</string>
+    <string name="longevity_direction_strengthening_body">Your long-term physical foundations are strengthening over the selected period.</string>
+    <string name="longevity_direction_holding">Holding</string>
+    <string name="longevity_direction_holding_body">Your long-term physical foundations are holding steady over the selected period.</string>
+    <string name="longevity_direction_mixed">Mixed</string>
+    <string name="longevity_direction_mixed_body">Your foundations are moving in different directions over the selected period.</string>
+    <string name="longevity_direction_weakening">Weakening</string>
+    <string name="longevity_direction_weakening_body">Your long-term physical foundations are weakening over the selected period.</string>
+    <string name="longevity_direction_building">Building Your Trend</string>
+    <string name="longevity_direction_building_body">Keep scanning. There is not enough history in this period to show a direction yet.</string>
+
+    <string name="longevity_foundation_metabolic">Metabolic Health</string>
+    <string name="longevity_foundation_recomposition">Body Recomposition</string>
+    <string name="longevity_foundation_physical">Physical Foundation</string>
+    <string name="longevity_foundation_functional">Functional Capacity</string>
+
+    <string name="longevity_status_strengthening">Strengthening</string>
+    <string name="longevity_status_holding">Holding</string>
+    <string name="longevity_status_mixed">Mixed</string>
+    <string name="longevity_status_weakening">Weakening</string>
+    <string name="longevity_status_insufficient">Building</string>
+
+    <string name="longevity_evidence_waist_to_height">Waist-to-height</string>
+    <string name="longevity_evidence_fat">Fat</string>
+    <string name="longevity_evidence_lean">Lean</string>
+    <string name="longevity_evidence_thigh">Thigh</string>
+    <string name="longevity_evidence_calf">Calf</string>
+    <string name="longevity_evidence_vo2_max">VO\u2082 Max</string>
+    <string name="longevity_evidence_rhr">RHR</string>
+    <string name="longevity_evidence_transition">%1$s \u2192 %2$s</string>
+
+    <string name="longevity_error_load">Couldn\'t load your longevity trend. Please try again.</string>
+
+    <string name="longevity_info_sheet_what">Longevity shows whether your body\'s long-term physical foundations are strengthening, holding, mixed, or weakening over the selected period.</string>
+    <string name="longevity_info_sheet_inputs">It combines Metabolic Health, Body Recomposition, Physical Foundation, and Functional Capacity. Body measurements and composition lead the result, while activity, VO\u2082 Max, resting heart rate, and sleep provide supporting context.</string>
+    <string name="longevity_info_sheet_windows">Use 4 Weeks to view recent body direction, 6 Months for your medium-term trajectory, and 1 Year to see whether the direction has been sustained.</string>
+    <string name="longevity_info_sheet_limits">Longevity is a long-term trend, not a daily score or an estimate of lifespan, biological age, or disease risk.</string>
     <string name="longevity_trend_improving">Improving</string>
     <string name="longevity_trend_stable">Stable</string>
     <string name="longevity_trend_decreasing">Decreasing</string>
 
     <!-- Longevity signals -->
-    <string name="longevity_signals_title">Longevity Signals</string>
-    <string name="longevity_signal_hrv">HRV</string>
-    <string name="longevity_signal_rhr">RHR</string>
-    <string name="longevity_signal_sleep">Sleep</string>
-    <string name="longevity_signal_recovery">Recovery</string>
-    <string name="longevity_signal_activity">Activity</string>
-    <string name="longevity_signal_vo2_max">VO2 Max</string>
-    <string name="longevity_signal_waist_profile">Waist Profile</string>
-    <string name="longevity_signal_physique_trend">Physique Trend</string>
-    <string name="longevity_signal_stress_load">Stress Load</string>
-    <string name="longevity_unit_ms">ms</string>
-    <string name="longevity_unit_steps">st</string>
 
     <!-- Longevity insight -->
-    <string name="longevity_insight_title">Longevity Insight</string>
-    <string name="longevity_insight_body">Your recovery and activity trends are improving, which may support better long-term health and body resilience.</string>
 
     <!-- Longevity info sheet -->
-    <string name="longevity_info_sheet_intro">Longevity shows how well your body is aging based on key health signals.</string>
-    <string name="longevity_info_sheet_heading_1">1. HRV</string>
-    <string name="longevity_info_sheet_body_1">Shows recovery and nervous system balance. Higher is usually better.</string>
-    <string name="longevity_info_sheet_heading_2">2. Resting Heart Rate</string>
-    <string name="longevity_info_sheet_body_2">Shows your heart rate at rest. Lower is usually better.</string>
-    <string name="longevity_info_sheet_heading_3">3. Sleep</string>
-    <string name="longevity_info_sheet_body_3">Good sleep supports recovery and long-term health.</string>
-    <string name="longevity_info_sheet_heading_4">4. Activity</string>
-    <string name="longevity_info_sheet_body_4">Steps, workouts, and movement consistency support longevity.</string>
-    <string name="longevity_info_sheet_heading_5">5. Recovery</string>
-    <string name="longevity_info_sheet_body_5">Shows how ready your body is based on sleep, stress, activity load, heart rate, and HRV.</string>
-    <string name="longevity_info_sheet_heading_6">6. Waist Profile</string>
-    <string name="longevity_info_sheet_body_6">Shows body composition and abdominal fat trends.</string>
-    <string name="longevity_info_sheet_heading_7">7. VO2 Max</string>
-    <string name="longevity_info_sheet_body_7">Shows cardio fitness and how well your body uses oxygen.</string>
-    <string name="longevity_info_sheet_heading_8">8. Total Score</string>
-    <string name="longevity_info_sheet_body_8">Combines these signals into one healthy aging score.</string>
-    <string name="longevity_info_sheet_heading_9">9. Stress Load</string>
-    <string name="longevity_info_sheet_body_9">Shows how daily physical and nervous system strain may affect recovery, resilience, and long-term health over time.</string>
 </resources>

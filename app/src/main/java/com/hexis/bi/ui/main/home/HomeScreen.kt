@@ -49,7 +49,7 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     onSleepClick: () -> Unit = {},
     onActivityClick: () -> Unit = {},
-    onRecoveryClick: () -> Unit = {},
+    onRecompositionClick: () -> Unit = {},
     onLongevityClick: () -> Unit = {},
     onPhysiqueDriftClick: () -> Unit = {},
     onPaceOfAgingClick: () -> Unit = {},
@@ -182,7 +182,7 @@ fun HomeScreen(
                 scores = state.intelligenceScores,
                 onScoreClick = { key ->
                     when (key) {
-                        IntelligenceScoreKey.RECOVERY -> onRecoveryClick()
+                        IntelligenceScoreKey.RECOMPOSITION -> onRecompositionClick()
                         IntelligenceScoreKey.PHYSIQUE_DRIFT -> onPhysiqueDriftClick()
                         IntelligenceScoreKey.LONGEVITY -> onLongevityClick()
                         IntelligenceScoreKey.PACE_OF_AGING -> onPaceOfAgingClick()
