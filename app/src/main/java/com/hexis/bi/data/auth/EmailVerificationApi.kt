@@ -15,6 +15,9 @@ class EmailVerificationApi(private val functions: FirebaseFunctions) {
 
     suspend fun sendCode(): Result<Unit> = call(FUNCTION_SEND_CODE, emptyMap())
 
+    suspend fun sendChangeEmailCode(newEmail: String): Result<Unit> =
+        call(FUNCTION_SEND_CODE, mapOf(FIELD_IS_CHANGE_EMAIL to true, FIELD_NEW_EMAIL to newEmail))
+
     suspend fun verifyCode(code: String): Result<Unit> =
         call(FUNCTION_VERIFY_CODE, mapOf(FIELD_CODE to code))
 
@@ -33,5 +36,7 @@ class EmailVerificationApi(private val functions: FirebaseFunctions) {
         private const val FUNCTION_SEND_CODE = "sendEmailVerificationCode"
         private const val FUNCTION_VERIFY_CODE = "verifyEmailCode"
         private const val FIELD_CODE = "code"
+        private const val FIELD_IS_CHANGE_EMAIL = "isChangeEmail"
+        private const val FIELD_NEW_EMAIL = "newEmail"
     }
 }

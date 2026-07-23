@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -23,10 +24,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
@@ -47,7 +50,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
@@ -57,6 +64,9 @@ import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppDatePicker
+import com.hexis.bi.ui.components.AppDialog
+import com.hexis.bi.ui.components.AppOtpInput
+import com.hexis.bi.ui.components.AppOutlinedButton
 import com.hexis.bi.ui.components.AppOutlinedTextField
 import com.hexis.bi.ui.components.AppPrimaryButton
 import com.hexis.bi.ui.components.AppSlider
@@ -66,6 +76,7 @@ import com.hexis.bi.ui.main.body.components.BodySegmentedToggleChip
 import com.hexis.bi.ui.main.body.components.BodySegmentedToggleTrack
 import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.screenBackground
+import com.hexis.bi.utils.constants.AuthFlowConstants
 import com.hexis.bi.utils.constants.ProfileConstants
 import com.hexis.bi.utils.parseDob
 import org.koin.androidx.compose.koinViewModel
@@ -118,7 +129,7 @@ fun EditProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .then(
-                    if (state.showDatePicker)
+                    if (state.showDatePicker || state.showChangeEmailDialog || state.showEnterCodeDialog)
                         Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
                     else Modifier
                 )
@@ -180,13 +191,9 @@ fun EditProfileScreen(
 
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
 
-                AppOutlinedTextField(
-                    value = state.email,
-                    onValueChange = viewModel::updateEmail,
-                    label = stringResource(R.string.label_email),
-                    placeholder = stringResource(R.string.placeholder_email),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                    modifier = Modifier.fillMaxWidth(),
+                EmailField(
+                    email = state.email,
+                    onChangeClick = viewModel::openChangeEmailDialog,
                 )
 
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
@@ -253,6 +260,259 @@ fun EditProfileScreen(
             onDismissRequest = viewModel::hideDatePicker,
             onSelect = viewModel::updateDateOfBirth,
         )
+
+        if (state.showChangeEmailDialog) AppDialog(onDismiss = viewModel::dismissChangeEmailDialog) {
+            ChangeEmailDialogContent(
+                state = state,
+                isLoading = isLoading,
+                onNewEmailChange = viewModel::updateNewEmail,
+                onPasswordChange = viewModel::updateChangePassword,
+                onTogglePasswordVisibility = viewModel::toggleChangePasswordVisibility,
+                onCancel = viewModel::dismissChangeEmailDialog,
+                onSendCode = viewModel::sendChangeCode,
+            )
+        }
+
+        if (state.showEnterCodeDialog) AppDialog(onDismiss = viewModel::dismissEnterCodeDialog) {
+            EnterCodeDialogContent(
+                state = state,
+                isLoading = isLoading,
+                onCodeChange = viewModel::updateEmailCode,
+                onCancel = viewModel::dismissEnterCodeDialog,
+                onConfirm = viewModel::confirmEmailChange,
+            )
+        }
+    }
+}
+
+@Composable
+private fun EmailField(
+    email: String,
+    onChangeClick: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.label_email),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = stringResource(R.string.change_email_action),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.clickable(onClick = onChangeClick),
+            )
+        }
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
+        AppOutlinedTextField(
+            value = email,
+            onValueChange = {},
+            readOnly = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+@Composable
+private fun ChangeEmailDialogContent(
+    state: EditProfileState,
+    isLoading: Boolean,
+    onNewEmailChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onTogglePasswordVisibility: () -> Unit,
+    onCancel: () -> Unit,
+    onSendCode: () -> Unit,
+) {
+    Box {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(dimensionResource(R.dimen.padding_large)),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = stringResource(R.string.change_email_dialog_title),
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Medium),
+                color = NocturnePulseTheme.extendedColors.textEmphasis,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+            Text(
+                text = stringResource(R.string.change_email_dialog_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+
+            AppOutlinedTextField(
+                value = state.newEmail,
+                onValueChange = onNewEmailChange,
+                label = stringResource(R.string.label_new_email),
+                placeholder = stringResource(R.string.placeholder_new_email),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
+
+            AppOutlinedTextField(
+                value = state.changePassword,
+                onValueChange = onPasswordChange,
+                label = stringResource(R.string.label_password),
+                error = state.changeEmailError,
+                reserveErrorSpace = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                visualTransformation = if (state.isChangePasswordVisible) VisualTransformation.None
+                else PasswordVisualTransformation(),
+                trailingIcon = {
+                    IconButton(onClick = onTogglePasswordVisibility) {
+                        Icon(
+                            painter = painterResource(
+                                if (state.isChangePasswordVisible) R.drawable.ic_eye_open
+                                else R.drawable.ic_eye_closed
+                            ),
+                            contentDescription = stringResource(R.string.cd_toggle_password),
+                            modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+            DialogButtonRow(
+                confirmText = stringResource(R.string.action_send_code),
+                confirmEnabled = state.canSendChangeCode && !isLoading,
+                onCancel = onCancel,
+                onConfirm = onSendCode,
+                cancelEnabled = !isLoading,
+            )
+        }
+
+        if (isLoading) DialogLoadingOverlay()
+    }
+}
+
+@Composable
+private fun EnterCodeDialogContent(
+    state: EditProfileState,
+    isLoading: Boolean,
+    onCodeChange: (String) -> Unit,
+    onCancel: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    Box {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(dimensionResource(R.dimen.padding_large)),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = stringResource(R.string.change_email_code_title),
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Medium),
+                color = NocturnePulseTheme.extendedColors.textEmphasis,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+            Text(
+                text = stringResource(R.string.change_email_code_prompt),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = state.pendingNewEmail,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = stringResource(R.string.change_email_code_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+
+            AppOtpInput(
+                value = state.emailCode,
+                onValueChange = onCodeChange,
+                length = AuthFlowConstants.EMAIL_CODE_LENGTH,
+                isError = state.isEmailCodeError,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            if (state.emailCodeError != null) {
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
+                Text(
+                    text = state.emailCodeError,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                )
+            }
+
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+
+            DialogButtonRow(
+                confirmText = stringResource(R.string.action_confirm),
+                confirmEnabled = state.isEmailCodeComplete && !state.isEmailCodeError && !isLoading,
+                onCancel = onCancel,
+                onConfirm = onConfirm,
+                cancelEnabled = !isLoading,
+            )
+        }
+
+        if (isLoading) DialogLoadingOverlay()
+    }
+}
+
+@Composable
+private fun DialogButtonRow(
+    confirmText: String,
+    confirmEnabled: Boolean,
+    onCancel: () -> Unit,
+    onConfirm: () -> Unit,
+    cancelEnabled: Boolean,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_xs)),
+    ) {
+        AppOutlinedButton(
+            text = stringResource(R.string.action_cancel),
+            onClick = onCancel,
+            enabled = cancelEnabled,
+            modifier = Modifier.weight(1f),
+        )
+        AppPrimaryButton(
+            text = confirmText,
+            onClick = onConfirm,
+            enabled = confirmEnabled,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun BoxScope.DialogLoadingOverlay() {
+    Box(
+        modifier = Modifier
+            .matchParentSize()
+            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.75f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
     }
 }
 

@@ -6,7 +6,9 @@ import com.hexis.bi.ui.base.UiEvent
 import com.hexis.bi.utils.calculateAge
 import com.hexis.bi.utils.cmToInches
 import com.hexis.bi.utils.cmToRoundedFeetAndInches
+import com.hexis.bi.utils.constants.AuthFlowConstants
 import com.hexis.bi.utils.constants.ProfileConstants
+import com.hexis.bi.utils.isValidEmail
 import com.hexis.bi.utils.kgToLb
 import com.hexis.bi.utils.parseDob
 import kotlin.math.roundToInt
@@ -19,6 +21,7 @@ data class EditProfileState(
     val firstName: String = "",
     val lastName: String = "",
     val email: String = "",
+    val originalEmail: String = "",
     val imageUrl: String? = null,
     val dateOfBirth: String = "",
     val gender: GenderOption = GenderOption.Male,
@@ -27,6 +30,16 @@ data class EditProfileState(
     val weightKg: Float = ProfileConstants.DEFAULT_WEIGHT_KG,
     val isGenderDropdownOpen: Boolean = false,
     val showDatePicker: Boolean = false,
+    val showChangeEmailDialog: Boolean = false,
+    val newEmail: String = "",
+    val changePassword: String = "",
+    val isChangePasswordVisible: Boolean = false,
+    val changeEmailError: String? = null,
+    val showEnterCodeDialog: Boolean = false,
+    val emailCode: String = "",
+    val isEmailCodeError: Boolean = false,
+    val emailCodeError: String? = null,
+    val pendingNewEmail: String = "",
 ) : HealthParameters {
     private val age: Int?
         get() = dateOfBirth.parseDob()?.calculateAge()
@@ -36,6 +49,14 @@ data class EditProfileState(
 
     val isAgeValid: Boolean
         get() = age?.let { it >= ProfileConstants.MIN_AGE_YEARS } == true
+
+    val canSendChangeCode: Boolean
+        get() = newEmail.isValidEmail() &&
+                !newEmail.trim().equals(originalEmail.trim(), ignoreCase = true) &&
+                changePassword.isNotBlank()
+
+    val isEmailCodeComplete: Boolean
+        get() = emailCode.length == AuthFlowConstants.EMAIL_CODE_LENGTH
 
     val canSave: Boolean
         get() = firstName.isNotBlank() &&

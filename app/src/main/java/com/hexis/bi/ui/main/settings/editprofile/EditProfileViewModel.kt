@@ -6,6 +6,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageMetadata
 import com.hexis.bi.R
+import com.hexis.bi.data.auth.AuthRepository
 import com.hexis.bi.data.user.UserProfile
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.enums.GenderOption
@@ -29,6 +30,7 @@ class EditProfileViewModel(
     private val firebaseAuth: FirebaseAuth,
     private val userRepository: UserRepository,
     private val storage: FirebaseStorage,
+    private val authRepository: AuthRepository,
 ) : BaseViewModel(application, initialLoading = true) {
 
     private val _state = MutableStateFlow(EditProfileState())
@@ -42,11 +44,14 @@ class EditProfileViewModel(
         userRepository.getUser().onSuccess { profile ->
             val dobString = profile.dateOfBirth?.formatDob().orEmpty()
             val gender = GenderOption.entries.firstOrNull { it.name == profile.gender }
+            val accountEmail = authRepository.currentUserEmail?.takeIf { it.isNotBlank() }
+                ?: profile.email
             _state.update {
                 it.copy(
                     firstName = profile.firstName,
                     lastName = profile.lastName,
-                    email = profile.email,
+                    email = accountEmail,
+                    originalEmail = accountEmail,
                     imageUrl = profile.imageUrl,
                     dateOfBirth = dobString,
                     gender = gender ?: it.gender,
@@ -60,7 +65,6 @@ class EditProfileViewModel(
 
     fun updateFirstName(value: String) = _state.update { it.copy(firstName = value) }
     fun updateLastName(value: String) = _state.update { it.copy(lastName = value) }
-    fun updateEmail(value: String) = _state.update { it.copy(email = value) }
     fun updateDateOfBirth(value: String) = _state.update { it.copy(dateOfBirth = value) }
     fun selectGender(gender: GenderOption) =
         _state.update { it.copy(gender = gender, isGenderDropdownOpen = false) }
@@ -106,6 +110,103 @@ class EditProfileViewModel(
         userRepository.updateUser(current.toUserProfile(uid))
             .onSuccess { emitEvent(EditProfileEvent.SaveSuccess) }
             .onFailure { setError(it.message) }
+    }
+
+    fun openChangeEmailDialog() = _state.update {
+        it.copy(
+            showChangeEmailDialog = true,
+            newEmail = "",
+            changePassword = "",
+            isChangePasswordVisible = false,
+            changeEmailError = null,
+        )
+    }
+
+    fun updateNewEmail(value: String) = _state.update {
+        it.copy(newEmail = value, changeEmailError = null)
+    }
+
+    fun updateChangePassword(value: String) = _state.update {
+        it.copy(changePassword = value, changeEmailError = null)
+    }
+
+    fun toggleChangePasswordVisibility() = _state.update {
+        it.copy(isChangePasswordVisible = !it.isChangePasswordVisible)
+    }
+
+    fun dismissChangeEmailDialog() = _state.update {
+        it.copy(showChangeEmailDialog = false, changePassword = "", changeEmailError = null)
+    }
+
+    fun sendChangeCode() {
+        val current = _state.value
+        if (!current.canSendChangeCode) return
+        val newEmail = current.newEmail.trim()
+        launch {
+            val reauth = authRepository.reauthenticateWithPassword(current.changePassword)
+            if (reauth.isFailure) {
+                _state.update { it.copy(changeEmailError = reauth.exceptionOrNull()?.message) }
+                return@launch
+            }
+            authRepository.sendChangeEmailCode(newEmail)
+                .onSuccess {
+                    _state.update {
+                        it.copy(
+                            showChangeEmailDialog = false,
+                            showEnterCodeDialog = true,
+                            pendingNewEmail = newEmail,
+                            emailCode = "",
+                            isEmailCodeError = false,
+                            emailCodeError = null,
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    _state.update { it.copy(changeEmailError = error.message) }
+                }
+        }
+    }
+
+    fun updateEmailCode(value: String) = _state.update {
+        it.copy(emailCode = value, isEmailCodeError = false, emailCodeError = null)
+    }
+
+    fun confirmEmailChange() {
+        val current = _state.value
+        if (!current.isEmailCodeComplete) return
+        launch {
+            authRepository.confirmEmailChange(
+                code = current.emailCode,
+                newEmail = current.pendingNewEmail,
+                password = current.changePassword,
+            )
+                .onSuccess {
+                    _state.update {
+                        it.copy(
+                            email = it.pendingNewEmail,
+                            originalEmail = it.pendingNewEmail,
+                            showEnterCodeDialog = false,
+                            emailCode = "",
+                            changePassword = "",
+                            newEmail = "",
+                        )
+                    }
+                    setMessage(R.string.change_email_success)
+                }
+                .onFailure { error ->
+                    _state.update { it.copy(isEmailCodeError = true, emailCodeError = error.message) }
+                }
+        }
+    }
+
+    fun dismissEnterCodeDialog() = _state.update {
+        it.copy(
+            showEnterCodeDialog = false,
+            emailCode = "",
+            isEmailCodeError = false,
+            emailCodeError = null,
+            changePassword = "",
+        )
     }
 
     private fun prepareAvatarUploadBytes(uri: Uri): ByteArray =

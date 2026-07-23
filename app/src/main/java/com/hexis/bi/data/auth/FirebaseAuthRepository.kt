@@ -90,11 +90,36 @@ class FirebaseAuthRepository(
     override suspend fun sendEmailVerificationCode(): Result<Unit> =
         emailVerificationApi.sendCode().mapAuthError(context)
 
+    override suspend fun sendChangeEmailCode(newEmail: String): Result<Unit> =
+        emailVerificationApi.sendChangeEmailCode(newEmail).mapAuthError(context)
+
     override suspend fun verifyEmailCode(code: String): Result<Unit> {
         val result = emailVerificationApi.verifyCode(code)
         // Refresh the local token so isEmailVerified / the auth gate see the server-side change.
         if (result.isSuccess) runCatching { auth.currentUser?.reload()?.await() }
         return result.mapAuthError(context)
+    }
+
+    override suspend fun reauthenticateWithPassword(password: String): Result<Unit> = runCatching {
+        val user = auth.currentUser
+            ?: throw FirebaseAuthCodeException(FirebaseAuthErrorCodes.NO_CURRENT_USER)
+        val email = user.email
+            ?: throw FirebaseAuthCodeException(FirebaseAuthErrorCodes.NO_EMAIL_ON_ACCOUNT)
+        user.reauthenticate(EmailAuthProvider.getCredential(email, password)).await()
+        Unit
+    }.mapAuthError(context)
+
+    override suspend fun confirmEmailChange(
+        code: String,
+        newEmail: String,
+        password: String,
+    ): Result<Unit> {
+        val verify = emailVerificationApi.verifyCode(code)
+        if (verify.isFailure) return verify.mapAuthError(context)
+        return runCatching {
+            auth.signInWithEmailAndPassword(newEmail, password).await()
+            Unit
+        }.mapAuthError(context)
     }
 
     override suspend fun reloadUser(): Result<Boolean> = runCatching {
@@ -200,6 +225,7 @@ private fun FirebaseFunctionsException.friendlyMessage(context: Context): String
         FirebaseFunctionsException.Code.DEADLINE_EXCEEDED -> R.string.error_verify_code_expired
         FirebaseFunctionsException.Code.RESOURCE_EXHAUSTED -> R.string.error_verify_too_many_attempts
         FirebaseFunctionsException.Code.NOT_FOUND -> R.string.error_verify_no_code
+        FirebaseFunctionsException.Code.ALREADY_EXISTS -> R.string.error_auth_email_in_use
         FirebaseFunctionsException.Code.FAILED_PRECONDITION -> R.string.error_verify_resend_cooldown
         FirebaseFunctionsException.Code.UNAUTHENTICATED -> R.string.error_session_expired
         else -> R.string.error_auth_network
