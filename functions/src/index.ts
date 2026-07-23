@@ -22,9 +22,10 @@ const threeDLookBaseUrl = "https://backend.fitxpress.3dlook.me/api/1.0";
 const terraSuccessRedirectUrl = "fitxpress://terra/success";
 const terraFailureRedirectUrl = "fitxpress://terra/failure";
 
-const emailVerificationCollection = "emailVerifications";
+const emailVerificationCollection = "emailVerificationCodes";
 // Must match the "Trigger Email from Firestore" extension's configured collection.
 const emailMailCollection = "mail";
+const usersCollection = "users";
 const emailCodeLength = 5;
 const emailCodeTtlMs = 10 * 60 * 1000;
 const emailResendCooldownMs = 30 * 1000;
@@ -317,11 +318,31 @@ export const threeDLookGetBodyProgress = onCall(threeDLookSecretOptions, async (
 export const sendEmailVerificationCode = onCall(callableOptions, async (request) => {
   const uid = requireAuth(request.auth?.uid);
   const token = request.auth?.token;
-  const email = typeof token?.email === "string" ? token.email : undefined;
-  if (!email) {
+  const currentEmail = typeof token?.email === "string" ? token.email : undefined;
+  if (!currentEmail) {
     throw new HttpsError("failed-precondition", "No email is associated with this account");
   }
-  if (token?.email_verified === true) {
+
+  const isChangeEmail = request.data?.isChangeEmail === true;
+
+  // Plain verification sends the code to the current address; an email change sends it to the
+  // requested new address, which we validate and stash so verifyEmailCode can apply the switch.
+  let targetEmail = currentEmail;
+  if (isChangeEmail) {
+    targetEmail = requireEmail(request.data?.newEmail, "newEmail");
+    if (targetEmail.toLowerCase() === currentEmail.toLowerCase()) {
+      throw new HttpsError("invalid-argument", "The new email matches your current email");
+    }
+    try {
+      await getAuth().getUserByEmail(targetEmail);
+      throw new HttpsError("already-exists", "This email is already in use");
+    } catch (error) {
+      if (error instanceof HttpsError) throw error;
+      if ((error as { code?: string }).code !== "auth/user-not-found") {
+        throw new HttpsError("internal", "Could not verify email availability");
+      }
+    }
+  } else if (token?.email_verified === true) {
     return { alreadyVerified: true };
   }
 
@@ -337,16 +358,25 @@ export const sendEmailVerificationCode = onCall(callableOptions, async (request)
   }
 
   const code = generateVerificationCode();
-  await ref.set({
+  const codeData: Record<string, unknown> = {
     codeHash: hashVerificationCode(uid, code),
-    email,
+    email: targetEmail,
     attempts: 0,
     expiresAt: Timestamp.fromMillis(now + emailCodeTtlMs),
     lastSentAt: Timestamp.fromMillis(now),
     createdAt: FieldValue.serverTimestamp(),
-  });
+  };
+  if (isChangeEmail) {
+    codeData.isChangeEmail = true;
+    codeData.newEmail = targetEmail;
+  }
+  await ref.set(codeData);
 
-  await enqueueVerificationEmail(email, code);
+  if (isChangeEmail) {
+    await enqueueEmailChangeCode(targetEmail, code);
+  } else {
+    await enqueueVerificationEmail(targetEmail, code);
+  }
   return { ok: true };
 });
 
@@ -380,6 +410,25 @@ export const verifyEmailCode = onCall(callableOptions, async (request) => {
   if (!storedHash || !verificationCodeMatches(storedHash, hashVerificationCode(uid, code))) {
     await ref.update({ attempts: FieldValue.increment(1) });
     throw new HttpsError("invalid-argument", "Invalid code. Please try again");
+  }
+
+  const isChangeEmail = snapshot.get("isChangeEmail") === true;
+  const newEmail = snapshot.get("newEmail") as string | undefined;
+
+  if (isChangeEmail && newEmail) {
+    try {
+      await getAuth().updateUser(uid, { email: newEmail, emailVerified: true });
+    } catch (error) {
+      if ((error as { code?: string }).code === "auth/email-already-exists") {
+        await ref.delete();
+        throw new HttpsError("already-exists", "This email is already in use");
+      }
+      throw new HttpsError("internal", "Could not update your email");
+    }
+    await getFirestore().collection(usersCollection).doc(uid)
+      .set({ email: newEmail }, { merge: true });
+    await ref.delete();
+    return { verified: true, email: newEmail };
   }
 
   await getAuth().updateUser(uid, { emailVerified: true });
@@ -418,6 +467,31 @@ function verificationEmailHtml(code: string): string {
     <div style="font-family: Arial, Helvetica, sans-serif; color: #0f172a;">
       <h2 style="margin: 0 0 8px;">Verify your email</h2>
       <p style="margin: 0 0 16px; color: #475569;">Enter this code to confirm your email address:</p>
+      <p style="font-size: 32px; font-weight: 700; letter-spacing: 8px; margin: 0 0 16px;">${code}</p>
+      <p style="margin: 0; color: #94a3b8; font-size: 13px;">
+        This code expires in 10 minutes. If you didn't request it, you can ignore this email.
+      </p>
+    </div>
+  `;
+}
+
+async function enqueueEmailChangeCode(email: string, code: string): Promise<void> {
+  await getFirestore().collection(emailMailCollection).add({
+    to: [email],
+    message: {
+      subject: "Confirm your new HEXIS-BI email",
+      text: `Use this code to confirm your new email address: ${code}. `
+        + "It expires in 10 minutes. If you didn't request this, you can ignore this email.",
+      html: emailChangeCodeHtml(code),
+    },
+  });
+}
+
+function emailChangeCodeHtml(code: string): string {
+  return `
+    <div style="font-family: Arial, Helvetica, sans-serif; color: #0f172a;">
+      <h2 style="margin: 0 0 8px;">Confirm your new email</h2>
+      <p style="margin: 0 0 16px; color: #475569;">Enter this code in the app to confirm your new email address:</p>
       <p style="font-size: 32px; font-weight: 700; letter-spacing: 8px; margin: 0 0 16px;">${code}</p>
       <p style="margin: 0; color: #94a3b8; font-size: 13px;">
         This code expires in 10 minutes. If you didn't request it, you can ignore this email.
@@ -581,6 +655,14 @@ function requireString(value: unknown, field: string): string {
     throw new HttpsError("invalid-argument", `${field} is required`);
   }
   return value.trim();
+}
+
+function requireEmail(value: unknown, field: string): string {
+  const email = requireString(value, field);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new HttpsError("invalid-argument", `${field} is not a valid email`);
+  }
+  return email;
 }
 
 function readString(value: unknown, field: string): string | undefined {
