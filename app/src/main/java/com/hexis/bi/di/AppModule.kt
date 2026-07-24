@@ -159,7 +159,7 @@ val appModule = module {
             get()
         )
     }
-    viewModel { EditProfileViewModel(androidApplication(), get(), get(), get()) }
+    viewModel { EditProfileViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { ForgotPasswordViewModel(get(), androidApplication()) }
     viewModel { VerifyEmailViewModel(get(), androidApplication()) }
     viewModel { ScanPreferencesViewModel(androidApplication(), get(), get()) }

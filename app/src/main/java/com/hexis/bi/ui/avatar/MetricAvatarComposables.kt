@@ -81,6 +81,7 @@ internal fun MetricAvatarPreview(
     showSkinAreas: Boolean = false,
     drawBackground: Boolean = true,
     touchRotationEnabled: Boolean = true,
+    yawOnlyRotation: Boolean = false,
     zoomPanEnabled: Boolean = false,
     /** Bounding-box height for the full-body figure; the renderer solves the distance from it. */
     fullBodyFigureHeight: Dp = Dp.Unspecified,
@@ -123,6 +124,7 @@ internal fun MetricAvatarPreview(
             touchRotationEnabled
         )
     }
+    LaunchedEffect(renderHost, yawOnlyRotation) { renderHost.setYawOnlyRotation(yawOnlyRotation) }
     LaunchedEffect(renderHost, zoomPanEnabled) { renderHost.setZoomPanEnabled(zoomPanEnabled) }
     val density = LocalDensity.current
     val fullBodyFigureHeightPx = remember(density, fullBodyFigureHeight) {

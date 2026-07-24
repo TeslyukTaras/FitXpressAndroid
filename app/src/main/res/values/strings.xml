@@ -96,6 +96,16 @@
     <string name="gender_other">Other</string>
     <string name="action_save">Save</string>
     <string name="action_cancel">Cancel</string>
+    <string name="change_email_action">Change</string>
+    <string name="change_email_dialog_title">Change Email</string>
+    <string name="change_email_dialog_body">Enter your new email and current password.\nWe\'ll send a verification code to the new address.</string>
+    <string name="label_new_email">New email</string>
+    <string name="placeholder_new_email">Your new email</string>
+    <string name="change_email_code_title">Enter Code</string>
+    <string name="change_email_code_prompt">We sent a 5-digit code to</string>
+    <string name="change_email_code_hint">Enter it to confirm your new email.</string>
+    <string name="action_confirm">Confirm</string>
+    <string name="change_email_success">Your email has been updated.</string>
 
     <!-- Scan preferences screen -->
     <string name="scan_preferences_title">Scan Preference</string>

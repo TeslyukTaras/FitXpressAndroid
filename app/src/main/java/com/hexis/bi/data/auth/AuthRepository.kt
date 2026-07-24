@@ -19,7 +19,10 @@ interface AuthRepository {
     val isEmailVerified: Boolean
     val currentUserEmail: String?
     suspend fun sendEmailVerificationCode(): Result<Unit>
+    suspend fun sendChangeEmailCode(newEmail: String): Result<Unit>
     suspend fun verifyEmailCode(code: String): Result<Unit>
+    suspend fun reauthenticateWithPassword(password: String): Result<Unit>
+    suspend fun confirmEmailChange(code: String, newEmail: String, password: String): Result<Unit>
     suspend fun reloadUser(): Result<Boolean>
     suspend fun deleteAccountWithPassword(password: String): Result<Unit>
     suspend fun deleteAccountWithGoogle(context: Context): Result<Unit>
