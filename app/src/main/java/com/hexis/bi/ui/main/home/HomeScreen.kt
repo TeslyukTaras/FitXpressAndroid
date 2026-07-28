@@ -1,5 +1,6 @@
 package com.hexis.bi.ui.main.home
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -125,16 +126,27 @@ fun HomeScreen(
                 age = state.age ?: unknown,
             )
 
-            val suitOrder = state.suitOrder
-            if (suitOrder != null) {
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
-                SuitOrderCard(
-                    data = suitOrder,
-                    onClick = viewModel::showOrderDetails,
-                )
-            } else if (state.suitSectionResolved && !state.isSuitConnected) {
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
-                PromoBanner(onBuyClick = onBuySuitClick)
+            AnimatedContent(
+                targetState = state.suitSection,
+                contentKey = { it::class },
+                modifier = Modifier.fillMaxWidth(),
+            ) { section ->
+                when (section) {
+                    SuitSection.None -> Spacer(Modifier.fillMaxWidth())
+
+                    is SuitSection.Order -> Column {
+                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+                        SuitOrderCard(
+                            data = section.data,
+                            onClick = viewModel::showOrderDetails,
+                        )
+                    }
+
+                    SuitSection.Promo -> Column {
+                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+                        PromoBanner(onBuyClick = onBuySuitClick)
+                    }
+                }
             }
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
