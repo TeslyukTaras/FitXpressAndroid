@@ -16,7 +16,7 @@ import kotlin.math.roundToInt
  * Recovery isn't its own Terra endpoint — we derive it from sleep + activity data
  * already fetched via [SleepRepository] and [ActivityRepository].
  */
-class TerraDerivedRecoveryRepository(
+class DefaultRecoveryRepository(
     private val sleepRepository: SleepRepository,
     private val activityRepository: ActivityRepository,
 ) : RecoveryRepository {

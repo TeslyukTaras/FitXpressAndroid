@@ -29,12 +29,12 @@ private object TerraActivityJsonKeys {
         const val TIMESTAMP_LOCAL = "timestamp_local"
         val CANDIDATES = listOf(
             DATE,
-            START_TIME,
-            END_TIME,
             START_TIME_LOCAL,
             END_TIME_LOCAL,
-            TIMESTAMP,
             TIMESTAMP_LOCAL,
+            START_TIME,
+            END_TIME,
+            TIMESTAMP,
         )
     }
 
@@ -72,8 +72,9 @@ private object TerraActivityJsonKeys {
         const val VO2_MAX_ML_PER_MIN_PER_KG = "vo2_max_ml_per_min_per_kg"
         const val VO2MAX = "vo2max"
         const val VO2_MAX = "vo2_max"
+        const val DAY_AVG_VO2MAX = "day_avg_vo2max_ml_per_min_per_kg"
         val CANDIDATES =
-            listOf(VO2MAX_ML_PER_MIN_PER_KG, VO2_MAX_ML_PER_MIN_PER_KG, VO2MAX, VO2_MAX)
+            listOf(VO2MAX_ML_PER_MIN_PER_KG, VO2_MAX_ML_PER_MIN_PER_KG, VO2MAX, VO2_MAX, DAY_AVG_VO2MAX)
     }
 
     object Steps {
@@ -116,11 +117,12 @@ object TerraActivityJsonMapper {
     fun summaryOrNull(json: JsonElement, fallbackDate: LocalDate? = null): ActivitySummary? {
         val root = json as? JsonObject ?: return null
         val date = root.dateOrNull() ?: fallbackDate ?: return null
-        val steps = root.extractSteps().coerceAtLeast(0)
         val distanceKm = (root.extractDistanceKm()).coerceAtLeast(0f)
         val calories = root.extractActiveCalories().coerceAtLeast(0)
         val durationSeconds = root.extractActiveDurationSeconds().coerceAtLeast(0)
-        val hourlySteps = root.extractHourlySteps(date)
+        val rollupSteps = root.extractSteps().coerceAtLeast(0)
+        val hourlySteps = root.extractHourlySteps(date, rollupSteps)
+        val steps = if (rollupSteps > 0) rollupSteps else hourlySteps.values.sum()
         return ActivitySummary(
             date = date,
             steps = steps,
@@ -277,7 +279,7 @@ private fun JsonObject.walkDeep(): Sequence<Pair<String, JsonElement>> = sequenc
     }
 }
 
-private fun JsonObject.extractHourlySteps(targetDate: LocalDate): Map<Int, Int> {
+private fun JsonObject.extractHourlySteps(targetDate: LocalDate, totalSteps: Int): Map<Int, Int> {
     val samples = mutableListOf<HourlyStepSample>()
     collectHourlyStepSamplesInto(samples)
     val normalized = samples
@@ -289,7 +291,6 @@ private fun JsonObject.extractHourlySteps(targetDate: LocalDate): Map<Int, Int> 
         .toSortedMap()
     if (fromStepSamples.isNotEmpty()) return fromStepSamples
 
-    val totalSteps = extractSteps()
     if (totalSteps <= 0) return emptyMap()
     return estimateHourlyStepsFromActivitySamples(targetDate, totalSteps)
 }
@@ -411,10 +412,10 @@ private fun Map<Int, Float>.scaleWeightsToSteps(totalSteps: Int): Map<Int, Int> 
 
 private fun JsonObject.sampleHourOrNull(): Int? =
     listOf(
-        TerraActivityJsonKeys.DateTime.TIMESTAMP,
         TerraActivityJsonKeys.DateTime.TIMESTAMP_LOCAL,
-        TerraActivityJsonKeys.DateTime.START_TIME,
         TerraActivityJsonKeys.DateTime.START_TIME_LOCAL,
+        TerraActivityJsonKeys.DateTime.TIMESTAMP,
+        TerraActivityJsonKeys.DateTime.START_TIME,
     )
         .firstNotNullOfOrNull { key ->
             (this[key] as? JsonPrimitive)?.contentOrNull()?.toLocalDateTimeOrNull()?.hour
@@ -432,10 +433,10 @@ private fun JsonObject.sampleStepsOrNull(): Int? =
 
 private fun JsonObject.sampleTime(): LocalDateTime? =
     listOf(
-        TerraActivityJsonKeys.DateTime.TIMESTAMP,
         TerraActivityJsonKeys.DateTime.TIMESTAMP_LOCAL,
-        TerraActivityJsonKeys.DateTime.START_TIME,
         TerraActivityJsonKeys.DateTime.START_TIME_LOCAL,
+        TerraActivityJsonKeys.DateTime.TIMESTAMP,
+        TerraActivityJsonKeys.DateTime.START_TIME,
     )
         .firstNotNullOfOrNull { key ->
             (this[key] as? JsonPrimitive)?.contentOrNull()?.toLocalDateTimeOrNull()

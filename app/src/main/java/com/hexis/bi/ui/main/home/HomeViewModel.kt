@@ -59,8 +59,8 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import java.time.LocalDate
+import timber.log.Timber
 import java.time.ZoneId
-import java.time.temporal.ChronoUnit
 import java.util.Locale
 import kotlin.math.abs
 
@@ -85,6 +85,8 @@ class HomeViewModel(
     val state = _state.asStateFlow()
 
     /** Pokes the overview pipeline; replay-less since every Home RESUME re-pokes. */
+    private var terraTileContext: TerraTileContext? = null
+
     private val refreshTrigger = MutableSharedFlow<Unit>(
         extraBufferCapacity = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST,
@@ -152,6 +154,10 @@ class HomeViewModel(
         // cache generation, so the same read transparently refetches the just-synced data.
         merge(refreshTrigger, TerraSdkSync.dataSynced)
             .onEach { reloadOverview() }
+            .launchIn(viewModelScope)
+
+        merge(activityRepository.updates, sleepRepository.updates)
+            .onEach { refreshTerraTiles() }
             .launchIn(viewModelScope)
 
         refreshTrigger
@@ -284,6 +290,7 @@ class HomeViewModel(
                 val isMetric = profile?.unitSystem.isMetricUnitSystem()
                 val heightCm = profile?.heightCm?.toFloat()
                 val scans = scanListDeferred.await()
+                terraTileContext = TerraTileContext(today, window, scans?.firstOrNull(), heightCm)
                 val recompositionScans = recompositionScansDeferred.await()
                 publishScanOverview(scans, isMetric)
                 publishRecompositionOverview(recompositionScans, today)
@@ -296,6 +303,36 @@ class HomeViewModel(
 
                 val terra = terraDeferred.await()
                 val latestScan = scans?.firstOrNull()
+                applyTerraTiles(today, window, terra, latestScan, heightCm)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            setError(e.message)
+        }
+    }
+
+    private suspend fun refreshTerraTiles() {
+        val context = terraTileContext ?: return reloadOverview()
+        try {
+            val terra = loadTerraOverview(context.today, context.window.first())
+            applyTerraTiles(context.today, context.window, terra, context.latestScan, context.heightCm)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Cached health refresh failed; keeping the tiles already shown")
+        }
+    }
+
+    private fun applyTerraTiles(
+        today: LocalDate,
+        window: List<LocalDate>,
+        terra: TerraOverview,
+        latestScan: ScanRecord?,
+        heightCm: Float?,
+    ) {
+        run {
+            run {
                 val todayActivity = terra.activity.firstOrNull { it.date == today }
                 val todayRecovery = terra.recovery.firstOrNull { it.date == today }
                 val longevityScore =
@@ -335,30 +372,25 @@ class HomeViewModel(
                     )
                 }
             }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            setError(e.message)
         }
     }
+
+    private data class TerraTileContext(
+        val today: LocalDate,
+        val window: List<LocalDate>,
+        val latestScan: ScanRecord?,
+        val heightCm: Float?,
+    )
 
     private suspend fun loadTerraOverview(today: LocalDate, windowStart: LocalDate): TerraOverview {
         terraManagerHolder.awaitCurrentOrTimeout()
         return coroutineScope {
-            val sleepDeferred = async {
-                sleepRepository.getSessionsForRange(windowStart.minusDays(1), today).getOrNull()
-                    .orEmpty()
-            }
-            val activityDeferred = async {
-                activityRepository.getSummariesForRange(windowStart, today, TerraDetail.FULL)
-                    .getOrNull().orEmpty()
-            }
+            val sleepDeferred = async { sleepRepository.cachedSessions(windowStart.minusDays(1), today) }
+            val activityDeferred = async { activityRepository.cachedSummaries(windowStart, today) }
 
             val sleep = sleepDeferred.await()
             val activity = activityDeferred.await()
-            val sleepSession = sleep.minByOrNull {
-                abs(ChronoUnit.DAYS.between(it.wakeTime.toLocalDate(), today))
-            }
+            val sleepSession = sleep.firstOrNull { it.wakeTime.toLocalDate() == today }
             val todayActivity = activity.firstOrNull { it.date == today }
             val steps = (todayActivity?.steps ?: 0).coerceAtLeast(0)
             val hourlySteps = todayActivity?.let { s ->

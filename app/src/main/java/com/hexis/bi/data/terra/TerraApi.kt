@@ -170,8 +170,9 @@ private fun logTerraRawJson(
 ) {
     if (Timber.treeCount == 0) return
     Timber.tag("TerraApi").d(
-        "[%s] user=%s range=[%s..%s] bytes=%d",
-        endpoint, redactSensitiveId(terraUserId), startDate, endDate, body.toString().length,
+        "[%s] user=%s range=[%s..%s] rows=%d",
+        endpoint, redactSensitiveId(terraUserId), startDate, endDate,
+        ((body as? Map<*, *>)?.get("data") as? Collection<*>)?.size ?: -1,
     )
 }
 

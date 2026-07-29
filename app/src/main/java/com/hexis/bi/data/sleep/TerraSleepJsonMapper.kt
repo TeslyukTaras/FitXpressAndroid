@@ -80,10 +80,10 @@ internal object TerraSleepJsonMapper {
     fun sessionOrNull(row: JsonElement): SleepSession? {
         val obj = row as? JsonObject ?: return null
         val metadata = obj.objectOrNull(TerraSleepJsonKeys.Metadata.NODE)
-        val bedtime = metadata?.parseTerraDateTimeField(TerraSleepJsonKeys.Metadata.START_TIME)
-            ?: obj.parseTerraDateTimeField(TerraSleepJsonKeys.Metadata.START_TIME)
-            ?: metadata?.parseTerraDateTimeField("start_time_local")
+        val bedtime = metadata?.parseTerraDateTimeField("start_time_local")
             ?: obj.parseTerraDateTimeField("start_time_local")
+            ?: metadata?.parseTerraDateTimeField(TerraSleepJsonKeys.Metadata.START_TIME)
+            ?: obj.parseTerraDateTimeField(TerraSleepJsonKeys.Metadata.START_TIME)
             ?: run {
                 Timber.w(
                     "Terra sleep: missing/unparsed %s in metadata",
@@ -91,10 +91,10 @@ internal object TerraSleepJsonMapper {
                 )
                 return null
             }
-        val wakeTime = metadata?.parseTerraDateTimeField(TerraSleepJsonKeys.Metadata.END_TIME)
-            ?: obj.parseTerraDateTimeField(TerraSleepJsonKeys.Metadata.END_TIME)
-            ?: metadata?.parseTerraDateTimeField("end_time_local")
+        val wakeTime = metadata?.parseTerraDateTimeField("end_time_local")
             ?: obj.parseTerraDateTimeField("end_time_local")
+            ?: metadata?.parseTerraDateTimeField(TerraSleepJsonKeys.Metadata.END_TIME)
+            ?: obj.parseTerraDateTimeField(TerraSleepJsonKeys.Metadata.END_TIME)
             ?: run {
                 Timber.w(
                     "Terra sleep: missing/unparsed %s in metadata",
@@ -174,8 +174,8 @@ internal object TerraSleepJsonMapper {
         val arr = this?.arrayOrNull(arrayField) ?: return emptyList()
         return arr.mapNotNull { el ->
             val o = el as? JsonObject ?: return@mapNotNull null
-            val time = o.parseTerraDateTimeField(TerraSleepJsonKeys.HeartRate.SAMPLE_TIMESTAMP)
-                ?: o.parseTerraDateTimeField(TerraSleepJsonKeys.HeartRate.SAMPLE_TIMESTAMP_LOCAL)
+            val time = o.parseTerraDateTimeField(TerraSleepJsonKeys.HeartRate.SAMPLE_TIMESTAMP_LOCAL)
+                ?: o.parseTerraDateTimeField(TerraSleepJsonKeys.HeartRate.SAMPLE_TIMESTAMP)
                 ?: return@mapNotNull null
             val value = o.float(valueField)?.toInt() ?: return@mapNotNull null
             SleepSample(time = time, value = value)
@@ -238,8 +238,8 @@ internal object TerraSleepJsonMapper {
         val samples = arrayOrNull(TerraSleepJsonKeys.Durations.HYPNOGRAM_SAMPLES)
             ?.mapNotNull { el ->
                 val o = el as? JsonObject ?: return@mapNotNull null
-                val time = o.parseTerraDateTimeField(TerraSleepJsonKeys.HeartRate.SAMPLE_TIMESTAMP)
-                    ?: o.parseTerraDateTimeField(TerraSleepJsonKeys.HeartRate.SAMPLE_TIMESTAMP_LOCAL)
+                val time = o.parseTerraDateTimeField(TerraSleepJsonKeys.HeartRate.SAMPLE_TIMESTAMP_LOCAL)
+                    ?: o.parseTerraDateTimeField(TerraSleepJsonKeys.HeartRate.SAMPLE_TIMESTAMP)
                     ?: return@mapNotNull null
                 val stage = o.int(TerraSleepJsonKeys.Durations.HYPNOGRAM_LEVEL)?.toSleepStage()
                     ?: return@mapNotNull null

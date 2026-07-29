@@ -16,6 +16,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.data.reminder.ScanReminderScheduler
+import com.hexis.bi.data.health.sync.HealthSyncCoordinator
 import com.hexis.bi.data.terra.TerraCallbackHandler
 import com.hexis.bi.data.terra.TerraManagerHolder
 import com.hexis.bi.data.terra.TerraSdkSync
@@ -34,6 +35,7 @@ class MainActivity : ComponentActivity() {
     private val terraManagerHolder: TerraManagerHolder by inject()
     private val notificationPermissionCoordinator: NotificationPermissionCoordinator by inject()
     private val scanReminderScheduler: ScanReminderScheduler by inject()
+    private val healthSyncCoordinator: HealthSyncCoordinator by inject()
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -102,6 +104,7 @@ class MainActivity : ComponentActivity() {
                         force = false,
                     )
                 }
+            healthSyncCoordinator.syncRecentWindow()
         }
     }
 
