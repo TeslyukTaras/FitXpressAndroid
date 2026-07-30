@@ -1,5 +1,6 @@
 package com.hexis.bi.ui.main.home.components
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -42,7 +43,11 @@ fun HomeHeader(
 
         Spacer(Modifier.width(dimensionResource(R.dimen.spacer_m)))
 
-        Column(modifier = Modifier.weight(1f)) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .animateContentSize(),
+        ) {
             Text(
                 text = userName,
                 style = MaterialTheme.typography.titleMedium,

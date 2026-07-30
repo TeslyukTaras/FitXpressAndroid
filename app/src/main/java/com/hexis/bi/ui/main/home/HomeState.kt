@@ -2,10 +2,12 @@ package com.hexis.bi.ui.main.home
 
 import androidx.annotation.StringRes
 import com.hexis.bi.R
+import com.hexis.bi.domain.longevity.LongevityDirection
 import com.hexis.bi.ui.main.buysuit.orderdetails.OrderDetailsUi
 import com.hexis.bi.utils.constants.ActivityConstants
 import com.hexis.bi.utils.constants.IntelligenceConstants
 import com.hexis.bi.utils.constants.SleepConstants
+import java.util.Locale
 
 /** Activity overview card: today's step total plus the hourly distribution for the mini bar chart. */
 data class ActivityOverview(
@@ -38,6 +40,14 @@ data class SuitOrderOverview(
     val eta: String?,
 )
 
+sealed interface SuitSection {
+    data object None : SuitSection
+
+    data class Order(val data: SuitOrderOverview) : SuitSection
+
+    data object Promo : SuitSection
+}
+
 /** Scan overview card: the headline key change plus a trend series for the sparkline. */
 data class ScanOverview(
     val value: String = "",
@@ -48,16 +58,23 @@ data class ScanOverview(
     val trend: List<Float> = emptyList(),
 )
 
-enum class IntelligenceScoreKey { RECOMPOSITION, PHYSIQUE_DRIFT, LONGEVITY, PACE_OF_AGING }
+enum class IntelligenceScoreKey { PHYSIQUE_DRIFT, PACE_OF_AGING, LONGEVITY, RECOMPOSITION }
+
+sealed interface IntelligenceTileValue {
+    data class Gauge(
+        val value: String,
+        val fraction: Float,
+    ) : IntelligenceTileValue
+
+    data class Direction(val direction: LongevityDirection) : IntelligenceTileValue
+
+    data class Amount(val value: String, @StringRes val unitRes: Int) : IntelligenceTileValue
+}
 
 data class IntelligenceScoreData(
     val key: IntelligenceScoreKey,
     @StringRes val titleRes: Int,
-    val value: String,
-    /** Gauge fill in [0, 1]. */
-    val fraction: Float,
-    /** True when there is no real data yet; the gauge shows a "Coming" placeholder. */
-    val comingSoon: Boolean = false,
+    val value: IntelligenceTileValue,
 )
 
 data class HomeState(
@@ -79,65 +96,73 @@ data class HomeState(
     val sleep: SleepOverview = SleepOverview(),
     val scan: ScanOverview = ScanOverview(),
     val recompositionValue: String = "0",
-    val recompositionFraction: Float = 0f,
-    val recoveryScore: Int? = null,
     val physiqueScore: Float? = null,
-    val longevityScore: Int? = null,
+    val longevityDirection: LongevityDirection = LongevityDirection.BuildingYourTrend,
     val paceOfAgingValue: String? = null,
     val paceOfAgingScore: Int? = null,
 ) {
+    val suitSection: SuitSection
+        get() = when {
+            suitOrder != null -> SuitSection.Order(suitOrder)
+            suitSectionResolved && !isSuitConnected -> SuitSection.Promo
+            else -> SuitSection.None
+        }
+
     /**
-     * The four "Body Intelligence" gauges. Longevity uses a 0-100 score; Physique Drift uses a
-     * 1-10 score; Pace of Aging displays the pace multiplier with a derived 0-100 fill.
+     * The four "Body Intelligence" tiles. Physique Drift (a 0-10 score) and Pace of Aging (the pace
+     * multiplier with a derived 0-100 fill) read as gauges; Longevity reports the trend word its own
+     * screen leads with, and Recomposition the kilograms recomposed.
      */
     val intelligenceScores: List<IntelligenceScoreData>
         get() = listOf(
-            recompositionGauge(),
-            physiqueGauge(),
-            scoreGauge(IntelligenceScoreKey.LONGEVITY, R.string.intelligence_longevity, longevityScore),
-            paceGauge(),
+            physiqueTile(),
+            paceTile(),
+            longevityTile(),
+            recompositionTile(),
         )
 
-    private fun recompositionGauge(): IntelligenceScoreData =
-        IntelligenceScoreData(
-            key = IntelligenceScoreKey.RECOMPOSITION,
-            titleRes = R.string.intelligence_recomposition,
-            value = recompositionValue,
-            fraction = recompositionFraction.coerceIn(0f, 1f),
-        )
-
-    private fun scoreGauge(key: IntelligenceScoreKey, @StringRes titleRes: Int, score: Int?): IntelligenceScoreData {
-        val clamped = (score ?: 0).coerceIn(0, IntelligenceConstants.MAX_SCORE_INT)
-        return IntelligenceScoreData(
-            key = key,
-            titleRes = titleRes,
-            value = clamped.toString(),
-            fraction = clamped / IntelligenceConstants.MAX_SCORE,
-        )
-    }
-
-    private fun paceGauge(): IntelligenceScoreData {
-        val clamped = (paceOfAgingScore ?: 0).coerceIn(0, IntelligenceConstants.MAX_SCORE_INT)
-        return IntelligenceScoreData(
-            key = IntelligenceScoreKey.PACE_OF_AGING,
-            titleRes = R.string.intelligence_pace_of_aging,
-            value = paceOfAgingValue ?: 0.toString(),
-            fraction = clamped / IntelligenceConstants.MAX_SCORE,
-        )
-    }
-
-    private fun physiqueGauge(): IntelligenceScoreData {
+    private fun physiqueTile(): IntelligenceScoreData {
         val clamped = (physiqueScore ?: 0f).coerceIn(PHYSIQUE_MIN_SCORE, PHYSIQUE_MAX_SCORE)
         return IntelligenceScoreData(
             key = IntelligenceScoreKey.PHYSIQUE_DRIFT,
             titleRes = R.string.intelligence_physique_drift,
-            value = if (physiqueScore == null) "0" else String.format(java.util.Locale.US, "%.1f", clamped),
-            fraction = clamped / PHYSIQUE_MAX_SCORE,
+            value = IntelligenceTileValue.Gauge(
+                value = if (physiqueScore == null) "0"
+                else String.format(Locale.US, PHYSIQUE_SCORE_FORMAT, clamped),
+                fraction = clamped / PHYSIQUE_MAX_SCORE,
+            ),
         )
     }
+
+    private fun paceTile(): IntelligenceScoreData {
+        val clamped = (paceOfAgingScore ?: 0).coerceIn(0, IntelligenceConstants.MAX_SCORE_INT)
+        return IntelligenceScoreData(
+            key = IntelligenceScoreKey.PACE_OF_AGING,
+            titleRes = R.string.intelligence_pace_of_aging,
+            value = IntelligenceTileValue.Gauge(
+                value = paceOfAgingValue ?: 0.toString(),
+                fraction = clamped / IntelligenceConstants.MAX_SCORE,
+            ),
+        )
+    }
+
+    private fun longevityTile(): IntelligenceScoreData =
+        IntelligenceScoreData(
+            key = IntelligenceScoreKey.LONGEVITY,
+            titleRes = R.string.intelligence_longevity,
+            value = IntelligenceTileValue.Direction(longevityDirection),
+        )
+
+    private fun recompositionTile(): IntelligenceScoreData =
+        IntelligenceScoreData(
+            key = IntelligenceScoreKey.RECOMPOSITION,
+            titleRes = R.string.intelligence_recomposition,
+            value = IntelligenceTileValue.Amount(recompositionValue, R.string.unit_kg),
+        )
 
     private companion object {
         const val PHYSIQUE_MIN_SCORE = 0f
         const val PHYSIQUE_MAX_SCORE = 10f
+        const val PHYSIQUE_SCORE_FORMAT = "%.1f"
     }
 }

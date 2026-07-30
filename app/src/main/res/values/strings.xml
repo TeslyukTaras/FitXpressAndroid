@@ -179,12 +179,10 @@
     <string name="home_action_buy_suit">Buy Suit</string>
     <string name="home_overview_title">Overview</string>
     <string name="home_intelligence_title">Body Intelligence</string>
-    <string name="intelligence_recovery">Recovery</string>
     <string name="intelligence_recomposition">Recomposition</string>
     <string name="intelligence_physique_drift">Physique Drift</string>
     <string name="intelligence_longevity">Longevity</string>
     <string name="intelligence_pace_of_aging">Pace of Aging</string>
-    <string name="intelligence_coming">Coming</string>
     <string name="home_card_sleep">Sleep</string>
     <string name="home_card_activity">Activity</string>
     <!-- Activity mini bar chart day-range labels. -->
