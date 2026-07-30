@@ -15,11 +15,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.IntelligenceScoreData
 import com.hexis.bi.ui.main.home.IntelligenceScoreKey
+import com.hexis.bi.ui.main.home.IntelligenceTileValue
+import com.hexis.bi.ui.main.home.longevity.components.directionColor
+import com.hexis.bi.ui.main.home.longevity.components.labelRes
 
 @Composable
 fun IntelligenceScoresCard(
@@ -39,7 +44,7 @@ fun IntelligenceScoresCard(
                 horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_s)),
             ) {
                 rowScores.forEach { score ->
-                    GaugeCard(
+                    IntelligenceTile(
                         score = score,
                         onClick = { onScoreClick(score.key) },
                         modifier = Modifier
@@ -54,7 +59,7 @@ fun IntelligenceScoresCard(
 }
 
 @Composable
-private fun GaugeCard(
+private fun IntelligenceTile(
     score: IntelligenceScoreData,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -73,11 +78,42 @@ private fun GaugeCard(
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
 
-        IntelligenceGauge(
-            fraction = score.fraction,
-            value = score.value,
-            comingSoon = score.comingSoon,
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-        )
+        when (val value = score.value) {
+            is IntelligenceTileValue.Gauge -> IntelligenceGauge(
+                fraction = value.fraction,
+                value = value.value,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            )
+
+            is IntelligenceTileValue.Direction -> Text(
+                text = stringResource(value.direction.labelRes),
+                style = MaterialTheme.typography.titleMedium,
+                color = directionColor(value.direction),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            is IntelligenceTileValue.Amount -> AmountValue(value)
+        }
     }
+}
+@Composable
+private fun AmountValue(
+    amount: IntelligenceTileValue.Amount,
+    modifier: Modifier = Modifier,
+) {
+    val numberStyle = MaterialTheme.typography.headlineMedium.toSpanStyle()
+        .copy(color = MaterialTheme.colorScheme.primary)
+    val unitStyle = MaterialTheme.typography.bodyMedium.toSpanStyle()
+        .copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Text(
+        text = buildAnnotatedString {
+            withStyle(numberStyle) { append(amount.value) }
+            append(" ")
+            withStyle(unitStyle) { append(stringResource(amount.unitRes)) }
+        },
+        style = MaterialTheme.typography.headlineMedium,
+        textAlign = TextAlign.Center,
+        modifier = modifier.fillMaxWidth(),
+    )
 }

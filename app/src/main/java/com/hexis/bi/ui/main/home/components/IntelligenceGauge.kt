@@ -18,22 +18,19 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
 import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.utils.constants.IntelligenceConstants
 
 /**
  * Downward-opening semicircle gauge: a grey track with a red → yellow → green fill proportional to
- * [fraction], and [value] centred at the flat edge. When [comingSoon] is true, the arc stays empty
- * and a muted "Coming" label is shown instead of a value. Used by the Body Intelligence cards.
+ * [fraction], and [value] centred at the flat edge. Used by the Body Intelligence cards.
  */
 @Composable
 internal fun IntelligenceGauge(
     fraction: Float,
     value: String,
     modifier: Modifier = Modifier,
-    comingSoon: Boolean = false,
 ) {
     val ext = NocturnePulseTheme.extendedColors
     val trackColor = ext.gaugeTrack
@@ -88,17 +85,9 @@ internal fun IntelligenceGauge(
         }
 
         Text(
-            text = if (comingSoon) stringResource(R.string.intelligence_coming) else value,
-            style = if (comingSoon) {
-                MaterialTheme.typography.bodyMedium
-            } else {
-                MaterialTheme.typography.bodyLarge
-            },
-            color = if (comingSoon) {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            } else {
-                MaterialTheme.colorScheme.onBackground
-            },
+            text = value,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onBackground,
         )
     }
 }

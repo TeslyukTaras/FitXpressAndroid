@@ -18,6 +18,7 @@ import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.body.BodyMeasurementKeys
 import com.hexis.bi.domain.body.BodyMeasurementRegion
 import com.hexis.bi.domain.body.physiqueScore
+import com.hexis.bi.domain.longevity.LongevityCalculator
 import com.hexis.bi.domain.longevity.PaceOfAgingInputs
 import com.hexis.bi.domain.longevity.agingScore
 import com.hexis.bi.domain.longevity.computePaceOfAging
@@ -31,13 +32,13 @@ import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.base.UiEvent
 import com.hexis.bi.ui.main.buysuit.orderdetails.OrderDetailsUi
 import com.hexis.bi.ui.main.buysuit.orderdetails.OrderTimelineStepUi
-import com.hexis.bi.ui.main.home.longevity.currentLongevityScore
 import com.hexis.bi.ui.main.home.longevity.longevityScoreWindow
 import com.hexis.bi.ui.main.home.longevity.waistToHeightRatio
 import com.hexis.bi.ui.main.scan.results.MeasurementChange
 import com.hexis.bi.utils.calculateAge
 import com.hexis.bi.utils.cmToInches
 import com.hexis.bi.utils.constants.ActivityConstants
+import com.hexis.bi.utils.constants.LongevityFoundationConstants
 import com.hexis.bi.utils.constants.OrderConstants
 import com.hexis.bi.utils.constants.RecompositionConstants
 import com.hexis.bi.utils.constants.SleepConstants
@@ -263,8 +264,7 @@ class HomeViewModel(
             TerraSdkSync.invalidateCaches()
             coroutineScope {
                 val today = LocalDate.now()
-                val window = longevityScoreWindow(today)
-                val windowStart = window.first()
+                val windowStart = longevityScoreWindow(today).first()
 
                 val profileDeferred = async { userRepository.getUser().getOrNull() }
                 val scanListDeferred = async {
@@ -294,6 +294,7 @@ class HomeViewModel(
                 val recompositionScans = recompositionScansDeferred.await()
                 publishScanOverview(scans, isMetric)
                 publishRecompositionOverview(recompositionScans, today)
+                publishLongevityDirection(recompositionScans, heightCm, today)
                 // physiqueScore needs a FULL scan: shoulders comes from front_linear_params, so the
                 // LIST_SUMMARY `scans` record (circumference only) would drop the Proportion component
                 // and yield a different score than the Physique Drift screen. Refetch the latest in full.
@@ -335,14 +336,6 @@ class HomeViewModel(
             run {
                 val todayActivity = terra.activity.firstOrNull { it.date == today }
                 val todayRecovery = terra.recovery.firstOrNull { it.date == today }
-                val longevityScore =
-                    currentLongevityScore(
-                        window,
-                        terra.recovery,
-                        terra.activity,
-                        latestScan,
-                        heightCm
-                    )
                 val pace = computePaceOfAging(
                     PaceOfAgingInputs(
                         hrvMs = todayRecovery?.hrvMs,
@@ -359,8 +352,6 @@ class HomeViewModel(
 
                 _state.update {
                     it.copy(
-                        recoveryScore = (todayRecovery?.score ?: 0).coerceAtLeast(0),
-                        longevityScore = longevityScore,
                         paceOfAgingValue = pace?.let { p ->
                             String.format(
                                 Locale.US,
@@ -468,9 +459,22 @@ class HomeViewModel(
         _state.update {
             it.copy(
                 recompositionValue = String.format(Locale.US, RECOMPOSITION_FORMAT, recomposedKg),
-                recompositionFraction = recomposedKg / RecompositionConstants.HOME_GAUGE_NORMALIZATION_KG,
             )
         }
+    }
+
+    private fun publishLongevityDirection(
+        scans: List<ScanRecord>?,
+        heightCm: Float?,
+        today: LocalDate,
+    ) {
+        val direction = LongevityCalculator.evaluateBody(
+            scans = scans.orEmpty(),
+            heightCm = heightCm,
+            windowStart = today.minusWeeks(LongevityFoundationConstants.WINDOW_WEEKS_SHORT),
+            windowEnd = today,
+        ).direction
+        _state.update { it.copy(longevityDirection = direction) }
     }
 
     private fun formatSteps(steps: Int): String = "%,d".format(steps.coerceAtLeast(0))
