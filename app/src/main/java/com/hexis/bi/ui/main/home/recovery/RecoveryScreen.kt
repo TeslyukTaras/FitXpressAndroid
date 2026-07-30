@@ -1,5 +1,10 @@
 package com.hexis.bi.ui.main.home.recovery
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -25,6 +30,7 @@ import com.hexis.bi.ui.components.AppTabSelector
 import com.hexis.bi.ui.components.LightStatusBarIcons
 import com.hexis.bi.ui.main.home.recovery.components.RecoveryInfoBottomSheet
 import com.hexis.bi.ui.theme.screenBackground
+import com.hexis.bi.utils.constants.AnimationConstants
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,7 +56,7 @@ fun RecoveryScreen(
                 )
                 .screenBackground(),
             containerColor = Color.Transparent,
-            isLoading = isLoading,
+            isLoading = isLoading || state.isTabLoading,
             error = error,
             onDismissError = viewModel::clearError,
             topBar = {
@@ -77,22 +83,33 @@ fun RecoveryScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                when (state.selectedTab) {
-                    RecoveryTab.Day -> {
-                        RecoveryDayContent(
-                            state = state,
-                            onInfoClick = viewModel::showInfoSheet,
-                            onPreviousDay = viewModel::previousDay,
-                            onNextDay = viewModel::nextDay,
-                        )
-                    }
+                AnimatedContent(
+                    targetState = state.selectedTab,
+                    transitionSpec = {
+                        fadeIn(tween(AnimationConstants.TAB_CONTENT_FADE_IN_MS)) togetherWith
+                            fadeOut(tween(AnimationConstants.TAB_CONTENT_FADE_OUT_MS))
+                    },
+                    label = "recoveryTabContent",
+                ) { selectedTab ->
+                    Column {
+                        when (selectedTab) {
+                            RecoveryTab.Day -> {
+                                RecoveryDayContent(
+                                    state = state,
+                                    onInfoClick = viewModel::showInfoSheet,
+                                    onPreviousDay = viewModel::previousDay,
+                                    onNextDay = viewModel::nextDay,
+                                )
+                            }
 
-                    RecoveryTab.Summary -> {
-                        RecoverySummaryContent(
-                            state = state,
-                            onPreviousWeek = viewModel::previousWeek,
-                            onNextWeek = viewModel::nextWeek,
-                        )
+                            RecoveryTab.Summary -> {
+                                RecoverySummaryContent(
+                                    state = state,
+                                    onPreviousWeek = viewModel::previousWeek,
+                                    onNextWeek = viewModel::nextWeek,
+                                )
+                            }
+                        }
                     }
                 }
 

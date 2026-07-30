@@ -1,5 +1,8 @@
 package com.hexis.bi.ui.main.home.sleep.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +17,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -25,6 +30,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -41,6 +47,7 @@ import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.sleep.TimelineSegment
 import com.hexis.bi.ui.main.home.sleep.nameRes
 import com.hexis.bi.ui.theme.NocturnePulseTheme
+import com.hexis.bi.utils.constants.AnimationConstants
 import com.hexis.bi.utils.constants.SleepConstants
 import com.hexis.bi.utils.constants.TimeConstants
 import com.hexis.bi.utils.formatHour
@@ -183,6 +190,12 @@ private fun TimelineChart(
     val cornerRadius = dimensionResource(R.dimen.sleep_timeline_corner_radius)
     val stageColor = rememberSleepStageColors()
 
+    val reveal = remember { Animatable(0f) }
+    LaunchedEffect(segments) {
+        reveal.snapTo(0f)
+        reveal.animateTo(1f, tween(AnimationConstants.LINE_WIPE_MS, easing = FastOutSlowInEasing))
+    }
+
     Canvas(modifier = modifier) {
         val stageHeightPx = stageHeight.toPx()
         val lineWidthPx = lineWidth.toPx()
@@ -253,17 +266,18 @@ private fun TimelineChart(
             linePath.lineTo(x1, py)
         }
 
-        // One translucent, color-shifting line with 2dp rounded corners.
-        drawPath(
-            path = linePath,
-            brush = lineBrush,
-            style = Stroke(
-                width = lineWidthPx,
-                cap = StrokeCap.Round,
-                join = StrokeJoin.Round,
-                pathEffect = PathEffect.cornerPathEffect(cornerRadiusPx),
-            ),
-        )
+        clipRect(right = size.width * reveal.value) {
+            drawPath(
+                path = linePath,
+                brush = lineBrush,
+                style = Stroke(
+                    width = lineWidthPx,
+                    cap = StrokeCap.Round,
+                    join = StrokeJoin.Round,
+                    pathEffect = PathEffect.cornerPathEffect(cornerRadiusPx),
+                ),
+            )
+        }
     }
 }
 

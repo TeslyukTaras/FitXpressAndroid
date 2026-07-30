@@ -1,5 +1,10 @@
 package com.hexis.bi.ui.main.body
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -33,6 +38,7 @@ import com.hexis.bi.ui.components.LightStatusBarIcons
 import com.hexis.bi.ui.main.body.components.BisInfoBottomSheet
 import com.hexis.bi.ui.main.body.components.BodyProportionInfoBottomSheet
 import com.hexis.bi.ui.theme.screenBackground
+import com.hexis.bi.utils.constants.AnimationConstants
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -111,51 +117,62 @@ fun BodyScreen(
                 BodyTab.Visual, BodyTab.MyBody, BodyTab.Compare -> Unit
             }
 
-            when (state.selectedTab) {
-                BodyTab.Stats -> Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
-                ) {
-                    StatsContent(
-                        state = state,
-                        onMassUnitChange = viewModel::selectMassUnit,
-                        onTimeRangeChange = viewModel::selectTimeRange,
-                        onPhysiqueBalanceClick = onPhysiqueBalanceClick,
-                        onRetry = viewModel::retry,
-                    )
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
+            AnimatedContent(
+                modifier = Modifier.weight(1f),
+                targetState = state.selectedTab,
+                transitionSpec = {
+                    fadeIn(tween(AnimationConstants.TAB_CONTENT_FADE_IN_MS)) togetherWith
+                        fadeOut(tween(AnimationConstants.TAB_CONTENT_FADE_OUT_MS))
+                },
+                label = "bodyTabContent",
+            ) { selectedTab ->
+                Column(modifier = Modifier.fillMaxSize()) {
+                    when (selectedTab) {
+                        BodyTab.Stats -> Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+                        ) {
+                            StatsContent(
+                                state = state,
+                                onMassUnitChange = viewModel::selectMassUnit,
+                                onTimeRangeChange = viewModel::selectTimeRange,
+                                onPhysiqueBalanceClick = onPhysiqueBalanceClick,
+                                onRetry = viewModel::retry,
+                            )
+                            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
+                        }
+
+                        BodyTab.Visual -> VisualContent(
+                            state = state.visual,
+                            isMetric = state.isMetric,
+                            onBodyPartSelected = viewModel::selectBodyPart,
+                            onModeSelected = viewModel::selectMode,
+                            onScanSelected = viewModel::selectVisualScan,
+                            modifier = Modifier.weight(1f),
+                        )
+
+                        BodyTab.Compare -> CompareContent(
+                            state = state.compare,
+                            isMetric = state.isMetric,
+                            onSelectLeftScan = viewModel::selectCompareLeftScan,
+                            onSelectRightScan = viewModel::selectCompareRightScan,
+                            onModeSelected = viewModel::selectMode,
+                            onBodyPartSelected = viewModel::selectCompareBodyPart,
+                            modifier = Modifier.weight(1f),
+                        )
+
+                        BodyTab.MyBody -> MyBodyContent(
+                            visualState = state.visual,
+                            proportionState = state.bodyProportion,
+                            isMetric = state.isMetric,
+                            onInfoClick = viewModel::showBodyProportionInfo,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
-
-                BodyTab.Visual -> VisualContent(
-                    state = state.visual,
-                    isMetric = state.isMetric,
-                    onBodyPartSelected = viewModel::selectBodyPart,
-                    onModeSelected = viewModel::selectMode,
-                    onScanSelected = viewModel::selectVisualScan,
-                    modifier = Modifier.weight(1f),
-                )
-
-                BodyTab.Compare -> CompareContent(
-                    state = state.compare,
-                    isMetric = state.isMetric,
-                    onSelectLeftScan = viewModel::selectCompareLeftScan,
-                    onSelectRightScan = viewModel::selectCompareRightScan,
-                    onModeSelected = viewModel::selectMode,
-                    onBodyPartSelected = viewModel::selectCompareBodyPart,
-                    modifier = Modifier.weight(1f),
-                )
-
-                BodyTab.MyBody -> MyBodyContent(
-                    visualState = state.visual,
-                    proportionState = state.bodyProportion,
-                    isMetric = state.isMetric,
-                    onInfoClick = viewModel::showBodyProportionInfo,
-                    modifier = Modifier.weight(1f),
-                )
             }
-
         }
     }
 

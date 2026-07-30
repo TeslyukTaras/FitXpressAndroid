@@ -110,4 +110,12 @@ data class ActivityState(
 
     val selectedWeekDay: WeekDayData?
         get() = weekDays.getOrNull(selectedWeekDayIndex)
+
+    val isTabLoading: Boolean
+        get() = when (selectedTab) {
+            ActivityTab.Day -> dayLoadState == ActivityLoadState.Loading
+            ActivityTab.Week -> weekLoadState == ActivityLoadState.Loading
+            ActivityTab.Month -> monthLoadState == ActivityLoadState.Loading
+            ActivityTab.Year -> yearLoadState == ActivityLoadState.Loading
+        }
 }

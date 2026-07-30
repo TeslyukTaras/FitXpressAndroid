@@ -1,5 +1,10 @@
 package com.hexis.bi.ui.main.home.sleep
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -34,6 +39,7 @@ import com.hexis.bi.ui.components.LightStatusBarIcons
 import com.hexis.bi.ui.main.home.sleep.components.SleepRecoverySheetBody
 import com.hexis.bi.ui.main.home.sleep.components.SleepSettingsDialogContent
 import com.hexis.bi.ui.theme.screenBackground
+import com.hexis.bi.utils.constants.AnimationConstants
 import com.hexis.bi.utils.providerDisplayName
 import org.koin.androidx.compose.koinViewModel
 
@@ -64,7 +70,7 @@ fun SleepScreen(
                 )
                 .screenBackground(),
             containerColor = Color.Transparent,
-            isLoading = isLoading,
+            isLoading = isLoading || state.isTabLoading,
             error = error,
             onDismissError = viewModel::clearError,
             topBar = {
@@ -100,22 +106,35 @@ fun SleepScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                when (state.selectedTab) {
-                    SleepTab.Day -> SleepDayContent(
-                        state = state,
-                        onInfoClick = viewModel::showRecoverySheet,
-                        onPreviousDay = viewModel::previousDay,
-                        onNextDay = viewModel::nextDay,
-                        onRetry = viewModel::retryLoad,
-                    )
+                AnimatedContent(
+                    targetState = state.selectedTab,
+                    transitionSpec = {
+                        fadeIn(tween(AnimationConstants.TAB_CONTENT_FADE_IN_MS)) togetherWith
+                            fadeOut(tween(AnimationConstants.TAB_CONTENT_FADE_OUT_MS))
+                    },
+                    label = "sleepTabContent",
+                ) { selectedTab ->
+                    // AnimatedContent's slot isn't a ColumnScope; each *Content composable below
+                    // emits loose siblings that rely on the caller arranging them vertically.
+                    Column {
+                        when (selectedTab) {
+                            SleepTab.Day -> SleepDayContent(
+                                state = state,
+                                onInfoClick = viewModel::showRecoverySheet,
+                                onPreviousDay = viewModel::previousDay,
+                                onNextDay = viewModel::nextDay,
+                                onRetry = viewModel::retryLoad,
+                            )
 
-                    SleepTab.Summary -> SleepSummaryContent(
-                        state = state,
-                        onInfoClick = viewModel::showRecoverySheet,
-                        onPreviousWeek = viewModel::previousWeek,
-                        onNextWeek = viewModel::nextWeek,
-                        onRetry = viewModel::retrySummaryLoad,
-                    )
+                            SleepTab.Summary -> SleepSummaryContent(
+                                state = state,
+                                onInfoClick = viewModel::showRecoverySheet,
+                                onPreviousWeek = viewModel::previousWeek,
+                                onNextWeek = viewModel::nextWeek,
+                                onRetry = viewModel::retrySummaryLoad,
+                            )
+                        }
+                    }
                 }
 
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))

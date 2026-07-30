@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -36,16 +35,7 @@ fun RecoveryDayContent(
     )
     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxs)))
 
-    when (state.dayLoadState) {
-        RecoveryLoadState.Loading -> RecoveryLoadPlaceholder {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-        }
-
-        // No "cannot load" view: a failed/empty load falls through to the cards,
-        // which render "—" for any missing values.
-        RecoveryLoadState.Ready,
-        RecoveryLoadState.Error -> RecoveryDayReady(state = state, onInfoClick = onInfoClick)
-    }
+    RecoveryDayReady(state = state, onInfoClick = onInfoClick)
 }
 
 @Composable

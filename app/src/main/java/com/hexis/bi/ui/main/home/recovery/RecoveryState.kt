@@ -81,4 +81,10 @@ data class RecoveryState(
     val showInfoSheet: Boolean = false,
 ) {
     val status: RecoveryStatus get() = RecoveryStatus.fromScore(score)
+
+    val isTabLoading: Boolean
+        get() = when (selectedTab) {
+            RecoveryTab.Day -> dayLoadState == RecoveryLoadState.Loading
+            RecoveryTab.Summary -> summaryLoadState == RecoveryLoadState.Loading
+        }
 }

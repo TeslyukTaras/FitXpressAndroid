@@ -1,5 +1,8 @@
 package com.hexis.bi.ui.main.home.sleep.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +28,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -35,6 +40,7 @@ import com.hexis.bi.ui.components.AppVerticalGradientDivider
 import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.sleep.ChartPoint
 import com.hexis.bi.ui.theme.NocturnePulseTheme
+import com.hexis.bi.utils.constants.AnimationConstants
 import com.hexis.bi.ui.theme.TitleHighlightTextStyle
 import com.hexis.bi.utils.formatHour
 import kotlin.math.floor
@@ -168,6 +174,13 @@ private fun HeartMetricsChart(
     val gridLineVertical = NocturnePulseTheme.extendedColors.chartGridLineVertical
     val hrvFillColor = NocturnePulseTheme.extendedColors.chartLine
     val hrvLineColor = NocturnePulseTheme.extendedColors.chartHrvLine
+
+    val reveal = remember { Animatable(0f) }
+    LaunchedEffect(hrvSeries, rhrSeries) {
+        reveal.snapTo(0f)
+        reveal.animateTo(1f, tween(AnimationConstants.LINE_WIPE_MS, easing = FastOutSlowInEasing))
+    }
+
     Box(modifier = modifier) {
         Canvas(modifier = Modifier.matchParentSize()) {
             val gridStroke = gridWidth.toPx()
@@ -214,8 +227,10 @@ private fun HeartMetricsChart(
             )
 
             if (range != null) {
-                drawSeries(hrvSeries, range, hrvLineColor, hrvBrush, lineStroke)
-                drawSeries(rhrSeries, range, rhrColor, rhrBrush, lineStroke)
+                clipRect(right = size.width * reveal.value) {
+                    drawSeries(hrvSeries, range, hrvLineColor, hrvBrush, lineStroke)
+                    drawSeries(rhrSeries, range, rhrColor, rhrBrush, lineStroke)
+                }
             }
         }
     }

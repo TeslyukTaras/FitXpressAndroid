@@ -1,5 +1,10 @@
 package com.hexis.bi.ui.main.scan.results.content
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +24,7 @@ import com.hexis.bi.ui.main.body.MyBodyContent
 import com.hexis.bi.ui.main.body.VisualContent
 import com.hexis.bi.ui.main.scan.results.ResultsState
 import com.hexis.bi.ui.main.scan.results.ResultsTab
+import com.hexis.bi.utils.constants.AnimationConstants
 
 internal data class ScanResultsActions(
     val onTabSelected: (ResultsTab) -> Unit,
@@ -53,41 +59,52 @@ internal fun ScanResultsContent(
 
         val bottomClearance = dimensionResource(R.dimen.spacer_l)
 
-        when (state.selectedTab) {
-            ResultsTab.Visual -> VisualContent(
-                state = state.visual,
-                isMetric = state.isMetric,
-                onBodyPartSelected = actions.onVisualBodyPartSelected,
-                onModeSelected = actions.onModeSelected,
-                onScanSelected = actions.onVisualScanSelected,
-                showScanSelector = false,
-                bottomClearance = bottomClearance,
-                onAvatarReady = onAvatarReady,
-                modifier = Modifier.weight(1f),
-            )
+        AnimatedContent(
+            modifier = Modifier.weight(1f),
+            targetState = state.selectedTab,
+            transitionSpec = {
+                fadeIn(tween(AnimationConstants.TAB_CONTENT_FADE_IN_MS)) togetherWith
+                    fadeOut(tween(AnimationConstants.TAB_CONTENT_FADE_OUT_MS))
+            },
+            label = "scanResultsTabContent",
+        ) { selectedTab ->
+            Column(modifier = Modifier.fillMaxSize()) {
+                when (selectedTab) {
+                    ResultsTab.Visual -> VisualContent(
+                        state = state.visual,
+                        isMetric = state.isMetric,
+                        onBodyPartSelected = actions.onVisualBodyPartSelected,
+                        onModeSelected = actions.onModeSelected,
+                        onScanSelected = actions.onVisualScanSelected,
+                        showScanSelector = false,
+                        bottomClearance = bottomClearance,
+                        onAvatarReady = onAvatarReady,
+                        modifier = Modifier.weight(1f),
+                    )
 
-            ResultsTab.Compare -> CompareContent(
-                state = state.compare,
-                isMetric = state.isMetric,
-                onSelectLeftScan = actions.onCompareLeftScanSelected,
-                onSelectRightScan = actions.onCompareRightScanSelected,
-                onModeSelected = actions.onModeSelected,
-                onBodyPartSelected = actions.onCompareBodyPartSelected,
-                showScanSelector = false,
-                bottomClearance = bottomClearance,
-                modifier = Modifier.weight(1f),
-            )
+                    ResultsTab.Compare -> CompareContent(
+                        state = state.compare,
+                        isMetric = state.isMetric,
+                        onSelectLeftScan = actions.onCompareLeftScanSelected,
+                        onSelectRightScan = actions.onCompareRightScanSelected,
+                        onModeSelected = actions.onModeSelected,
+                        onBodyPartSelected = actions.onCompareBodyPartSelected,
+                        showScanSelector = false,
+                        bottomClearance = bottomClearance,
+                        modifier = Modifier.weight(1f),
+                    )
 
-            ResultsTab.MyBody -> MyBodyContent(
-                visualState = state.visual,
-                proportionState = state.bodyProportion,
-                isMetric = state.isMetric,
-                bottomClearance = bottomClearance,
-                onAvatarReady = onAvatarReady,
-                onInfoClick = actions.onInfoClick,
-                modifier = Modifier.weight(1f),
-            )
+                    ResultsTab.MyBody -> MyBodyContent(
+                        visualState = state.visual,
+                        proportionState = state.bodyProportion,
+                        isMetric = state.isMetric,
+                        bottomClearance = bottomClearance,
+                        onAvatarReady = onAvatarReady,
+                        onInfoClick = actions.onInfoClick,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
         }
-
     }
 }

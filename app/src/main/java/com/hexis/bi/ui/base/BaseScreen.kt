@@ -1,5 +1,9 @@
 package com.hexis.bi.ui.base
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -21,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.withStateAtLeast
+import com.hexis.bi.utils.constants.AnimationConstants
 
 /**
  * Standard screen scaffold: loading overlay, persistent error snackbar, short info snackbar,
@@ -93,7 +98,11 @@ fun BaseScreen(
             }
         }
 
-        if (isLoading) {
+        AnimatedVisibility(
+            visible = isLoading,
+            enter = fadeIn(animationSpec = tween(AnimationConstants.SCRIM_FADE_IN_MS)),
+            exit = fadeOut(animationSpec = tween(AnimationConstants.SCRIM_FADE_OUT_MS)),
+        ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()

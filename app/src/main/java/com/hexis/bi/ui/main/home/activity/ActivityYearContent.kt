@@ -2,7 +2,6 @@ package com.hexis.bi.ui.main.home.activity
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -22,12 +21,8 @@ fun ActivityYearContent(
     onNextYear: () -> Unit,
     onRetry: () -> Unit,
 ) {
-    when (state.yearLoadState) {
-        ActivityLoadState.Loading -> ActivityLoadPlaceholder {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-        }
-
-        ActivityLoadState.Error -> ActivityLoadPlaceholder {
+    if (state.yearLoadState == ActivityLoadState.Error) {
+        ActivityLoadPlaceholder {
             Text(
                 text = stringResource(R.string.activity_error_title),
                 style = MaterialTheme.typography.titleSmall,
@@ -43,8 +38,8 @@ fun ActivityYearContent(
                 )
             }
         }
-
-        ActivityLoadState.Ready -> ActivityYearReady(
+    } else {
+        ActivityYearReady(
             state = state,
             onPreviousYear = onPreviousYear,
             onNextYear = onNextYear,

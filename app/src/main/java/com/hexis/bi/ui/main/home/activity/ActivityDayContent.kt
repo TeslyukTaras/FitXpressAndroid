@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -29,12 +28,8 @@ fun ActivityDayContent(
     onNextDay: () -> Unit,
     onRetry: () -> Unit,
 ) {
-    when (state.dayLoadState) {
-        ActivityLoadState.Loading -> ActivityLoadPlaceholder {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-        }
-
-        ActivityLoadState.Error -> ActivityLoadPlaceholder {
+    if (state.dayLoadState == ActivityLoadState.Error) {
+        ActivityLoadPlaceholder {
             Text(
                 text = stringResource(R.string.activity_error_title),
                 style = MaterialTheme.typography.titleSmall,
@@ -50,8 +45,8 @@ fun ActivityDayContent(
                 )
             }
         }
-
-        ActivityLoadState.Ready -> ActivityDayReady(
+    } else {
+        ActivityDayReady(
             state = state,
             onInfoClick = onInfoClick,
             onPreviousDay = onPreviousDay,
