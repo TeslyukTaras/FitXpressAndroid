@@ -1,5 +1,7 @@
 package com.hexis.bi.utils.constants
 
+import java.time.Duration
+
 internal object TerraProviders {
     const val HEALTH_CONNECT = "HEALTH_CONNECT"
     const val DUMMY = "DUMMY"
@@ -168,6 +170,38 @@ internal object TerraProviders {
 
 internal object TerraCacheConstants {
     const val RANGE_CACHE_TTL_MS = 60_000L
+}
+
+internal object TerraSyncConstants {
+    const val SYNC_WINDOW_DAYS = 7L
+    const val MAX_CONCURRENT_SOURCES = 4
+}
+
+internal object CanonicalCacheConstants {
+    /** 365-day display window + 28-day causal baseline, with room to spare. */
+    const val DAY_RETENTION_DAYS = 400L
+
+    /** A provider set untouched for this long stops being worth a parallel history. */
+    val PARTITION_RETENTION: Duration = Duration.ofDays(30)
+
+    /** How long a "no data" day stays re-checkable, covering provider backfill. */
+    const val CONFIRMED_EMPTY_RECHECK_DAYS = 30L
+
+    /** Days past which a cached day is refreshed on its own short TTL rather than kept forever. */
+    const val RECENT_REFRESH_DAYS = 2L
+    val RECENT_TTL: Duration = Duration.ofHours(24)
+
+    /**
+     * Providers keep revising the last week — today's totals move repeatedly, and users backfill
+     * missing days during the week — so this window is re-pulled regardless of cache freshness.
+     */
+    const val FORCED_REFRESH_DAYS = 7L
+
+    /**
+     * Throttles the forced window so screen navigation cannot re-pull it. State is in-memory, so a
+     * cold start always forces; returning from background past this interval forces again.
+     */
+    val FORCED_REFRESH_INTERVAL: Duration = Duration.ofMinutes(15)
 }
 
 internal object HealthConnectConstants {

@@ -175,11 +175,7 @@ class SleepViewModel(
             if (offset != dayOffset) return@launch
             (result ?: Result.success(null)).fold(
                 onSuccess = { session ->
-                    if (session.hasAnySleepData()) {
-                        applySession(session!!)
-                    } else {
-                        if (offset == 0) loadBestSessionFromNeighborRange(targetDay) else applyEmptySession()
-                    }
+                    if (session.hasAnySleepData()) applySession(session!!) else applyEmptySession()
                 },
                 onFailure = { err ->
                     applyEmptySession()
@@ -471,44 +467,11 @@ class SleepViewModel(
         WeeklyStageData(SleepStage.Awake, 0),
     )
 
-    private suspend fun loadBestSessionFromNeighborRange(targetDay: LocalDate) {
-        val rangeResult = withTimeoutOrNull(DAY_LOAD_TIMEOUT_MS) {
-            sleepRepository.getSessionsForRange(
-                targetDay.minusDays(SLEEP_DAY_FALLBACK_RANGE_DAYS + 1),
-                targetDay.plusDays(SLEEP_DAY_FALLBACK_RANGE_DAYS),
-                TerraDetail.FULL,
-            )
-        }
-        val fallback = rangeResult
-            ?.getOrNull()
-            .orEmpty()
-            .bestForTargetDay(targetDay)
-        if (targetDay != LocalDate.now().plusDays(dayOffset.toLong())) return
-        if (fallback.hasAnySleepData()) applySession(fallback!!) else applyEmptySession()
-    }
-
-    private fun List<SleepSession>.bestForTargetDay(targetDay: LocalDate): SleepSession? =
-        minWithOrNull(
-            compareBy<SleepSession> {
-                kotlin.math.abs(
-                    java.time.temporal.ChronoUnit.DAYS.between(
-                        it.wakeTime.toLocalDate(),
-                        targetDay
-                    )
-                )
-            }
-                .thenByDescending { it.sleepMagnitude() },
-        )
-
     private fun SleepSession?.hasAnySleepData(): Boolean =
         this != null && (durationMinutes > 0 || stages.isNotEmpty())
 
-    private fun SleepSession.sleepMagnitude(): Long =
-        durationMinutes.toLong() + hrvMs.toLong() + restingHeartRateBpm.toLong()
-
     private companion object {
         private const val DAY_LOAD_TIMEOUT_MS = 12_000L
-        private const val SLEEP_DAY_FALLBACK_RANGE_DAYS = 1L
         private const val MAX_CHART_POINTS = 96
         private const val DAYS_PER_WEEK = 7L
         private val STAGE_DISPLAY_ORDER =

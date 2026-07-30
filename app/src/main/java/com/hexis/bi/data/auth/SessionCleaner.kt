@@ -1,5 +1,7 @@
 package com.hexis.bi.data.auth
 
+import com.google.firebase.auth.FirebaseAuth
+import com.hexis.bi.data.health.local.CanonicalUserCacheCleaner
 import com.hexis.bi.data.order.OrderDraftHolder
 import com.hexis.bi.data.preferences.UserPreferencesRepository
 import com.hexis.bi.data.scan.ScanResultRepository
@@ -12,6 +14,8 @@ class SessionCleaner(
     private val scanResultRepository: ScanResultRepository,
     private val terraManagerHolder: TerraManagerHolder,
     private val authRepository: AuthRepository,
+    private val canonicalAggregateRepository: CanonicalUserCacheCleaner,
+    private val firebaseAuth: FirebaseAuth,
 ) {
 
     suspend fun signOut() {
@@ -20,6 +24,7 @@ class SessionCleaner(
     }
 
     suspend fun clearLocalData() {
+        firebaseAuth.currentUser?.uid?.let { canonicalAggregateRepository.clearUser(it) }
         terraManagerHolder.clearLocalManager()
         TerraSdkSync.reset()
         orderDraftHolder.clear()

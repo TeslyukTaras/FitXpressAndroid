@@ -6,7 +6,11 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.storage.FirebaseStorage
 import com.hexis.bi.data.activity.ActivityRepository
-import com.hexis.bi.data.activity.TerraApiActivityRepository
+import com.hexis.bi.data.activity.DefaultActivityRepository
+import com.hexis.bi.data.health.local.HealthAggregateDatabase
+import com.hexis.bi.data.health.local.HealthLocalDataSource
+import com.hexis.bi.data.health.local.CanonicalUserCacheCleaner
+import com.hexis.bi.BuildConfig
 import com.hexis.bi.data.auth.AuthRepository
 import com.hexis.bi.data.auth.EmailVerificationApi
 import com.hexis.bi.data.auth.FirebaseAuthRepository
@@ -19,16 +23,18 @@ import com.hexis.bi.data.order.FirestoreOrderRepository
 import com.hexis.bi.data.order.OrderDraftHolder
 import com.hexis.bi.data.preferences.UserPreferencesRepository
 import com.hexis.bi.data.recovery.RecoveryRepository
-import com.hexis.bi.data.recovery.TerraDerivedRecoveryRepository
+import com.hexis.bi.data.recovery.DefaultRecoveryRepository
 import com.hexis.bi.data.reminder.ScanReminderScheduler
 import com.hexis.bi.data.reminder.ScanReminderSchedulerImpl
 import com.hexis.bi.data.reminder.ScanReminderWorkRunner
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanResultRepository
+import com.hexis.bi.data.health.remote.HealthRemoteDataSource
+import com.hexis.bi.data.health.sync.HealthSyncCoordinator
 import com.hexis.bi.data.scan.ThreeDLookRepository
 import com.hexis.bi.data.scan.api.ThreeDLookApi
 import com.hexis.bi.data.sleep.SleepRepository
-import com.hexis.bi.data.sleep.TerraApiSleepRepository
+import com.hexis.bi.data.sleep.DefaultSleepRepository
 import com.hexis.bi.data.store.AppPreferencesDataStore
 import com.hexis.bi.data.suit.MockSuitRepository
 import com.hexis.bi.data.terra.TerraApi
@@ -88,6 +94,9 @@ val appModule = module {
     single { FirebaseStorage.getInstance() }
     single { CredentialManager.create(androidContext()) }
     single { AppPreferencesDataStore(androidContext()) }
+    single { HealthAggregateDatabase(androidContext()) }
+    single { HealthLocalDataSource(get(), BuildConfig.ENVIRONMENT) }
+    single<CanonicalUserCacheCleaner> { get<HealthLocalDataSource>() }
     single { UserPreferencesRepository(get()) }
     single { NotificationInboxRepository(androidContext(), get()) }
     single {
@@ -105,7 +114,9 @@ val appModule = module {
     single { NotificationPermissionCoordinator(androidContext(), get(), get(), get(), get()) }
     single { EmailVerificationApi(get()) }
     single<AuthRepository> { FirebaseAuthRepository(get(), get(), get(), androidContext()) }
-    single { SessionCleaner(get(), get(), get(), get(), get()) }
+    single { HealthRemoteDataSource(get()) }
+    single { HealthSyncCoordinator(get(), get(), get(), get()) }
+    single { SessionCleaner(get(), get(), get(), get(), get(), get(), get()) }
     single<SuitRepository> { MockSuitRepository(get()) }
     single<UserRepository> { FirestoreUserRepository(get(), get(), androidContext()) }
     single {
@@ -119,7 +130,7 @@ val appModule = module {
     single { ThreeDLookApi(get(), get(), get(), androidContext()) }
     single { ThreeDLookRepository(get(), get()) }
     single { ScanResultRepository() }
-    single { ScanHistoryRepository(get(), get()) }
+    single { ScanHistoryRepository(get(), get(), get()) }
     single { OrderDraftHolder() }
     single<OrderRepository> { FirestoreOrderRepository(get(), get()) }
     single { TerraAuthApi(get()) }
@@ -137,10 +148,14 @@ val appModule = module {
     single { TerraCallbackHandler(get()) }
     single { TerraWidgetApi(get()) }
     single { TerraConnector(get(), get()) }
-    single<SleepRepository> { TerraApiSleepRepository(api = get(), sourceResolver = get()) }
-    single<ActivityRepository> { TerraApiActivityRepository(api = get(), sourceResolver = get()) }
+    single<SleepRepository> {
+        DefaultSleepRepository(api = get(), remote = get(), local = get(), auth = get())
+    }
+    single<ActivityRepository> {
+        DefaultActivityRepository(api = get(), remote = get(), local = get(), auth = get())
+    }
     single<RecoveryRepository> {
-        TerraDerivedRecoveryRepository(sleepRepository = get(), activityRepository = get())
+        DefaultRecoveryRepository(sleepRepository = get(), activityRepository = get())
     }
     viewModel { MainViewModel(get(), get()) }
     viewModel { LoginViewModel(get(), get(), get(), androidApplication()) }

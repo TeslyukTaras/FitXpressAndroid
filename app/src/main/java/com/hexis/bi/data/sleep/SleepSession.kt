@@ -20,6 +20,13 @@ data class SleepSample(
     val value: Int,
 )
 
+data class SleepStageTotals(
+    val deepMinutes: Int = 0,
+    val lightMinutes: Int = 0,
+    val remMinutes: Int = 0,
+    val awakeMinutes: Int = 0,
+)
+
 data class SleepSession(
     val bedtime: LocalDateTime,
     val wakeTime: LocalDateTime,
@@ -36,4 +43,6 @@ data class SleepSession(
     val heartRateSamples: List<SleepSample> = emptyList(),
     /** Intra-night HRV readings (RMSSD, ms), if the provider reports detailed samples. */
     val hrvSamples: List<SleepSample> = emptyList(),
+    val sessionCount: Int = 1,
+    val aggregateStageTotals: SleepStageTotals? = null,
 )

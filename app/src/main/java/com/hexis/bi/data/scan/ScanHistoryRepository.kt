@@ -6,6 +6,7 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
+import com.hexis.bi.data.health.local.HealthLocalDataSource
 import com.hexis.bi.data.scan.api.MeasurementResponse
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.COLLECTION_SCANS
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.COLLECTION_USERS
@@ -49,6 +50,7 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import timber.log.Timber
+import java.time.Duration
 import java.util.Date
 
 /**
@@ -79,6 +81,7 @@ data class ScanRecord(
     val frontLinearParams: Map<String, Float> = emptyMap(),
     /** Side-view linear / ANFA-style params (from API `side_linear_params`). */
     val sideLinearParams: Map<String, Float> = emptyMap(),
+    val heightCm: Float? = null,
     val weightKg: Float? = null,
     val estimatedWeightKg: Float? = null,
     val bmi: Float? = null,
@@ -92,9 +95,10 @@ data class BodyProgressCache(
     val modelUrl: String?,
 )
 
-class ScanHistoryRepository(
+class ScanHistoryRepository internal constructor(
     private val firestore: FirebaseFirestore,
     private val auth: FirebaseAuth,
+    private val canonical: HealthLocalDataSource,
 ) {
     private fun scansCollection() =
         firestore.collection(COLLECTION_USERS)
@@ -162,6 +166,10 @@ class ScanHistoryRepository(
         }
 
         batch.commit().await()
+        canonical.storeScans(
+            requireNotNull(auth.currentUser?.uid),
+            listOf(buildScanRecordFromResponse(response, docId, savedAtMillis).toCanonicalAggregate()),
+        )
         Timber.d("saveScan: wrote %s with %d fields", docId, mainData.size)
         docId
     }
@@ -204,6 +212,7 @@ class ScanHistoryRepository(
             measurements = measurements,
             frontLinearParams = frontLinearParams,
             sideLinearParams = sideLinearParams,
+            heightCm = response.height?.toFloat(),
             weightKg = response.weight?.toFloat() ?: response.estimatedWeight?.toFloat(),
             estimatedWeightKg = response.estimatedWeight?.toFloat(),
             bmi = response.bmi?.toFloat() ?: response.estimatedBmi?.toFloat(),
@@ -265,9 +274,7 @@ class ScanHistoryRepository(
      * Loads one scan by document id with full measurement subdocs (for Results fast path).
      */
     suspend fun getScanRecordById(scanId: String): Result<ScanRecord?> = runCatching {
-        val doc = scansCollection().document(scanId).get().await()
-        if (!doc.exists()) return@runCatching null
-        buildFullScanRecord(doc)
+        cachedFullSnapshot().firstOrNull { it.id == scanId }
     }
 
     /**
@@ -277,17 +284,8 @@ class ScanHistoryRepository(
         savedAtCutoff: Timestamp,
         limit: Long = 2,
     ): Result<List<ScanRecord>> = runCatching {
-        val snapshot = scansCollection()
-            .whereLessThan(FIELD_SAVED_AT, savedAtCutoff)
-            .orderBy(FIELD_SAVED_AT, Query.Direction.DESCENDING)
-            .limit(limit)
-            .get()
-            .await()
-        coroutineScope {
-            snapshot.documents.map { doc ->
-                async { buildFullScanRecord(doc) }
-            }.awaitAll()
-        }
+        cachedFullSnapshot().filter { it.timestamp < savedAtCutoff.toDate().time }
+            .sortedByDescending { it.timestamp }.take(limit.toInt())
     }
 
     /** True if any saved scan in recent history has [ScanRecord.timestamp] in the inclusive range. */
@@ -306,26 +304,38 @@ class ScanHistoryRepository(
         limit: Long,
         projection: ScanFetchProjection,
     ): Result<List<ScanRecord>> = runCatching {
-        val snapshot = scansCollection()
-            .orderBy(FIELD_SAVED_AT, Query.Direction.DESCENDING)
-            .limit(limit)
-            .get()
-            .await()
-
-        buildProjectedScanRecords(snapshot.documents, projection)
+        cachedFullSnapshot().sortedByDescending { it.timestamp }.take(limit.toInt())
+            .map { it.project(projection) }
     }
 
     private suspend fun fetchScansSavedSince(
         savedAtMillisInclusive: Long,
         projection: ScanFetchProjection,
     ): Result<List<ScanRecord>> = runCatching {
-        val snapshot = scansCollection()
-            .whereGreaterThanOrEqualTo(FIELD_SAVED_AT, Timestamp(Date(savedAtMillisInclusive)))
-            .orderBy(FIELD_SAVED_AT, Query.Direction.DESCENDING)
-            .get()
-            .await()
+        cachedFullSnapshot().filter { it.timestamp >= savedAtMillisInclusive }
+            .sortedByDescending { it.timestamp }.map { it.project(projection) }
+    }
 
-        buildProjectedScanRecords(snapshot.documents, projection)
+    private suspend fun cachedFullSnapshot(): List<ScanRecord> {
+        val uid = auth.currentUser?.uid ?: error("Not authenticated")
+        return canonical.singleFlight(uid, HealthLocalDataSource.SOURCE_SCAN) {
+            if (canonical.scanSnapshotIsFresh(uid, SCAN_CACHE_TTL)) {
+                canonical.logStats(uid)
+                return@singleFlight canonical.scans(uid).map { it.toScanRecord() }
+            }
+            canonical.recordProviderCalls(uid, HealthLocalDataSource.SOURCE_SCAN, 1)
+            val snapshot = scansCollection().orderBy(FIELD_SAVED_AT, Query.Direction.DESCENDING).get().await()
+            val records = buildProjectedScanRecords(snapshot.documents, ScanFetchProjection.FULL)
+            canonical.replaceScans(uid, records.map { it.toCanonicalAggregate() })
+            canonical.logStats(uid)
+            records
+        }
+    }
+
+    private fun ScanRecord.project(projection: ScanFetchProjection): ScanRecord = when (projection) {
+        ScanFetchProjection.FULL -> this
+        ScanFetchProjection.LIST_SUMMARY -> copy(frontLinearParams = emptyMap(), sideLinearParams = emptyMap())
+        ScanFetchProjection.TIMESTAMPS_ONLY -> ScanRecord(id = id, timestamp = timestamp)
     }
 
     private suspend fun buildProjectedScanRecords(
@@ -390,6 +400,7 @@ class ScanHistoryRepository(
             measurements = measurements,
             frontLinearParams = frontLinearParams,
             sideLinearParams = sideLinearParams,
+            heightCm = doc.numericField(FIELD_HEIGHT),
             weightKg = doc.numericField(FIELD_WEIGHT, FIELD_ESTIMATED_WEIGHT),
             estimatedWeightKg = doc.numericField(FIELD_ESTIMATED_WEIGHT),
             bmi = doc.numericField(FIELD_BMI, FIELD_ESTIMATED_BMI),
@@ -448,4 +459,8 @@ class ScanHistoryRepository(
             val converted: Any = prim.content.toDoubleOrNull() ?: prim.content
             key.snakeToCamel() to converted
         }.toMap()
+
+    private companion object {
+        val SCAN_CACHE_TTL: Duration = Duration.ofHours(6)
+    }
 }
