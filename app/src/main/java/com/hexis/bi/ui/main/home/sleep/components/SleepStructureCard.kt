@@ -1,5 +1,8 @@
 package com.hexis.bi.ui.main.home.sleep.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -25,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -62,6 +66,7 @@ import com.hexis.bi.ui.main.home.sleep.nameRes
 import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.ui.theme.TitleHighlightTextStyle
+import com.hexis.bi.utils.constants.AnimationConstants
 import com.hexis.bi.utils.constants.SleepConstants
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -292,19 +297,26 @@ private fun DayStructureBar(
 ) {
     val corner = dimensionResource(R.dimen.sleep_structure_bar_corner)
     val borderWidth = dimensionResource(R.dimen.sleep_structure_selection_border)
-    val total = day.totalMinutes.coerceAtMost(maxMinutes)
+    val target = day.totalMinutes.coerceAtMost(maxMinutes)
     val stageColor = rememberSleepStageColors()
     val selectionBorderColor = MaterialTheme.colorScheme.primary
+
+    val reveal = remember { Animatable(0f) }
+    LaunchedEffect(target) {
+        reveal.animateTo(target.toFloat(), tween(AnimationConstants.BAR_GROWTH_MS, easing = FastOutSlowInEasing))
+    }
+    val revealedTotal = reveal.value.coerceIn(0f, maxMinutes.toFloat())
+
     Column(
         modifier = modifier
             .fillMaxHeight()
             .clip(RoundedCornerShape(corner, corner)),
     ) {
-        val emptyWeight = (maxMinutes - total).toFloat()
+        val emptyWeight = (maxMinutes - revealedTotal).coerceAtLeast(0f)
         if (emptyWeight > 0f) Spacer(Modifier.weight(emptyWeight))
-        if (total > 0) Column(
+        if (target > 0 && revealedTotal > 0f) Column(
             modifier = Modifier
-                .weight(total.toFloat())
+                .weight(revealedTotal)
                 .clip(RoundedCornerShape(corner, corner))
                 .fillMaxWidth()
                 .then(

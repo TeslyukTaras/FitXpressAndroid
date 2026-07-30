@@ -1,5 +1,8 @@
 package com.hexis.bi.ui.main.home.activity.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -19,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +52,7 @@ import com.hexis.bi.ui.theme.ActivityMediumTitleStyle
 import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.utils.constants.ActivityConstants
+import com.hexis.bi.utils.constants.AnimationConstants
 import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.ceil
@@ -514,16 +519,20 @@ internal fun ChartBar(
     )
 
     val fraction = (value / yMax).coerceIn(0f, 1f)
+    val reveal = remember { Animatable(0f) }
+    LaunchedEffect(fraction) {
+        reveal.animateTo(fraction, tween(durationMillis = AnimationConstants.BAR_GROWTH_MS, easing = FastOutSlowInEasing))
+    }
 
     Box(
         modifier = modifier.fillMaxHeight(),
         contentAlignment = Alignment.BottomCenter,
     ) {
-        if (fraction > 0f) {
+        if (reveal.value > 0f) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(fraction)
+                    .fillMaxHeight(reveal.value)
                     .clip(barShape)
                     .background(barBrush),
             )

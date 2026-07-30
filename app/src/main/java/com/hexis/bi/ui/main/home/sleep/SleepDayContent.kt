@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,12 +41,8 @@ fun SleepDayContent(
     )
     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxs)))
 
-    when (state.dayLoadState) {
-        SleepLoadState.Loading -> SleepLoadPlaceholder {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-        }
-
-        SleepLoadState.Error -> SleepLoadPlaceholder {
+    if (state.dayLoadState == SleepLoadState.Error) {
+        SleepLoadPlaceholder {
             Text(
                 text = stringResource(R.string.sleep_error_title),
                 style = MaterialTheme.typography.titleSmall,
@@ -63,8 +58,8 @@ fun SleepDayContent(
                 )
             }
         }
-
-        SleepLoadState.Ready -> SleepDayReady(state = state, onInfoClick = onInfoClick)
+    } else {
+        SleepDayReady(state = state, onInfoClick = onInfoClick)
     }
 }
 

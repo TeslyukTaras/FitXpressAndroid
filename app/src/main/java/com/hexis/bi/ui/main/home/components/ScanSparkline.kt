@@ -1,18 +1,25 @@
 package com.hexis.bi.ui.main.home.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import com.hexis.bi.R
 import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.utils.SmoothLinePath
+import com.hexis.bi.utils.constants.AnimationConstants
 import com.hexis.bi.utils.constants.HomeConstants
 
 /**
@@ -37,6 +44,11 @@ internal fun ScanSparkline(
         dimensionResource(R.dimen.home_sparkline_marker_border).toPx()
     }
 
+    val reveal = remember(points) { Animatable(0f) }
+    LaunchedEffect(points) {
+        reveal.animateTo(1f, tween(durationMillis = AnimationConstants.LINE_WIPE_MS, easing = FastOutSlowInEasing))
+    }
+
     Canvas(modifier = modifier) {
         if (points.size < 2) return@Canvas
         val pad = size.height * HomeConstants.SPARKLINE_VERTICAL_PADDING_FRACTION
@@ -56,28 +68,29 @@ internal fun ScanSparkline(
             lineTo(coords.first().x, size.height)
             close()
         }
-        drawPath(
-            path = fillPath,
-            brush = Brush.verticalGradient(
-                colorStops = arrayOf(
-                    0f to lineColor.copy(alpha = HomeConstants.SPARKLINE_FILL_TOP_ALPHA),
-                    1f to lineColor.copy(alpha = HomeConstants.SPARKLINE_FILL_BOTTOM_ALPHA),
+        clipRect(right = size.width * reveal.value) {
+            drawPath(
+                path = fillPath,
+                brush = Brush.verticalGradient(
+                    colorStops = arrayOf(
+                        0f to lineColor.copy(alpha = HomeConstants.SPARKLINE_FILL_TOP_ALPHA),
+                        1f to lineColor.copy(alpha = HomeConstants.SPARKLINE_FILL_BOTTOM_ALPHA),
+                    ),
+                    startY = coords.minOf { it.y },
+                    endY = size.height,
                 ),
-                startY = coords.minOf { it.y },
-                endY = size.height,
-            ),
-        )
-        drawPath(path = linePath, color = lineColor, style = Stroke(width = strokePx))
+            )
+            drawPath(path = linePath, color = lineColor, style = Stroke(width = strokePx))
 
-        // Mark the previous peak — the last interior local maximum — as in the design.
-        val peak = coords[previousPeakIndex(points)]
-        drawCircle(color = markerFill, radius = markerRadiusPx, center = peak)
-        drawCircle(
-            color = markerBorder,
-            radius = markerRadiusPx - markerBorderPx / 2f,
-            center = peak,
-            style = Stroke(width = markerBorderPx),
-        )
+            val peak = coords[previousPeakIndex(points)]
+            drawCircle(color = markerFill, radius = markerRadiusPx, center = peak)
+            drawCircle(
+                color = markerBorder,
+                radius = markerRadiusPx - markerBorderPx / 2f,
+                center = peak,
+                style = Stroke(width = markerBorderPx),
+            )
+        }
     }
 }
 

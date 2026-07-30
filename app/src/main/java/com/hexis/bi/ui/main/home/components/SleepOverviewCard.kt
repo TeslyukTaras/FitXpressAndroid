@@ -1,5 +1,8 @@
 package com.hexis.bi.ui.main.home.components
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -10,6 +13,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.dimensionResource
@@ -19,6 +23,7 @@ import androidx.compose.ui.text.withStyle
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.SleepOverview
+import com.hexis.bi.utils.constants.AnimationConstants
 import com.hexis.bi.utils.constants.HomeConstants
 import com.hexis.bi.utils.constants.SleepConstants
 
@@ -70,6 +75,11 @@ private fun SleepProgressBar(
     fraction: Float,
     modifier: Modifier = Modifier,
 ) {
+    val animatedFraction by animateFloatAsState(
+        targetValue = fraction.coerceIn(0f, 1f),
+        animationSpec = tween(durationMillis = AnimationConstants.BAR_GROWTH_MS, easing = FastOutSlowInEasing),
+        label = "sleepGoalFraction",
+    )
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -82,7 +92,7 @@ private fun SleepProgressBar(
     ) {
         Box(
             modifier = Modifier
-                .fillMaxWidth(fraction.coerceIn(0f, 1f))
+                .fillMaxWidth(animatedFraction)
                 .fillMaxHeight()
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primary),

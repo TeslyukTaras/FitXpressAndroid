@@ -2,7 +2,6 @@ package com.hexis.bi.ui.main.home.sleep
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,12 +34,8 @@ fun SleepSummaryContent(
     )
     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxs)))
 
-    when (state.summaryLoadState) {
-        SleepLoadState.Loading -> SleepLoadPlaceholder {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-        }
-
-        SleepLoadState.Error -> SleepLoadPlaceholder {
+    if (state.summaryLoadState == SleepLoadState.Error) {
+        SleepLoadPlaceholder {
             Text(
                 text = stringResource(R.string.sleep_error_title),
                 style = MaterialTheme.typography.titleSmall,
@@ -56,8 +51,8 @@ fun SleepSummaryContent(
                 )
             }
         }
-
-        SleepLoadState.Ready -> SleepSummaryReady(state = state, onInfoClick = onInfoClick)
+    } else {
+        SleepSummaryReady(state = state, onInfoClick = onInfoClick)
     }
 }
 

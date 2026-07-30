@@ -2,7 +2,6 @@ package com.hexis.bi.ui.main.home.recovery
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -27,15 +26,7 @@ fun RecoverySummaryContent(
     )
     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxs)))
 
-    when (state.summaryLoadState) {
-        RecoveryLoadState.Loading -> RecoveryLoadPlaceholder {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-        }
-
-        // No "cannot load" view: a failed/empty load falls through to the chart and cards.
-        RecoveryLoadState.Ready,
-        RecoveryLoadState.Error -> RecoverySummaryReady(state = state)
-    }
+    RecoverySummaryReady(state = state)
 }
 
 @Composable

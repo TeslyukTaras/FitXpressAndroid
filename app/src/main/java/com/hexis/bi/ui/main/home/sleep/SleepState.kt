@@ -112,4 +112,10 @@ data class SleepState(
 
     // Recovery bottom sheet
     val showRecoverySheet: Boolean = false,
-)
+) {
+    val isTabLoading: Boolean
+        get() = when (selectedTab) {
+            SleepTab.Day -> dayLoadState == SleepLoadState.Loading
+            SleepTab.Summary -> summaryLoadState == SleepLoadState.Loading
+        }
+}

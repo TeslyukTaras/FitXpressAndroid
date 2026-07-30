@@ -1,8 +1,12 @@
 package com.hexis.bi.ui.main.home.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -13,6 +17,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import com.hexis.bi.R
 import com.hexis.bi.ui.theme.NocturnePulseTheme
+import com.hexis.bi.utils.constants.AnimationConstants
 import com.hexis.bi.utils.constants.HomeConstants
 import kotlin.random.Random
 
@@ -44,6 +49,11 @@ internal fun ActivityMiniBarChart(
     }
     val maxValue = values.maxOrNull() ?: 0f
 
+    val reveal = remember(values) { Animatable(0f) }
+    LaunchedEffect(values) {
+        reveal.animateTo(1f, tween(durationMillis = AnimationConstants.BAR_GROWTH_MS, easing = FastOutSlowInEasing))
+    }
+
     Canvas(modifier = modifier) {
         if (barCount <= 0) return@Canvas
         val barWidth = (size.width - spacingPx * (barCount - 1)) / barCount
@@ -55,7 +65,7 @@ internal fun ActivityMiniBarChart(
             val fraction = if (hasSteps) value / maxValue else idleFractions[index]
             val color = if (hasSteps) activeColor else idleColor
 
-            val barHeight = size.height * fraction.coerceIn(0f, 1f)
+            val barHeight = size.height * fraction.coerceIn(0f, 1f) * reveal.value
             val left = index * (barWidth + spacingPx)
             // Only the top corners are rounded.
             val path = Path().apply {

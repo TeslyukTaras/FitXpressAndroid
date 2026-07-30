@@ -1,5 +1,10 @@
 package com.hexis.bi.ui.main.home.activity
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -36,6 +41,7 @@ import com.hexis.bi.ui.components.AppTabSelector
 import com.hexis.bi.ui.components.LightStatusBarIcons
 import com.hexis.bi.ui.main.home.activity.components.ActivitySettingsDialogContent
 import com.hexis.bi.ui.theme.screenBackground
+import com.hexis.bi.utils.constants.AnimationConstants
 import com.hexis.bi.utils.providerDisplayName
 import org.koin.androidx.compose.koinViewModel
 
@@ -62,7 +68,7 @@ fun ActivityScreen(
                 )
                 .screenBackground(),
             containerColor = Color.Transparent,
-            isLoading = isLoading,
+            isLoading = isLoading || state.isTabLoading,
             error = error,
             onDismissError = viewModel::clearError,
             topBar = {
@@ -99,38 +105,51 @@ fun ActivityScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                when (state.selectedTab) {
-                    ActivityTab.Day -> ActivityDayContent(
-                        state = state,
-                        onInfoClick = viewModel::showInfoSheet,
-                        onPreviousDay = viewModel::previousDay,
-                        onNextDay = viewModel::nextDay,
-                        onRetry = viewModel::retryDayLoad,
-                    )
+                AnimatedContent(
+                    targetState = state.selectedTab,
+                    transitionSpec = {
+                        fadeIn(tween(AnimationConstants.TAB_CONTENT_FADE_IN_MS)) togetherWith
+                            fadeOut(tween(AnimationConstants.TAB_CONTENT_FADE_OUT_MS))
+                    },
+                    label = "activityTabContent",
+                ) { selectedTab ->
+                    // AnimatedContent's slot isn't a ColumnScope; each *Content composable below
+                    // emits loose siblings that rely on the caller arranging them vertically.
+                    Column {
+                        when (selectedTab) {
+                            ActivityTab.Day -> ActivityDayContent(
+                                state = state,
+                                onInfoClick = viewModel::showInfoSheet,
+                                onPreviousDay = viewModel::previousDay,
+                                onNextDay = viewModel::nextDay,
+                                onRetry = viewModel::retryDayLoad,
+                            )
 
-                    ActivityTab.Week -> ActivityWeekContent(
-                        state = state,
-                        onPreviousWeek = viewModel::previousWeek,
-                        onNextWeek = viewModel::nextWeek,
-                        onSelectWeekDay = viewModel::selectWeekDay,
-                        onClearWeekDay = viewModel::clearWeekDaySelection,
-                        onInfoClick = viewModel::showInfoSheet,
-                        onRetry = viewModel::retryWeekLoad,
-                    )
+                            ActivityTab.Week -> ActivityWeekContent(
+                                state = state,
+                                onPreviousWeek = viewModel::previousWeek,
+                                onNextWeek = viewModel::nextWeek,
+                                onSelectWeekDay = viewModel::selectWeekDay,
+                                onClearWeekDay = viewModel::clearWeekDaySelection,
+                                onInfoClick = viewModel::showInfoSheet,
+                                onRetry = viewModel::retryWeekLoad,
+                            )
 
-                    ActivityTab.Month -> ActivityMonthContent(
-                        state = state,
-                        onPreviousMonth = viewModel::previousMonth,
-                        onNextMonth = viewModel::nextMonth,
-                        onRetry = viewModel::retryMonthLoad,
-                    )
+                            ActivityTab.Month -> ActivityMonthContent(
+                                state = state,
+                                onPreviousMonth = viewModel::previousMonth,
+                                onNextMonth = viewModel::nextMonth,
+                                onRetry = viewModel::retryMonthLoad,
+                            )
 
-                    ActivityTab.Year -> ActivityYearContent(
-                        state = state,
-                        onPreviousYear = viewModel::previousYear,
-                        onNextYear = viewModel::nextYear,
-                        onRetry = viewModel::retryYearLoad,
-                    )
+                            ActivityTab.Year -> ActivityYearContent(
+                                state = state,
+                                onPreviousYear = viewModel::previousYear,
+                                onNextYear = viewModel::nextYear,
+                                onRetry = viewModel::retryYearLoad,
+                            )
+                        }
+                    }
                 }
 
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
