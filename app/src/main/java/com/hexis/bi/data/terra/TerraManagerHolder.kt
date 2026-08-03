@@ -40,9 +40,15 @@ class TerraManagerHolder {
                         Timber.e(error, "Terra init failed")
                         if (cont.isActive) cont.resume(Result.failure(error))
                     } else {
-                        manager = mgr
-                        Timber.d("Terra init success (env=%s)", TerraConfig.environment)
-                        if (cont.isActive) cont.resume(Result.success(mgr))
+                        if (cont.isActive) {
+                            manager = mgr
+                            Timber.d("Terra init success (env=%s)", TerraConfig.environment)
+                            cont.resume(Result.success(mgr)) { _, _, _ ->
+                                if (manager === mgr) manager = null
+                            }
+                        } else {
+                            Timber.d("Terra init completed after its caller was cancelled; manager discarded")
+                        }
                     }
                 }
             }

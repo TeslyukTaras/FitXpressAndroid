@@ -2,14 +2,14 @@ package com.hexis.bi.data.terra
 
 import android.app.Activity
 import co.tryterra.terra.enums.Connections
-import co.tryterra.terra.enums.CustomPermissions
+import com.hexis.bi.data.healthconnect.HealthConnectPermissions
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 import kotlin.coroutines.resume
 
 /** Runs Terra's SDK connection flow (Health Connect / Samsung Health). Must be called from an Activity. */
-class TerraConnector(
+class TerraConnector internal constructor(
     private val authApi: TerraAuthApi,
     private val terraManagerHolder: TerraManagerHolder,
 ) {
@@ -22,8 +22,7 @@ class TerraConnector(
             ?: return Result.failure(IllegalStateException("TerraManager not initialised"))
 
         if (manager.getUserId(connection) != null) {
-            Timber.d("Terra already connected to %s", connection)
-            return Result.success(true)
+            Timber.d("Terra already linked to %s; re-running connection flow to refresh grants", connection)
         }
 
         val token = authApi.generateAuthToken().getOrElse {
@@ -31,7 +30,11 @@ class TerraConnector(
             return Result.failure(it)
         }
 
-        val permissions = if (connection == Connections.HEALTH_CONNECT) HEALTH_CONNECT_PERMISSIONS else emptySet()
+        val permissions = if (connection == Connections.HEALTH_CONNECT) {
+            HealthConnectPermissions.TERRA_CUSTOM_PERMISSIONS
+        } else {
+            emptySet()
+        }
 
         return withTimeoutOrNull(INIT_CONNECTION_TIMEOUT_MS) {
             suspendCancellableCoroutine { cont ->
@@ -57,25 +60,5 @@ class TerraConnector(
 
     companion object {
         private const val INIT_CONNECTION_TIMEOUT_MS = 30_000L
-
-        // Matches the <uses-permission android:name="android.permission.health.READ_*"> block in
-        // AndroidManifest.xml. Passing these to initConnection ensures Terra requests the full set
-        // at the Health Connect permission prompt, instead of its smaller default.
-        private val HEALTH_CONNECT_PERMISSIONS: Set<CustomPermissions> = setOf(
-            CustomPermissions.SLEEP_ANALYSIS,
-            CustomPermissions.HEART_RATE,
-            CustomPermissions.HEART_RATE_VARIABILITY,
-            CustomPermissions.RESTING_HEART_RATE,
-            CustomPermissions.STEPS,
-            CustomPermissions.FLIGHTS_CLIMBED,
-            CustomPermissions.EXERCISE_DISTANCE,
-            CustomPermissions.CALORIES,
-            CustomPermissions.ACTIVE_DURATIONS,
-            CustomPermissions.WORKOUT_TYPE,
-            CustomPermissions.ACTIVITY_SUMMARY,
-            CustomPermissions.OXYGEN_SATURATION,
-            CustomPermissions.RESPIRATORY_RATE,
-            CustomPermissions.VO2MAX,
-        )
     }
 }

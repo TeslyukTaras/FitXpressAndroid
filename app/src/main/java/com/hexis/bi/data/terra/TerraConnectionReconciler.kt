@@ -16,18 +16,12 @@ class TerraConnectionReconciler(
     private val healthConnections: HealthConnectionsRepository,
 ) {
 
-    /**
-     * Stores any live Terra connection that Firestore is missing.
-     *
-     * Upsert-only: Terra drops a user when it is deauthenticated, so a provider the user
-     * disconnected is absent here and will not be resurrected.
-     *
-     * @return the provider codes newly marked connected by this pass.
-     */
     suspend fun reconcile(): Result<Set<String>> {
         val remote = terraApi.listConnections().getOrElse { return Result.failure(it) }
         val stored = healthConnections.getConnections().getOrElse { return Result.failure(it) }
         val storedActiveIds = stored.filter { it.active }.mapTo(mutableSetOf()) { it.terraUserId }
+
+        retireConnectionsTerraNoLongerLists(stored, remote)
 
         val recovered = mutableSetOf<String>()
         for (user in remote.users) {
@@ -63,6 +57,54 @@ class TerraConnectionReconciler(
         return Result.success(recovered)
     }
 
+    private suspend fun retireConnectionsTerraNoLongerLists(
+        stored: List<HealthConnection>,
+        remote: TerraConnectionsResponse,
+    ) {
+        if (!remote.isAuthoritative) {
+            Timber.w("Terra reconcile: connection list not authoritative (status=%s); retiring nothing", remote.status)
+            return
+        }
+        val liveIds = remote.users
+            .filter { it.active }
+            .mapNotNullTo(mutableSetOf()) { it.user_id?.takeIf(String::isNotBlank) }
+        if (liveIds.isEmpty()) {
+            Timber.w("Terra reconcile: connection list came back empty; retiring nothing")
+            return
+        }
+        val absent = stored.filterTo(mutableSetOf()) {
+            it.active &&
+                it.terraUserId !in liveIds &&
+                it.provider.uppercase() in RETIRABLE_PROVIDERS
+        }
+        val confirmed = absentLastPass intersect absent.mapTo(mutableSetOf()) { it.terraUserId }
+        absentLastPass = absent.mapTo(mutableSetOf()) { it.terraUserId }
+        val retired = absent.filter { it.terraUserId in confirmed }
+        if (retired.isEmpty()) {
+            if (absent.isNotEmpty()) {
+                Timber.i(
+                    "Terra reconcile: %d connection(s) absent for the first time; awaiting confirmation",
+                    absent.size,
+                )
+            }
+            return
+        }
+
+        Timber.i("Terra reconcile: retiring %d connection(s) Terra no longer lists", retired.size)
+        for (connection in retired) {
+            healthConnections.deactivateConnection(connection.terraUserId).onFailure {
+                Timber.w(
+                    it, "Terra reconcile: could not retire %s (%s)",
+                    connection.provider, redactSensitiveId(connection.terraUserId),
+                )
+            }
+        }
+        TerraSdkSync.invalidateCachesAndNotify()
+    }
+
+    @Volatile
+    private var absentLastPass: Set<String> = emptySet()
+
     private fun sourceFor(provider: String): String =
         if (provider == TerraProviders.HEALTH_CONNECT) {
             HealthConnection.SOURCE_SDK
@@ -76,5 +118,7 @@ class TerraConnectionReconciler(
                 TerraProviders.APP_CODES +
                 TerraProviders.HEALTH_CONNECT +
                 TerraProviders.DUMMY
+
+        val RETIRABLE_PROVIDERS: Set<String> = RECONCILABLE_PROVIDERS - TerraProviders.DUMMY
     }
 }

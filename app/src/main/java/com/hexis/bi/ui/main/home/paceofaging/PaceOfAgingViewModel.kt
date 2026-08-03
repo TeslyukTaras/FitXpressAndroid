@@ -9,6 +9,7 @@ import com.hexis.bi.data.recovery.RecoveryRepository
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanRecord
 import com.hexis.bi.data.terra.TerraManagerHolder
+import com.hexis.bi.data.terra.TerraSdkConnectionOwnership
 import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.longevity.AgingLevel
@@ -41,6 +42,7 @@ class PaceOfAgingViewModel(
     private val scanHistoryRepository: ScanHistoryRepository,
     private val userRepository: UserRepository,
     private val terraManagerHolder: TerraManagerHolder,
+    private val terraSdkConnectionOwnership: TerraSdkConnectionOwnership,
 ) : BaseViewModel(application, initialLoading = true) {
 
     private val _state = MutableStateFlow(PaceOfAgingState())
@@ -61,6 +63,7 @@ class PaceOfAgingViewModel(
             setLoading(false)
             val synced = TerraSdkSync.syncLinkedConnections(
                 terraManagerHolder.current,
+                ownedUserIds = terraSdkConnectionOwnership.syncableSdkUserIds().getOrNull(),
                 reason = "pace_of_aging",
             )
             if (synced) renderFromRepositories()

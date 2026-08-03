@@ -12,6 +12,8 @@ import co.tryterra.terra.enums.Connections
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.R
+import com.hexis.bi.data.health.sync.HealthSyncScheduler
+import com.hexis.bi.data.healthconnect.HealthConnectPermissionChecker
 import com.hexis.bi.data.healthconnections.HealthConnection
 import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
 import com.hexis.bi.data.terra.TerraApi
@@ -21,6 +23,7 @@ import com.hexis.bi.data.terra.TerraConnector
 import com.hexis.bi.data.terra.TerraManagerHolder
 import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.data.terra.TerraWidgetApi
+import com.hexis.bi.data.terra.ownedSdkUserIds
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.constants.TerraProviders
 import com.hexis.bi.utils.redactSensitiveId
@@ -40,7 +43,7 @@ private const val HIDE_PROVIDERS_WITHOUT_BRANDED_ICON = true
 private const val VERIFY_MAX_ATTEMPTS = 5
 private const val VERIFY_RETRY_DELAY_MS = 2_000L
 
-class HealthConnectionsViewModel(
+class HealthConnectionsViewModel internal constructor(
     application: Application,
     private val terraConnector: TerraConnector,
     private val terraWidgetApi: TerraWidgetApi,
@@ -50,6 +53,8 @@ class HealthConnectionsViewModel(
     private val terraApi: TerraApi,
     private val terraManagerHolder: TerraManagerHolder,
     private val terraConnectionReconciler: TerraConnectionReconciler,
+    private val healthConnectPermissions: HealthConnectPermissionChecker,
+    private val healthSyncScheduler: HealthSyncScheduler,
 ) : BaseViewModel(application, initialLoading = true) {
 
     private val _state = MutableStateFlow(HealthConnectionsState())
@@ -181,6 +186,7 @@ class HealthConnectionsViewModel(
                         otherProviders = buildOtherProviders().filterVisibleForDisplay(active),
                     )
                 }
+                refreshHealthConnectRowState()
             }
             .catch { setError(R.string.error_connection_save_failed) }
             .launchIn(viewModelScope)
@@ -193,10 +199,42 @@ class HealthConnectionsViewModel(
             showLoading = false,
             onError = { Timber.w(it, "Terra reconcile on open failed") },
         ) {
-            terraConnectionReconciler.reconcile()
+            reconcileAndBackfillNewSources()
         }
 
         setLoading(false)
+    }
+
+    private suspend fun reconcileAndBackfillNewSources(): Set<String> {
+        val recovered = terraConnectionReconciler.reconcile().getOrElse { emptySet() }
+        if (recovered.isNotEmpty()) {
+            healthSyncScheduler.enqueueHistoryBackfill(reason = "source_connected")
+        }
+        return recovered
+    }
+
+    private fun isHealthConnectSdkLinked(): Boolean {
+        val sdkId = terraManagerHolder.current?.getUserId(Connections.HEALTH_CONNECT) ?: return false
+        return sdkId in ownedSdkUserIds(setOf(sdkId), _state.value.wearableConnections)
+    }
+
+    private fun refreshHealthConnectRowState() {
+        val rowState = when {
+            !isHealthConnectSdkLinked() ->
+                if (isWearableConnected(TerraProviders.HEALTH_CONNECT)) {
+                    HealthConnectRowState.NeedsRelink
+                } else {
+                    HealthConnectRowState.NotConnected
+                }
+
+            healthConnectPermissions.status().isBlocked -> HealthConnectRowState.NeedsPermission
+            else -> HealthConnectRowState.Connected
+        }
+        val previous = _state.value.healthConnectRowState
+        _state.update { it.copy(healthConnectRowState = rowState) }
+        if (rowState == HealthConnectRowState.Connected && previous != HealthConnectRowState.Connected) {
+            healthSyncScheduler.enqueueHistoryBackfill(reason = "health_connect_readable")
+        }
     }
 
     fun onSdkProviderRowClick(provider: String, displayName: String, activity: Activity?) {
@@ -209,9 +247,7 @@ class HealthConnectionsViewModel(
             return
         }
         val sdkConnection = Connections.HEALTH_CONNECT
-        val sdkConnected = terraManagerHolder.current?.getUserId(sdkConnection) != null
-        val storedConnected = isWearableConnected(provider)
-        if (sdkConnected || storedConnected) {
+        if (isHealthConnectSdkLinked() && !healthConnectPermissions.status().isBlocked) {
             disconnectSdkProvider(
                 activity = activity,
                 connection = sdkConnection,
@@ -321,15 +357,16 @@ class HealthConnectionsViewModel(
      * auth is pending since Terra can lag a moment behind the completed OAuth.
      */
     fun onScreenResumed() {
+        refreshHealthConnectRowState()
         if (verifyJob?.isActive == true) return
         val pendingProvider = _state.value.pendingAuthProvider
         verifyJob = launch(showLoading = false, onError = { clearPendingAuth() }) {
             if (pendingProvider == null) {
-                terraConnectionReconciler.reconcile()
+                reconcileAndBackfillNewSources()
                 return@launch
             }
             repeat(VERIFY_MAX_ATTEMPTS) { attempt ->
-                val recovered = terraConnectionReconciler.reconcile().getOrElse { emptySet() }
+                val recovered = reconcileAndBackfillNewSources()
                 if (recovered.any { TerraProviders.storedMatchesUi(it, pendingProvider) }) {
                     clearPendingAuth()
                     setMessage(
@@ -395,6 +432,7 @@ class HealthConnectionsViewModel(
             .map { it.terraUserId }
             .distinct()
         val sdkId = terraManagerHolder.current?.getUserId(connection)
+            ?.takeIf { it in ownedSdkUserIds(setOf(it), _state.value.wearableConnections) }
         val allIds = (firestoreIds + listOfNotNull(sdkId)).distinct()
         if (allIds.isEmpty()) {
             setMessage(R.string.msg_health_connect_nothing_to_disconnect)
@@ -414,6 +452,7 @@ class HealthConnectionsViewModel(
         terraManagerHolder.init(activity, uid)
             .onFailure { Timber.e(it, "Terra init after disconnect failed") }
         TerraSdkSync.invalidateCachesAndNotify()
+        refreshHealthConnectRowState()
         if (provider.equals(TerraProviders.HEALTH_CONNECT, ignoreCase = true)) {
             setMessage(R.string.msg_health_connect_disconnected)
         } else {
@@ -437,14 +476,19 @@ class HealthConnectionsViewModel(
             setError(R.string.error_health_connect_failed)
             return@launch
         }
+        val liveTerraUserId = persistSdkConnection(connection, provider)
         terraManagerHolder.current?.let { mgr ->
             TerraSdkSync.syncLinkedConnections(
                 mgr,
+                ownedUserIds = setOfNotNull(liveTerraUserId),
                 reason = "post_connect",
                 force = true,
             )
         }
-        persistSdkConnection(connection, provider)
+        refreshHealthConnectRowState()
+        if (liveTerraUserId != null) {
+            healthSyncScheduler.enqueueHistoryBackfill(reason = "source_connected")
+        }
         if (provider.equals(TerraProviders.HEALTH_CONNECT, ignoreCase = true)) {
             setMessage(R.string.msg_health_connect_connected)
         } else {
@@ -461,9 +505,9 @@ class HealthConnectionsViewModel(
         else -> R.string.error_health_connect_failed
     }
 
-    private suspend fun persistSdkConnection(connection: Connections, provider: String) {
+    private suspend fun persistSdkConnection(connection: Connections, provider: String): String? {
         val terraUserId = terraManagerHolder.current?.getUserId(connection)
-            ?: return
+            ?: return null
         healthConnectionsRepository.upsertConnection(
             HealthConnection(
                 terraUserId = terraUserId,
@@ -472,7 +516,43 @@ class HealthConnectionsViewModel(
                 connectedAt = Timestamp.now(),
                 active = true,
             ),
-        ).onFailure { setError(R.string.error_connection_save_failed) }
+        ).onFailure {
+            setError(R.string.error_connection_save_failed)
+            return null
+        }
+        TerraSdkSync.invalidateCaches()
+        retireSupersededSdkConnections(provider, liveTerraUserId = terraUserId)
+        return terraUserId
+    }
+
+    private suspend fun retireSupersededSdkConnections(provider: String, liveTerraUserId: String) {
+        val connections = healthConnectionsRepository.getConnections().getOrElse { error ->
+            Timber.w(error, "Could not load connections to retire superseded %s links", provider)
+            return
+        }
+        val superseded = connections.filter {
+            it.active &&
+                it.source == HealthConnection.SOURCE_SDK &&
+                it.terraUserId != liveTerraUserId &&
+                TerraProviders.storedMatchesUi(it.provider, provider)
+        }
+        if (superseded.isEmpty()) return
+
+        Timber.i("Retiring %d superseded %s connection(s)", superseded.size, provider)
+        for (stale in superseded) {
+            terraApi.deauthenticateUser(stale.terraUserId).onFailure { error ->
+                Timber.w(
+                    error, "Terra deauthenticate failed for superseded %s",
+                    redactSensitiveId(stale.terraUserId),
+                )
+            }
+            healthConnectionsRepository.deactivateConnection(stale.terraUserId).onFailure { error ->
+                Timber.w(
+                    error, "Could not deactivate superseded %s",
+                    redactSensitiveId(stale.terraUserId),
+                )
+            }
+        }
     }
 
     private fun handleCallbackOutcome(outcome: TerraCallbackHandler.Outcome) {
