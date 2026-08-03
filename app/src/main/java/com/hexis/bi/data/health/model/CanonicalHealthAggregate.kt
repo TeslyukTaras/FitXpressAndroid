@@ -98,7 +98,7 @@ internal data class CanonicalStageInterval(
 
 @Serializable
 internal data class CanonicalSample(
-    val timestamp: String,
+    @SerialName("t") val epochMillis: Long,
     val value: Double,
 )
 
@@ -163,6 +163,6 @@ private val CANONICAL_SECONDS_FORMAT: DateTimeFormatter =
 private val CANONICAL_MICROS_FORMAT: DateTimeFormatter =
     DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
 
-internal const val CANONICAL_HEALTH_AGGREGATE_VERSION = 4
+internal const val CANONICAL_HEALTH_AGGREGATE_VERSION = 5
 internal const val METERS_PER_KILOMETER = 1_000.0
 internal const val MAX_CANONICAL_SLEEP_SAMPLES = 96

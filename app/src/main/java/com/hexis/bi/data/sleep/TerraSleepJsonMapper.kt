@@ -176,8 +176,8 @@ internal object TerraSleepJsonMapper {
                 ?: o.parseTerraDateTimeField(TerraSleepJsonKeys.HeartRate.SAMPLE_TIMESTAMP)
                 ?: return@mapNotNull null
             val value = o.float(valueField)?.toInt() ?: return@mapNotNull null
-            SleepSample(time = time, value = value)
-        }.sortedBy { it.time }
+            SleepSample(epochMillis = time.toSampleMillis(), value = value)
+        }.sortedBy { it.epochMillis }
     }
 
     private fun estimateSdnnFromHeartRateSamples(samples: List<SleepSample>): Int {

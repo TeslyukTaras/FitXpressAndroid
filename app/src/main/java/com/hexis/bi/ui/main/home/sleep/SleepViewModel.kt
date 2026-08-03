@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.hexis.bi.R
 import com.hexis.bi.data.health.sync.HealthSyncScheduler
 import com.hexis.bi.data.sleep.SleepRepository
+import com.hexis.bi.data.sleep.toSampleMillis
 import com.hexis.bi.data.sleep.SleepSample
 import com.hexis.bi.data.sleep.SleepSession
 import com.hexis.bi.data.sleep.SleepStage
@@ -336,9 +337,10 @@ class SleepViewModel(
         intervals: List<SleepStageInterval>,
     ): Int? {
         if (samples.isEmpty() || intervals.isEmpty()) return null
+        val bounds = intervals.map { it.start.toSampleMillis() to it.end.toSampleMillis() }
         val values = samples
             .filter { sample ->
-                intervals.any { !sample.time.isBefore(it.start) && sample.time.isBefore(it.end) }
+                bounds.any { (start, end) -> sample.epochMillis in start until end }
             }
             .map { it.value }
         return if (values.isEmpty()) null else values.average().roundToInt()
@@ -356,9 +358,10 @@ class SleepViewModel(
         val totalMinutes = Duration.between(session.bedtime, session.wakeTime).toMinutes()
             .toFloat()
             .coerceAtLeast(1f)
+        val bedtimeMillis = session.bedtime.toSampleMillis()
         val points = samples
             .map { sample ->
-                val offset = Duration.between(session.bedtime, sample.time).toMinutes().toFloat()
+                val offset = ((sample.epochMillis - bedtimeMillis) / SleepConstants.MILLIS_PER_MINUTE).toFloat()
                 ChartPoint(
                     fraction = (offset / totalMinutes).coerceIn(0f, 1f),
                     value = sample.value

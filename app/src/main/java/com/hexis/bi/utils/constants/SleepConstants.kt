@@ -2,6 +2,7 @@ package com.hexis.bi.utils.constants
 
 internal object SleepConstants {
     const val MINUTES_PER_HOUR = 60
+    const val MILLIS_PER_MINUTE = 60_000L
     const val SLEEP_GOAL_MIN_HOURS = 5
     const val SLEEP_GOAL_MAX_HOURS = 12
 

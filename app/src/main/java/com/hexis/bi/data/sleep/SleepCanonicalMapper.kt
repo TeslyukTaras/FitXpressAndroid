@@ -31,8 +31,8 @@ internal fun CanonicalDailyAggregate.toSleepSession(): SleepSession {
         sdnnMs = ui.sdnnMs?.roundToInt() ?: 0,
         stages = ui.timelineIntervals.mapNotNull { it.toDomainOrNull() },
         isNap = ui.isNap,
-        heartRateSamples = ui.heartRateSamples.map { SleepSample(it.timestamp.asLocalDateTime(), it.value.roundToInt()) },
-        hrvSamples = ui.hrvSamples.map { SleepSample(it.timestamp.asLocalDateTime(), it.value.roundToInt()) },
+        heartRateSamples = ui.heartRateSamples.map { SleepSample(it.epochMillis, it.value.roundToInt()) },
+        hrvSamples = ui.hrvSamples.map { SleepSample(it.epochMillis, it.value.roundToInt()) },
         sessionCount = quality.sessionCount.coerceAtLeast(1),
         aggregateStageTotals = com.hexis.bi.data.sleep.SleepStageTotals(
             deepMinutes = ui.stageMinutes.deep, lightMinutes = ui.stageMinutes.light,
@@ -86,15 +86,18 @@ private fun List<SleepSample>.toCanonicalSamples(
     bedtime: LocalDateTime,
     wakeTime: LocalDateTime,
 ): List<CanonicalSample> {
-    if (size <= MAX_CANONICAL_SLEEP_SAMPLES) return map { CanonicalSample(it.time.toCanonicalTimestamp(), it.value.toDouble()) }
-    val spanNanos = java.time.Duration.between(bedtime, wakeTime).toNanos().coerceAtLeast(1)
+    if (size <= MAX_CANONICAL_SLEEP_SAMPLES) {
+        return map { CanonicalSample(it.epochMillis, it.value.toDouble()) }
+    }
+    val bedtimeMillis = bedtime.toSampleMillis()
+    val spanMillis = (wakeTime.toSampleMillis() - bedtimeMillis).coerceAtLeast(1)
     return groupBy { sample ->
-        val fraction = java.time.Duration.between(bedtime, sample.time).toNanos().toDouble() / spanNanos
+        val fraction = (sample.epochMillis - bedtimeMillis).toDouble() / spanMillis
         (fraction * MAX_CANONICAL_SLEEP_SAMPLES).toInt().coerceIn(0, MAX_CANONICAL_SLEEP_SAMPLES - 1)
     }.toSortedMap().values.map { bucket ->
-        val sorted = bucket.sortedBy { it.time }
+        val sorted = bucket.sortedBy { it.epochMillis }
         CanonicalSample(
-            timestamp = sorted[sorted.size / 2].time.toCanonicalTimestamp(),
+            epochMillis = sorted[sorted.size / 2].epochMillis,
             value = kotlin.math.round(sorted.map { it.value }.average() * 100.0) / 100.0,
         )
     }
