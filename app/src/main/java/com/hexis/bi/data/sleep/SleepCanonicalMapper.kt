@@ -34,10 +34,10 @@ internal fun CanonicalDailyAggregate.toSleepSession(): SleepSession {
         heartRateSamples = ui.heartRateSamples.map { SleepSample(it.timestamp.asLocalDateTime(), it.value.roundToInt()) },
         hrvSamples = ui.hrvSamples.map { SleepSample(it.timestamp.asLocalDateTime(), it.value.roundToInt()) },
         sessionCount = quality.sessionCount.coerceAtLeast(1),
-        aggregateStageTotals = if (quality.sessionCount > 1) com.hexis.bi.data.sleep.SleepStageTotals(
+        aggregateStageTotals = com.hexis.bi.data.sleep.SleepStageTotals(
             deepMinutes = ui.stageMinutes.deep, lightMinutes = ui.stageMinutes.light,
             remMinutes = ui.stageMinutes.rem, awakeMinutes = ui.stageMinutes.awake,
-        ) else null,
+        ),
     )
 }
 

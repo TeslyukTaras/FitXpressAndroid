@@ -2,6 +2,7 @@ package com.hexis.bi.data.health.local
 
 import com.hexis.bi.data.health.model.CanonicalBodyScanAggregate
 import com.hexis.bi.data.health.model.CanonicalDailyAggregate
+import com.hexis.bi.data.health.sync.HealthRangeCoverage
 import com.hexis.bi.utils.constants.CanonicalCacheConstants
 import java.time.Clock
 import java.time.Duration
@@ -10,6 +11,7 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -40,9 +42,10 @@ internal fun contiguousDateRanges(days: Collection<LocalDate>): List<ClosedRange
     return ranges
 }
 
+internal fun canonicalToday(clock: Clock): LocalDate = LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC)
+
 internal fun canonicalRetentionFloor(clock: Clock): LocalDate =
-    LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC)
-        .minusDays(CanonicalCacheConstants.DAY_RETENTION_DAYS)
+    canonicalToday(clock).minusDays(CanonicalCacheConstants.DAY_RETENTION_DAYS)
 
 internal class HealthLocalDataSource(
     private val cache: HealthAggregateDatabase,
@@ -55,52 +58,106 @@ internal class HealthLocalDataSource(
 
     suspend fun <T> singleFlight(userId: String, source: String, block: suspend () -> T): T =
         fetchCoordinator.run("$environment:$userId:$source", block)
-    suspend fun aggregates(
+    suspend fun allAggregatesByIdentity(
         userId: String,
-        fingerprint: String,
+        identities: List<String>,
+        source: String,
+        days: List<LocalDate>,
+        withSamples: Boolean,
+    ): List<List<CanonicalDailyAggregate>> = withContext(io) {
+        if (days.isEmpty()) return@withContext identities.map { emptyList() }
+        val wanted = days.toSet()
+        identities.map { terraUserId ->
+            val byDay = cache.getDays(environment, userId, terraUserId, source, wanted, withSamples)
+            days.mapNotNull(byDay::get)
+        }
+    }
+
+    private fun fetchableWindow(): ClosedRange<LocalDate> =
+        canonicalRetentionFloor(clock)..canonicalToday(clock)
+
+    private fun daysCoveredByAllIdentities(
+        userId: String,
+        identities: List<String>,
         source: String,
         days: List<LocalDate>,
         todayTtl: Duration,
-    ): Map<LocalDate, CanonicalDailyAggregate> =
-        readDays(userId, fingerprint, source, days, todayTtl).mapNotNull { (day, cached) ->
-            cached.aggregate?.let { day to it }
-        }.toMap()
+    ): Set<LocalDate> {
+        if (identities.isEmpty()) return emptySet()
+        val perIdentity = identities.map { terraUserId ->
+            cache.freshDays(environment, userId, terraUserId, source, days, todayTtl)
+        }
+        return days.filterTo(mutableSetOf()) { day -> perIdentity.all { day in it } }
+    }
 
-    /** Every cached day regardless of freshness; [fingerprint] null falls back to the newest partition. */
-    suspend fun allAggregates(
+    suspend fun coverage(
         userId: String,
+        identities: List<String>,
         source: String,
         days: List<LocalDate>,
-        fingerprint: String? = null,
-    ): Map<LocalDate, CanonicalDailyAggregate> =
-        readAnyDays(userId, fingerprint, source, days).mapNotNull { (day, cached) ->
-            cached.aggregate?.let { day to it }
-        }.toMap()
+    ): HealthRangeCoverage = withContext(io) {
+        val fetchable = days.filter { it in fetchableWindow() }
+        if (identities.isEmpty() || fetchable.isEmpty()) return@withContext HealthRangeCoverage.SETTLED
+        val perIdentity = identities.map { terraUserId ->
+            cache.getSyncedRanges(environment, userId, terraUserId, source)
+        }
+        if (perIdentity.any { it.isEmpty() }) {
+            return@withContext HealthRangeCoverage(syncedDays = 0, totalDays = fetchable.size)
+                .also { logCoverage(source, fetchable, it, "no stored range") }
+        }
+        HealthRangeCoverage(
+            syncedDays = fetchable.count { day -> perIdentity.all { ranges -> ranges.any { day in it } } },
+            totalDays = fetchable.size,
+        ).also {
+            logCoverage(source, fetchable, it, perIdentity.joinToString(" + ") { ranges ->
+                ranges.joinToString(",") { r -> "${r.start}..${r.endInclusive}" }
+            })
+        }
+    }
 
-    private fun fetchableWindow(): ClosedRange<LocalDate> =
-        canonicalRetentionFloor(clock)..LocalDate.now(clock)
+    suspend fun hasUnsyncedDays(
+        userId: String,
+        identities: List<String>,
+        source: String,
+        days: List<LocalDate>,
+        todayTtl: Duration,
+    ): Boolean = withContext(io) {
+        val window = fetchableWindow()
+        val fetchable = days.filter { it in window }
+        if (identities.isEmpty() || fetchable.isEmpty()) return@withContext false
+        val perIdentity = identities.map { terraUserId ->
+            cache.getSyncedRanges(environment, userId, terraUserId, source)
+        }
+        if (perIdentity.any { it.isEmpty() }) return@withContext true
+        val uncovered = fetchable.any { day -> perIdentity.any { ranges -> ranges.none { day in it } } }
+        if (uncovered) return@withContext true
+        val horizon = canonicalToday(clock).minusDays(CanonicalCacheConstants.CONFIRMED_EMPTY_RECHECK_DAYS)
+        val recent = fetchable.filterNot { it.isBefore(horizon) }
+        if (recent.isEmpty()) return@withContext false
+        daysCoveredByAllIdentities(userId, identities, source, recent, todayTtl).size < recent.size
+    }
 
     suspend fun staleDays(
         userId: String,
-        fingerprint: String,
+        identities: List<String>,
         source: String,
         days: List<LocalDate>,
         todayTtl: Duration,
     ): List<LocalDate> = withContext(io) {
         val window = fetchableWindow()
         val fetchable = days.filter { it in window }
-        val fresh = cache.getFreshDays(environment, userId, fingerprint, source, fetchable, todayTtl).keys
-        fetchable.filterNot(fresh::contains)
+        val covered = daysCoveredByAllIdentities(userId, identities, source, fetchable, todayTtl)
+        fetchable.filterNot(covered::contains)
     }
 
     suspend fun missingDays(
         userId: String,
-        fingerprint: String,
+        identities: List<String>,
         source: String,
         days: List<LocalDate>,
         todayTtl: Duration,
     ): List<LocalDate> = withContext(io) {
-        val today = LocalDate.now(clock)
+        val today = canonicalToday(clock)
         val window = fetchableWindow()
         val fetchable = days.filter { it in window }
         days.count { it.isBefore(window.start) }.let { expired ->
@@ -109,27 +166,25 @@ internal class HealthLocalDataSource(
                 expired, source, CanonicalCacheConstants.DAY_RETENTION_DAYS,
             )
         }
-        val cachedFresh = cache.getFreshDays(environment, userId, fingerprint, source, fetchable, todayTtl).keys
+        val covered = daysCoveredByAllIdentities(userId, identities, source, fetchable, todayTtl)
         val now = clock.instant()
         val key = "$userId|$source"
         val forced = forcedRefreshDays(fetchable, today, lastForcedRefresh[key], now)
         if (forced.isNotEmpty()) lastForcedRefresh[key] = now
-        val present = cachedFresh - forced
+        val present = covered - forced
         diagnostics.recordLookup(userId, source, present.size, fetchable.size - present.size)
         fetchable.filterNot(present::contains)
     }
 
     suspend fun storeDays(
-        userId: String, fingerprint: String, aggregates: List<CanonicalDailyAggregate>,
+        userId: String, terraUserId: String, aggregates: List<CanonicalDailyAggregate>,
     ) = withContext(io) {
-        aggregates.forEach { cache.putDay(environment, userId, fingerprint, it) }
+        if (aggregates.isEmpty()) return@withContext
+        aggregates.forEach { cache.putDay(environment, userId, terraUserId, it) }
         aggregates.groupingBy { it.source }.eachCount().forEach { (source, count) ->
             diagnostics.recordWrites(userId, source, count)
         }
-        aggregates.map { it.source }.distinct().forEach { source ->
-            cache.pruneExpired(environment, userId, source, fingerprint)
-        }
-        Timber.i("Canonical cache wrote %d aggregate days for user=%s", aggregates.size, userId.redacted())
+        cache.pruneExpiredDays(environment, userId)
         aggregates.map { it.source }.distinct().forEach { _changes.tryEmit(it) }
     }
 
@@ -137,27 +192,42 @@ internal class HealthLocalDataSource(
         cache.pruneExpiredDays(environment, userId)
     }
 
-    suspend fun storeEmptyDays(
-        userId: String, fingerprint: String, source: String, days: List<LocalDate>,
+    fun retentionFloor(): LocalDate = canonicalRetentionFloor(clock)
+
+    suspend fun recordSyncedRange(
+        userId: String, terraUserId: String, source: String, window: ClosedRange<LocalDate>,
     ) = withContext(io) {
-        val written = cache.putConfirmedEmpty(environment, userId, fingerprint, source, days)
-        cache.pruneExpired(environment, userId, source, fingerprint)
+        val fetchable = fetchableWindow()
+        val start = maxOf(window.start, fetchable.start)
+        val end = minOf(window.endInclusive, fetchable.endInclusive)
+        if (start.isAfter(end)) return@withContext
+        cache.extendSyncedRange(environment, userId, terraUserId, source, start..end)
+    }
+
+    suspend fun storeEmptyDays(
+        userId: String, terraUserId: String, source: String, days: List<LocalDate>,
+    ) = withContext(io) {
+        if (days.isEmpty()) return@withContext
+        val written = cache.putConfirmedEmpty(environment, userId, terraUserId, source, days)
+        cache.pruneExpiredDays(environment, userId)
         diagnostics.recordWrites(userId, source, written)
-        Timber.i("Canonical cache wrote %d confirmed-empty %s days", written, source)
         if (written > 0) _changes.tryEmit(source)
     }
 
-    suspend fun storeScans(userId: String, scans: List<CanonicalBodyScanAggregate>) = withContext(io) {
+    suspend fun storeScans(userId: String, scans: List<CanonicalBodyScanAggregate>): Unit = withContext(io) {
+        if (scans.isEmpty()) return@withContext
         scans.forEach { cache.putScan(environment, userId, it) }
         diagnostics.recordWrites(userId, SOURCE_SCAN, scans.size)
-        Timber.i("Canonical cache wrote %d scans for user=%s", scans.size, userId.redacted())
+        Timber.i("Health cache stored %d scans", scans.size)
+        _changes.tryEmit(SOURCE_SCAN)
     }
 
-    suspend fun replaceScans(userId: String, scans: List<CanonicalBodyScanAggregate>) = withContext(io) {
+    suspend fun replaceScans(userId: String, scans: List<CanonicalBodyScanAggregate>): Unit = withContext(io) {
         cache.replaceScans(environment, userId, scans)
         diagnostics.recordWrites(userId, SOURCE_SCAN, scans.size)
         cache.setSyncCursor(environment, userId, SOURCE_SCAN, System.currentTimeMillis().toString())
-        Timber.i("Canonical cache replaced scan snapshot: %d records", scans.size)
+        Timber.i("Health cache replaced scan snapshot: %d records", scans.size)
+        _changes.tryEmit(SOURCE_SCAN)
     }
 
     suspend fun scanSnapshotIsFresh(userId: String, ttl: Duration): Boolean = withContext(io) {
@@ -168,13 +238,17 @@ internal class HealthLocalDataSource(
         }
     }
 
-    suspend fun storedFingerprint(userId: String): String? = withContext(io) {
-        cache.getSyncCursor(environment, userId, PROVIDER_FINGERPRINT_CURSOR)
+    suspend fun storedIdentityOrder(userId: String): List<String> = withContext(io) {
+        cache.getSyncCursor(environment, userId, IDENTITY_ORDER_CURSOR)
+            ?.split(IDENTITY_ORDER_SEPARATOR)
+            ?.filter { it.isNotBlank() }
+            .orEmpty()
     }
 
-    suspend fun rememberFingerprint(userId: String, fingerprint: String) = withContext(io) {
-        if (cache.getSyncCursor(environment, userId, PROVIDER_FINGERPRINT_CURSOR) != fingerprint) {
-            cache.setSyncCursor(environment, userId, PROVIDER_FINGERPRINT_CURSOR, fingerprint)
+    suspend fun rememberIdentityOrder(userId: String, encodedIdentities: List<String>) = withContext(io) {
+        val encoded = encodedIdentities.joinToString(IDENTITY_ORDER_SEPARATOR)
+        if (cache.getSyncCursor(environment, userId, IDENTITY_ORDER_CURSOR) != encoded) {
+            cache.setSyncCursor(environment, userId, IDENTITY_ORDER_CURSOR, encoded)
         }
     }
 
@@ -189,58 +263,59 @@ internal class HealthLocalDataSource(
     fun recordProviderCalls(userId: String, source: String, count: Int) =
         diagnostics.recordProviderCalls(userId, source, count)
 
-    fun recordStaleFallback(userId: String, source: String, records: Int) =
-        diagnostics.recordStale(userId, source, records)
-
     suspend fun logStats(userId: String): CanonicalCacheStats = withContext(io) {
         cache.stats(environment, userId).also { stats ->
-            stats.bySource.forEach { (source, volume) ->
-                Timber.i(
-                    "Canonical cache %-5s: %d records, %.4f MiB",
-                    source, volume.records, volume.bytes / BYTES_PER_MIB,
-                )
-            }
+            val runtime = diagnostics.snapshot(userId).values
+            val sources = stats.bySource.entries.joinToString(" ") { (source, v) -> "$source=${v.records}" }
+            val fetched = runtime.sumOf { it.providerCalls }
+            val misses = runtime.sumOf { it.misses }
+            val signature = "$userId|$sources|${stats.total.records}|${stats.total.bytes}|$fetched|$misses"
+            if (lastStatsSignature.getAndSet(signature) == signature) return@also
             Timber.i(
-                "Canonical cache TOTAL: %d records, %.4f MiB",
-                stats.total.records, stats.total.bytes / BYTES_PER_MIB,
+                "Health cache: %s | %d rows %.1f MiB | fetched %d, hit %d, miss %d",
+                sources,
+                stats.total.records,
+                stats.total.bytes / BYTES_PER_MIB,
+                fetched,
+                runtime.sumOf { it.hits },
+                misses,
             )
-            diagnostics.snapshot(userId).forEach { (source, runtime) ->
-                Timber.i(
-                    "Canonical runtime %-5s: hits=%d misses=%d stale=%d writes=%d provider_calls=%d",
-                    source, runtime.hits, runtime.misses, runtime.staleRecords,
-                    runtime.writes, runtime.providerCalls,
-                )
-            }
         }
     }
 
     override suspend fun clearUser(userId: String) = withContext(io) {
         cache.clearUser(environment, userId)
         diagnostics.clearUser(userId)
+        lastForcedRefresh.keys.removeAll { it.startsWith("$userId|") }
+        lastCoverageSignature.clear()
+        lastStatsSignature.set(null)
+        _changes.tryEmit(SOURCE_DAILY)
+        _changes.tryEmit(SOURCE_SLEEP)
+        _changes.tryEmit(SOURCE_SCAN)
+        Unit
     }
 
-    private suspend fun readDays(
-        userId: String,
-        fingerprint: String,
+    private fun logCoverage(
         source: String,
         days: List<LocalDate>,
-        todayTtl: Duration,
-    ): Map<LocalDate, CachedCanonicalDay> = withContext(io) {
-        cache.getFreshDays(environment, userId, fingerprint, source, days, todayTtl)
+        coverage: HealthRangeCoverage,
+        detail: String,
+    ) {
+        val key = "$source|${days.first()}|${days.last()}"
+        val signature = "${coverage.syncedDays}/${coverage.totalDays}"
+        if (lastCoverageSignature.put(key, signature) == signature) return
+        Timber.d(
+            "Health coverage %s [%s..%s]: %d/%d synced (%s)",
+            source, days.first(), days.last(),
+            coverage.syncedDays, coverage.totalDays, detail,
+        )
     }
 
-    private suspend fun readAnyDays(
-        userId: String, fingerprint: String?, source: String, days: List<LocalDate>,
-    ): Map<LocalDate, CachedCanonicalDay> = withContext(io) {
-        val partition = fingerprint
-            ?: cache.latestPartition(environment, userId, source)
-            ?: return@withContext emptyMap()
-        days.mapNotNull { day ->
-            cache.getDay(environment, userId, partition, source, day)?.let { day to it }
-        }.toMap()
-    }
+    private val lastCoverageSignature = ConcurrentHashMap<String, String>()
 
     private val lastForcedRefresh = ConcurrentHashMap<String, Instant>()
+
+    private val lastStatsSignature = AtomicReference<String>()
 
     private fun String.redacted(): String = if (length <= 8) "***" else "${take(4)}…${takeLast(4)}"
 
@@ -248,7 +323,8 @@ internal class HealthLocalDataSource(
         const val SOURCE_DAILY = "daily"
         const val SOURCE_SLEEP = "sleep"
         const val SOURCE_SCAN = "scan"
-        private const val PROVIDER_FINGERPRINT_CURSOR = "providers"
+        private const val IDENTITY_ORDER_CURSOR = "providers"
+        private const val IDENTITY_ORDER_SEPARATOR = "|"
         private const val BYTES_PER_MIB = 1_048_576.0
     }
 }
@@ -273,7 +349,6 @@ internal fun forcedRefreshDays(
 internal data class CanonicalRuntimeStats(
     val hits: Long,
     val misses: Long,
-    val staleRecords: Long,
     val writes: Long,
     val providerCalls: Long,
 )
@@ -281,8 +356,7 @@ internal data class CanonicalRuntimeStats(
 internal class CanonicalCacheDiagnostics {
     private data class Counters(
         val hits: AtomicLong = AtomicLong(), val misses: AtomicLong = AtomicLong(),
-        val stale: AtomicLong = AtomicLong(), val writes: AtomicLong = AtomicLong(),
-        val providerCalls: AtomicLong = AtomicLong(),
+        val writes: AtomicLong = AtomicLong(), val providerCalls: AtomicLong = AtomicLong(),
     )
 
     private val values = ConcurrentHashMap<String, Counters>()
@@ -290,9 +364,6 @@ internal class CanonicalCacheDiagnostics {
 
     fun recordLookup(userId: String, source: String, hits: Int, misses: Int) {
         counters(userId, source).also { it.hits.addAndGet(hits.toLong()); it.misses.addAndGet(misses.toLong()) }
-    }
-    fun recordStale(userId: String, source: String, records: Int) {
-        counters(userId, source).stale.addAndGet(records.toLong())
     }
     fun recordWrites(userId: String, source: String, records: Int) {
         counters(userId, source).writes.addAndGet(records.toLong())
@@ -304,7 +375,7 @@ internal class CanonicalCacheDiagnostics {
         val prefix = "$userId|"
         if (!key.startsWith(prefix)) return@mapNotNull null
         key.removePrefix(prefix) to CanonicalRuntimeStats(
-            value.hits.get(), value.misses.get(), value.stale.get(),
+            value.hits.get(), value.misses.get(),
             value.writes.get(), value.providerCalls.get(),
         )
     }.toMap()

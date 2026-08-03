@@ -51,6 +51,37 @@ internal data class CanonicalDailyUi(
 )
 
 @Serializable
+internal data class CanonicalDaySamples(
+    @SerialName("timeline_intervals") val timelineIntervals: List<CanonicalStageInterval> = emptyList(),
+    @SerialName("heart_rate_samples") val heartRateSamples: List<CanonicalSample> = emptyList(),
+    @SerialName("hrv_samples") val hrvSamples: List<CanonicalSample> = emptyList(),
+) {
+    val isEmpty: Boolean
+        get() = timelineIntervals.isEmpty() && heartRateSamples.isEmpty() && hrvSamples.isEmpty()
+}
+
+internal fun CanonicalDailyAggregate.detachSamples(): Pair<CanonicalDailyAggregate, CanonicalDaySamples> {
+    val samples = CanonicalDaySamples(ui.timelineIntervals, ui.heartRateSamples, ui.hrvSamples)
+    if (samples.isEmpty) return this to samples
+    return copy(
+        ui = ui.copy(
+            timelineIntervals = emptyList(),
+            heartRateSamples = emptyList(),
+            hrvSamples = emptyList(),
+        ),
+    ) to samples
+}
+
+internal fun CanonicalDailyAggregate.attachSamples(samples: CanonicalDaySamples): CanonicalDailyAggregate =
+    if (samples.isEmpty) this else copy(
+        ui = ui.copy(
+            timelineIntervals = samples.timelineIntervals,
+            heartRateSamples = samples.heartRateSamples,
+            hrvSamples = samples.hrvSamples,
+        ),
+    )
+
+@Serializable
 internal data class CanonicalStageMinutes(
     val deep: Int = 0,
     val light: Int = 0,

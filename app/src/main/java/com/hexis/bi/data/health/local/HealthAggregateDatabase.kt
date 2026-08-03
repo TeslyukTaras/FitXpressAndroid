@@ -3,31 +3,24 @@ package com.hexis.bi.data.health.local
 import com.hexis.bi.data.health.model.CANONICAL_HEALTH_AGGREGATE_VERSION
 import com.hexis.bi.data.health.model.CanonicalBodyScanAggregate
 import com.hexis.bi.data.health.model.CanonicalDailyAggregate
+import com.hexis.bi.data.health.model.CanonicalDaySamples
+import com.hexis.bi.data.health.model.attachSamples
+import com.hexis.bi.data.health.model.detachSamples
 import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.hexis.bi.utils.constants.CanonicalCacheConstants
+import com.hexis.bi.utils.redactSensitiveId
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import timber.log.Timber
-
-internal data class CachedCanonicalDay(
-    val aggregate: CanonicalDailyAggregate?,
-    val confirmedEmpty: Boolean,
-    val fetchedAt: Instant,
-) {
-    init {
-        require(confirmedEmpty.xor(aggregate != null)) {
-            "A cached day must contain exactly one of aggregate or confirmed-empty"
-        }
-    }
-}
 
 internal data class CanonicalCacheVolume(val records: Int, val bytes: Long)
 
@@ -58,36 +51,43 @@ internal class HealthAggregateDatabase(
 
     override fun onOpen(db: SQLiteDatabase) {
         super.onOpen(db)
-        db.delete("canonical_days", "schema_version!=?", arrayOf(CANONICAL_HEALTH_AGGREGATE_VERSION.toString()))
-        db.delete("canonical_scans", "schema_version!=?", arrayOf(CANONICAL_HEALTH_AGGREGATE_VERSION.toString()))
+        val version = arrayOf(CANONICAL_HEALTH_AGGREGATE_VERSION.toString())
+        if (db.delete("canonical_days", "schema_version!=?", version) > 0) {
+            db.delete("canonical_sync", "source LIKE ?", arrayOf("$SYNCED_RANGE_PREFIX%"))
+        }
+        if (db.delete("canonical_scans", "schema_version!=?", version) > 0) {
+            db.delete("canonical_sync", "source=?", arrayOf(HealthLocalDataSource.SOURCE_SCAN))
+        }
     }
 
-    fun putDay(environment: String, userId: String, fingerprint: String, aggregate: CanonicalDailyAggregate) {
+    fun putDay(environment: String, userId: String, terraUserId: String, aggregate: CanonicalDailyAggregate) {
         require(aggregate.schemaVersion == CANONICAL_HEALTH_AGGREGATE_VERSION)
+        val (slim, samples) = aggregate.detachSamples()
         putDayRow(
-            environment, userId, fingerprint, aggregate.source, aggregate.day,
-            json.encodeToString(aggregate), false,
+            environment, userId, terraUserId, aggregate.source, aggregate.day,
+            json.encodeToString(slim), false,
+            if (samples.isEmpty) null else json.encodeToString(samples),
         )
     }
 
     fun putConfirmedEmpty(
         environment: String,
         userId: String,
-        fingerprint: String,
+        terraUserId: String,
         source: String,
         days: List<LocalDate>,
     ): Int {
         if (days.isEmpty()) return 0
-        val holdingData = daysHoldingData(environment, userId, fingerprint, source, days)
+        val holdingData = daysHoldingData(environment, userId, terraUserId, source, days)
         var written = 0
         for (day in days) {
             if (day in holdingData) continue
-            putDayRow(environment, userId, fingerprint, source, day.toString(), null, true)
+            putDayRow(environment, userId, terraUserId, source, day.toString(), null, true)
             written++
         }
         if (written < days.size) {
             Timber.i(
-                "Canonical cache kept %d existing %s day(s) the provider stopped returning",
+                "Health cache kept %d existing %s day(s) the provider stopped returning",
                 days.size - written, source,
             )
         }
@@ -97,15 +97,15 @@ internal class HealthAggregateDatabase(
     private fun daysHoldingData(
         environment: String,
         userId: String,
-        fingerprint: String,
+        terraUserId: String,
         source: String,
         days: List<LocalDate>,
     ): Set<LocalDate> {
         val placeholders = days.joinToString(",") { "?" }
-        val args = arrayOf(environment, userId, fingerprint, source) + days.map { it.toString() }
+        val args = arrayOf(environment, userId, terraUserId, source) + days.map { it.toString() }
         return readableDatabase.query(
             "canonical_days", arrayOf("day"),
-            "environment=? AND user_id=? AND provider_fingerprint=? AND source=? " +
+            "environment=? AND user_id=? AND terra_user_id=? AND source=? " +
                 "AND payload IS NOT NULL AND day IN ($placeholders)",
             args, null, null, null,
         ).use { cursor ->
@@ -113,64 +113,117 @@ internal class HealthAggregateDatabase(
         }
     }
 
-    fun getDay(
+    fun storedDays(
         environment: String,
         userId: String,
-        fingerprint: String,
+        terraUserId: String,
         source: String,
-        day: LocalDate,
-    ): CachedCanonicalDay? {
-        val row = readableDatabase.query(
-            "canonical_days",
-            arrayOf("payload", "confirmed_empty", "fetched_at_ms", "schema_version", "provider_fingerprint"),
-            "environment=? AND user_id=? AND provider_fingerprint=? AND source=? AND day=?",
-            arrayOf(environment, userId, fingerprint, source, day.toString()), null, null, null,
+        days: Collection<LocalDate>,
+    ): Set<LocalDate> {
+        if (days.isEmpty()) return emptySet()
+        val wanted = days.toSet()
+        return readableDatabase.query(
+            "canonical_days", arrayOf("day"),
+            "environment=? AND user_id=? AND terra_user_id=? AND source=? " +
+                "AND day BETWEEN ? AND ? AND schema_version=?",
+            arrayOf(
+                environment, userId, terraUserId, source,
+                wanted.min().toString(), wanted.max().toString(),
+                CANONICAL_HEALTH_AGGREGATE_VERSION.toString(),
+            ),
+            null, null, null,
         ).use { cursor ->
-            if (!cursor.moveToFirst()) null else DayRow(
-                payload = if (cursor.isNull(0)) null else cursor.getString(0),
-                confirmedEmpty = cursor.getInt(1) == 1,
-                fetchedAtMs = cursor.getLong(2),
-                schemaVersion = cursor.getInt(3),
-                fingerprint = cursor.getString(4),
-            )
-        } ?: return null
-        return runCatching {
-            require(row.schemaVersion == CANONICAL_HEALTH_AGGREGATE_VERSION)
-            CachedCanonicalDay(
-                aggregate = row.payload?.let { json.decodeFromString<CanonicalDailyAggregate>(it) },
-                confirmedEmpty = row.confirmedEmpty,
-                fetchedAt = Instant.ofEpochMilli(row.fetchedAtMs),
-            )
-        }.getOrElse { error ->
-            quarantineDay(environment, userId, row.fingerprint, source, day, error)
-            null
+            buildSet {
+                while (cursor.moveToNext()) {
+                    val day = runCatching { LocalDate.parse(cursor.getString(0)) }.getOrNull() ?: continue
+                    if (day in wanted) add(day)
+                }
+            }
         }
     }
 
-    fun latestPartition(environment: String, userId: String, source: String): String? =
-        readableDatabase.query(
-            "canonical_days", arrayOf("provider_fingerprint"),
-            "environment=? AND user_id=? AND source=?", arrayOf(environment, userId, source),
-            null, null, "fetched_at_ms DESC", "1",
-        ).use { if (it.moveToFirst()) it.getString(0) else null }
-
-    fun getFreshDays(
+    fun getDays(
         environment: String,
         userId: String,
-        fingerprint: String,
+        terraUserId: String,
         source: String,
-        days: Iterable<LocalDate>,
+        days: Collection<LocalDate>,
+        withSamples: Boolean = false,
+    ): Map<LocalDate, CanonicalDailyAggregate> {
+        if (days.isEmpty()) return emptyMap()
+        val wanted = days.toSet()
+        val malformed = mutableListOf<Pair<LocalDate, Throwable>>()
+        val columns = if (withSamples) arrayOf("day", "payload", "samples") else arrayOf("day", "payload")
+        val decoded = readableDatabase.query(
+            "canonical_days",
+            columns,
+            "environment=? AND user_id=? AND terra_user_id=? AND source=? " +
+                "AND payload IS NOT NULL AND day BETWEEN ? AND ? AND schema_version=?",
+            arrayOf(
+                environment, userId, terraUserId, source,
+                wanted.min().toString(), wanted.max().toString(),
+                CANONICAL_HEALTH_AGGREGATE_VERSION.toString(),
+            ),
+            null, null, null,
+        ).use { cursor ->
+            buildMap {
+                while (cursor.moveToNext()) {
+                    val day = runCatching { LocalDate.parse(cursor.getString(0)) }.getOrNull() ?: continue
+                    if (day !in wanted) continue
+                    runCatching {
+                        val slim = json.decodeFromString<CanonicalDailyAggregate>(cursor.getString(1))
+                        if (!withSamples || cursor.isNull(2)) slim
+                        else slim.attachSamples(json.decodeFromString<CanonicalDaySamples>(cursor.getString(2)))
+                    }
+                        .onSuccess { put(day, it) }
+                        .onFailure { malformed += day to it }
+                }
+            }
+        }
+        malformed.forEach { (day, error) ->
+            quarantineDay(environment, userId, terraUserId, source, day, error)
+        }
+        return decoded
+    }
+
+    fun freshDays(
+        environment: String,
+        userId: String,
+        terraUserId: String,
+        source: String,
+        days: Collection<LocalDate>,
         todayTtl: Duration,
         recentRefreshDays: Long = CanonicalCacheConstants.RECENT_REFRESH_DAYS,
         recentTtl: Duration = CanonicalCacheConstants.RECENT_TTL,
-    ): Map<LocalDate, CachedCanonicalDay> = days.mapNotNull { day ->
-        val cached = getDay(environment, userId, fingerprint, source, day) ?: return@mapNotNull null
-        val fresh = isCanonicalDayFresh(
-            day, cached.fetchedAt, clock.instant(), todayTtl,
-            recentRefreshDays, recentTtl, cached.confirmedEmpty,
-        )
-        if (fresh) day to cached else null
-    }.toMap()
+    ): Set<LocalDate> {
+        if (days.isEmpty()) return emptySet()
+        val wanted = days.toSet()
+        val now = clock.instant()
+        return readableDatabase.query(
+            "canonical_days",
+            arrayOf("day", "confirmed_empty", "fetched_at_ms"),
+            "environment=? AND user_id=? AND terra_user_id=? AND source=? " +
+                "AND day BETWEEN ? AND ? AND schema_version=?",
+            arrayOf(
+                environment, userId, terraUserId, source,
+                wanted.min().toString(), wanted.max().toString(),
+                CANONICAL_HEALTH_AGGREGATE_VERSION.toString(),
+            ),
+            null, null, null,
+        ).use { cursor ->
+            buildSet {
+                while (cursor.moveToNext()) {
+                    val day = runCatching { LocalDate.parse(cursor.getString(0)) }.getOrNull() ?: continue
+                    if (day !in wanted) continue
+                    val fresh = isCanonicalDayFresh(
+                        day, Instant.ofEpochMilli(cursor.getLong(2)), now, todayTtl,
+                        recentRefreshDays, recentTtl, cursor.getInt(1) == 1,
+                    )
+                    if (fresh) add(day)
+                }
+            }
+        }
+    }
 
     fun putScan(environment: String, userId: String, scan: CanonicalBodyScanAggregate) {
         val values = ContentValues().apply {
@@ -210,7 +263,7 @@ internal class HealthAggregateDatabase(
         val invalid = mutableListOf<String>()
         val decoded = rows.mapNotNull { (id, payload) ->
             runCatching { json.decodeFromString<CanonicalBodyScanAggregate>(payload) }
-                .onFailure { Timber.e(it, "Canonical cache quarantined malformed scan id=%s", id) }
+                .onFailure { Timber.e(it, "Health cache quarantined malformed scan id=%s", id) }
                 .getOrNull() ?: run { invalid += id; null }
         }
         invalid.forEach { id ->
@@ -227,6 +280,60 @@ internal class HealthAggregateDatabase(
         }
         return decoded
     }
+
+    fun getSyncedRanges(
+        environment: String,
+        userId: String,
+        terraUserId: String,
+        source: String,
+    ): List<ClosedRange<LocalDate>> =
+        getSyncCursor(environment, userId, syncedRangeKey(source, terraUserId))
+            ?.split(SYNCED_RANGE_LIST_SEPARATOR)
+            ?.mapNotNull(::parseSyncedRange)
+            ?.sortedBy { it.start }
+            .orEmpty()
+
+    fun extendSyncedRange(
+        environment: String,
+        userId: String,
+        terraUserId: String,
+        source: String,
+        window: ClosedRange<LocalDate>,
+    ) {
+        val existing = getSyncedRanges(environment, userId, terraUserId, source)
+        if (existing.any {
+                !window.start.isBefore(it.start) && !window.endInclusive.isAfter(it.endInclusive)
+            }
+        ) {
+            return
+        }
+        val merged = mergeDateRanges(existing + window)
+        Timber.d(
+            "Health sync range %s/%s: %d range(s), %d day(s) total, widest [%s..%s], after window [%s..%s]",
+            source, redactSensitiveId(terraUserId), merged.size,
+            merged.sumOf { ChronoUnit.DAYS.between(it.start, it.endInclusive) + 1 },
+            merged.first().start, merged.last().endInclusive,
+            window.start, window.endInclusive,
+        )
+        setSyncCursor(
+            environment, userId, syncedRangeKey(source, terraUserId),
+            merged.joinToString(SYNCED_RANGE_LIST_SEPARATOR) {
+                "${it.start}$SYNCED_RANGE_SEPARATOR${it.endInclusive}"
+            },
+        )
+    }
+
+    private fun parseSyncedRange(encoded: String): ClosedRange<LocalDate>? {
+        val separator = encoded.indexOf(SYNCED_RANGE_SEPARATOR)
+        if (separator < 0) return null
+        return runCatching {
+            LocalDate.parse(encoded.substring(0, separator))..
+                LocalDate.parse(encoded.substring(separator + SYNCED_RANGE_SEPARATOR.length))
+        }.getOrNull()?.takeIf { !it.start.isAfter(it.endInclusive) }
+    }
+
+    private fun syncedRangeKey(source: String, terraUserId: String) =
+        "$SYNCED_RANGE_PREFIX$source:$terraUserId"
 
     fun setSyncCursor(environment: String, userId: String, source: String, cursor: String) {
         val values = ContentValues().apply {
@@ -256,30 +363,14 @@ internal class HealthAggregateDatabase(
         }
     }
 
-    fun pruneExpired(environment: String, userId: String, source: String, keepPartition: String): Int {
-        val now = clock.instant()
-        val partitionCutoff = now.minus(CanonicalCacheConstants.PARTITION_RETENTION).toEpochMilli()
-        var removed = deleteDaysOlderThanRetention(environment, userId)
-        removed += writableDatabase.delete(
-            "canonical_days",
-            "environment=? AND user_id=? AND source=? AND provider_fingerprint!=? AND fetched_at_ms<?",
-            arrayOf(environment, userId, source, keepPartition, partitionCutoff.toString()),
-        )
-        if (removed > 0) Timber.i("Canonical cache pruned %d expired %s row(s)", removed, source)
-        return removed
-    }
-
     fun pruneExpiredDays(environment: String, userId: String): Int {
-        val removed = deleteDaysOlderThanRetention(environment, userId)
-        if (removed > 0) Timber.i("Canonical cache startup sweep pruned %d expired day row(s)", removed)
-        return removed
-    }
-
-    private fun deleteDaysOlderThanRetention(environment: String, userId: String): Int =
-        writableDatabase.delete(
+        val removed = writableDatabase.delete(
             "canonical_days", "environment=? AND user_id=? AND day<?",
             arrayOf(environment, userId, canonicalRetentionFloor(clock).toString()),
         )
+        if (removed > 0) Timber.i("Health cache pruned %d expired day row(s)", removed)
+        return removed
+    }
 
     fun stats(environment: String, userId: String): CanonicalCacheStats {
         val volumes = linkedMapOf<String, CanonicalCacheVolume>()
@@ -306,14 +397,15 @@ internal class HealthAggregateDatabase(
     }
 
     private fun putDayRow(
-        environment: String, userId: String, fingerprint: String, source: String, day: String,
-        payload: String?, confirmedEmpty: Boolean,
+        environment: String, userId: String, terraUserId: String, source: String, day: String,
+        payload: String?, confirmedEmpty: Boolean, samples: String? = null,
     ) {
         val values = ContentValues().apply {
             put("environment", environment); put("user_id", userId)
-            put("provider_fingerprint", fingerprint)
+            put("terra_user_id", terraUserId)
             put("source", source); put("day", day)
             if (payload == null) putNull("payload") else put("payload", payload)
+            if (samples == null) putNull("samples") else put("samples", samples)
             put("confirmed_empty", if (confirmedEmpty) 1 else 0)
             put("schema_version", CANONICAL_HEALTH_AGGREGATE_VERSION)
             put("fetched_at_ms", clock.millis())
@@ -322,14 +414,23 @@ internal class HealthAggregateDatabase(
     }
 
     private fun quarantineDay(
-        environment: String, userId: String, fingerprint: String,
+        environment: String, userId: String, terraUserId: String,
         source: String, day: LocalDate, error: Throwable,
     ) {
-        Timber.e(error, "Canonical cache quarantined malformed %s day=%s", source, day)
+        Timber.e(error, "Health cache quarantined malformed %s day=%s", source, day)
         writableDatabase.delete(
             "canonical_days",
-            "environment=? AND user_id=? AND provider_fingerprint=? AND source=? AND day=?",
-            arrayOf(environment, userId, fingerprint, source, day.toString()),
+            "environment=? AND user_id=? AND terra_user_id=? AND source=? AND day=?",
+            arrayOf(environment, userId, terraUserId, source, day.toString()),
+        )
+        val remaining = removeDayFromRanges(
+            getSyncedRanges(environment, userId, terraUserId, source), day,
+        )
+        setSyncCursor(
+            environment, userId, syncedRangeKey(source, terraUserId),
+            remaining.joinToString(SYNCED_RANGE_LIST_SEPARATOR) {
+                "${it.start}$SYNCED_RANGE_SEPARATOR${it.endInclusive}"
+            },
         )
     }
 
@@ -340,20 +441,18 @@ internal class HealthAggregateDatabase(
         onCreate(db)
     }
 
-    private data class DayRow(
-        val payload: String?, val confirmedEmpty: Boolean,
-        val fetchedAtMs: Long, val schemaVersion: Int, val fingerprint: String,
-    )
-
     private companion object {
+        const val SYNCED_RANGE_PREFIX = "range:"
+        const val SYNCED_RANGE_SEPARATOR = ".."
+        const val SYNCED_RANGE_LIST_SEPARATOR = ","
         const val DATABASE_NAME = "canonical_health_cache.db"
-        const val DATABASE_VERSION = 5
+        const val DATABASE_VERSION = 8
         const val CREATE_DAYS = """CREATE TABLE canonical_days (
-            environment TEXT NOT NULL, user_id TEXT NOT NULL, provider_fingerprint TEXT NOT NULL,
+            environment TEXT NOT NULL, user_id TEXT NOT NULL, terra_user_id TEXT NOT NULL,
             source TEXT NOT NULL, day TEXT NOT NULL,
             payload TEXT, confirmed_empty INTEGER NOT NULL, schema_version INTEGER NOT NULL,
-            fetched_at_ms INTEGER NOT NULL,
-            PRIMARY KEY(environment,user_id,provider_fingerprint,source,day),
+            fetched_at_ms INTEGER NOT NULL, samples TEXT,
+            PRIMARY KEY(environment,user_id,terra_user_id,source,day),
             CHECK ((confirmed_empty=1 AND payload IS NULL) OR (confirmed_empty=0 AND payload IS NOT NULL)))"""
         const val CREATE_SCANS = """CREATE TABLE canonical_scans (
             environment TEXT NOT NULL, user_id TEXT NOT NULL, document_id TEXT NOT NULL, saved_at TEXT NOT NULL,
@@ -384,4 +483,31 @@ internal fun isCanonicalDayFresh(
         else -> return true
     }
     return Duration.between(fetchedAt, now) < ttl
+}
+
+internal fun mergeDateRanges(ranges: List<ClosedRange<LocalDate>>): List<ClosedRange<LocalDate>> {
+    val sorted = ranges.filterNot { it.start.isAfter(it.endInclusive) }.sortedBy { it.start }
+    if (sorted.isEmpty()) return emptyList()
+    val merged = mutableListOf<ClosedRange<LocalDate>>()
+    var current = sorted.first()
+    for (next in sorted.drop(1)) {
+        current = if (!next.start.isAfter(current.endInclusive.plusDays(1))) {
+            current.start..maxOf(current.endInclusive, next.endInclusive)
+        } else {
+            merged += current
+            next
+        }
+    }
+    merged += current
+    return merged
+}
+
+internal fun removeDayFromRanges(
+    ranges: List<ClosedRange<LocalDate>>,
+    day: LocalDate,
+): List<ClosedRange<LocalDate>> = ranges.flatMap { range ->
+    if (day !in range) listOf(range) else listOfNotNull(
+        (range.start..day.minusDays(1)).takeIf { !it.start.isAfter(it.endInclusive) },
+        (day.plusDays(1)..range.endInclusive).takeIf { !it.start.isAfter(it.endInclusive) },
+    )
 }

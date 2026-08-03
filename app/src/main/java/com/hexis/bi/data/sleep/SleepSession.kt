@@ -25,7 +25,14 @@ data class SleepStageTotals(
     val lightMinutes: Int = 0,
     val remMinutes: Int = 0,
     val awakeMinutes: Int = 0,
-)
+) {
+    fun minutesFor(stage: SleepStage): Int = when (stage) {
+        SleepStage.Deep -> deepMinutes
+        SleepStage.REM -> remMinutes
+        SleepStage.Light -> lightMinutes
+        SleepStage.Awake -> awakeMinutes
+    }
+}
 
 data class SleepSession(
     val bedtime: LocalDateTime,
@@ -45,4 +52,12 @@ data class SleepSession(
     val hrvSamples: List<SleepSample> = emptyList(),
     val sessionCount: Int = 1,
     val aggregateStageTotals: SleepStageTotals? = null,
-)
+) {
+    val stageTotals: SleepStageTotals
+        get() = aggregateStageTotals ?: SleepStageTotals(
+            deepMinutes = stages.filter { it.stage == SleepStage.Deep }.sumOf { it.durationMinutes },
+            lightMinutes = stages.filter { it.stage == SleepStage.Light }.sumOf { it.durationMinutes },
+            remMinutes = stages.filter { it.stage == SleepStage.REM }.sumOf { it.durationMinutes },
+            awakeMinutes = stages.filter { it.stage == SleepStage.Awake }.sumOf { it.durationMinutes },
+        )
+}

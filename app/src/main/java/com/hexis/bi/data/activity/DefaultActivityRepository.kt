@@ -6,12 +6,12 @@ import com.hexis.bi.data.health.model.CanonicalDailyAggregate
 import com.hexis.bi.data.health.remote.HealthRemoteDataSource
 import com.hexis.bi.data.health.sync.HealthDomainSpec
 import com.hexis.bi.data.health.sync.HealthDomainSync
+import com.hexis.bi.data.health.sync.HealthRangeCoverage
 import com.hexis.bi.data.terra.TerraApi
 import com.hexis.bi.data.terra.TerraDetail
 import com.hexis.bi.data.terra.TerraRangeJsonFetcher
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
-import kotlinx.serialization.json.JsonElement
 
 internal class DefaultActivityRepository(
     api: TerraApi,
@@ -24,19 +24,18 @@ internal class DefaultActivityRepository(
 
     override val updates: Flow<Unit> = sync.updates
 
-    override suspend fun cachedSummaries(start: LocalDate, end: LocalDate): List<ActivitySummary> =
-        sync.cached(start, end)
+    override suspend fun coverage(start: LocalDate, end: LocalDate): HealthRangeCoverage =
+        sync.coverage(start, end)
 
     override suspend fun sync(start: LocalDate, end: LocalDate): Result<Unit> = sync.sync(start, end)
 
     override suspend fun getSummariesForRange(
         start: LocalDate,
         end: LocalDate,
-        detail: TerraDetail,
     ): Result<List<ActivitySummary>> = sync.range(start, end)
 
     override suspend fun getSummaryForDate(date: LocalDate): Result<ActivitySummary?> =
-        getSummariesForRange(date, date, TerraDetail.FULL).map { it.firstOrNull() }
+        getSummariesForRange(date, date).map { it.firstOrNull() }
 }
 
 /** What makes activity different from the other health domains; the rest lives in [HealthDomainSync]. */
@@ -47,7 +46,7 @@ private class ActivitySpec(private val api: TerraApi) : HealthDomainSpec<Activit
 
     override fun dayOf(item: ActivitySummary): LocalDate = item.date
 
-    override fun parse(rows: List<JsonElement>): List<ActivitySummary> =
+    override fun parse(rows: List<Any?>): List<ActivitySummary> =
         rows.mapNotNull(TerraActivityJsonMapper::summaryOrNull)
 
     override fun merge(perSource: List<List<ActivitySummary>>): List<ActivitySummary> {
@@ -69,7 +68,7 @@ private class ActivitySpec(private val api: TerraApi) : HealthDomainSpec<Activit
         terraUserId: String,
         start: LocalDate,
         end: LocalDate,
-    ): Result<List<JsonElement>> = TerraRangeJsonFetcher.fetchJsonRows(start, end.plusDays(1)) { rs, re ->
+    ): Result<List<Any?>> = TerraRangeJsonFetcher.fetchJsonRows(start, end.plusDays(1)) { rs, re ->
         api.getDaily(terraUserId = terraUserId, startDate = rs, endDate = re, detail = TerraDetail.FULL)
     }
 }

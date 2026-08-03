@@ -6,13 +6,13 @@ import com.hexis.bi.data.health.model.CanonicalDailyAggregate
 import com.hexis.bi.data.health.remote.HealthRemoteDataSource
 import com.hexis.bi.data.health.sync.HealthDomainSpec
 import com.hexis.bi.data.health.sync.HealthDomainSync
+import com.hexis.bi.data.health.sync.HealthRangeCoverage
 import com.hexis.bi.data.terra.TerraApi
 import com.hexis.bi.data.terra.TerraDetail
 import com.hexis.bi.data.terra.TerraRangeJsonFetcher
 import com.hexis.bi.utils.redactSensitiveId
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
-import kotlinx.serialization.json.JsonElement
 import timber.log.Timber
 
 private object SleepRepositoryConstants {
@@ -32,8 +32,8 @@ internal class DefaultSleepRepository(
 
     override val updates: Flow<Unit> = sync.updates
 
-    override suspend fun cachedSessions(start: LocalDate, end: LocalDate): List<SleepSession> =
-        sync.cached(start, end)
+    override suspend fun coverage(start: LocalDate, end: LocalDate): HealthRangeCoverage =
+        sync.coverage(start, end)
 
     override suspend fun sync(start: LocalDate, end: LocalDate): Result<Unit> = sync.sync(start, end)
 
@@ -41,7 +41,7 @@ internal class DefaultSleepRepository(
         start: LocalDate,
         end: LocalDate,
         detail: TerraDetail,
-    ): Result<List<SleepSession>> = sync.range(start, end)
+    ): Result<List<SleepSession>> = sync.range(start, end, withSamples = detail == TerraDetail.FULL)
 
     override suspend fun getSessionForNight(date: LocalDate): Result<SleepSession?> =
         getSessionsForRange(
@@ -56,10 +56,12 @@ private class SleepSpec(private val api: TerraApi) : HealthDomainSpec<SleepSessi
     override val source = HealthLocalDataSource.SOURCE_SLEEP
     override val label = "Sleep"
 
+    override val fetchLookbackDays = SleepRepositoryConstants.DAY_LOOKBACK_DAYS
+
     /** Sleep is filed under the day you woke up, not the day you went to bed. */
     override fun dayOf(item: SleepSession): LocalDate = item.wakeTime.toLocalDate()
 
-    override fun parse(rows: List<JsonElement>): List<SleepSession> =
+    override fun parse(rows: List<Any?>): List<SleepSession> =
         rows.mapNotNull(TerraSleepJsonMapper::sessionOrNull)
 
     override fun merge(perSource: List<List<SleepSession>>): List<SleepSession> {
@@ -84,7 +86,7 @@ private class SleepSpec(private val api: TerraApi) : HealthDomainSpec<SleepSessi
         terraUserId: String,
         start: LocalDate,
         end: LocalDate,
-    ): Result<List<JsonElement>> {
+    ): Result<List<Any?>> {
         Timber.d("Terra /sleep request user_id=%s range=[%s..%s]", redactSensitiveId(terraUserId), start, end)
         return TerraRangeJsonFetcher.fetchJsonRows(start, end.plusDays(1)) { rs, re ->
             api.getSleep(terraUserId = terraUserId, startDate = rs, endDate = re, detail = TerraDetail.FULL)
@@ -99,6 +101,7 @@ private class SleepSpec(private val api: TerraApi) : HealthDomainSpec<SleepSessi
 internal fun selectSessionForNight(sessions: List<SleepSession>, date: LocalDate): SleepSession? =
     sessions.firstOrNull { it.wakeTime.toLocalDate() == date }
 internal fun aggregateSleepSessionsForWakeDay(sessions: List<SleepSession>): SleepSession? {
+    sessions.singleOrNull()?.let { return it }
     val primary = sessions.primarySleepSessionForWakeDay() ?: return null
     return primary.copy(
         durationMinutes = sessions.sumOf { it.durationMinutes },
