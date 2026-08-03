@@ -1,10 +1,5 @@
 package com.hexis.bi.data.terra
 
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.floatOrNull
-import kotlinx.serialization.json.intOrNull
 import timber.log.Timber
 import java.time.Instant
 import java.time.LocalDateTime
@@ -13,24 +8,40 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
-internal fun JsonPrimitive.contentOrNullSafe(): String? =
-    if (isString) content else content.takeIf { it.isNotBlank() }
+internal typealias TerraNode = Map<*, *>
 
-internal fun JsonObject.float(key: String): Float? =
-    (this[key] as? JsonPrimitive)?.floatOrNull
+internal fun terraScalar(value: Any?): String? = when (value) {
+    is String -> value
+    is Number -> value.toString()
+    is Boolean -> value.toString()
+    else -> null
+}
 
-internal fun JsonObject.int(key: String): Int? =
-    (this[key] as? JsonPrimitive)?.intOrNull
+internal fun TerraNode.float(key: String): Float? = terraScalar(this[key])?.toFloatOrNull()
 
-/** Terra emits explicit JSON nulls for absent nodes; a safe cast keeps them from throwing. */
-internal fun JsonObject.objectOrNull(key: String): JsonObject? =
-    this[key] as? JsonObject
+internal fun TerraNode.int(key: String): Int? = terraScalar(this[key])?.toIntOrNull()
 
-internal fun JsonObject.arrayOrNull(key: String): JsonArray? =
-    this[key] as? JsonArray
+internal fun TerraNode.boolean(key: String): Boolean? =
+    terraScalar(this[key])?.toBooleanStrictOrNull()
 
-internal fun JsonObject.parseTerraDateTimeField(key: String): LocalDateTime? {
-    val raw = (this[key] as? JsonPrimitive)?.contentOrNullSafe()?.trim() ?: return null
+internal fun TerraNode.objectOrNull(key: String): TerraNode? = this[key] as? TerraNode
+
+internal fun terraArray(value: Any?): List<*>? = when (value) {
+    is List<*> -> value
+    is Array<*> -> value.asList()
+    else -> null
+}
+
+internal fun TerraNode.arrayOrNull(key: String): List<*>? = terraArray(this[key])
+
+internal fun terraNumberAsInt(value: Any?): Int? =
+    terraScalar(value)?.let { it.toIntOrNull() ?: it.toFloatOrNull()?.toInt() }
+
+internal fun terraNumberAsFloat(value: Any?): Float? =
+    terraScalar(value)?.let { it.toFloatOrNull() ?: it.toIntOrNull()?.toFloat() }
+
+internal fun TerraNode.parseTerraDateTimeField(key: String): LocalDateTime? {
+    val raw = terraScalar(this[key])?.trim() ?: return null
     return parseTerraDateTime(raw)
 }
 

@@ -2,12 +2,11 @@ package com.hexis.bi.data.activity
 
 import com.hexis.bi.data.terra.arrayOrNull
 import com.hexis.bi.data.terra.objectOrNull
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.floatOrNull
-import kotlinx.serialization.json.intOrNull
+import com.hexis.bi.data.terra.TerraNode
+import com.hexis.bi.data.terra.terraArray
+import com.hexis.bi.data.terra.terraNumberAsFloat
+import com.hexis.bi.data.terra.terraNumberAsInt
+import com.hexis.bi.data.terra.terraScalar
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -114,8 +113,8 @@ private object TerraActivityJsonKeys {
 }
 
 object TerraActivityJsonMapper {
-    fun summaryOrNull(json: JsonElement, fallbackDate: LocalDate? = null): ActivitySummary? {
-        val root = json as? JsonObject ?: return null
+    fun summaryOrNull(json: Any?, fallbackDate: LocalDate? = null): ActivitySummary? {
+        val root = json as? TerraNode ?: return null
         val date = root.dateOrNull() ?: fallbackDate ?: return null
         val distanceKm = (root.extractDistanceKm()).coerceAtLeast(0f)
         val calories = root.extractActiveCalories().coerceAtLeast(0)
@@ -135,14 +134,14 @@ object TerraActivityJsonMapper {
     }
 }
 
-private fun JsonObject.extractVo2Max(): Float? {
+private fun TerraNode.extractVo2Max(): Float? {
     val oxygenData = objectOrNull(TerraActivityJsonKeys.Nodes.OXYGEN_DATA)
     return (oxygenData.firstFloatByKeysDeep(TerraActivityJsonKeys.Vo2.CANDIDATES)
         ?: this.firstFloatByKeysDeep(TerraActivityJsonKeys.Vo2.CANDIDATES))
         ?.takeIf { it > 0f }
 }
 
-private fun JsonObject.dateOrNull(): LocalDate? {
+private fun TerraNode.dateOrNull(): LocalDate? {
     val metadata = objectOrNull(TerraActivityJsonKeys.Common.METADATA)
     val fromDateField = TerraActivityJsonKeys.DateTime.CANDIDATES
         .firstNotNullOfOrNull { key ->
@@ -159,7 +158,7 @@ private fun String.toLocalDateOrNull(): LocalDate? =
         else OffsetDateTime.parse(this).toLocalDate()
     }.getOrNull()
 
-private fun JsonObject.extractSteps(): Int {
+private fun TerraNode.extractSteps(): Int {
     val distanceData = objectOrNull(TerraActivityJsonKeys.Nodes.DISTANCE_DATA)
     val activityData = objectOrNull(TerraActivityJsonKeys.Nodes.ACTIVITY_DATA)
     val metadata = objectOrNull(TerraActivityJsonKeys.Common.METADATA)
@@ -183,10 +182,10 @@ private fun JsonObject.extractSteps(): Int {
  * normalize their aggregate as a float (e.g. `8421.0`). The strict [int] helper returns null for
  * a float token, which would silently zero out the day, so parse through [numberAsIntOrNull].
  */
-private fun JsonObject.stepsValue(key: String): Int? =
-    (this[key] as? JsonPrimitive)?.numberAsIntOrNull()
+private fun TerraNode.stepsValue(key: String): Int? =
+    terraNumberAsInt(this[key])
 
-private fun JsonObject.extractDistanceKm(): Float {
+private fun TerraNode.extractDistanceKm(): Float {
     val distanceData = objectOrNull(TerraActivityJsonKeys.Nodes.DISTANCE_DATA)
     val activityData = objectOrNull(TerraActivityJsonKeys.Nodes.ACTIVITY_DATA)
     val meters = distanceData.firstFloatByKeysDeep(TerraActivityJsonKeys.Distance.METERS_CANDIDATES)
@@ -207,7 +206,7 @@ private fun JsonObject.extractDistanceKm(): Float {
     return 0f
 }
 
-private fun JsonObject.extractActiveDurationSeconds(): Int {
+private fun TerraNode.extractActiveDurationSeconds(): Int {
     val activeDurations = objectOrNull(TerraActivityJsonKeys.Nodes.ACTIVE_DURATIONS_DATA)
     val activityData = objectOrNull(TerraActivityJsonKeys.Nodes.ACTIVITY_DATA)
     val seconds = activeDurations.firstFloatByKeysDeep(TerraActivityJsonKeys.Duration.CANDIDATES)
@@ -215,7 +214,7 @@ private fun JsonObject.extractActiveDurationSeconds(): Int {
     return seconds?.coerceAtLeast(0f)?.roundToInt() ?: 0
 }
 
-private fun JsonObject.extractActiveCalories(): Int {
+private fun TerraNode.extractActiveCalories(): Int {
     val caloriesData = objectOrNull(TerraActivityJsonKeys.Nodes.CALORIES_DATA)
     val activityData = objectOrNull(TerraActivityJsonKeys.Nodes.ACTIVITY_DATA)
     val directActive =
@@ -245,41 +244,38 @@ private fun JsonObject.extractActiveCalories(): Int {
     return 0
 }
 
-private fun JsonObject?.firstIntByKeysDeep(keys: List<String>): Int? {
+private fun TerraNode?.firstIntByKeysDeep(keys: List<String>): Int? {
     this ?: return null
     val keySet = keys.map { it.lowercase() }.toSet()
     return walkDeep()
         .firstNotNullOfOrNull { (key, value) ->
-            if (key.lowercase() !in keySet) null else (value as? JsonPrimitive)?.numberAsIntOrNull()
+            if (key.lowercase() !in keySet) null else terraNumberAsInt(value)
         }
 }
 
-private fun JsonObject?.firstFloatByKeysDeep(keys: List<String>): Float? {
+private fun TerraNode?.firstFloatByKeysDeep(keys: List<String>): Float? {
     this ?: return null
     val keySet = keys.map { it.lowercase() }.toSet()
     return walkDeep()
         .firstNotNullOfOrNull { (key, value) ->
-            if (key.lowercase() !in keySet) null else (value as? JsonPrimitive)?.numberAsFloatOrNull()
+            if (key.lowercase() !in keySet) null else terraNumberAsFloat(value)
         }
 }
 
-private fun JsonObject.walkDeep(): Sequence<Pair<String, JsonElement>> = sequence {
+private fun TerraNode.walkDeep(): Sequence<Pair<String, Any?>> = sequence {
     for ((key, value) in this@walkDeep) {
-        yield(key to value)
-        when (value) {
-            is JsonObject -> yieldAll(value.walkDeep())
-            is kotlinx.serialization.json.JsonArray -> {
-                value.forEach { item ->
-                    if (item is JsonObject) yieldAll(item.walkDeep())
-                }
+        yield(key.toString() to value)
+        if (value is TerraNode) {
+            yieldAll(value.walkDeep())
+        } else {
+            terraArray(value)?.forEach { item ->
+                if (item is TerraNode) yieldAll(item.walkDeep())
             }
-
-            else -> Unit
         }
     }
 }
 
-private fun JsonObject.extractHourlySteps(targetDate: LocalDate, totalSteps: Int): Map<Int, Int> {
+private fun TerraNode.extractHourlySteps(targetDate: LocalDate, totalSteps: Int): Map<Int, Int> {
     val samples = mutableListOf<HourlyStepSample>()
     collectHourlyStepSamplesInto(samples)
     val normalized = samples
@@ -295,14 +291,14 @@ private fun JsonObject.extractHourlySteps(targetDate: LocalDate, totalSteps: Int
     return estimateHourlyStepsFromActivitySamples(targetDate, totalSteps)
 }
 
-private fun JsonObject.collectHourlyStepSamplesInto(out: MutableList<HourlyStepSample>) {
+private fun TerraNode.collectHourlyStepSamplesInto(out: MutableList<HourlyStepSample>) {
     for ((_, value) in this) {
         when (value) {
-            is JsonObject -> value.collectHourlyStepSamplesInto(out)
+            is TerraNode -> value.collectHourlyStepSamplesInto(out)
             else -> {
-                val arr = value as? JsonArray ?: continue
+                val arr = terraArray(value) ?: continue
                 arr.forEach { item ->
-                    val sample = item as? JsonObject ?: return@forEach
+                    val sample = item as? TerraNode ?: return@forEach
                     val hour = sample.sampleHourOrNull() ?: return@forEach
                     val steps = sample.sampleStepsOrNull() ?: return@forEach
                     val sampleTime = sample.sampleTime()
@@ -322,7 +318,7 @@ private fun JsonObject.collectHourlyStepSamplesInto(out: MutableList<HourlyStepS
     }
 }
 
-private fun JsonObject.estimateHourlyStepsFromActivitySamples(
+private fun TerraNode.estimateHourlyStepsFromActivitySamples(
     targetDate: LocalDate,
     totalSteps: Int,
 ): Map<Int, Int> {
@@ -330,7 +326,7 @@ private fun JsonObject.estimateHourlyStepsFromActivitySamples(
         ?.arrayOrNull(TerraActivityJsonKeys.Samples.MET)
         .orEmpty()
         .mapNotNull {
-            (it as? JsonObject)?.toHourlyActivityWeight(
+            (it as? TerraNode)?.toHourlyActivityWeight(
                 targetDate,
                 ActivitySampleSource.Met
             )
@@ -341,7 +337,7 @@ private fun JsonObject.estimateHourlyStepsFromActivitySamples(
         ?.arrayOrNull(TerraActivityJsonKeys.Samples.ACTIVITY_LEVELS)
         .orEmpty()
         .mapNotNull {
-            (it as? JsonObject)?.toHourlyActivityWeight(
+            (it as? TerraNode)?.toHourlyActivityWeight(
                 targetDate,
                 ActivitySampleSource.ActivityLevel
             )
@@ -360,7 +356,7 @@ private fun JsonObject.estimateHourlyStepsFromActivitySamples(
     return weightByHour.scaleWeightsToSteps(totalSteps)
 }
 
-private fun JsonObject.toHourlyActivityWeight(
+private fun TerraNode.toHourlyActivityWeight(
     targetDate: LocalDate,
     source: ActivitySampleSource,
 ): HourlyActivityWeight? {
@@ -368,12 +364,10 @@ private fun JsonObject.toHourlyActivityWeight(
     if (sampleTime.toLocalDate() != targetDate) return null
     val raw = when (source) {
         ActivitySampleSource.Met ->
-            (this[TerraActivityJsonKeys.Samples.MET_LEVEL] as? JsonPrimitive)
-                ?.numberAsFloatOrNull()
+            terraNumberAsFloat(this[TerraActivityJsonKeys.Samples.MET_LEVEL])
 
         ActivitySampleSource.ActivityLevel ->
-            (this[TerraActivityJsonKeys.Samples.ACTIVITY_LEVEL] as? JsonPrimitive)
-                ?.numberAsFloatOrNull()
+            terraNumberAsFloat(this[TerraActivityJsonKeys.Samples.ACTIVITY_LEVEL])
     } ?: return null
     val weight = when (source) {
         // Oura reports resting/placeholder MET samples around 0.9, including future filler for today.
@@ -410,7 +404,7 @@ private fun Map<Int, Float>.scaleWeightsToSteps(totalSteps: Int): Map<Int, Int> 
     return scaled.toSortedMap()
 }
 
-private fun JsonObject.sampleHourOrNull(): Int? =
+private fun TerraNode.sampleHourOrNull(): Int? =
     listOf(
         TerraActivityJsonKeys.DateTime.TIMESTAMP_LOCAL,
         TerraActivityJsonKeys.DateTime.START_TIME_LOCAL,
@@ -418,20 +412,19 @@ private fun JsonObject.sampleHourOrNull(): Int? =
         TerraActivityJsonKeys.DateTime.START_TIME,
     )
         .firstNotNullOfOrNull { key ->
-            (this[key] as? JsonPrimitive)?.contentOrNull()?.toLocalDateTimeOrNull()?.hour
+            terraScalar(this[key])?.toLocalDateTimeOrNull()?.hour
         }
 
-private fun JsonObject.sampleStepsOrNull(): Int? =
+private fun TerraNode.sampleStepsOrNull(): Int? =
     listOf(
         TerraActivityJsonKeys.Steps.STEPS,
         TerraActivityJsonKeys.Steps.STEP_COUNT,
     )
         .firstNotNullOfOrNull { key ->
-            (this[key] as? JsonPrimitive)?.intOrNull
-                ?: (this[key] as? JsonPrimitive)?.floatOrNull?.toInt()
+            terraNumberAsInt(this[key])
         }
 
-private fun JsonObject.sampleTime(): LocalDateTime? =
+private fun TerraNode.sampleTime(): LocalDateTime? =
     listOf(
         TerraActivityJsonKeys.DateTime.TIMESTAMP_LOCAL,
         TerraActivityJsonKeys.DateTime.START_TIME_LOCAL,
@@ -439,21 +432,8 @@ private fun JsonObject.sampleTime(): LocalDateTime? =
         TerraActivityJsonKeys.DateTime.START_TIME,
     )
         .firstNotNullOfOrNull { key ->
-            (this[key] as? JsonPrimitive)?.contentOrNull()?.toLocalDateTimeOrNull()
+            terraScalar(this[key])?.toLocalDateTimeOrNull()
         }
-
-private fun JsonPrimitive.contentOrNull(): String? =
-    if (isString) content else content.takeIf { it.isNotBlank() }
-
-private fun JsonPrimitive.numberAsIntOrNull(): Int? =
-    intOrNull
-        ?: floatOrNull?.toInt()
-        ?: contentOrNull()?.toFloatOrNull()?.toInt()
-
-private fun JsonPrimitive.numberAsFloatOrNull(): Float? =
-    floatOrNull
-        ?: intOrNull?.toFloat()
-        ?: contentOrNull()?.toFloatOrNull()
 
 private fun String.toLocalDateTimeOrNull(): LocalDateTime? =
     runCatching { OffsetDateTime.parse(this).toLocalDateTime() }

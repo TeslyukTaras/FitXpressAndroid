@@ -36,12 +36,7 @@ class TerraApi(private val functions: FirebaseFunctions) {
             val data = functions.getHttpsCallable(terraFunction(FUNCTION_GET_DAILY)).call(payload)
                 .await().data
             logTerraRawJson("DAILY", terraUserId, startDate, endDate, data)
-            Result.success(
-                terraJson.decodeFromJsonElement(
-                    TerraDataListResponse.serializer(),
-                    data.toJsonElement()
-                )
-            )
+            Result.success(data.asTerraDataList())
         } catch (e: Exception) {
             if (e is CancellationException) throw e
             Result.failure(e)
@@ -59,12 +54,7 @@ class TerraApi(private val functions: FirebaseFunctions) {
             val data = functions.getHttpsCallable(terraFunction(FUNCTION_GET_SLEEP)).call(payload)
                 .await().data
             logTerraRawJson("SLEEP", terraUserId, startDate, endDate, data)
-            Result.success(
-                terraJson.decodeFromJsonElement(
-                    TerraDataListResponse.serializer(),
-                    data.toJsonElement()
-                )
-            )
+            Result.success(data.asTerraDataList())
         } catch (e: Exception) {
             if (e is CancellationException) throw e
             Result.failure(e)
@@ -176,13 +166,26 @@ private fun logTerraRawJson(
     )
 }
 
-@Serializable
 data class TerraDataListResponse(
     val status: String? = null,
     val type: String? = null,
-    val data: List<JsonElement> = emptyList(),
+    val data: List<Any?> = emptyList(),
     val message: String? = null,
 )
+
+/**
+ * Reads the range envelope off the tree the Firebase callable already built. The row payloads are
+ * handed on untouched, so the samples are never copied into a parallel representation.
+ */
+private fun Any?.asTerraDataList(): TerraDataListResponse {
+    val root = this as? Map<*, *> ?: return TerraDataListResponse()
+    return TerraDataListResponse(
+        status = root["status"] as? String,
+        type = root["type"] as? String,
+        data = (root["data"] as? List<*>).orEmpty(),
+        message = root["message"] as? String,
+    )
+}
 
 @Serializable
 data class TerraUserInfoResponse(
@@ -206,7 +209,10 @@ data class TerraConnectionsResponse(
     val status: String? = null,
     val message: String? = null,
     val users: List<TerraUserInfo> = emptyList(),
-)
+) {
+    val isAuthoritative: Boolean
+        get() = status?.equals("success", ignoreCase = true) == true
+}
 
 @Serializable
 data class TerraUserInfo(
