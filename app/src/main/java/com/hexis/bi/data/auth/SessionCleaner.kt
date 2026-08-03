@@ -19,12 +19,17 @@ class SessionCleaner(
 ) {
 
     suspend fun signOut() {
-        clearLocalData()
+        val outgoingUserId = firebaseAuth.currentUser?.uid
         authRepository.signOut()
+        clearLocalDataFor(outgoingUserId)
     }
 
     suspend fun clearLocalData() {
-        firebaseAuth.currentUser?.uid?.let { canonicalAggregateRepository.clearUser(it) }
+        clearLocalDataFor(firebaseAuth.currentUser?.uid)
+    }
+
+    private suspend fun clearLocalDataFor(userId: String?) {
+        userId?.let { canonicalAggregateRepository.clearUser(it) }
         terraManagerHolder.clearLocalManager()
         TerraSdkSync.reset()
         orderDraftHolder.clear()
