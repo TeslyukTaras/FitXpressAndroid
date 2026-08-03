@@ -12,6 +12,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.ActivityOverview
@@ -19,6 +23,7 @@ import com.hexis.bi.ui.main.home.ActivityOverview
 @Composable
 internal fun ActivityOverviewCard(
     data: ActivityOverview,
+    isSyncing: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -33,12 +38,24 @@ internal fun ActivityOverviewCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
-            Text(
-                text = data.steps,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
+            AnimatedContent(
+                targetState = isSyncing,
+                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                label = "activity-overview-value",
+            ) { syncing ->
+                Text(
+                    text = if (syncing) stringResource(R.string.health_data_syncing) else data.steps,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (syncing) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onBackground
+                    },
+                )
+            }
         }
+
+        if (isSyncing) return@BodyGlassCard
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
 

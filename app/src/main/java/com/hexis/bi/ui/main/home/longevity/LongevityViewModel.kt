@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.viewModelScope
 import com.hexis.bi.R
 import com.hexis.bi.data.activity.ActivityRepository
+import com.hexis.bi.data.health.sync.HealthSyncScheduler
 import com.hexis.bi.data.recovery.RecoveryRepository
 import com.hexis.bi.data.scan.ScanFetchProjection
 import com.hexis.bi.data.scan.ScanHistoryRepository
@@ -19,7 +20,9 @@ import com.hexis.bi.domain.longevity.MetabolicFoundation
 import com.hexis.bi.domain.longevity.PhysicalFoundation
 import com.hexis.bi.domain.longevity.RecompositionFoundation
 import com.hexis.bi.ui.base.BaseViewModel
+import com.hexis.bi.utils.constants.CanonicalCacheConstants
 import com.hexis.bi.utils.constants.LongevityFoundationConstants
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -33,6 +36,10 @@ import java.time.ZoneId
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.onEach
 
 /**
  * Drives the body-led Longevity screen.
@@ -44,6 +51,7 @@ import kotlin.math.roundToInt
  * being viewed, in the background, and cached per window. Functional Capacity fills in when it
  * arrives; the other three foundations never wait on it.
  */
+@OptIn(FlowPreview::class)
 class LongevityViewModel(
     application: Application,
     private val scanHistoryRepository: ScanHistoryRepository,
@@ -51,6 +59,7 @@ class LongevityViewModel(
     private val activityRepository: ActivityRepository,
     private val recoveryRepository: RecoveryRepository,
     private val sleepRepository: SleepRepository,
+    private val healthSyncScheduler: HealthSyncScheduler,
 ) : BaseViewModel(application, initialLoading = true) {
 
     private val _state = MutableStateFlow(LongevityState())
@@ -59,9 +68,29 @@ class LongevityViewModel(
     private var bodyResults: Map<LongevityWindow, LongevityResult> = emptyMap()
     private val functionalCache = mutableMapOf<LongevityWindow, FunctionalFoundation>()
     private var functionalJob: Job? = null
+    private var backfillInFlight = false
+    private var functionalSyncing = false
 
     init {
         load()
+        merge(activityRepository.updates, sleepRepository.updates)
+            .debounce(CanonicalCacheConstants.UPDATE_DEBOUNCE_MS)
+            .onEach {
+                if (!backfillInFlight) reloadFunctional() else {
+                    val wasSyncing = functionalSyncing
+                    refreshFunctionalSyncing(_state.value.selectedWindow)
+                    if (wasSyncing && !functionalSyncing) reloadFunctional()
+                }
+            }
+            .launchIn(viewModelScope)
+        healthSyncScheduler.backfillInFlight()
+            .onEach { inFlight ->
+                val settled = backfillInFlight && !inFlight
+                backfillInFlight = inFlight
+                refreshFunctionalSyncing(_state.value.selectedWindow)
+                if (settled) reloadFunctional()
+            }
+            .launchIn(viewModelScope)
     }
 
     fun selectWindow(window: LongevityWindow) {
@@ -112,13 +141,20 @@ class LongevityViewModel(
         render(_state.value.selectedWindow)
     }
 
+    private fun reloadFunctional() {
+        functionalCache.clear()
+        loadFunctional(_state.value.selectedWindow)
+    }
+
     private fun loadFunctional(window: LongevityWindow) {
         if (functionalCache.containsKey(window)) {
             render(window)
+            viewModelScope.launch { refreshFunctionalSyncing(window) }
             return
         }
         functionalJob?.cancel()
         functionalJob = viewModelScope.launch {
+            refreshFunctionalSyncing(window)
             val today = LocalDate.now()
             val start = windowStart(window, today)
             val functional = coroutineScope {
@@ -143,6 +179,23 @@ class LongevityViewModel(
             functionalCache[window] = functional
             if (_state.value.selectedWindow == window) render(window)
         }
+    }
+
+    /**
+     * Functional Capacity is the only foundation fed by wearables, so it is the only one that can
+     * be showing a half-filled window. Reads the local cache only — the days it reports missing are
+     * already queued on the backfill worker.
+     */
+    private suspend fun refreshFunctionalSyncing(window: LongevityWindow) {
+        val today = LocalDate.now()
+        val start = windowStart(window, today)
+        val syncing = backfillInFlight && (
+            activityRepository.coverage(start, today).isPartial ||
+                sleepRepository.coverage(start, today).isPartial
+            )
+        if (syncing == functionalSyncing) return
+        functionalSyncing = syncing
+        render(window)
     }
 
     private fun render(window: LongevityWindow) {
@@ -218,6 +271,7 @@ class LongevityViewModel(
     private fun functionalUi(foundation: FunctionalFoundation) = LongevityFoundationUi(
         titleRes = R.string.longevity_foundation_functional,
         status = foundation.status,
+        isSyncing = functionalSyncing,
         evidence = listOf(
             transition(
                 label = string(R.string.longevity_evidence_vo2_max),

@@ -4,13 +4,14 @@ import android.app.Application
 import androidx.lifecycle.viewModelScope
 import com.hexis.bi.data.activity.ActivityRepository
 import com.hexis.bi.data.activity.ActivitySummary
-import com.hexis.bi.data.terra.TerraDetail
+import com.hexis.bi.data.health.sync.HealthSyncScheduler
 import com.hexis.bi.data.terra.TerraRestSourceResolver
 import com.hexis.bi.data.user.FirestoreSchema
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.caloriesGoal
 import com.hexis.bi.utils.constants.ActivityConstants
+import com.hexis.bi.utils.constants.CanonicalCacheConstants
 import com.hexis.bi.utils.constants.ProfileConstants
 import com.hexis.bi.utils.constants.TerraProviders
 import com.hexis.bi.utils.distanceGoalKm
@@ -28,6 +29,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -40,12 +43,15 @@ import java.time.temporal.TemporalAdjusters
 import java.time.temporal.WeekFields
 import java.util.Locale
 import kotlin.math.abs
+import kotlinx.coroutines.FlowPreview
 
+@OptIn(FlowPreview::class)
 class ActivityViewModel(
     application: Application,
     private val activityRepository: ActivityRepository,
     private val userRepository: UserRepository,
     private val sourceResolver: TerraRestSourceResolver,
+    private val healthSyncScheduler: HealthSyncScheduler,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(ActivityState())
@@ -59,10 +65,26 @@ class ActivityViewModel(
     private var heightCm: Float? = null
     private var isFemale: Boolean = false
     private val loadedTabs = mutableSetOf<ActivityTab>()
+    private val loadedTabRanges = mutableMapOf<ActivityTab, ClosedRange<LocalDate>>()
+
+    @Volatile
+    private var backfillInFlight = false
 
     init {
         observeDataSource()
         loadDataForTab(_state.value.selectedTab)
+        activityRepository.updates
+            .debounce(CanonicalCacheConstants.UPDATE_DEBOUNCE_MS)
+            .onEach {
+                if (backfillInFlight) reloadTabsThatSettled() else reloadLoadedTabs(showLoading = false)
+            }
+            .launchIn(viewModelScope)
+        healthSyncScheduler.backfillInFlight()
+            .onEach { inFlight ->
+                backfillInFlight = inFlight
+                reloadLoadedTabs(showLoading = false)
+            }
+            .launchIn(viewModelScope)
         combine(
             userRepository.observeUser(),
             userRepository.observeUserSettings(),
@@ -111,12 +133,12 @@ class ActivityViewModel(
         if (tab !in loadedTabs) loadDataForTab(tab)
     }
 
-    private fun loadDataForTab(tab: ActivityTab) {
+    private fun loadDataForTab(tab: ActivityTab, showLoading: Boolean = true) {
         when (tab) {
-            ActivityTab.Day -> loadDayData(dayOffset)
-            ActivityTab.Week -> loadWeekData(weekOffset)
-            ActivityTab.Month -> loadMonthData(monthOffset)
-            ActivityTab.Year -> loadYearData(yearOffset)
+            ActivityTab.Day -> loadDayData(dayOffset, showLoading)
+            ActivityTab.Week -> loadWeekData(weekOffset, showLoading)
+            ActivityTab.Month -> loadMonthData(monthOffset, showLoading)
+            ActivityTab.Year -> loadYearData(yearOffset, showLoading)
         }
     }
 
@@ -244,15 +266,37 @@ class ActivityViewModel(
         reloadLoadedTabs()
     }
 
-    private fun reloadLoadedTabs() {
-        loadedTabs.toList().forEach(::loadDataForTab)
+    private fun reloadLoadedTabs(showLoading: Boolean = true) {
+        loadedTabs.toList().forEach { loadDataForTab(it, showLoading) }
     }
 
-    private fun loadDayData(offset: Int) {
+    private suspend fun reloadTabsThatSettled() {
+        loadedTabRanges.toMap().forEach { (tab, range) ->
+            if (_state.value.loadStateOf(tab) != ActivityLoadState.Loading) return@forEach
+            if (loadStateFor(range.start, range.endInclusive) != ActivityLoadState.Ready) return@forEach
+            loadDataForTab(tab, showLoading = false)
+        }
+    }
+
+    /**
+     * A range the backfill has not finished covering keeps showing its loading state rather than a
+     * chart with holes in it. Purely a local-cache read — the missing days are already being
+     * fetched by the worker, so this never adds a request. Once nothing is in flight the partial
+     * data is shown regardless, otherwise an offline device would spin forever.
+     */
+    private suspend fun loadStateFor(start: LocalDate, end: LocalDate): ActivityLoadState =
+        if (backfillInFlight && activityRepository.coverage(start, end).isPartial) {
+            ActivityLoadState.Loading
+        } else {
+            ActivityLoadState.Ready
+        }
+
+    private fun loadDayData(offset: Int, showLoading: Boolean = true) {
         val day = LocalDate.now().plusDays(offset.toLong())
+        loadedTabRanges[ActivityTab.Day] = day..day
         _state.update {
             it.copy(
-                dayLoadState = ActivityLoadState.Loading,
+                dayLoadState = if (showLoading) ActivityLoadState.Loading else it.dayLoadState,
                 dayErrorMessage = null,
                 dateLabel = day.formatFullMonthDay(),
                 canGoNextDay = offset < 0,
@@ -261,7 +305,7 @@ class ActivityViewModel(
         viewModelScope.launch {
             activityRepository.getSummaryForDate(day).fold(
                 onSuccess = { summary ->
-                    applyDaySummary(day, summary)
+                    applyDaySummary(day, summary, loadStateFor(day, day))
                 },
                 onFailure = { err ->
                     _state.update {
@@ -275,31 +319,33 @@ class ActivityViewModel(
         }
     }
 
-    private fun loadWeekData(offset: Int) {
+    private fun loadWeekData(offset: Int, showLoading: Boolean = true) {
         val weekStartDay = WeekFields.of(Locale.getDefault()).firstDayOfWeek
         val weekStart = LocalDate.now()
             .with(TemporalAdjusters.previousOrSame(weekStartDay))
             .plusWeeks(offset.toLong())
         val weekEnd = weekStart.plusDays(6)
+        loadedTabRanges[ActivityTab.Week] = weekStart..weekEnd
         val previousStart = weekStart.minusWeeks(1)
         val previousEnd = weekEnd.minusWeeks(1)
         _state.update {
             it.copy(
-                weekLoadState = ActivityLoadState.Loading,
+                weekLoadState = if (showLoading) ActivityLoadState.Loading else it.weekLoadState,
                 weekErrorMessage = null
             )
         }
         viewModelScope.launch {
             activityRepository
-                .getSummariesForRange(previousStart, weekEnd, TerraDetail.FULL)
+                .getSummariesForRange(previousStart, weekEnd)
                 .fold(
                     onSuccess = { allRows ->
                         val rows = allRows.filterByDateRange(weekStart, weekEnd)
                         val previousRows = allRows.filterByDateRange(previousStart, previousEnd)
                         loadedTabs.add(ActivityTab.Week)
+                        val loadState = loadStateFor(weekStart, weekEnd)
                         _state.update {
                             it.copy(
-                                weekLoadState = ActivityLoadState.Ready,
+                                weekLoadState = loadState,
                                 week = buildPeriodSummary(
                                     start = weekStart,
                                     periodLengthDays = ActivityConstants.DAYS_IN_WEEK,
@@ -325,17 +371,18 @@ class ActivityViewModel(
         }
     }
 
-    private fun loadMonthData(offset: Int) {
+    private fun loadMonthData(offset: Int, showLoading: Boolean = true) {
         val monthStart = LocalDate.now()
             .withDayOfMonth(1)
             .plusMonths(offset.toLong())
         val daysInMonth = monthStart.lengthOfMonth()
         val monthEnd = monthStart.plusDays(daysInMonth.toLong() - 1)
+        loadedTabRanges[ActivityTab.Month] = monthStart..monthEnd
         val prevStart = monthStart.minusMonths(1)
         val prevEnd = prevStart.plusDays(prevStart.lengthOfMonth().toLong() - 1)
         _state.update {
             it.copy(
-                monthLoadState = ActivityLoadState.Loading,
+                monthLoadState = if (showLoading) ActivityLoadState.Loading else it.monthLoadState,
                 monthErrorMessage = null
             )
         }
@@ -347,9 +394,10 @@ class ActivityViewModel(
                         val rows = allRows.filterByDateRange(monthStart, monthEnd)
                         val prevRows = allRows.filterByDateRange(prevStart, prevEnd)
                         loadedTabs.add(ActivityTab.Month)
+                        val loadState = loadStateFor(monthStart, monthEnd)
                         _state.update {
                             it.copy(
-                                monthLoadState = ActivityLoadState.Ready,
+                                monthLoadState = loadState,
                                 month = buildPeriodSummary(
                                     start = monthStart,
                                     periodLengthDays = daysInMonth,
@@ -374,14 +422,15 @@ class ActivityViewModel(
         }
     }
 
-    private fun loadYearData(offset: Int) {
+    private fun loadYearData(offset: Int, showLoading: Boolean = true) {
         val yearStart = LocalDate.now()
             .withDayOfYear(1)
             .plusYears(offset.toLong())
         val yearEnd = yearStart.plusDays(yearStart.lengthOfYear().toLong() - 1)
+        loadedTabRanges[ActivityTab.Year] = yearStart..yearEnd
         _state.update {
             it.copy(
-                yearLoadState = ActivityLoadState.Loading,
+                yearLoadState = if (showLoading) ActivityLoadState.Loading else it.yearLoadState,
                 yearErrorMessage = null
             )
         }
@@ -389,9 +438,10 @@ class ActivityViewModel(
             activityRepository.getSummariesForRange(yearStart, yearEnd).fold(
                 onSuccess = { rows ->
                     loadedTabs.add(ActivityTab.Year)
+                    val loadState = loadStateFor(yearStart, yearEnd)
                     _state.update {
                         it.copy(
-                            yearLoadState = ActivityLoadState.Ready,
+                            yearLoadState = loadState,
                             year = buildPeriodSummary(
                                 start = yearStart,
                                 periodLengthDays = yearStart.lengthOfYear(),
@@ -526,7 +576,11 @@ class ActivityViewModel(
         else -> 0
     }
 
-    private fun applyDaySummary(day: LocalDate, summary: ActivitySummary?) {
+    private fun applyDaySummary(
+        day: LocalDate,
+        summary: ActivitySummary?,
+        loadState: ActivityLoadState,
+    ) {
         val hourlyBars = buildDayBars(day, summary)
         val totalSteps = summary?.steps ?: 0
         val distanceKm = summary?.distanceKm ?: 0f
@@ -535,7 +589,7 @@ class ActivityViewModel(
         loadedTabs.add(ActivityTab.Day)
         _state.update {
             it.copy(
-                dayLoadState = ActivityLoadState.Ready,
+                dayLoadState = loadState,
                 dayErrorMessage = null,
                 dateLabel = day.formatFullMonthDay(),
                 currentSteps = totalSteps,

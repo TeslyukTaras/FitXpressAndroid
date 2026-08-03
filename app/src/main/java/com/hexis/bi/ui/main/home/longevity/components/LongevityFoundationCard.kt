@@ -1,5 +1,9 @@
 package com.hexis.bi.ui.main.home.longevity.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -53,14 +57,28 @@ internal fun LongevityFoundationCard(
                 color = MaterialTheme.colorScheme.onBackground,
             )
 
-            Text(
-                text = stringResource(foundation.status.labelRes),
-                style = TitleDimTextStyle,
-                color = statusColor(foundation.status),
-            )
+            AnimatedContent(
+                targetState = foundation.isSyncing,
+                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                label = "foundation-status",
+            ) { syncing ->
+                if (syncing) {
+                    Text(
+                        text = stringResource(R.string.health_data_syncing),
+                        style = TitleDimTextStyle,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    Text(
+                        text = stringResource(foundation.status.labelRes),
+                        style = TitleDimTextStyle,
+                        color = statusColor(foundation.status),
+                    )
+                }
+            }
         }
 
-        if (foundation.evidence.isEmpty()) return@BodyGlassCard
+        if (foundation.isSyncing || foundation.evidence.isEmpty()) return@BodyGlassCard
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
