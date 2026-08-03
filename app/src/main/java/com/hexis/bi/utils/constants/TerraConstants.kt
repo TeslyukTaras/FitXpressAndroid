@@ -179,8 +179,8 @@ internal object TerraSyncConstants {
 }
 
 internal object CanonicalCacheConstants {
-    /** 365-day display window + 28-day causal baseline, with room to spare. */
-    const val DAY_RETENTION_DAYS = 400L
+    /** One year of display history, plus today. */
+    const val DAY_RETENTION_DAYS = 366L
 
     /** How long a "no data" day stays re-checkable, covering provider backfill. */
     const val CONFIRMED_EMPTY_RECHECK_DAYS = 30L
