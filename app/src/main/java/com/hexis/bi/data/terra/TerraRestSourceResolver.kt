@@ -93,8 +93,8 @@ private fun providerTier(provider: String): Int? = when (val code = provider.upp
 }
 
 /**
- * Resolves identities, fetches JSON per identity, parses to rows, then merges with gap-fill so
- * higher-priority sources win per logical key (e.g. wake day for sleep).
+ * Resolves identities, fetches JSON per identity and parses to rows. Rows stay grouped by
+ * identity; the caller merges per stored partition.
  *
  * Share this across Terra REST repositories (sleep today, daily / activity later).
  */
@@ -105,11 +105,10 @@ internal suspend fun <T> fetchMergedFromAllSources(
     end: LocalDate,
     fetchJson: suspend (terraUserId: String, LocalDate, LocalDate) -> Result<List<Any?>>,
     parse: (List<Any?>) -> List<T>,
-    merge: (List<List<T>>) -> List<T>,
 ): Result<MergedSourceResult<T>> {
     if (identities.isEmpty()) {
         return Result.success(
-            MergedSourceResult(rows = emptyList(), complete = true, successfulSources = 0, totalSources = 0),
+            MergedSourceResult(complete = true, successfulSources = 0, totalSources = 0),
         )
     }
 
@@ -140,7 +139,6 @@ internal suspend fun <T> fetchMergedFromAllSources(
     }
     return Result.success(
         MergedSourceResult(
-            rows = merge(perSource),
             perIdentity = identities.zip(results).mapNotNull { (identity, result) ->
                 result.getOrNull()?.let { IdentityRows(identity.terraUserId, it) }
             },
@@ -154,7 +152,6 @@ internal suspend fun <T> fetchMergedFromAllSources(
 internal data class IdentityRows<T>(val terraUserId: String, val rows: List<T>)
 
 internal data class MergedSourceResult<T>(
-    val rows: List<T>,
     val perIdentity: List<IdentityRows<T>> = emptyList(),
     val complete: Boolean,
     val successfulSources: Int,

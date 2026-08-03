@@ -189,7 +189,6 @@ internal class HealthDomainSync<T>(
             end = window.endInclusive,
             fetchJson = spec::fetchJson,
             parse = spec::parse,
-            merge = spec::merge,
         )
 
     private suspend fun mergedAny(

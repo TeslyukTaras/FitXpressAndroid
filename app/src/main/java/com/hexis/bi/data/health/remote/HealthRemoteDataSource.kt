@@ -33,7 +33,6 @@ internal class HealthRemoteDataSource(
         end: LocalDate,
         fetchJson: suspend (terraUserId: String, LocalDate, LocalDate) -> Result<List<Any?>>,
         parse: (List<Any?>) -> List<T>,
-        merge: (List<List<T>>) -> List<T>,
     ): Result<MergedSourceResult<T>> = fetchMergedFromAllSources(
         identities = identities,
         gate = gate,
@@ -41,7 +40,6 @@ internal class HealthRemoteDataSource(
         end = end,
         fetchJson = fetchJson,
         parse = parse,
-        merge = merge,
     )
 
     fun fetchableIdentities(identities: List<TerraRestIdentity>): List<TerraRestIdentity> {
