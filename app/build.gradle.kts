@@ -38,7 +38,7 @@ android {
         // Terra Android SDK requires minSdk 28 (Samsung Health / Health Connect).
         minSdk = 28
         targetSdk = 37
-        versionCode = 13
+        versionCode = 14
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
