@@ -11,7 +11,6 @@ import com.hexis.bi.data.scan.ScanFetchProjection
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanRecord
 import com.hexis.bi.data.sleep.SleepRepository
-import com.hexis.bi.data.terra.TerraDetail
 import com.hexis.bi.data.terra.TerraManagerHolder
 import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.data.user.UserRepository
@@ -59,8 +58,8 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
-import java.time.LocalDate
 import timber.log.Timber
+import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Locale
 import kotlin.math.abs
@@ -208,8 +207,6 @@ class HomeViewModel(
             reference = trackingNumber ?: orderNumber,
             referenceIsTracking = trackingNumber != null,
             eta = estimatedDeliveryMillis?.millisToShortMonthDay(),
-            // The remote statusHistory already carries every ladder step in order; render it as-is.
-            // A reached step shows its actual time; a pending one shows the admin estimate, if set.
             steps = statusHistory.map { event ->
                 OrderTimelineStepUi(
                     label = appContext.getString(event.status.displayRes()),
@@ -258,13 +255,11 @@ class HomeViewModel(
      */
     private suspend fun reloadOverview() {
         try {
-            // Force a fresh Terra pull on every Home reload (RESUME / sync / just-connected device)
-            // so a newly connected source shows up immediately instead of a stale cached read.
-            // Bumps the cache generation once; parallel reads within this reload still dedupe.
             TerraSdkSync.invalidateCaches()
             coroutineScope {
                 val today = LocalDate.now()
-                val windowStart = longevityScoreWindow(today).first()
+                val window = longevityScoreWindow(today)
+                val windowStart = window.first()
 
                 val profileDeferred = async { userRepository.getUser().getOrNull() }
                 val scanListDeferred = async {
@@ -295,9 +290,6 @@ class HomeViewModel(
                 publishScanOverview(scans, isMetric)
                 publishRecompositionOverview(recompositionScans, today)
                 publishLongevityDirection(recompositionScans, heightCm, today)
-                // physiqueScore needs a FULL scan: shoulders comes from front_linear_params, so the
-                // LIST_SUMMARY `scans` record (circumference only) would drop the Proportion component
-                // and yield a different score than the Physique Drift screen. Refetch the latest in full.
                 val latestFullScan = scans?.firstOrNull()?.id
                     ?.let { scanHistoryRepository.getScanRecordById(it).getOrNull() }
                 _state.update { it.copy(physiqueScore = latestFullScan?.physiqueScore(heightCm)) }
@@ -317,7 +309,13 @@ class HomeViewModel(
         val context = terraTileContext ?: return reloadOverview()
         try {
             val terra = loadTerraOverview(context.today, context.window.first())
-            applyTerraTiles(context.today, context.window, terra, context.latestScan, context.heightCm)
+            applyTerraTiles(
+                context.today,
+                context.window,
+                terra,
+                context.latestScan,
+                context.heightCm
+            )
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -376,7 +374,8 @@ class HomeViewModel(
     private suspend fun loadTerraOverview(today: LocalDate, windowStart: LocalDate): TerraOverview {
         terraManagerHolder.awaitCurrentOrTimeout()
         return coroutineScope {
-            val sleepDeferred = async { sleepRepository.cachedSessions(windowStart.minusDays(1), today) }
+            val sleepDeferred =
+                async { sleepRepository.cachedSessions(windowStart.minusDays(1), today) }
             val activityDeferred = async { activityRepository.cachedSummaries(windowStart, today) }
 
             val sleep = sleepDeferred.await()
