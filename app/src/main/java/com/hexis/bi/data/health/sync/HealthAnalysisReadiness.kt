@@ -19,9 +19,10 @@ data class HealthAnalysisReadiness(
         "$syncedDays/$requiredDays days (daily ${daily.syncedDays}, sleep ${sleep.syncedDays})"
 
     companion object {
-        val NOT_READY = HealthAnalysisReadiness(
-            daily = HealthRangeCoverage(0, HealthAnalysisConstants.REQUIRED_DAYS.toInt()),
-            sleep = HealthRangeCoverage(0, HealthAnalysisConstants.REQUIRED_DAYS.toInt()),
-        )
+        fun notReady(requiredDays: Int = HealthAnalysisConstants.FALLBACK_REQUIRED_DAYS) =
+            HealthAnalysisReadiness(
+                daily = HealthRangeCoverage(0, requiredDays),
+                sleep = HealthRangeCoverage(0, requiredDays),
+            )
     }
 }

@@ -4,6 +4,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.data.activity.ActivityRepository
 import com.hexis.bi.data.health.local.HealthLocalDataSource
 import com.hexis.bi.data.health.remote.HealthRemoteDataSource
+import com.hexis.bi.data.intelligence.IntelligenceConfigRepository
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.sleep.SleepRepository
 import com.hexis.bi.utils.constants.CanonicalCacheConstants
@@ -23,7 +24,17 @@ internal class HealthSyncCoordinator(
     private val local: HealthLocalDataSource,
     private val remote: HealthRemoteDataSource,
     private val auth: FirebaseAuth,
+    private val configRepository: IntelligenceConfigRepository,
 ) {
+
+    private suspend fun requiredAnalysisDays(): Int {
+        val windows = configRepository.config().getOrNull()?.windows
+        if (windows == null) {
+            Timber.w("Engine config unreadable; prioritising %d days", HealthAnalysisConstants.FALLBACK_REQUIRED_DAYS)
+            return HealthAnalysisConstants.FALLBACK_REQUIRED_DAYS
+        }
+        return windows.observationDays
+    }
 
     suspend fun syncRecentWindow(today: LocalDate = LocalDate.now()) {
         val uid = auth.currentUser?.uid ?: return
@@ -63,7 +74,8 @@ internal class HealthSyncCoordinator(
         val identityIds = identities.fetchable.map { it.terraUserId }
         val retention = retentionWindow(local.retentionFloor(), today)
 
-        val analysis = analysisWindow(today, retention)
+        val requiredDays = requiredAnalysisDays()
+        val analysis = analysisWindow(today, retention, requiredDays)
         val analysisOutcome = fillWindow(
             GapFillArgs(uid, identityIds, analysis, elapsed, stillReadable),
             budget = domainDeadline(budget, elapsed(), 2),
@@ -71,7 +83,7 @@ internal class HealthSyncCoordinator(
         )
         Timber.i(
             "Gap fill analysis window (%d days): %s | readiness %s",
-            analysis.size, analysisOutcome, readiness(uid, identityIds, today),
+            analysis.size, analysisOutcome, readiness(uid, identityIds, today, requiredDays),
         )
 
         val historyOutcome = fillWindow(
@@ -82,20 +94,14 @@ internal class HealthSyncCoordinator(
         return worstOf(listOf(analysisOutcome, historyOutcome))
     }
 
-    suspend fun readiness(today: LocalDate = LocalDate.now()): HealthAnalysisReadiness {
-        val uid = auth.currentUser?.uid ?: return HealthAnalysisReadiness.NOT_READY
-        val identities = remote.identities().getOrNull()?.fetchable?.map { it.terraUserId }
-            ?: return HealthAnalysisReadiness.NOT_READY
-        return readiness(uid, identities, today)
-    }
-
     private suspend fun readiness(
         uid: String,
         identityIds: List<String>,
         today: LocalDate,
+        requiredDays: Int,
     ): HealthAnalysisReadiness {
-        val window = analysisWindow(today, retentionWindow(local.retentionFloor(), today))
-        if (identityIds.isEmpty() || window.isEmpty()) return HealthAnalysisReadiness.NOT_READY
+        val window = analysisWindow(today, retentionWindow(local.retentionFloor(), today), requiredDays)
+        if (identityIds.isEmpty() || window.isEmpty()) return HealthAnalysisReadiness.notReady(requiredDays)
         return HealthAnalysisReadiness(
             daily = local.coverage(uid, identityIds, HealthLocalDataSource.SOURCE_DAILY, window),
             sleep = local.coverage(uid, identityIds, HealthLocalDataSource.SOURCE_SLEEP, window),
@@ -172,9 +178,13 @@ internal fun retentionWindow(floor: LocalDate, today: LocalDate): List<LocalDate
     return generateSequence(floor) { it.plusDays(1).takeIf { next -> !next.isAfter(today) } }.toList()
 }
 
-internal fun analysisWindow(today: LocalDate, retention: List<LocalDate>): List<LocalDate> {
-    if (retention.isEmpty()) return emptyList()
-    val earliest = today.minusDays(HealthAnalysisConstants.REQUIRED_DAYS - 1)
+internal fun analysisWindow(
+    today: LocalDate,
+    retention: List<LocalDate>,
+    requiredDays: Int,
+): List<LocalDate> {
+    if (retention.isEmpty() || requiredDays <= 0) return emptyList()
+    val earliest = today.minusDays(requiredDays - 1L)
     return retention.filter { !it.isBefore(earliest) && !it.isAfter(today) }
 }
 

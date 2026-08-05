@@ -205,11 +205,8 @@ internal object CanonicalCacheConstants {
 }
 
 internal object HealthAnalysisConstants {
-    const val ANALYSIS_DAYS = 30L
-
-    const val HISTORY_DAYS = 30L
-
-    const val REQUIRED_DAYS = ANALYSIS_DAYS + HISTORY_DAYS
+    /** Used only when the engine config cannot be read; the config is the source of truth. */
+    const val FALLBACK_REQUIRED_DAYS = 58
 
     const val MAX_CONSECUTIVE_FAILURES = 3
 }

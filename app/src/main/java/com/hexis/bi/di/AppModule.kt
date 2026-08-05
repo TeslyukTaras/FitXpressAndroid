@@ -125,7 +125,7 @@ val appModule = module {
     single<AuthRepository> { FirebaseAuthRepository(get(), get(), get(), androidContext()) }
     single { HealthConnectPermissionChecker(androidContext()) }
     single { HealthRemoteDataSource(get(), get()) }
-    single { HealthSyncCoordinator(get(), get(), get(), get(), get(), get()) }
+    single { HealthSyncCoordinator(get(), get(), get(), get(), get(), get(), get()) }
     single { IntelligenceConfigRepository(listOf(AssetIntelligenceConfigSource(androidContext()))) }
     single { IntelligenceInputProvider(get(), get(), get()) }
     single { RunIntelligenceUseCase(get(), get()) }
