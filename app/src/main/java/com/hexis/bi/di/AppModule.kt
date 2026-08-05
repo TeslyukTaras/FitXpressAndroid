@@ -32,6 +32,10 @@ import com.hexis.bi.data.reminder.ScanReminderWorkRunner
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.health.remote.HealthRemoteDataSource
+import com.hexis.bi.data.intelligence.AssetIntelligenceConfigSource
+import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
+import com.hexis.bi.data.intelligence.IntelligenceConfigRepository
+import com.hexis.bi.data.intelligence.IntelligenceInputProvider
 import com.hexis.bi.data.health.sync.HealthSyncCoordinator
 import com.hexis.bi.data.health.sync.HealthSyncScheduler
 import com.hexis.bi.data.health.sync.WorkManagerHealthSyncScheduler
@@ -122,6 +126,9 @@ val appModule = module {
     single { HealthConnectPermissionChecker(androidContext()) }
     single { HealthRemoteDataSource(get(), get()) }
     single { HealthSyncCoordinator(get(), get(), get(), get(), get(), get()) }
+    single { IntelligenceConfigRepository(listOf(AssetIntelligenceConfigSource(androidContext()))) }
+    single { IntelligenceInputProvider(get(), get(), get()) }
+    single { RunIntelligenceUseCase(get(), get()) }
     single { WorkManager.getInstance(androidContext()) }
     single<HealthSyncScheduler> { WorkManagerHealthSyncScheduler(get()) }
     single { SessionCleaner(get(), get(), get(), get(), get(), get(), get()) }

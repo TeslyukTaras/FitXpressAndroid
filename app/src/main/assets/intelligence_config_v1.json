@@ -1,0 +1,295 @@
+{
+  "_comment": "Engine configuration, projected from config.yaml by tests/gen_parity_fixtures.py. Ships as app/src/main/assets/intelligence_config_v1.json. Do not hand-edit \u2014 change config.yaml and regenerate, or the platforms disagree on their own rules.",
+  "schema_version": 1,
+  "config_version": "v1.2.0",
+  "ruleset_version": "v1.1.1",
+  "formula_registry": {
+    "status": "experimental_wellness",
+    "contract_version": "1.0.0",
+    "formulas": {
+      "trend": {
+        "id": "hexis.trend.linear",
+        "version": "1.1.0"
+      },
+      "longevity": {
+        "id": "hexis.longevity.direction",
+        "version": "1.0.0"
+      },
+      "pace_of_aging": {
+        "id": "hexis.aging.direction",
+        "version": "1.0.0"
+      },
+      "physique": {
+        "id": "hexis.physique.drift",
+        "version": "1.0.0"
+      },
+      "stress": {
+        "id": "hexis.stress.supporting",
+        "version": "1.0.0"
+      }
+    }
+  },
+  "windows": {
+    "baseline_days": 28,
+    "analysis_days": 30,
+    "short_avgs": [
+      3,
+      7
+    ],
+    "trend_days": [
+      7,
+      30,
+      90,
+      180,
+      365
+    ],
+    "display_windows": [
+      30,
+      180,
+      365
+    ],
+    "prior_period": true,
+    "min_scans_for_drift": 3,
+    "drift_coverage_scans": 6
+  },
+  "trend": {
+    "estimator": "linear_ols",
+    "winsorize_pct": 0.1,
+    "stable_deadband_frac": 0.5,
+    "decisive_change_multiple": 2.0,
+    "min_persistence": 0.6,
+    "min_persist_days": {
+      "sleep": 7,
+      "recovery": 7,
+      "activity": 14,
+      "body": 0
+    }
+  },
+  "thresholds": {
+    "default_mode": "relative",
+    "absolute_metrics": {
+      "weight": 0.5,
+      "lean_mass": 0.5,
+      "body_fat_pct": 1.0,
+      "waist": 1.0,
+      "waist_to_height": 0.005,
+      "vo2max": 1.0
+    }
+  },
+  "confidence": {
+    "weights": {
+      "signal_magnitude": 0.2,
+      "persistence": 0.2,
+      "agreement": 0.3,
+      "coverage": 0.15,
+      "recency": 0.1,
+      "source_quality": 0.05,
+      "contradiction": 0.2
+    },
+    "buckets": {
+      "high": 0.7,
+      "moderate": 0.4
+    },
+    "recency_fresh_days": 2
+  },
+  "priority": {
+    "featured_limit": 3,
+    "body": 6,
+    "recovery": 5,
+    "aging": 4,
+    "metabolic": 3,
+    "stress": 2,
+    "activity": 1
+  },
+  "quality": {
+    "min_coverage": {
+      "sleep": 0.6,
+      "recovery": 0.6,
+      "activity": 0.5,
+      "aging": 0.5,
+      "body": 0.0
+    },
+    "min_scans_for_body": 2,
+    "freshness_days": {
+      "default": 3,
+      "sleep": 3,
+      "recovery": 3,
+      "activity": 3,
+      "aging": 7,
+      "body": 7,
+      "stress": 3
+    },
+    "plausibility_per_week": {
+      "weight": 2.0,
+      "lean_mass": 1.0
+    },
+    "still_learning_coverage": 0.4
+  },
+  "composites": {
+    "height_cm": null,
+    "required_daily_inputs": [
+      "hrv_rmssd",
+      "sleep_efficiency",
+      "steps",
+      "resting_hr"
+    ],
+    "carry_forward_days": {
+      "weight": 45,
+      "body_fat_pct": 45,
+      "lean_mass": 45,
+      "waist": 45,
+      "vo2max": 90
+    },
+    "longevity": {
+      "weights": {
+        "hrv": 0.25,
+        "sleep": 0.2,
+        "activity": 0.15,
+        "rhr": 0.15,
+        "vo2": 0.1,
+        "body_fat": 0.075,
+        "waist": 0.075
+      },
+      "anchors": {
+        "hrv": [
+          20,
+          60
+        ],
+        "rhr": [
+          75,
+          50
+        ],
+        "activity": [
+          0,
+          10000
+        ],
+        "body_fat": [
+          30,
+          10
+        ],
+        "waist_to_height": [
+          0.6,
+          0.4
+        ],
+        "vo2": [
+          30,
+          55
+        ]
+      }
+    },
+    "pace_of_aging": {
+      "baseline": 1.0,
+      "min": 0.7,
+      "max": 1.3,
+      "neutral_score": 50,
+      "effects": {
+        "hrv": 0.06,
+        "sleep": 0.05,
+        "vo2": 0.04,
+        "activity": 0.03,
+        "body_fat": 0.03,
+        "rhr": 0.03,
+        "waist": 0.02
+      }
+    },
+    "foundations": {
+      "window_days": 180,
+      "weights": {
+        "metabolic": 0.35,
+        "recomposition": 0.3,
+        "physical": 0.2,
+        "functional": 0.15
+      },
+      "strengthening_weight_min": 0.6,
+      "weakening_weight_min": 0.5,
+      "major_lean_loss_kg": 2.0
+    },
+    "stress": {
+      "hrv_anchors": [
+        50,
+        30
+      ]
+    },
+    "physique": {
+      "min": 1.0,
+      "max": 10.0,
+      "weights": {
+        "body_fat": 0.5,
+        "lean_mass": 0.25,
+        "waist_shape": 0.15,
+        "proportion": 0.1
+      },
+      "body_fat_anchors": [
+        [
+          9,
+          10
+        ],
+        [
+          11,
+          9
+        ],
+        [
+          15,
+          8
+        ],
+        [
+          19,
+          6
+        ],
+        [
+          24,
+          4
+        ],
+        [
+          35,
+          2
+        ],
+        [
+          45,
+          1
+        ]
+      ],
+      "lean_mass": [
+        60,
+        3,
+        90,
+        10
+      ],
+      "waist_shape": [
+        0.62,
+        2,
+        0.43,
+        10
+      ],
+      "proportion": [
+        1.15,
+        4,
+        1.65,
+        10
+      ],
+      "drift_meaningful_delta": 0.2,
+      "drift_signal_reference": 1.0,
+      "enable_proportion": false
+    }
+  },
+  "domains": {
+    "sleep_duration": "sleep",
+    "sleep_efficiency": "sleep",
+    "deep_sleep": "sleep",
+    "rem_sleep": "sleep",
+    "resting_hr": "recovery",
+    "hrv_rmssd": "recovery",
+    "steps": "activity",
+    "active_minutes": "activity",
+    "active_calories": "activity",
+    "vo2max": "aging",
+    "weight": "body",
+    "body_fat_pct": "body",
+    "lean_mass": "body",
+    "waist": "body",
+    "longevity_score": "aging",
+    "aging_score": "aging",
+    "physique_score": "body",
+    "stress_score": "stress"
+  }
+}

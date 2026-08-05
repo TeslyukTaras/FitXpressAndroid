@@ -57,6 +57,7 @@ android {
             versionNameSuffix = "-dev"
             resValue("string", "app_name", "Hexis-BI Dev")
             buildConfigField("String", "ENVIRONMENT", "\"dev\"")
+            buildConfigField("boolean", "INTELLIGENCE_ENGINE_ENABLED", "true")
             buildConfigField("String", "API_BASE_URL", "\"https://api.dev.hexis.bi/\"")
             buildConfigField("String", "TERRA_FUNCTION_PREFIX", "\"terraDev\"")
             buildConfigField("String", "TERRA_DEV_ID", "\"${terraDevId("terra.dev.id")}\"")
@@ -68,6 +69,7 @@ android {
             versionNameSuffix = "-stage"
             resValue("string", "app_name", "Hexis-BI Stage")
             buildConfigField("String", "ENVIRONMENT", "\"stage\"")
+            buildConfigField("boolean", "INTELLIGENCE_ENGINE_ENABLED", "true")
             buildConfigField("String", "API_BASE_URL", "\"https://api.stage.hexis.bi/\"")
             buildConfigField("String", "TERRA_FUNCTION_PREFIX", "\"terraDev\"")
             buildConfigField("String", "TERRA_DEV_ID", "\"${terraDevId("terra.dev.id")}\"")
@@ -77,6 +79,7 @@ android {
             dimension = "env"
             resValue("string", "app_name", "Hexis-BI")
             buildConfigField("String", "ENVIRONMENT", "\"prod\"")
+            buildConfigField("boolean", "INTELLIGENCE_ENGINE_ENABLED", "false")
             buildConfigField("String", "API_BASE_URL", "\"https://api.hexis.bi/\"")
             buildConfigField("String", "TERRA_FUNCTION_PREFIX", "\"terraProd\"")
             buildConfigField("String", "TERRA_DEV_ID", "\"${prodTerraDevId}\"")
@@ -114,6 +117,7 @@ kotlin {
 }
 
 dependencies {
+    implementation(project(":intelligence"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
