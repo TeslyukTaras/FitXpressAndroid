@@ -7,6 +7,7 @@ import com.hexis.bi.data.health.remote.HealthRemoteDataSource
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.sleep.SleepRepository
 import com.hexis.bi.utils.constants.CanonicalCacheConstants
+import com.hexis.bi.utils.constants.HealthAnalysisConstants
 import com.hexis.bi.utils.constants.HealthSyncWorkConstants
 import com.hexis.bi.utils.constants.TerraCacheConstants
 import java.time.Duration
@@ -59,22 +60,60 @@ internal class HealthSyncCoordinator(
         }
 
         val stillReadable = { isActive() && remote.fetchableIdentities(identities.all).isNotEmpty() }
-        val window = retentionWindow(local.retentionFloor(), today)
-        val args = GapFillArgs(uid, identities.fetchable.map { it.terraUserId }, window, elapsed, stillReadable)
+        val identityIds = identities.fetchable.map { it.terraUserId }
+        val retention = retentionWindow(local.retentionFloor(), today)
 
-        val sleep = fillDomain(args, HealthLocalDataSource.SOURCE_SLEEP, domainDeadline(budget, elapsed(), 2)) {
-            start, end -> sleepRepository.sync(start, end)
-        }
-        val daily = fillDomain(args, HealthLocalDataSource.SOURCE_DAILY, domainDeadline(budget, elapsed(), 1)) {
-            start, end -> activityRepository.sync(start, end)
-        }
+        val analysis = analysisWindow(today, retention)
+        val analysisOutcome = fillWindow(
+            GapFillArgs(uid, identityIds, analysis, elapsed, stillReadable),
+            budget = domainDeadline(budget, elapsed(), 2),
+            label = "analysis window",
+        )
+        Timber.i(
+            "Gap fill analysis window (%d days): %s | readiness %s",
+            analysis.size, analysisOutcome, readiness(uid, identityIds, today),
+        )
 
-        val outcomes = listOf(sleep, daily)
-        return when {
-            BackfillOutcome.Failed in outcomes -> BackfillOutcome.Failed
-            BackfillOutcome.Incomplete in outcomes -> BackfillOutcome.Incomplete
-            else -> BackfillOutcome.Complete
+        val historyOutcome = fillWindow(
+            GapFillArgs(uid, identityIds, retention, elapsed, stillReadable),
+            budget = budget,
+            label = "history",
+        )
+        return worstOf(listOf(analysisOutcome, historyOutcome))
+    }
+
+    suspend fun readiness(today: LocalDate = LocalDate.now()): HealthAnalysisReadiness {
+        val uid = auth.currentUser?.uid ?: return HealthAnalysisReadiness.NOT_READY
+        val identities = remote.identities().getOrNull()?.fetchable?.map { it.terraUserId }
+            ?: return HealthAnalysisReadiness.NOT_READY
+        return readiness(uid, identities, today)
+    }
+
+    private suspend fun readiness(
+        uid: String,
+        identityIds: List<String>,
+        today: LocalDate,
+    ): HealthAnalysisReadiness {
+        val window = analysisWindow(today, retentionWindow(local.retentionFloor(), today))
+        if (identityIds.isEmpty() || window.isEmpty()) return HealthAnalysisReadiness.NOT_READY
+        return HealthAnalysisReadiness(
+            daily = local.coverage(uid, identityIds, HealthLocalDataSource.SOURCE_DAILY, window),
+            sleep = local.coverage(uid, identityIds, HealthLocalDataSource.SOURCE_SLEEP, window),
+        )
+    }
+
+    private suspend fun fillWindow(
+        args: GapFillArgs,
+        budget: Duration,
+        label: String,
+    ): BackfillOutcome {
+        val sleep = fillDomain(args, HealthLocalDataSource.SOURCE_SLEEP, budget) { start, end ->
+            sleepRepository.sync(start, end)
         }
+        val daily = fillDomain(args, HealthLocalDataSource.SOURCE_DAILY, budget) { start, end ->
+            activityRepository.sync(start, end)
+        }
+        return worstOf(listOf(sleep, daily)).also { Timber.i("Gap fill %s: %s", label, it) }
     }
 
     private data class GapFillArgs(
@@ -133,6 +172,21 @@ internal fun retentionWindow(floor: LocalDate, today: LocalDate): List<LocalDate
     return generateSequence(floor) { it.plusDays(1).takeIf { next -> !next.isAfter(today) } }.toList()
 }
 
+internal fun analysisWindow(today: LocalDate, retention: List<LocalDate>): List<LocalDate> {
+    if (retention.isEmpty()) return emptyList()
+    val earliest = today.minusDays(HealthAnalysisConstants.REQUIRED_DAYS - 1)
+    return retention.filter { !it.isBefore(earliest) && !it.isAfter(today) }
+}
+
+internal fun worstOf(outcomes: List<BackfillOutcome>): BackfillOutcome = when {
+    outcomes.isEmpty() -> BackfillOutcome.Skipped
+    BackfillOutcome.Failed in outcomes -> BackfillOutcome.Failed
+    BackfillOutcome.Unreachable in outcomes -> BackfillOutcome.Unreachable
+    BackfillOutcome.Incomplete in outcomes -> BackfillOutcome.Incomplete
+    BackfillOutcome.Complete in outcomes -> BackfillOutcome.Complete
+    else -> BackfillOutcome.Skipped
+}
+
 internal suspend fun fillMissingDays(
     missing: List<LocalDate>,
     budget: Duration,
@@ -143,19 +197,46 @@ internal suspend fun fillMissingDays(
     sync: suspend (LocalDate, LocalDate) -> Result<Unit>,
 ): BackfillOutcome {
     var filled = 0
+    var failedBatches = 0
+    var consecutiveFailures = 0
+    var stoppedEarly = false
+    var unreachable = false
+
     for (batch in missing.sortedDescending().chunked(batchDays)) {
-        if (!isActive() || elapsed() >= budget) return BackfillOutcome.Incomplete
-        if (sync(batch.min(), batch.max()).isFailure) return BackfillOutcome.Failed
+        if (!isActive() || elapsed() >= budget) {
+            stoppedEarly = true
+            break
+        }
+        val error = sync(batch.min(), batch.max()).exceptionOrNull()
+        if (error != null) {
+            failedBatches++
+            if (error is HealthSourceUnavailable) {
+                unreachable = true
+                break
+            }
+            consecutiveFailures++
+            if (consecutiveFailures >= HealthAnalysisConstants.MAX_CONSECUTIVE_FAILURES) break
+            continue
+        }
+        consecutiveFailures = 0
         filled += batch.size
         onBatchFilled(filled)
     }
-    return BackfillOutcome.Complete
+
+    return when {
+        unreachable && filled == 0 -> BackfillOutcome.Unreachable
+        failedBatches > 0 && filled == 0 -> BackfillOutcome.Failed
+        failedBatches > 0 || stoppedEarly -> BackfillOutcome.Incomplete
+        else -> BackfillOutcome.Complete
+    }
 }
 
 internal enum class BackfillOutcome {
     Complete,
 
     Incomplete,
+
+    Unreachable,
 
     Failed,
 

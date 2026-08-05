@@ -50,25 +50,21 @@ internal class HealthSyncWorker(
         auth.currentUser?.uid?.let { local.logStats(it) }
         Timber.i("Health sync finished: %s after %ds", outcome, elapsed().seconds)
         return when (outcome) {
-            BackfillOutcome.Failed -> giveUpOrRetry()
-            BackfillOutcome.Incomplete -> continueOrStop()
+            BackfillOutcome.Unreachable -> {
+                Timber.i("Health sync: source unreachable; resumes on next app open")
+                Result.success()
+            }
+            BackfillOutcome.Failed, BackfillOutcome.Incomplete -> giveUpOrRetry(outcome)
             BackfillOutcome.Complete, BackfillOutcome.Skipped -> Result.success()
         }
     }
 
-    private fun giveUpOrRetry(): Result {
-        if (runAttemptCount + 1 >= HealthSyncWorkConstants.MAX_RUN_ATTEMPTS) {
-            Timber.w("Health sync worker gave up after %d attempts; resumes on next app open", runAttemptCount + 1)
-            return Result.success()
-        }
-        return Result.retry()
-    }
-
-    private fun continueOrStop(): Result {
-        if (runAttemptCount + 1 >= HealthSyncWorkConstants.MAX_CONTINUATION_ATTEMPTS) {
-            Timber.i(
-                "Health sync still has gaps after %d budgeted runs; resumes on next app open",
-                runAttemptCount + 1,
+    private fun giveUpOrRetry(outcome: BackfillOutcome? = null): Result {
+        val attempts = runAttemptCount + 1
+        if (attempts >= HealthSyncWorkConstants.MAX_RUN_ATTEMPTS) {
+            Timber.w(
+                "Health sync stopping after %d runs (%s); resumes on next app open",
+                attempts, outcome ?: "error",
             )
             return Result.success()
         }

@@ -204,6 +204,16 @@ internal object CanonicalCacheConstants {
     const val UPDATE_DEBOUNCE_MS = 750L
 }
 
+internal object HealthAnalysisConstants {
+    const val ANALYSIS_DAYS = 30L
+
+    const val HISTORY_DAYS = 30L
+
+    const val REQUIRED_DAYS = ANALYSIS_DAYS + HISTORY_DAYS
+
+    const val MAX_CONSECUTIVE_FAILURES = 3
+}
+
 internal object HealthSyncWorkConstants {
     const val UNIQUE_WORK_NAME = "health-history-backfill"
 
@@ -213,9 +223,7 @@ internal object HealthSyncWorkConstants {
 
     val RETRY_BACKOFF: Duration = Duration.ofMinutes(1)
 
-    const val MAX_RUN_ATTEMPTS = 3
-
-    const val MAX_CONTINUATION_ATTEMPTS = 6
+    const val MAX_RUN_ATTEMPTS = 6
 }
 
 internal object HealthConnectConstants {

@@ -5,6 +5,7 @@ import com.hexis.bi.data.health.local.HealthLocalDataSource
 import com.hexis.bi.data.health.local.contiguousDateRanges
 import com.hexis.bi.data.health.model.CanonicalDailyAggregate
 import com.hexis.bi.data.health.remote.HealthRemoteDataSource
+import com.hexis.bi.utils.constants.HealthAnalysisConstants
 import com.hexis.bi.utils.constants.TerraCacheConstants
 import com.hexis.bi.utils.constants.TerraSyncConstants
 import java.time.Duration
@@ -123,21 +124,42 @@ internal class HealthDomainSync<T>(
                     return@singleFlight Result.success(Unit)
                 }
 
-                var failure: Throwable? = null
                 val windows = contiguousDateRanges(missing).flatMap { it.windowed() }
+                var failure: Throwable? = null
+                var stored = 0
+                var consecutiveFailures = 0
+                var unreachable = false
 
                 for (window in windows) {
                     val merged = fetchWindow(fetchable, window).getOrElse { error ->
                         failure = error
-                        break
+                        consecutiveFailures++
+                        null
                     }
+                    if (merged == null) {
+                        if (consecutiveFailures >= HealthAnalysisConstants.MAX_CONSECUTIVE_FAILURES) {
+                            unreachable = true
+                            break
+                        }
+                        continue
+                    }
+                    consecutiveFailures = 0
                     local.recordProviderCalls(uid, spec.source, merged.totalSources)
                     store(uid, window, merged)
+                    stored++
                 }
 
-                failure?.let { error ->
-                    Timber.w(error, "%s refresh failed", spec.label)
-                    return@singleFlight Result.failure(error)
+                val error = failure
+                if (error != null) {
+                    val unreachableSource = unreachable || stored == 0
+                    Timber.w(
+                        "%s refresh %s: %d/%d windows stored (%s)",
+                        spec.label, if (unreachableSource) "aborted, source unreachable" else "incomplete",
+                        stored, windows.size, error.message ?: error::class.simpleName,
+                    )
+                    return@singleFlight Result.failure(
+                        if (unreachableSource) HealthSourceUnavailable(error) else error,
+                    )
                 }
 
                 Result.success(Unit)
