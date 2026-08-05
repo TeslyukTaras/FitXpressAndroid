@@ -52,6 +52,10 @@ internal class RunIntelligenceUseCase(
             report.findings.size, report.suppressed.size,
             report.metricsOk, report.metricsTotal, report.stillLearning,
         )
+        Timber.d(
+            "  windows: %s",
+            report.availableWindows.joinToString { "${it}d=${report.forWindow(it)?.findings?.size ?: 0}" },
+        )
         report.verdicts.filterNot { it.ok }.forEach { verdict ->
             Timber.d("  gated %-16s %-20s %s", verdict.metric, verdict.status, verdict.reasons)
         }

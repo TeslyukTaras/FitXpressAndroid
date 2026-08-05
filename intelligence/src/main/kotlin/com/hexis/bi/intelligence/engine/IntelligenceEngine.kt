@@ -23,6 +23,18 @@ data class FoundationsReport(
     val statuses: Map<String, String>,
 )
 
+data class WindowFindings(
+    val windowDays: Int,
+    val findings: List<Finding>,
+    val findingsByArea: Map<String, List<Finding>>,
+    val suppressed: List<SuppressedFinding>,
+    val verdicts: List<QualityVerdict>,
+) {
+    val metricsOk: Int get() = verdicts.count { it.ok }
+
+    val metricsTotal: Int get() = verdicts.size
+}
+
 data class EngineReport(
     val runDate: String,
     val primaryWindowDays: Int,
@@ -36,7 +48,12 @@ data class EngineReport(
     val findings: List<Finding>,
     val findingsByArea: Map<String, List<Finding>>,
     val suppressed: List<SuppressedFinding>,
-)
+    val findingsByWindow: Map<Int, WindowFindings>,
+) {
+    fun forWindow(windowDays: Int): WindowFindings? = findingsByWindow[windowDays]
+
+    val availableWindows: List<Int> get() = findingsByWindow.keys.sorted()
+}
 
 private const val DAYS_PER_WEEK = 7
 
@@ -84,9 +101,6 @@ object IntelligenceEngine {
         val baselines = baselinesByWindow.getValue(primary)
         val rows = metricTrends.map { it.copy(baseline = baselines[it.metric]) }
 
-        val primaryTrends = trendsByWindow.getValue(primary)
-        val verdicts = series.associate { it.metric to assess(it, primaryTrends[it.metric], input.runDate, config) }
-
         val requestedFoundationWindow = config.composites.foundations.windowDays
         val foundationWindows = windows.filter { it <= available && trendsByWindow.getValue(it).isNotEmpty() }
         val foundationWindow = if (requestedFoundationWindow in foundationWindows) {
@@ -97,25 +111,43 @@ object IntelligenceEngine {
         val foundations = evaluateFoundations(trendsByWindow.getValue(foundationWindow), config)
         val drift = evaluatePhysiqueDrift(series, config)
 
-        val candidates = evaluateRules(primaryTrends) +
-            singleMetricCandidates(primaryTrends, config) +
-            foundationCandidates(foundations) +
-            driftCandidates(drift, config, input.runDate)
-        val result = buildFindings(candidates, primaryTrends, config, input.runDate, verdicts)
+        val narratable = windows.filter { trendsByWindow.getValue(it).isNotEmpty() }
+            .ifEmpty { listOf(primary) }
+        val findingsByWindow = narratable.associateWith { window ->
+            val trends = trendsByWindow.getValue(window)
+            val windowVerdicts = series.associate {
+                it.metric to assess(it, trends[it.metric], input.runDate, config)
+            }
+            val candidates = evaluateRules(trends) +
+                singleMetricCandidates(trends, config) +
+                foundationCandidates(foundations) +
+                driftCandidates(drift, config, input.runDate)
+            val built = buildFindings(candidates, trends, config, input.runDate, windowVerdicts)
+            WindowFindings(
+                windowDays = window,
+                findings = built.findings,
+                findingsByArea = groupByArea(built.findings),
+                suppressed = built.suppressed,
+                verdicts = windowVerdicts.values.toList(),
+            )
+        }
+
+        val primaryFindings = findingsByWindow.getValue(primary)
 
         return EngineReport(
             runDate = input.runDate,
             primaryWindowDays = primary,
-            stillLearning = stillLearning(verdicts, config),
-            metricsOk = verdicts.values.count { it.ok },
-            metricsTotal = verdicts.size,
-            verdicts = verdicts.values.toList(),
+            stillLearning = stillLearning(primaryFindings.verdicts.associateBy { it.metric }, config),
+            metricsOk = primaryFindings.metricsOk,
+            metricsTotal = primaryFindings.metricsTotal,
+            verdicts = primaryFindings.verdicts,
             foundations = FoundationsReport(foundationWindow, foundations.direction, foundations.statuses),
             physiqueDrift = drift,
             metricTrends = rows,
-            findings = result.findings,
-            findingsByArea = groupByArea(result.findings),
-            suppressed = result.suppressed,
+            findings = primaryFindings.findings,
+            findingsByArea = primaryFindings.findingsByArea,
+            suppressed = primaryFindings.suppressed,
+            findingsByWindow = findingsByWindow,
         )
     }
 
