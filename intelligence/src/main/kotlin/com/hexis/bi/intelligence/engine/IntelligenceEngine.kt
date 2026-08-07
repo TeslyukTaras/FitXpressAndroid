@@ -49,10 +49,17 @@ data class EngineReport(
     val findingsByArea: Map<String, List<Finding>>,
     val suppressed: List<SuppressedFinding>,
     val findingsByWindow: Map<Int, WindowFindings>,
+    val areaWeights: Map<String, Double>,
 ) {
     fun forWindow(windowDays: Int): WindowFindings? = findingsByWindow[windowDays]
 
     val availableWindows: List<Int> get() = findingsByWindow.keys.sorted()
+
+    fun weightOf(finding: Finding): Double = areaWeights[finding.area] ?: DEFAULT_AREA_WEIGHT
+
+    private companion object {
+        const val DEFAULT_AREA_WEIGHT = 1.0
+    }
 }
 
 private const val DAYS_PER_WEEK = 7
@@ -148,6 +155,11 @@ object IntelligenceEngine {
             findingsByArea = primaryFindings.findingsByArea,
             suppressed = primaryFindings.suppressed,
             findingsByWindow = findingsByWindow,
+            areaWeights = findingsByWindow.values
+                .flatMap { it.findings }
+                .map { it.area }
+                .distinct()
+                .associateWith { config.priorityOf(it) },
         )
     }
 
