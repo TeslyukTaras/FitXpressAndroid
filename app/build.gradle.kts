@@ -38,14 +38,13 @@ android {
         // Terra Android SDK requires minSdk 28 (Samsung Health / Health Connect).
         minSdk = 28
         targetSdk = 37
-        versionCode = 14
+        versionCode = 15
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         ndk {
-            // x86_64 excluded to eliminate the 16KB-page-size (4KB-aligned .so) warning.
-            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86"))
+            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a"))
         }
     }
 
