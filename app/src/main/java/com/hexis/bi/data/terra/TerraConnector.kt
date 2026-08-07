@@ -67,14 +67,11 @@ class TerraConnector(
             CustomPermissions.HEART_RATE_VARIABILITY,
             CustomPermissions.RESTING_HEART_RATE,
             CustomPermissions.STEPS,
-            CustomPermissions.FLIGHTS_CLIMBED,
             CustomPermissions.EXERCISE_DISTANCE,
             CustomPermissions.CALORIES,
             CustomPermissions.ACTIVE_DURATIONS,
             CustomPermissions.WORKOUT_TYPE,
             CustomPermissions.ACTIVITY_SUMMARY,
-            CustomPermissions.OXYGEN_SATURATION,
-            CustomPermissions.RESPIRATORY_RATE,
             CustomPermissions.VO2MAX,
         )
     }
