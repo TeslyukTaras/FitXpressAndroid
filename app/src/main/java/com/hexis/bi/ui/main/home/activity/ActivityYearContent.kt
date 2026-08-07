@@ -13,6 +13,7 @@ import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
 import com.hexis.bi.ui.main.home.activity.components.ActivityScrollableStepsBarChart
 import com.hexis.bi.utils.constants.ActivityConstants
+import com.hexis.bi.utils.constants.FindingWindows
 
 @Composable
 fun ActivityYearContent(
@@ -63,6 +64,7 @@ private fun ActivityYearReady(
     ActivityPeriodContent(
         state = state,
         period = state.year,
+        windowDays = FindingWindows.ACTIVITY_YEAR,
         trendTitle = stringResource(R.string.activity_trend_label_year),
         trendDescription = trendDescription,
         separateInsightGlass = false,

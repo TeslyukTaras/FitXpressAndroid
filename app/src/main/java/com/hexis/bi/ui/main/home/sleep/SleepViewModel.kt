@@ -14,6 +14,9 @@ import com.hexis.bi.data.terra.TerraDetail
 import com.hexis.bi.data.terra.TerraRestSourceResolver
 import com.hexis.bi.data.user.FirestoreSchema
 import com.hexis.bi.data.user.UserRepository
+import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
+import com.hexis.bi.intelligence.engine.Domains
+import com.hexis.bi.ui.main.home.intelligence.findingsFor
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.main.home.sleep.SleepViewModel.Companion.MAX_CHART_POINTS
 import com.hexis.bi.utils.constants.CanonicalCacheConstants
@@ -39,13 +42,21 @@ import java.time.LocalDate
 import kotlin.math.roundToInt
 
 @OptIn(FlowPreview::class)
-class SleepViewModel(
+class SleepViewModel internal constructor(
     application: Application,
     private val sleepRepository: SleepRepository,
     private val userRepository: UserRepository,
     private val sourceResolver: TerraRestSourceResolver,
     private val healthSyncScheduler: HealthSyncScheduler,
+    private val runIntelligence: RunIntelligenceUseCase,
 ) : BaseViewModel(application) {
+
+    private fun loadFindings() {
+        viewModelScope.launch {
+            val resolved = runIntelligence.findingsFor(Domains.SLEEP)
+            _state.update { it.copy(findings = resolved) }
+        }
+    }
 
     private val _state = MutableStateFlow(SleepState())
     val state: StateFlow<SleepState> = _state.asStateFlow()
@@ -59,6 +70,7 @@ class SleepViewModel(
     private var backfillInFlight = false
 
     init {
+        loadFindings()
         observeDataSource()
         sleepRepository.updates
             .debounce(CanonicalCacheConstants.UPDATE_DEBOUNCE_MS)

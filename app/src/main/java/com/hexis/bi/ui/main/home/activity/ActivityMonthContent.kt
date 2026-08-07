@@ -13,6 +13,7 @@ import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
 import com.hexis.bi.ui.main.home.activity.components.ActivityStepsBarChart
 import com.hexis.bi.utils.constants.ActivityConstants
+import com.hexis.bi.utils.constants.FindingWindows
 
 @Composable
 fun ActivityMonthContent(
@@ -63,6 +64,7 @@ private fun ActivityMonthReady(
     ActivityPeriodContent(
         state = state,
         period = state.month,
+        windowDays = FindingWindows.ACTIVITY_MONTH,
         trendTitle = stringResource(R.string.activity_trend_label_month),
         trendDescription = trendDescription,
         separateInsightGlass = false,

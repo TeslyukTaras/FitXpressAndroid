@@ -19,6 +19,9 @@ import com.hexis.bi.domain.longevity.PaceOfAgingResult
 import com.hexis.bi.domain.longevity.agingLevel
 import com.hexis.bi.domain.longevity.computePaceOfAging
 import com.hexis.bi.ui.base.BaseViewModel
+import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
+import com.hexis.bi.intelligence.engine.Domains
+import com.hexis.bi.ui.main.home.intelligence.findingsFor
 import com.hexis.bi.ui.main.home.longevity.LongevityTrend
 import com.hexis.bi.ui.main.home.longevity.waistToHeightRatio
 import com.hexis.bi.utils.constants.LongevityConstants
@@ -35,7 +38,7 @@ import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-class PaceOfAgingViewModel(
+class PaceOfAgingViewModel internal constructor(
     application: Application,
     private val recoveryRepository: RecoveryRepository,
     private val activityRepository: ActivityRepository,
@@ -43,12 +46,21 @@ class PaceOfAgingViewModel(
     private val userRepository: UserRepository,
     private val terraManagerHolder: TerraManagerHolder,
     private val terraSdkConnectionOwnership: TerraSdkConnectionOwnership,
+    private val runIntelligence: RunIntelligenceUseCase,
 ) : BaseViewModel(application, initialLoading = true) {
+
+    private fun loadFindings() {
+        viewModelScope.launch {
+            val resolved = runIntelligence.findingsFor(Domains.AGING)
+            _state.update { it.copy(findings = resolved) }
+        }
+    }
 
     private val _state = MutableStateFlow(PaceOfAgingState())
     val state = _state.asStateFlow()
 
     init {
+        loadFindings()
         load()
     }
 

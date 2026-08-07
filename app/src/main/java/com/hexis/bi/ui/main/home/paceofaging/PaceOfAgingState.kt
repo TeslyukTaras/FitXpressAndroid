@@ -1,9 +1,11 @@
 package com.hexis.bi.ui.main.home.paceofaging
 
 import com.hexis.bi.domain.longevity.AgingLevel
+import com.hexis.bi.ui.main.home.intelligence.AreaFindings
 import com.hexis.bi.ui.main.home.longevity.LongevityTrend
 
 data class PaceOfAgingState(
+    val findings: AreaFindings = AreaFindings(),
     val hasData: Boolean = false,
     val level: AgingLevel = AgingLevel.Normal,
     val paceText: String = "",

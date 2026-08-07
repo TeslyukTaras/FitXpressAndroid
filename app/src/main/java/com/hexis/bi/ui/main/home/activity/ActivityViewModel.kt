@@ -8,6 +8,9 @@ import com.hexis.bi.data.health.sync.HealthSyncScheduler
 import com.hexis.bi.data.terra.TerraRestSourceResolver
 import com.hexis.bi.data.user.FirestoreSchema
 import com.hexis.bi.data.user.UserRepository
+import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
+import com.hexis.bi.intelligence.engine.Domains
+import com.hexis.bi.ui.main.home.intelligence.findingsFor
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.caloriesGoal
 import com.hexis.bi.utils.constants.ActivityConstants
@@ -46,13 +49,21 @@ import kotlin.math.abs
 import kotlinx.coroutines.FlowPreview
 
 @OptIn(FlowPreview::class)
-class ActivityViewModel(
+class ActivityViewModel internal constructor(
     application: Application,
     private val activityRepository: ActivityRepository,
     private val userRepository: UserRepository,
     private val sourceResolver: TerraRestSourceResolver,
     private val healthSyncScheduler: HealthSyncScheduler,
+    private val runIntelligence: RunIntelligenceUseCase,
 ) : BaseViewModel(application) {
+
+    private fun loadFindings() {
+        viewModelScope.launch {
+            val resolved = runIntelligence.findingsFor(Domains.ACTIVITY)
+            _state.update { it.copy(findings = resolved) }
+        }
+    }
 
     private val _state = MutableStateFlow(ActivityState())
     val state: StateFlow<ActivityState> = _state.asStateFlow()
@@ -71,6 +82,7 @@ class ActivityViewModel(
     private var backfillInFlight = false
 
     init {
+        loadFindings()
         observeDataSource()
         loadDataForTab(_state.value.selectedTab)
         activityRepository.updates
