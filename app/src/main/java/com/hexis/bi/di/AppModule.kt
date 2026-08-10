@@ -5,6 +5,7 @@ import androidx.work.WorkManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.FirebaseFunctions
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.storage.FirebaseStorage
 import com.hexis.bi.data.activity.ActivityRepository
 import com.hexis.bi.data.activity.DefaultActivityRepository
@@ -33,6 +34,8 @@ import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.health.remote.HealthRemoteDataSource
 import com.hexis.bi.data.intelligence.AssetIntelligenceConfigSource
+import com.hexis.bi.data.intelligence.RemoteIntelligenceConfigSource
+import com.hexis.bi.utils.constants.IntelligenceRemoteConfig
 import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
 import com.hexis.bi.data.intelligence.IntelligenceConfigRepository
 import com.hexis.bi.data.intelligence.IntelligenceInputProvider
@@ -126,7 +129,22 @@ val appModule = module {
     single { HealthConnectPermissionChecker(androidContext()) }
     single { HealthRemoteDataSource(get(), get()) }
     single { HealthSyncCoordinator(get(), get(), get(), get(), get(), get(), get()) }
-    single { IntelligenceConfigRepository(listOf(AssetIntelligenceConfigSource(androidContext()))) }
+    single { FirebaseRemoteConfig.getInstance() }
+    single {
+        IntelligenceConfigRepository(
+            overrides = listOf(
+                RemoteIntelligenceConfigSource(
+                    remoteConfig = get(),
+                    minimumFetchIntervalSeconds = if (BuildConfig.DEBUG) {
+                        IntelligenceRemoteConfig.DEBUG_FETCH_INTERVAL_SECONDS
+                    } else {
+                        IntelligenceRemoteConfig.RELEASE_FETCH_INTERVAL_SECONDS
+                    },
+                ),
+            ),
+            baseline = AssetIntelligenceConfigSource(androidContext()),
+        )
+    }
     single { IntelligenceInputProvider(get(), get(), get()) }
     single { RunIntelligenceUseCase(get(), get()) }
     single { WorkManager.getInstance(androidContext()) }

@@ -33,3 +33,10 @@ google-services.json
 /github.properties
 
 /firebase-debug.log
+
+# Build artifacts
+*.aab
+*.apk
+app/prod/
+app/dev/
+app/stage/

@@ -8,6 +8,14 @@ internal object FindingWindows {
     const val ACTIVITY_YEAR = 365
 }
 
+internal object IntelligenceRemoteConfig {
+
+    const val CONFIG_KEY = "intelligence_engine_config"
+
+    const val DEBUG_FETCH_INTERVAL_SECONDS = 60L
+    const val RELEASE_FETCH_INTERVAL_SECONDS = 12L * 60 * 60
+}
+
 internal object IntelligenceConstants {
 
     const val MAX_SCORE = 100f
