@@ -5,6 +5,7 @@ import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import java.util.concurrent.TimeUnit
 import com.hexis.bi.utils.constants.HealthSyncWorkConstants
@@ -56,6 +57,6 @@ internal class WorkManagerHealthSyncScheduler(
 
     override fun backfillInFlight(): Flow<Boolean> =
         workManager.getWorkInfosForUniqueWorkFlow(HealthSyncWorkConstants.UNIQUE_WORK_NAME)
-            .map { infos -> infos.any { !it.state.isFinished } }
+            .map { infos -> infos.any { it.state == WorkInfo.State.RUNNING } }
             .distinctUntilChanged()
 }

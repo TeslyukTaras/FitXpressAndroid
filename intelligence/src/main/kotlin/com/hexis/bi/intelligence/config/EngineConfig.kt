@@ -14,6 +14,8 @@ data class EngineConfig(
     val trend: TrendConfig,
     val thresholds: ThresholdsConfig,
     val confidence: ConfidenceConfig,
+    val features: FeaturesConfig = FeaturesConfig(),
+    val findings: FindingsConfig = FindingsConfig(),
     val priority: Map<String, Double>,
     val quality: QualityConfig,
     val composites: CompositesConfig,
@@ -59,6 +61,9 @@ data class TrendConfig(
     @SerialName("decisive_change_multiple") val decisiveChangeMultiple: Double,
     @SerialName("min_persistence") val minPersistence: Double,
     @SerialName("min_persist_days") val minPersistDays: Map<String, Int>,
+    @SerialName("recent_days_for_z") val recentDaysForZ: Int = 3,
+    @SerialName("min_points") val minPoints: Int = 2,
+    @SerialName("min_points_for_persistence") val minPointsForPersistence: Int = 3,
 ) {
     fun minPersistDaysFor(domain: String): Int = minPersistDays[domain] ?: DEFAULT_MIN_PERSIST_DAYS
 
@@ -83,7 +88,41 @@ data class ConfidenceConfig(
     val weights: Map<String, Double>,
     val buckets: Map<String, Double>,
     @SerialName("recency_fresh_days") val recencyFreshDays: Int,
+    @SerialName("recency_decay_days") val recencyDecayDays: Int = recencyFreshDays,
+    @SerialName("full_signal_z") val fullSignalZ: Double = 3.0,
+    @SerialName("source_quality") val sourceQuality: Double = 1.0,
 )
+
+@Serializable
+data class FeaturesConfig(
+    @SerialName("pattern_findings") val patternFindings: Boolean = true,
+    @SerialName("metric_findings") val metricFindings: Boolean = true,
+    @SerialName("stable_findings") val stableFindings: Boolean = true,
+    val foundations: Boolean = true,
+    @SerialName("physique_drift") val physiqueDrift: Boolean = true,
+    val longevity: Boolean = true,
+    @SerialName("pace_of_aging") val paceOfAging: Boolean = true,
+    val stress: Boolean = true,
+    val physique: Boolean = true,
+)
+
+@Serializable
+data class FindingsConfig(
+    @SerialName("minimum_stress_corroborating_domains") val minimumStressCorroboratingDomains: Int = 1,
+    @SerialName("default_metric_area") val defaultMetricArea: String = "activity",
+    @SerialName("good_when_up") val goodWhenUp: Set<String> = DEFAULT_GOOD_WHEN_UP,
+    @SerialName("good_when_down") val goodWhenDown: Set<String> = DEFAULT_GOOD_WHEN_DOWN,
+    @SerialName("neutral_metrics") val neutralMetrics: Set<String> = DEFAULT_NEUTRAL_METRICS,
+) {
+    companion object {
+        val DEFAULT_GOOD_WHEN_UP = setOf(
+            "sleep_duration", "sleep_efficiency", "deep_sleep", "rem_sleep", "hrv_rmssd",
+            "steps", "active_minutes", "active_calories", "vo2max", "lean_mass",
+        )
+        val DEFAULT_GOOD_WHEN_DOWN = setOf("resting_hr", "body_fat_pct", "waist")
+        val DEFAULT_NEUTRAL_METRICS = setOf("weight")
+    }
+}
 
 @Serializable
 data class QualityConfig(
@@ -92,6 +131,8 @@ data class QualityConfig(
     @SerialName("freshness_days") val freshnessDays: Map<String, Int>,
     @SerialName("plausibility_per_week") val plausibilityPerWeek: Map<String, Double>,
     @SerialName("still_learning_coverage") val stillLearningCoverage: Double,
+    @SerialName("still_learning_weak_fraction") val stillLearningWeakFraction: Double = 0.5,
+    @SerialName("min_points_for_plausibility") val minPointsForPlausibility: Int = 2,
 ) {
     fun minCoverageFor(domain: String): Double = minCoverage[domain] ?: DEFAULT_MIN_COVERAGE
 

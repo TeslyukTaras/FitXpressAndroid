@@ -17,7 +17,6 @@ object QualityStatus {
 private const val COVERAGE_REASON_DIGITS = 2
 private const val PER_WEEK_REASON_DIGITS = 1
 private const val DAYS_PER_WEEK = 7.0
-private const val MIN_POINTS_FOR_PLAUSIBILITY = 2
 
 internal fun assess(
     series: MetricSeries,
@@ -63,7 +62,7 @@ internal fun assess(
     }
 
     val bound = quality.plausibilityPerWeek[series.metric]
-    if (bound != null && trend != null && series.points.size >= MIN_POINTS_FOR_PLAUSIBILITY) {
+    if (bound != null && trend != null && series.points.size >= quality.minPointsForPlausibility) {
         val spanDays = EngineDates.daysBetween(series.points.first().date, series.points.last().date)
         if (spanDays > 0) {
             val perWeek = abs(trend.absChange) / (spanDays / DAYS_PER_WEEK)
@@ -90,5 +89,5 @@ internal fun stillLearning(verdicts: Map<String, QualityVerdict>, config: Engine
     val tracked = verdicts.values.filter { it.domain != Domains.BODY }
     if (tracked.isEmpty()) return true
     val weak = tracked.count { it.coverage < floor }
-    return weak > tracked.size / 2.0
+    return weak.toDouble() / tracked.size > config.quality.stillLearningWeakFraction
 }

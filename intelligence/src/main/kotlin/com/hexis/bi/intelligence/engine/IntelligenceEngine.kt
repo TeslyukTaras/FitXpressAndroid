@@ -18,6 +18,7 @@ data class MetricTrendRow(
 )
 
 data class FoundationsReport(
+    val enabled: Boolean,
     val windowDays: Int,
     val direction: String,
     val statuses: Map<String, String>,
@@ -113,8 +114,16 @@ object IntelligenceEngine {
         } else {
             foundationWindows.maxOrNull() ?: widestSupported
         }
-        val foundations = evaluateFoundations(trendsByWindow.getValue(foundationWindow), config)
-        val drift = evaluatePhysiqueDrift(series, config)
+        val foundations = if (config.features.foundations) {
+            evaluateFoundations(trendsByWindow.getValue(foundationWindow), config)
+        } else {
+            FoundationsResult(FoundationDirection.DISABLED, emptyMap())
+        }
+        val drift = if (config.features.physiqueDrift) {
+            evaluatePhysiqueDrift(series, config)
+        } else {
+            PhysiqueDrift(DriftStatus.INSUFFICIENT_SCANS, scans = 0)
+        }
 
         val narratable = windows.filter { trendsByWindow.getValue(it).isNotEmpty() }
             .ifEmpty { listOf(widestSupported) }
@@ -126,10 +135,12 @@ object IntelligenceEngine {
             val windowVerdicts = series.associate {
                 it.metric to assess(it, trends[it.metric], input.runDate, config)
             }
-            val candidates = evaluateRules(trends) +
-                singleMetricCandidates(trends, config) +
-                foundationCandidates(foundations) +
-                driftCandidates(drift, config, input.runDate)
+            val candidates = buildList {
+                addAll(enabledRuleCandidates(evaluateRules(trends), config))
+                if (config.features.metricFindings) addAll(singleMetricCandidates(trends, config))
+                if (config.features.foundations) addAll(foundationCandidates(foundations))
+                if (config.features.physiqueDrift) addAll(driftCandidates(drift, config, input.runDate))
+            }
             val built = buildFindings(candidates, trends, config, input.runDate, windowVerdicts)
             WindowFindings(
                 windowDays = window,
@@ -149,7 +160,12 @@ object IntelligenceEngine {
             metricsOk = primaryFindings.metricsOk,
             metricsTotal = primaryFindings.metricsTotal,
             verdicts = primaryFindings.verdicts,
-            foundations = FoundationsReport(foundationWindow, foundations.direction, foundations.statuses),
+            foundations = FoundationsReport(
+                enabled = config.features.foundations,
+                windowDays = foundationWindow,
+                direction = foundations.direction,
+                statuses = foundations.statuses,
+            ),
             physiqueDrift = drift,
             metricTrends = rows,
             findings = primaryFindings.findings,

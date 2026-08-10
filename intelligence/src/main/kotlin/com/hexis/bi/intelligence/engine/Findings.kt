@@ -99,7 +99,9 @@ internal fun buildFindings(
             }
         }
 
-        if (candidate.requiresCorroboration && candidate.corroboration.isEmpty()) {
+        if (candidate.requiresCorroboration &&
+            candidate.corroboration.distinct().size < config.findings.minimumStressCorroboratingDomains
+        ) {
             suppressed += SuppressedFinding(
                 insightId = candidate.id,
                 interpretation = candidate.interpretation,

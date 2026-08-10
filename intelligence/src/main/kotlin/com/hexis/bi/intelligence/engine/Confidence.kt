@@ -27,8 +27,6 @@ object ConfidenceBuckets {
 
 private const val FACTOR_DIGITS = 3
 private const val SCORE_DIGITS = 3
-private const val FULL_SIGNAL_Z = 3.0
-private const val SINGLE_SOURCE_QUALITY = 1.0
 
 internal fun scoreFactors(factors: Map<String, Double>, config: EngineConfig): ConfidenceBreakdown {
     val weights = config.confidence.weights
@@ -65,24 +63,26 @@ internal fun computeConfidence(
 ): ConfidenceBreakdown {
     val lead = trends.maxByOrNull { abs(it.zNow) } ?: error("confidence needs at least one trend")
     val factors = mapOf(
-        ConfidenceFactors.SIGNAL_MAGNITUDE to minOf(abs(lead.zNow) / FULL_SIGNAL_Z, 1.0),
+        ConfidenceFactors.SIGNAL_MAGNITUDE to minOf(abs(lead.zNow) / config.confidence.fullSignalZ, 1.0),
         ConfidenceFactors.PERSISTENCE to
             minOf(lead.persistenceDays.toDouble() / maxOf(1, lead.windowDays), 1.0),
         ConfidenceFactors.AGREEMENT to
             minOf(agreementCount.toDouble() / maxOf(1, agreementExpected), 1.0),
         ConfidenceFactors.COVERAGE to minOf(mean(trends.map { it.coverage }), 1.0),
-        ConfidenceFactors.RECENCY to recency(trends, runDate, config.confidence.recencyFreshDays),
-        ConfidenceFactors.SOURCE_QUALITY to SINGLE_SOURCE_QUALITY,
+        ConfidenceFactors.RECENCY to recency(
+            trends, runDate, config.confidence.recencyFreshDays, config.confidence.recencyDecayDays,
+        ),
+        ConfidenceFactors.SOURCE_QUALITY to config.confidence.sourceQuality,
         ConfidenceFactors.CONTRADICTION to contradiction,
     )
     return scoreFactors(factors, config)
 }
 
-internal fun recency(trends: List<Trend>, runDate: String, freshDays: Int): Double {
+internal fun recency(trends: List<Trend>, runDate: String, freshDays: Int, decayDays: Int = freshDays): Double {
     if (runDate.isEmpty()) return 1.0
     val gaps = trends.filter { it.lastDate.isNotEmpty() }
         .map { EngineDates.daysBetween(it.lastDate, runDate) }
     val gap = gaps.maxOrNull() ?: return 1.0
     if (gap <= freshDays) return 1.0
-    return maxOf(0.0, 1.0 - (gap - freshDays).toDouble() / freshDays)
+    return maxOf(0.0, 1.0 - (gap - freshDays).toDouble() / decayDays)
 }

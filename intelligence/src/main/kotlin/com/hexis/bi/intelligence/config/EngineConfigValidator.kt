@@ -27,6 +27,7 @@ object EngineConfigValidator {
         validateTrend(config.trend)
         validateThresholds(config.thresholds)
         validateConfidence(config.confidence)
+        validateFeaturesAndFindings(config)
         validateQuality(config.quality)
         validateComposites(config.composites)
 
@@ -67,6 +68,9 @@ object EngineConfigValidator {
         if (trend.minPersistence !in 0.0..1.0) add("trend.min_persistence must be in [0, 1]")
         if (trend.stableDeadbandFraction < 0.0) add("trend.stable_deadband_frac is negative")
         if (trend.decisiveChangeMultiple < 1.0) add("trend.decisive_change_multiple must be >= 1")
+        if (trend.recentDaysForZ <= 0) add("trend.recent_days_for_z must be > 0")
+        if (trend.minPoints < 2) add("trend.min_points must be >= 2")
+        if (trend.minPointsForPersistence < 2) add("trend.min_points_for_persistence must be >= 2")
         trend.minPersistDays.forEach { (domain, days) ->
             if (days < 0) add("trend.min_persist_days.$domain is negative")
         }
@@ -99,6 +103,9 @@ object EngineConfigValidator {
             if (high < moderate) add("confidence.buckets.high is below moderate")
         }
         if (confidence.recencyFreshDays <= 0) add("confidence.recency_fresh_days must be > 0")
+        if (confidence.recencyDecayDays <= 0) add("confidence.recency_decay_days must be > 0")
+        if (confidence.fullSignalZ <= 0.0) add("confidence.full_signal_z must be > 0")
+        if (confidence.sourceQuality !in 0.0..1.0) add("confidence.source_quality must be in [0, 1]")
     }
 
     private fun MutableList<String>.validateQuality(quality: QualityConfig) {
@@ -118,6 +125,24 @@ object EngineConfigValidator {
         if (quality.stillLearningCoverage !in 0.0..1.0) {
             add("quality.still_learning_coverage must be in [0, 1]")
         }
+        if (quality.stillLearningWeakFraction !in 0.0..1.0) {
+            add("quality.still_learning_weak_fraction must be in [0, 1]")
+        }
+        if (quality.minPointsForPlausibility < 2) add("quality.min_points_for_plausibility must be >= 2")
+    }
+
+    private fun MutableList<String>.validateFeaturesAndFindings(config: EngineConfig) {
+        val findings = config.findings
+        if (findings.minimumStressCorroboratingDomains < 0) {
+            add("findings.minimum_stress_corroborating_domains is negative")
+        }
+        if (findings.defaultMetricArea !in KNOWN_AREAS) {
+            add("findings.default_metric_area is unknown")
+        }
+        val overlap = (findings.goodWhenUp intersect findings.goodWhenDown) +
+            (findings.goodWhenUp intersect findings.neutralMetrics) +
+            (findings.goodWhenDown intersect findings.neutralMetrics)
+        if (overlap.isNotEmpty()) add("findings metric polarity overlaps for ${overlap.sorted()}")
     }
 
     private fun MutableList<String>.validateComposites(composites: CompositesConfig) {

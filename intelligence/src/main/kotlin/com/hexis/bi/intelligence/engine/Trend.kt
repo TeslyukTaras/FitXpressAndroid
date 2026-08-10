@@ -15,9 +15,6 @@ private const val REL_CHANGE_DIGITS = 4
 private const val STRENGTH_DIGITS = 3
 private const val COVERAGE_DIGITS = 3
 private const val Z_DIGITS = 3
-private const val RECENT_DAYS_FOR_Z = 3
-private const val MIN_POINTS_FOR_TREND = 2
-private const val MIN_POINTS_FOR_PERSISTENCE = 3
 
 internal fun computeTrend(
     series: MetricSeries,
@@ -30,7 +27,7 @@ internal fun computeTrend(
     val lastDate = windowed.points.lastOrNull()?.date.orEmpty()
     val minPersistDays = trendConfig.minPersistDaysFor(series.domain)
 
-    val tooFewPoints = windowed.points.size < MIN_POINTS_FOR_TREND ||
+    val tooFewPoints = windowed.points.size < trendConfig.minPoints ||
         (series.domain != Domains.BODY && windowed.points.size < minPersistDays)
     if (tooFewPoints) return insufficient(series, windowDays, lastDate)
 
@@ -39,8 +36,8 @@ internal fun computeTrend(
 
     val fit = fitOf(days, values, trendConfig)
     val strength = spearmanAbs(days, values)
-    val persistence = stepPersistence(values, fit.change)
-    val zNow = zNowOf(values, baseline)
+    val persistence = stepPersistence(values, fit.change, trendConfig.minPointsForPersistence)
+    val zNow = zNowOf(values, baseline, trendConfig.recentDaysForZ)
     val threshold = thresholdOf(series.metric, baseline, config)
     val direction = classify(fit.change, threshold, persistence, trendConfig)
 
@@ -89,14 +86,14 @@ private fun fitOf(days: List<Double>, values: List<Double>, trendConfig: TrendCo
     }
 
 private fun periodChange(points: List<MetricPoint>, trendConfig: TrendConfig): Double? {
-    if (points.size < MIN_POINTS_FOR_TREND) return null
+    if (points.size < trendConfig.minPoints) return null
     val values = winsorize(points.map { it.value }, trendConfig.winsorizePct).values
     val days = points.map { EngineDates.ordinal(it.date) }
     return fitOf(days, values, trendConfig).change
 }
 
-private fun stepPersistence(values: List<Double>, change: Double): Double {
-    if (values.size < MIN_POINTS_FOR_PERSISTENCE || change == 0.0) return 1.0
+private fun stepPersistence(values: List<Double>, change: Double, minimumPoints: Int): Double {
+    if (values.size < minimumPoints || change == 0.0) return 1.0
     val steps = values.zipWithNext { previous, next -> next - previous }.filter { it != 0.0 }
     if (steps.isEmpty()) return 1.0
     return steps.count { (it > 0.0) == (change > 0.0) }.toDouble() / steps.size
@@ -115,10 +112,10 @@ private fun sideRun(values: List<Double>, median: Double): Int {
     return best
 }
 
-private fun zNowOf(values: List<Double>, baseline: Baseline): Double {
+private fun zNowOf(values: List<Double>, baseline: Baseline, recentDays: Int): Double {
     val scale = Baseline.MAD_TO_STD_DEV * baseline.mad
     if (scale == 0.0) return 0.0
-    return (mean(values.takeLast(RECENT_DAYS_FOR_Z)) - baseline.median) / scale
+    return (mean(values.takeLast(recentDays)) - baseline.median) / scale
 }
 
 private fun thresholdOf(metric: String, baseline: Baseline, config: EngineConfig): Double {

@@ -13,6 +13,7 @@ object FoundationStatus {
 }
 
 object FoundationDirection {
+    const val DISABLED = "disabled"
     const val STRENGTHENING = "strengthening"
     const val HOLDING = "holding"
     const val MIXED = "mixed"

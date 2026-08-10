@@ -31,20 +31,17 @@ internal data class Candidate(
     val corroboration: List<String> = emptyList(),
     val confidenceFactors: Map<String, Double>? = null,
     val supportingValues: Map<String, String> = emptyMap(),
+    val kind: String = CandidateKind.RELATIONSHIP,
 )
+
+internal object CandidateKind {
+    const val RELATIONSHIP = "relationship"
+    const val COMPOSITE = "composite"
+}
 
 private const val RECOVERY_SIGNAL_COUNT = 3
 private const val FRACTION_DIGITS = 3
 private const val DRIFT_VALUE_DIGITS = 2
-private const val DEFAULT_METRIC_AREA = "activity"
-
-private val GOOD_WHEN_UP = setOf(
-    Metrics.SLEEP_DURATION, Metrics.SLEEP_EFFICIENCY, Metrics.DEEP_SLEEP, Metrics.REM_SLEEP,
-    Metrics.HRV_RMSSD, Metrics.STEPS, Metrics.ACTIVE_MINUTES, Metrics.ACTIVE_CALORIES,
-    Metrics.VO2MAX, Metrics.LEAN_MASS,
-)
-
-private val GOOD_WHEN_DOWN = setOf(Metrics.RESTING_HR, Metrics.BODY_FAT_PCT, Metrics.WAIST)
 
 private val VERB = mapOf(
     Directions.UP to "increased",
@@ -208,11 +205,15 @@ internal fun evaluateRules(trends: Map<String, Trend>): List<Candidate> {
             metrics = listOf(Metrics.STRESS_SCORE),
             agreementCount = 1, agreementExpected = 1, contradiction = 0.0,
             requiresCorroboration = true, corroboration = support,
+            kind = CandidateKind.COMPOSITE,
         )
     }
 
     return out
 }
+
+internal fun enabledRuleCandidates(candidates: List<Candidate>, config: EngineConfig): List<Candidate> =
+    candidates.filter { it.kind != CandidateKind.RELATIONSHIP || config.features.patternFindings }
 
 internal fun singleMetricCandidates(
     trends: Map<String, Trend>,
@@ -220,9 +221,10 @@ internal fun singleMetricCandidates(
 ): List<Candidate> = trends.entries.sortedBy { it.key }.mapNotNull { (metric, trend) ->
     if (metric.endsWith("_score")) return@mapNotNull null
     if (trend.direction !in VERB.keys) return@mapNotNull null
-    val area = config.domains[metric] ?: DEFAULT_METRIC_AREA
+    val area = config.domains[metric] ?: config.findings.defaultMetricArea
     val fact = "${metric}_${VERB.getValue(trend.direction)}"
     if (trend.direction == Directions.STABLE) {
+        if (!config.features.stableFindings) return@mapNotNull null
         return@mapNotNull Candidate(
             id = "${metric}_stable", area = area, interpretation = "${metric}_holding",
             direction = FindingDirection.NEUTRAL, facts = listOf(fact), metrics = listOf(metric),
@@ -231,8 +233,8 @@ internal fun singleMetricCandidates(
         )
     }
     val direction = when (metric) {
-        in GOOD_WHEN_UP -> if (trend.direction == Directions.UP) FindingDirection.POSITIVE else FindingDirection.NEGATIVE
-        in GOOD_WHEN_DOWN -> if (trend.direction == Directions.DOWN) FindingDirection.POSITIVE else FindingDirection.NEGATIVE
+        in config.findings.goodWhenUp -> if (trend.direction == Directions.UP) FindingDirection.POSITIVE else FindingDirection.NEGATIVE
+        in config.findings.goodWhenDown -> if (trend.direction == Directions.DOWN) FindingDirection.POSITIVE else FindingDirection.NEGATIVE
         else -> FindingDirection.NEUTRAL
     }
     Candidate(
@@ -299,6 +301,7 @@ private fun compositeCandidate(
     id = id, area = area, interpretation = id, direction = direction,
     facts = listOf(fact), metrics = listOf(metric),
     agreementCount = 1, agreementExpected = 1, contradiction = 0.0,
+    kind = CandidateKind.COMPOSITE,
 )
 
 private fun directionOf(trends: Map<String, Trend>, metric: String): String =

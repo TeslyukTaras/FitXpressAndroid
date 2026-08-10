@@ -186,11 +186,17 @@ internal fun buildCompositeSeries(
 
         val complete = day.keys.containsAll(required) && day.keys.containsAll(stableOptional)
         if (complete) {
-            longevityScore(day, config)?.let { longevity += MetricPoint(date, Metrics.LONGEVITY_SCORE, it, Metrics.SOURCE_COMPOSITE) }
-            agingScore(day, config)?.let { aging += MetricPoint(date, Metrics.AGING_SCORE, it, Metrics.SOURCE_COMPOSITE) }
+            if (config.features.longevity) longevityScore(day, config)?.let {
+                longevity += MetricPoint(date, Metrics.LONGEVITY_SCORE, it, Metrics.SOURCE_COMPOSITE)
+            }
+            if (config.features.paceOfAging) agingScore(day, config)?.let {
+                aging += MetricPoint(date, Metrics.AGING_SCORE, it, Metrics.SOURCE_COMPOSITE)
+            }
         }
-        stressScore(day, config)?.let { stress += MetricPoint(date, Metrics.STRESS_SCORE, it, Metrics.SOURCE_COMPOSITE) }
-        if (Metrics.WEIGHT in observed || Metrics.BODY_FAT_PCT in observed) {
+        if (config.features.stress) stressScore(day, config)?.let {
+            stress += MetricPoint(date, Metrics.STRESS_SCORE, it, Metrics.SOURCE_COMPOSITE)
+        }
+        if (config.features.physique && (Metrics.WEIGHT in observed || Metrics.BODY_FAT_PCT in observed)) {
             physiqueScore(observed, config)?.let {
                 physique += MetricPoint(date, Metrics.PHYSIQUE_SCORE, it, Metrics.SOURCE_COMPOSITE)
             }

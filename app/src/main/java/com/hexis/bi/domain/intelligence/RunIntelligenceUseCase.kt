@@ -18,7 +18,7 @@ internal class RunIntelligenceUseCase(
     private val computation: CoroutineDispatcher = Dispatchers.Default,
 ) {
 
-    private data class Memo(val input: EngineInput, val configVersion: String, val report: EngineReport)
+    private data class Memo(val input: EngineInput, val config: EngineConfig, val report: EngineReport)
 
     private val memo = AtomicReference<Memo>()
 
@@ -39,7 +39,7 @@ internal class RunIntelligenceUseCase(
 
     private suspend fun runReport(input: EngineInput, config: EngineConfig): Result<EngineReport> {
         memo.get()?.let { cached ->
-            if (cached.input == input && cached.configVersion == config.configVersion) {
+            if (cached.input == input && cached.config == config) {
                 return Result.success(cached.report)
             }
         }
@@ -47,7 +47,7 @@ internal class RunIntelligenceUseCase(
         return runCatching {
             withContext(computation) { IntelligenceEngine.run(input, config) }
         }.onSuccess { report ->
-            memo.set(Memo(input, config.configVersion, report))
+            memo.set(Memo(input, config, report))
             log(report, input, System.currentTimeMillis() - startedAt)
         }.onFailure { Timber.w(it, "Intelligence run failed") }
     }
