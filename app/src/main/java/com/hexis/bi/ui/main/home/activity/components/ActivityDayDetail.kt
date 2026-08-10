@@ -18,6 +18,7 @@ import com.hexis.bi.utils.constants.MeasurementConstants
 
 @Composable
 fun ActivityDayDetail(
+    loading: Boolean = false,
     state: ActivityState,
     steps: Int,
     distanceKm: Float,
@@ -34,6 +35,7 @@ fun ActivityDayDetail(
         ((steps.toFloat() / state.stepsGoal) * 100).toInt().coerceIn(0, 100) else 0
 
     BodyGlassCard(
+        loading = loading,
         modifier = modifier,
         contentPadding = PaddingValues(
             start = dimensionResource(R.dimen.spacer_m),
@@ -102,6 +104,7 @@ fun ActivityDayDetail(
     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
     ActivityProgressCard(
+        loading = loading,
         progressPercent = progressPercent,
         stepsProgress = if (state.stepsGoal > 0)
             (steps.toFloat() / state.stepsGoal).coerceIn(0f, 1f) else 0f,

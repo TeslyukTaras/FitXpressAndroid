@@ -119,7 +119,4 @@ data class ActivityState(
         ActivityTab.Month -> monthLoadState
         ActivityTab.Year -> yearLoadState
     }
-
-    val isTabLoading: Boolean
-        get() = loadStateOf(selectedTab) == ActivityLoadState.Loading
 }

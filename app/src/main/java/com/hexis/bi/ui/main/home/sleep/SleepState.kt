@@ -116,11 +116,6 @@ data class SleepState(
 
     val findings: AreaFindings = AreaFindings(),
 ) {
-    val isTabLoading: Boolean
-        get() = when (selectedTab) {
-            SleepTab.Day -> dayLoadState == SleepLoadState.Loading
-            SleepTab.Summary -> summaryLoadState == SleepLoadState.Loading
-        }
 
     fun loadStateOf(tab: SleepTab): SleepLoadState = when (tab) {
         SleepTab.Day -> dayLoadState

@@ -68,7 +68,7 @@ fun ActivityScreen(
                 )
                 .screenBackground(),
             containerColor = Color.Transparent,
-            isLoading = isLoading || state.isTabLoading,
+            isLoading = isLoading,
             error = error,
             onDismissError = viewModel::clearError,
             topBar = {

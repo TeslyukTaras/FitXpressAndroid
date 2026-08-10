@@ -139,6 +139,12 @@ object EngineConfigValidator {
         if (findings.defaultMetricArea !in KNOWN_AREAS) {
             add("findings.default_metric_area is unknown")
         }
+        val declared = config.domains.keys
+        val unknown = (findings.goodWhenUp + findings.goodWhenDown + findings.neutralMetrics)
+            .filterNot { it in declared }
+        if (unknown.isNotEmpty()) {
+            add("findings polarity lists reference metrics absent from domains: ${unknown.sorted()}")
+        }
         val overlap = (findings.goodWhenUp intersect findings.goodWhenDown) +
             (findings.goodWhenUp intersect findings.neutralMetrics) +
             (findings.goodWhenDown intersect findings.neutralMetrics)

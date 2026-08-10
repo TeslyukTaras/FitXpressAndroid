@@ -64,6 +64,7 @@ private fun SleepSummaryReady(
     onInfoClick: () -> Unit,
 ) {
     SleepStructureCard(
+        loading = state.summaryLoadState == SleepLoadState.Loading,
         structure = state.weeklyStructure,
         stages = state.weeklyStages,
     )

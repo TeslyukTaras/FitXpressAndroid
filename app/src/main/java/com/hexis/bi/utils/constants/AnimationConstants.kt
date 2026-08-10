@@ -24,6 +24,14 @@ internal object AnimationConstants {
     /** Circular gauges/rings sweeping in: Home intelligence gauges, Activity rings. */
     const val ARC_FILL_MS = 500
 
+    /** Sheen sweeping across a glass card while its data loads. */
+    const val GLASS_LOADING_SWEEP_MS = 1400
+    const val GLASS_LOADING_BAND_FRACTION = 0.45f
+    const val GLASS_LOADING_SHEEN_ALPHA = 0.2f
+    const val GLASS_LOADING_FADE_IN_MS = 300
+    const val GLASS_LOADING_FADE_OUT_MS = 1100
+
+
     /** Line charts wiping in left-to-right: scan sparkline, sleep HRV/RHR chart, hypnogram. */
     const val LINE_WIPE_MS = 600
 }

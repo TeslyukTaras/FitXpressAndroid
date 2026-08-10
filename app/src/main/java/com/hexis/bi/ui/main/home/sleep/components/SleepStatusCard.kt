@@ -48,11 +48,13 @@ private fun SleepStage.connectorDistanceRes(): Int = when (this) {
 @Composable
 fun SleepStatusCard(
     modifier: Modifier = Modifier,
+    loading: Boolean = false,
     totalSleepMinutes: Int,
     sleepGoalHours: Int,
     stages: List<SleepStageData>,
 ) {
     BodyGlassCard(
+        loading = loading,
         modifier = modifier,
         contentPadding = PaddingValues(
             start = dimensionResource(R.dimen.spacer_m),

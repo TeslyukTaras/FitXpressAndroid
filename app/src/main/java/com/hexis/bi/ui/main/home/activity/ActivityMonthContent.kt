@@ -64,6 +64,7 @@ private fun ActivityMonthReady(
     ActivityPeriodContent(
         state = state,
         period = state.month,
+        loading = state.monthLoadState == ActivityLoadState.Loading,
         windowDays = FindingWindows.ACTIVITY_MONTH,
         trendTitle = stringResource(R.string.activity_trend_label_month),
         trendDescription = trendDescription,

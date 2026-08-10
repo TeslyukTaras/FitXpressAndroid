@@ -66,6 +66,7 @@ fun SleepDayContent(
 @Composable
 private fun SleepDayReady(state: SleepState, onInfoClick: () -> Unit) {
     SleepStatusCard(
+        loading = state.dayLoadState == SleepLoadState.Loading,
         totalSleepMinutes = state.totalSleepMinutes,
         sleepGoalHours = state.sleepGoalHours,
         stages = state.stages,
@@ -74,6 +75,7 @@ private fun SleepDayReady(state: SleepState, onInfoClick: () -> Unit) {
     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
     SleepTimelineCard(
+        loading = state.dayLoadState == SleepLoadState.Loading,
         totalSleepMinutes = state.totalSleepMinutes,
         timeStartHour = state.timelineStartHour,
         timeEndHour = state.timelineEndHour,
@@ -83,6 +85,7 @@ private fun SleepDayReady(state: SleepState, onInfoClick: () -> Unit) {
     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
     SleepMetricsCard(
+        loading = state.dayLoadState == SleepLoadState.Loading,
         hrv = state.hrv,
         restingHeartRate = state.restingHeartRate,
         hrvSeries = state.hrvSeries,

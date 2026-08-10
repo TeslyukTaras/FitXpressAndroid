@@ -57,10 +57,11 @@ fun SleepMetricsCard(
     timeStartHour: Int,
     timeEndHour: Int,
     modifier: Modifier = Modifier,
+    loading: Boolean = false,
 ) {
     val rhrColor = NocturnePulseTheme.extendedColors.accentBlue
     val axis = remember(hrvSeries, rhrSeries) { axisFor(hrvSeries, rhrSeries) }
-    BodyGlassCard(modifier = modifier) {
+    BodyGlassCard(modifier = modifier, loading = loading) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,

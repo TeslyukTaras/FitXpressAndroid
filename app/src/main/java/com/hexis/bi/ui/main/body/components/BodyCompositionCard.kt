@@ -23,13 +23,14 @@ import com.hexis.bi.utils.kgToLb
 
 @Composable
 internal fun BodyCompositionCard(
+    loading: Boolean = false,
     composition: BodyComposition,
     massUnit: BodyMassUnit,
     isMetric: Boolean,
     onMassUnitChange: (BodyMassUnit) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    BodyGlassCard(modifier = modifier) {
+    BodyGlassCard(loading = loading, modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,

@@ -74,6 +74,7 @@ private fun ActivityDayReady(
     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxs)))
 
     ActivityDayDetail(
+        loading = state.dayLoadState == ActivityLoadState.Loading,
         state = state,
         steps = state.currentSteps,
         distanceKm = state.distanceKm,

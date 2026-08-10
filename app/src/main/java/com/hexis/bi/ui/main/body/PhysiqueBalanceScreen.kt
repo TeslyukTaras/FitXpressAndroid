@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -86,10 +85,6 @@ fun PhysiqueBalanceScreen(
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
 
             when (state.loadState) {
-                BodyLoadState.Loading -> PhysiqueBalancePlaceholder {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                }
-
                 BodyLoadState.Error -> PhysiqueBalancePlaceholder {
                     Text(
                         text = stringResource(R.string.body_error_title),
@@ -106,13 +101,14 @@ fun PhysiqueBalanceScreen(
                     }
                 }
 
-                BodyLoadState.Ready -> Column(
+                BodyLoadState.Loading, BodyLoadState.Ready -> Column(
                     modifier = Modifier
                         .weight(1f)
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
                 ) {
                     BodyTrendChart(
+                        loading = state.loadState == BodyLoadState.Loading,
                         chart = state.chart,
                         timeRange = state.timeRange,
                         onTimeRangeChange = viewModel::selectTimeRange,

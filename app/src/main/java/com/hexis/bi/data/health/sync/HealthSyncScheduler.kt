@@ -55,8 +55,14 @@ internal class WorkManagerHealthSyncScheduler(
         Timber.d("Health history backfill enqueued (%s)", trigger.reason)
     }
 
+    private fun isBackfillActive(info: WorkInfo): Boolean = when (info.state) {
+        WorkInfo.State.RUNNING -> true
+        WorkInfo.State.ENQUEUED -> info.runAttemptCount > 0
+        else -> false
+    }
+
     override fun backfillInFlight(): Flow<Boolean> =
         workManager.getWorkInfosForUniqueWorkFlow(HealthSyncWorkConstants.UNIQUE_WORK_NAME)
-            .map { infos -> infos.any { it.state == WorkInfo.State.RUNNING } }
+            .map { infos -> infos.any(::isBackfillActive) }
             .distinctUntilChanged()
 }

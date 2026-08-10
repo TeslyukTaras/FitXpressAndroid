@@ -64,6 +64,7 @@ private fun ActivityYearReady(
     ActivityPeriodContent(
         state = state,
         period = state.year,
+        loading = state.yearLoadState == ActivityLoadState.Loading,
         windowDays = FindingWindows.ACTIVITY_YEAR,
         trendTitle = stringResource(R.string.activity_trend_label_year),
         trendDescription = trendDescription,

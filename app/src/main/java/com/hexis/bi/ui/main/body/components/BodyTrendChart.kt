@@ -80,6 +80,7 @@ import kotlin.math.roundToInt
 
 @Composable
 internal fun BodyTrendChart(
+    loading: Boolean = false,
     chart: BodyChartData,
     timeRange: BodyTimeRange,
     onTimeRangeChange: (BodyTimeRange) -> Unit,
@@ -149,6 +150,7 @@ internal fun BodyTrendChart(
     }
 
     BodyGlassCard(
+        loading = loading,
         modifier = modifier,
         contentPadding = PaddingValues(
             start = dimensionResource(R.dimen.spacer_m),

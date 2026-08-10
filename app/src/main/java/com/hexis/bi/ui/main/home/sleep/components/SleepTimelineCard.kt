@@ -70,6 +70,7 @@ fun SleepTimelineCard(
     timeEndHour: Int,
     segments: List<TimelineSegment>,
     modifier: Modifier = Modifier,
+    loading: Boolean = false,
 ) {
     val stageHeight = dimensionResource(R.dimen.sleep_timeline_stage_height)
     val labelStyle = MaterialTheme.typography.labelSmall.copy(
@@ -83,6 +84,7 @@ fun SleepTimelineCard(
     }
     val plotStartX = longestLabel + dimensionResource(R.dimen.spacer_l)
     BodyGlassCard(
+        loading = loading,
         modifier = modifier,
         contentPadding = PaddingValues(
             start = dimensionResource(R.dimen.spacer_m),
