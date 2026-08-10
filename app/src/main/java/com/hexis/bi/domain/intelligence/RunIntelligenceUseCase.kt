@@ -26,7 +26,15 @@ internal class RunIntelligenceUseCase(
         val config = configRepository.config().getOrElse { return Result.failure(it) }
         val input = inputProvider.load(config.windows.analysisDays, config.windows.baselineDays)
             .getOrElse { return Result.failure(it) }
-        return runReport(input, config)
+        return runReport(input, config.withHeight(input.heightCm))
+    }
+
+    private fun EngineConfig.withHeight(heightCm: Double?): EngineConfig {
+        if (heightCm == null) {
+            Timber.w("User profile has no height; height-dependent signals are omitted")
+            return this
+        }
+        return copy(composites = composites.copy(heightCm = heightCm))
     }
 
     private suspend fun runReport(input: EngineInput, config: EngineConfig): Result<EngineReport> {

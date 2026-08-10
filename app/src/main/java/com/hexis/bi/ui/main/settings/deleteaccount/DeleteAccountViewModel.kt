@@ -64,8 +64,8 @@ class DeleteAccountViewModel(
         launch {
             userRepository.deleteUser()
                 .onFailure { setError(it.message); return@launch }
-            authRepository.deleteAccountWithPassword(password)
-                .onSuccess { onAccountDeleted() }
+            sessionCleaner.deleteAccount { authRepository.deleteAccountWithPassword(password) }
+                .onSuccess { emitEvent(DeleteAccountEvent.DeleteSuccess) }
                 .onFailure { setError(it.message) }
         }
     }
@@ -73,20 +73,16 @@ class DeleteAccountViewModel(
     fun deleteAccountWithGoogle(context: Context) = launch {
         userRepository.deleteUser()
             .onFailure { setError(it.message); return@launch }
-        authRepository.deleteAccountWithGoogle(context)
-            .onSuccess { onAccountDeleted() }
+        sessionCleaner.deleteAccount { authRepository.deleteAccountWithGoogle(context) }
+            .onSuccess { emitEvent(DeleteAccountEvent.DeleteSuccess) }
             .onFailure { setError(it.message) }
     }
 
     fun deleteAccountWithApple(activity: Activity) = launch {
         userRepository.deleteUser()
             .onFailure { setError(it.message); return@launch }
-        authRepository.deleteAccountWithApple(activity)
-            .onSuccess { onAccountDeleted() }
+        sessionCleaner.deleteAccount { authRepository.deleteAccountWithApple(activity) }
+            .onSuccess { emitEvent(DeleteAccountEvent.DeleteSuccess) }
             .onFailure { setError(it.message) }
-    }
-    private suspend fun onAccountDeleted() {
-        sessionCleaner.clearLocalData()
-        emitEvent(DeleteAccountEvent.DeleteSuccess)
     }
 }

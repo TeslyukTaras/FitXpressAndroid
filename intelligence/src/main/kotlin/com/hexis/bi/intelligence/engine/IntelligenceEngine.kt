@@ -104,22 +104,23 @@ object IntelligenceEngine {
         }
 
         val available = series.maxOfOrNull { calendarSpan(it) } ?: 0
-        val primary = windows.filter { it <= available }.maxOrNull() ?: windows.min()
-        val baselines = baselinesByWindow.getValue(primary)
-        val rows = metricTrends.map { it.copy(baseline = baselines[it.metric]) }
+        val widestSupported = windows.filter { it <= available }.maxOrNull() ?: windows.min()
 
         val requestedFoundationWindow = config.composites.foundations.windowDays
         val foundationWindows = windows.filter { it <= available && trendsByWindow.getValue(it).isNotEmpty() }
         val foundationWindow = if (requestedFoundationWindow in foundationWindows) {
             requestedFoundationWindow
         } else {
-            foundationWindows.maxOrNull() ?: primary
+            foundationWindows.maxOrNull() ?: widestSupported
         }
         val foundations = evaluateFoundations(trendsByWindow.getValue(foundationWindow), config)
         val drift = evaluatePhysiqueDrift(series, config)
 
         val narratable = windows.filter { trendsByWindow.getValue(it).isNotEmpty() }
-            .ifEmpty { listOf(primary) }
+            .ifEmpty { listOf(widestSupported) }
+        val primary = narratable.max()
+        val baselines = baselinesByWindow.getValue(primary)
+        val rows = metricTrends.map { it.copy(baseline = baselines[it.metric]) }
         val findingsByWindow = narratable.associateWith { window ->
             val trends = trendsByWindow.getValue(window)
             val windowVerdicts = series.associate {

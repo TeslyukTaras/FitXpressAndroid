@@ -113,7 +113,11 @@ internal class HealthSyncCoordinator(
         budget: Duration,
         label: String,
     ): BackfillOutcome {
-        val sleep = fillDomain(args, HealthLocalDataSource.SOURCE_SLEEP, budget) { start, end ->
+        val sleep = fillDomain(
+            args,
+            HealthLocalDataSource.SOURCE_SLEEP,
+            domainDeadline(budget, args.elapsed(), 2),
+        ) { start, end ->
             sleepRepository.sync(start, end)
         }
         val daily = fillDomain(args, HealthLocalDataSource.SOURCE_DAILY, budget) { start, end ->

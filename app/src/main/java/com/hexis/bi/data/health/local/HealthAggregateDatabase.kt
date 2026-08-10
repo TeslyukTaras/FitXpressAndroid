@@ -16,7 +16,7 @@ import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneOffset
+import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -31,7 +31,7 @@ internal data class CanonicalCacheStats(
 
 internal class HealthAggregateDatabase(
     context: Context,
-    private val clock: Clock = Clock.systemUTC(),
+    private val clock: Clock = Clock.systemDefaultZone(),
     private val json: Json = Json { ignoreUnknownKeys = false },
 ) : SQLiteOpenHelper(context.applicationContext, DATABASE_NAME, null, DATABASE_VERSION) {
 
@@ -472,8 +472,9 @@ internal fun isCanonicalDayFresh(
     recentRefreshDays: Long = CanonicalCacheConstants.RECENT_REFRESH_DAYS,
     recentTtl: Duration = CanonicalCacheConstants.RECENT_TTL,
     confirmedEmpty: Boolean = false,
+    zone: ZoneId = ZoneId.systemDefault(),
 ): Boolean {
-    val today = LocalDate.ofInstant(now, ZoneOffset.UTC)
+    val today = LocalDate.ofInstant(now, zone)
     if (day > today) return false
     val ageDays = java.time.temporal.ChronoUnit.DAYS.between(day, today)
     val ttl = when {

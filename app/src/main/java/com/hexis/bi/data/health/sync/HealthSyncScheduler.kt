@@ -13,8 +13,15 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
 
+enum class HealthSyncTrigger(internal val reason: String, internal val policy: ExistingWorkPolicy) {
+    AppOpen("app_open", ExistingWorkPolicy.KEEP),
+    SignIn("sign_in", ExistingWorkPolicy.KEEP),
+    SourceConnected("source_connected", ExistingWorkPolicy.APPEND_OR_REPLACE),
+    HealthConnectReadable("health_connect_readable", ExistingWorkPolicy.APPEND_OR_REPLACE),
+}
+
 interface HealthSyncScheduler {
-    fun enqueueHistoryBackfill(reason: String)
+    fun enqueueHistoryBackfill(trigger: HealthSyncTrigger)
 
     fun backfillInFlight(): Flow<Boolean>
 }
@@ -23,7 +30,7 @@ internal class WorkManagerHealthSyncScheduler(
     private val workManager: WorkManager,
 ) : HealthSyncScheduler {
 
-    override fun enqueueHistoryBackfill(reason: String) {
+    override fun enqueueHistoryBackfill(trigger: HealthSyncTrigger) {
         val request = OneTimeWorkRequestBuilder<HealthSyncWorker>()
             .setConstraints(
                 Constraints.Builder()
@@ -41,10 +48,10 @@ internal class WorkManagerHealthSyncScheduler(
 
         workManager.enqueueUniqueWork(
             HealthSyncWorkConstants.UNIQUE_WORK_NAME,
-            ExistingWorkPolicy.KEEP,
+            trigger.policy,
             request,
         )
-        Timber.d("Health history backfill enqueued (%s)", reason)
+        Timber.d("Health history backfill enqueued (%s)", trigger.reason)
     }
 
     override fun backfillInFlight(): Flow<Boolean> =

@@ -1,5 +1,6 @@
 package com.hexis.bi.ui.main.home.intelligence
 
+import com.hexis.bi.BuildConfig
 import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
 import com.hexis.bi.intelligence.engine.EngineReport
 import java.util.Locale
@@ -52,8 +53,10 @@ object EngineFindingsMapper {
     private fun formatScore(score: Double): String = String.format(Locale.US, "%.3f", score)
 }
 
-internal suspend fun RunIntelligenceUseCase.findingsFor(area: String): AreaFindings =
-    invoke().fold(
+internal suspend fun RunIntelligenceUseCase.findingsFor(area: String): AreaFindings {
+    if (!BuildConfig.INTELLIGENCE_ENGINE_ENABLED) return AreaFindings()
+    return invoke().fold(
         onSuccess = { EngineFindingsMapper.forArea(it, area) },
         onFailure = { AreaFindings() },
     )
+}
