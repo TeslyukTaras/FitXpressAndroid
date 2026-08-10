@@ -251,8 +251,6 @@ class HomeViewModel(
             reference = trackingNumber ?: orderNumber,
             referenceIsTracking = trackingNumber != null,
             eta = estimatedDeliveryMillis?.millisToShortMonthDay(),
-            // The remote statusHistory already carries every ladder step in order; render it as-is.
-            // A reached step shows its actual time; a pending one shows the admin estimate, if set.
             steps = statusHistory.map { event ->
                 OrderTimelineStepUi(
                     label = appContext.getString(event.status.displayRes()),
@@ -305,9 +303,6 @@ class HomeViewModel(
 
     private suspend fun reloadOverviewLocked() {
         try {
-            // Force a fresh Terra pull on every Home reload (RESUME / sync / just-connected device)
-            // so a newly connected source shows up immediately instead of a stale cached read.
-            // Bumps the cache generation once; parallel reads within this reload still dedupe.
             TerraSdkSync.invalidateCaches()
             coroutineScope {
                 val today = LocalDate.now()
