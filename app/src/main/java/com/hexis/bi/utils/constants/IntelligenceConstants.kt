@@ -3,7 +3,7 @@ package com.hexis.bi.utils.constants
 internal object FindingWindows {
 
     const val SLEEP_SUMMARY = 7
-    const val ACTIVITY_WEEK = 7
+    const val ACTIVITY_WEEK = 30
     const val ACTIVITY_MONTH = 30
     const val ACTIVITY_YEAR = 365
 }

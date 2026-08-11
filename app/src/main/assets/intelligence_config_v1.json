@@ -1,7 +1,7 @@
 {
   "_comment": "Engine configuration, projected from config.yaml by tests/gen_parity_fixtures.py. Ships as app/src/main/assets/intelligence_config_v1.json. Do not hand-edit \u2014 change config.yaml and regenerate, or the platforms disagree on their own rules.",
   "schema_version": 1,
-  "config_version": "v1.3.0",
+  "config_version": "v1.4.0",
   "ruleset_version": "v1.1.1",
   "formula_registry": {
     "status": "experimental_wellness",
@@ -309,6 +309,7 @@
     "resting_hr": "recovery",
     "hrv_rmssd": "recovery",
     "steps": "activity",
+    "distance": "activity",
     "active_minutes": "activity",
     "active_calories": "activity",
     "vo2max": "aging",
