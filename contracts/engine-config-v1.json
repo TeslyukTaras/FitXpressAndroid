@@ -1,8 +1,8 @@
 {
   "_comment": "Engine configuration, projected from config.yaml by tests/gen_parity_fixtures.py. Ships as app/src/main/assets/intelligence_config_v1.json. Do not hand-edit \u2014 change config.yaml and regenerate, or the platforms disagree on their own rules.",
   "schema_version": 1,
-  "config_version": "v1.4.0",
-  "ruleset_version": "v1.1.1",
+  "config_version": "v1.5.0",
+  "ruleset_version": "v1.2.0",
   "formula_registry": {
     "status": "experimental_wellness",
     "contract_version": "1.0.0",
@@ -121,8 +121,9 @@
   },
   "priority": {
     "featured_limit": 3,
-    "body": 6,
-    "recovery": 5,
+    "body": 7,
+    "recovery": 6,
+    "sleep": 5,
     "aging": 4,
     "metabolic": 3,
     "stress": 2,
