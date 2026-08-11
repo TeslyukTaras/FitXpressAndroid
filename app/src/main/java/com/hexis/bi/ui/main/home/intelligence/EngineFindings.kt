@@ -7,7 +7,7 @@ import java.util.Locale
 
 data class EngineFindingRow(
     val finding: String,
-    val weight: String,
+    val rank: String,
     val confidence: String,
 )
 
@@ -29,34 +29,32 @@ data class AreaFindings(
 
 object EngineFindingsMapper {
 
-    fun forArea(report: EngineReport, area: String): AreaFindings = AreaFindings(
+    fun forAreas(report: EngineReport, areas: Set<String>): AreaFindings = AreaFindings(
         byWindow = report.availableWindows.associateWith { window ->
-            rowsFor(report, area, window)
+            rowsFor(report, areas, window)
         },
         primaryWindowDays = report.primaryWindowDays,
     )
 
-    private fun rowsFor(report: EngineReport, area: String, windowDays: Int): EngineFindingsState {
-        val rows = report.forWindow(windowDays)?.findingsByArea?.get(area).orEmpty().map { finding ->
+    private fun rowsFor(report: EngineReport, areas: Set<String>, windowDays: Int): EngineFindingsState {
+        val rows = report.forWindow(windowDays)?.findings.orEmpty().filter { it.area in areas }.map { finding ->
             EngineFindingRow(
                 finding = finding.insightId,
-                weight = formatWeight(report.weightOf(finding)),
+                rank = finding.priorityRank.toString(),
                 confidence = "${finding.confidence} ${formatScore(finding.confidenceScore)}",
             )
         }
         return if (rows.isEmpty()) EngineFindingsState.Hidden else EngineFindingsState.Ready(rows)
     }
 
-    private fun formatWeight(weight: Double): String =
-        if (weight == weight.toLong().toDouble()) weight.toLong().toString() else weight.toString()
-
     private fun formatScore(score: Double): String = String.format(Locale.US, "%.3f", score)
 }
 
-internal suspend fun RunIntelligenceUseCase.findingsFor(area: String): AreaFindings {
+internal suspend fun RunIntelligenceUseCase.findingsFor(vararg areas: String): AreaFindings {
     if (!BuildConfig.INTELLIGENCE_ENGINE_ENABLED) return AreaFindings()
+    val scope = areas.toSet()
     return invoke().fold(
-        onSuccess = { EngineFindingsMapper.forArea(it, area) },
+        onSuccess = { EngineFindingsMapper.forAreas(it, scope) },
         onFailure = { AreaFindings() },
     )
 }

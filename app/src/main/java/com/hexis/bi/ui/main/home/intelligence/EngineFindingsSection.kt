@@ -60,10 +60,10 @@ private fun FindingRow(row: EngineFindingRow) {
             modifier = Modifier.weight(FINDING_WEIGHT),
         )
         Text(
-            text = row.weight,
+            text = row.rank,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(WEIGHT_COLUMN),
+            modifier = Modifier.weight(RANK_COLUMN),
         )
         Text(
             text = row.confidence,
@@ -75,5 +75,5 @@ private fun FindingRow(row: EngineFindingRow) {
 }
 
 private const val FINDING_WEIGHT = 5f
-private const val WEIGHT_COLUMN = 1f
+private const val RANK_COLUMN = 1f
 private const val CONFIDENCE_COLUMN = 3f
