@@ -1,7 +1,7 @@
 {
   "_comment": "Engine configuration, projected from config.yaml by tests/gen_parity_fixtures.py. Ships as app/src/main/assets/intelligence_config_v1.json. Do not hand-edit \u2014 change config.yaml and regenerate, or the platforms disagree on their own rules.",
   "schema_version": 1,
-  "config_version": "v1.1.1",
+  "config_version": "v1.4.0",
   "ruleset_version": "v1.1.1",
   "formula_registry": {
     "status": "experimental_wellness",
@@ -31,6 +31,7 @@
   },
   "windows": {
     "baseline_days": 28,
+    "analysis_days": 30,
     "short_avgs": [
       3,
       7
@@ -57,6 +58,9 @@
     "stable_deadband_frac": 0.5,
     "decisive_change_multiple": 2.0,
     "min_persistence": 0.6,
+    "recent_days_for_z": 3,
+    "min_points": 2,
+    "min_points_for_persistence": 3,
     "min_persist_days": {
       "sleep": 7,
       "recovery": 7,
@@ -89,7 +93,31 @@
       "high": 0.7,
       "moderate": 0.4
     },
-    "recency_fresh_days": 2
+    "recency_fresh_days": 2,
+    "recency_decay_days": 2,
+    "full_signal_z": 3.0,
+    "source_quality": 1.0
+  },
+  "features": {
+    "pattern_findings": true,
+    "metric_findings": true,
+    "stable_findings": true,
+    "foundations": true,
+    "physique_drift": true,
+    "longevity": true,
+    "pace_of_aging": true,
+    "stress": true,
+    "physique": true
+  },
+  "findings": {
+    "minimum_stress_corroborating_domains": 1,
+    "default_metric_area": "activity",
+    "good_when_up": [
+      "sleep_duration", "sleep_efficiency", "deep_sleep", "rem_sleep", "hrv_rmssd",
+      "steps", "active_minutes", "active_calories", "vo2max", "lean_mass"
+    ],
+    "good_when_down": ["resting_hr", "body_fat_pct", "waist"],
+    "neutral_metrics": ["weight"]
   },
   "priority": {
     "featured_limit": 3,
@@ -122,7 +150,9 @@
       "weight": 2.0,
       "lean_mass": 1.0
     },
-    "still_learning_coverage": 0.4
+    "still_learning_coverage": 0.4,
+    "still_learning_weak_fraction": 0.5,
+    "min_points_for_plausibility": 2
   },
   "composites": {
     "height_cm": null,
@@ -279,6 +309,7 @@
     "resting_hr": "recovery",
     "hrv_rmssd": "recovery",
     "steps": "activity",
+    "distance": "activity",
     "active_minutes": "activity",
     "active_calories": "activity",
     "vo2max": "aging",
