@@ -10,7 +10,6 @@ dependencies {
 
 sourceSets {
     test {
-        resources.srcDir("../contracts")
         resources.srcDir("../app/src/main/assets")
     }
 }
