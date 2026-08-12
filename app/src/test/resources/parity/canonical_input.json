@@ -107,10 +107,119 @@
         "deep_periods": [
           {
             "start": "2026-07-20T13:10:00",
-            "end": "2026-07-20T13:40:00"
+            "end": "2026-07-20T13:20:30"
+          },
+          {
+            "start": "2026-07-20T13:20:30",
+            "end": "2026-07-20T13:31:00"
+          }
+        ],
+        "light_periods": [
+          {
+            "start": "2026-07-20T13:31:00",
+            "end": "2026-07-20T13:40:30"
           }
         ]
       }
     }
-  ]
+  ],
+  "expected": {
+    "activity": {
+      "2026-07-20": {
+        "_aggregate_version": 4,
+        "record_type": "daily_activity",
+        "source": "daily",
+        "day": "2026-07-20",
+        "period": {},
+        "provenance": {
+          "provider": "merged"
+        },
+        "metrics": {
+          "steps": 1000,
+          "distance_meters": 1609.34,
+          "active_duration_seconds": 3662,
+          "active_calories_kcal": 123
+        },
+        "ui": {
+          "hourly_steps": {
+            "8": 100,
+            "9": 700,
+            "10": 100,
+            "11": 100
+          }
+        },
+        "quality": {
+          "has_steps": true,
+          "has_hourly_steps": true
+        }
+      }
+    },
+    "sleep": {
+      "2026-07-20": {
+        "_aggregate_version": 4,
+        "record_type": "daily_sleep",
+        "source": "sleep",
+        "day": "2026-07-20",
+        "period": {
+          "start": "2026-07-20T02:00:00",
+          "end": "2026-07-20T07:00:00"
+        },
+        "provenance": {
+          "provider": "merged"
+        },
+        "metrics": {
+          "sleep_duration_seconds": 25200.0,
+          "sleep_efficiency_ratio": 0.8857142857142857,
+          "deep_sleep_seconds": 3660.0,
+          "rem_sleep_seconds": 3600.0,
+          "resting_hr_bpm": 52,
+          "hrv_rmssd_ms": 60
+        },
+        "ui": {
+          "bedtime": "2026-07-20T02:00:00",
+          "wake_time": "2026-07-20T07:00:00",
+          "duration_minutes": 420,
+          "efficiency_percent": 88.57142857142857,
+          "sdnn_ms": 0,
+          "is_nap": false,
+          "stage_minutes": {
+            "deep": 61,
+            "light": 209,
+            "rem": 60,
+            "awake": 0
+          },
+          "timeline_intervals": [
+            {
+              "stage": "deep",
+              "start": "2026-07-20T00:00:00",
+              "end": "2026-07-20T00:40:00"
+            },
+            {
+              "stage": "rem",
+              "start": "2026-07-20T00:40:00",
+              "end": "2026-07-20T01:40:00"
+            },
+            {
+              "stage": "light",
+              "start": "2026-07-20T01:40:00",
+              "end": "2026-07-20T05:00:00"
+            }
+          ],
+          "heart_rate_samples": [
+            {
+              "timestamp": "2026-07-20T01:00:00",
+              "value": 52
+            }
+          ],
+          "hrv_samples": []
+        },
+        "quality": {
+          "session_count": 2,
+          "has_timeline": true,
+          "has_hr_samples": true,
+          "has_hrv_samples": false
+        }
+      }
+    }
+  }
 }

@@ -116,10 +116,10 @@ internal fun aggregateSleepSessionsForWakeDay(sessions: List<SleepSession>): Sle
         isNap = sessions.all { it.isNap },
         sessionCount = sessions.size,
         aggregateStageTotals = SleepStageTotals(
-            deepMinutes = sessions.sumOf { it.stages.filter { stage -> stage.stage == SleepStage.Deep }.sumOf { stage -> stage.durationMinutes } },
-            lightMinutes = sessions.sumOf { it.stages.filter { stage -> stage.stage == SleepStage.Light }.sumOf { stage -> stage.durationMinutes } },
-            remMinutes = sessions.sumOf { it.stages.filter { stage -> stage.stage == SleepStage.REM }.sumOf { stage -> stage.durationMinutes } },
-            awakeMinutes = sessions.sumOf { it.stages.filter { stage -> stage.stage == SleepStage.Awake }.sumOf { stage -> stage.durationMinutes } },
+            deepMinutes = sessions.sumOf { it.stages.stageSeconds(SleepStage.Deep) }.wholeMinutes(),
+            lightMinutes = sessions.sumOf { it.stages.stageSeconds(SleepStage.Light) }.wholeMinutes(),
+            remMinutes = sessions.sumOf { it.stages.stageSeconds(SleepStage.REM) }.wholeMinutes(),
+            awakeMinutes = sessions.sumOf { it.stages.stageSeconds(SleepStage.Awake) }.wholeMinutes(),
         ),
     )
 }
