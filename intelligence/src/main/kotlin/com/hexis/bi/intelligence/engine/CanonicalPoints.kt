@@ -46,15 +46,17 @@ fun normalizeCanonical(
     scans: List<CanonicalScanRecord>,
 ): List<MetricPoint> =
     normalizeDays(daily, DAILY_MAPPING, Metrics.SOURCE_DAILY) +
-        normalizeDays(sleep, SLEEP_MAPPING, Metrics.SOURCE_SLEEP) +
+        normalizeDays(sleep, SLEEP_MAPPING, Metrics.SOURCE_SLEEP, requirePositive = true) +
         normalizeScans(scans)
 
 private fun normalizeDays(
     records: List<CanonicalDayRecord>,
     mapping: Map<String, Pair<String, Double>>,
     source: String,
+    requirePositive: Boolean = false,
 ): List<MetricPoint> = records.flatMap { record ->
-    record.metrics.map { (key, value) ->
+    record.metrics.mapNotNull { (key, value) ->
+        if (requirePositive && value <= 0.0) return@mapNotNull null
         val (metric, scale) = mapping[key] ?: (key to 1.0)
         MetricPoint(record.day, metric, value * scale, source)
     }

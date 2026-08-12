@@ -107,6 +107,11 @@ internal object TerraSleepJsonMapper {
                 return null
             }
 
+        if (!wakeTime.isAfter(bedtime)) {
+            Timber.w("Terra sleep: session ends at or before it starts; dropped")
+            return null
+        }
+
         val durations = obj.objectOrNull(TerraSleepJsonKeys.Durations.NODE)
         val asleep = durations?.objectOrNull(TerraSleepJsonKeys.Durations.ASLEEP)
         val inBed = durations?.objectOrNull(TerraSleepJsonKeys.Durations.IN_BED)
