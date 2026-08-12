@@ -1,8 +1,8 @@
 {
-  "_comment": "Engine configuration, projected from config.yaml by tests/gen_parity_fixtures.py. Ships as app/src/main/assets/intelligence_config_v1.json. Do not hand-edit \u2014 change config.yaml and regenerate, or the platforms disagree on their own rules.",
+  "_comment": "Engine configuration, projected from config.yaml by tests/gen_parity_fixtures.py. Ships as app/src/main/assets/intelligence_config_v1.json. Do not hand-edit — change config.yaml and regenerate, or the platforms disagree on their own rules.",
   "schema_version": 1,
-  "config_version": "v1.5.0",
-  "ruleset_version": "v1.2.0",
+  "config_version": "v1.7.0",
+  "ruleset_version": "v1.3.0",
   "formula_registry": {
     "status": "experimental_wellness",
     "contract_version": "1.0.0",
@@ -113,11 +113,25 @@
     "minimum_stress_corroborating_domains": 1,
     "default_metric_area": "activity",
     "good_when_up": [
-      "sleep_duration", "sleep_efficiency", "deep_sleep", "rem_sleep", "hrv_rmssd",
-      "steps", "active_minutes", "active_calories", "vo2max", "lean_mass"
+      "sleep_duration",
+      "sleep_efficiency",
+      "deep_sleep",
+      "rem_sleep",
+      "hrv_rmssd",
+      "steps",
+      "active_minutes",
+      "active_calories",
+      "vo2max",
+      "lean_mass"
     ],
-    "good_when_down": ["resting_hr", "body_fat_pct", "waist"],
-    "neutral_metrics": ["weight"]
+    "good_when_down": [
+      "resting_hr",
+      "body_fat_pct",
+      "waist"
+    ],
+    "neutral_metrics": [
+      "weight"
+    ]
   },
   "priority": {
     "featured_limit": 3,
@@ -322,5 +336,93 @@
     "aging_score": "aging",
     "physique_score": "body",
     "stress_score": "stress"
+  },
+  "copy": {
+    "headings": {
+      "positive_recomposition": "Your body is heading in the right direction.",
+      "positive_recovery": "Your recovery trend is improving.",
+      "training_adaptation": "Your body is handling the higher workload well.",
+      "unfavorable_gain": "Your recent gain is moving in the wrong direction.",
+      "lean_mass_concern": "Your weight is falling, but the trend needs attention.",
+      "recovery_pressure": "Your body is under more recovery pressure than usual.",
+      "longevity_improving": "Your longevity markers are moving in your favour.",
+      "longevity_declining": "Your longevity markers have lost ground.",
+      "aging_slowing": "Your rate of aging is trending down.",
+      "aging_accelerating": "Your rate of aging is trending up.",
+      "physique_improving": "Your physique is trending upward.",
+      "physique_drift_positive": "Your body composition has shifted in your favour.",
+      "physique_drift_negative": "Your body composition has drifted the wrong way.",
+      "rising_stress": "Your stress load has been building.",
+      "longevity_foundations_strengthening": "The foundations behind your longevity are strengthening.",
+      "longevity_foundations_weakening": "The foundations behind your longevity are slipping.",
+      "longevity_foundations_mixed": "Your longevity foundations are pulling in different directions."
+    },
+    "labels": {
+      "waist": "waist",
+      "body_fat_pct": "body fat",
+      "body_fat": "body fat",
+      "lean_mass": "lean mass",
+      "weight": "weight",
+      "hrv_rmssd": "HRV",
+      "resting_hr": "resting heart rate",
+      "sleep_duration": "sleep duration",
+      "sleep_efficiency": "sleep efficiency",
+      "deep_sleep": "deep sleep",
+      "rem_sleep": "REM sleep",
+      "steps": "steps",
+      "distance": "distance",
+      "active_minutes": "active minutes",
+      "active_calories": "active calories",
+      "vo2max": "VO2 max",
+      "longevity_score": "longevity score",
+      "aging_score": "pace-of-aging score",
+      "physique_score": "physique score",
+      "stress_score": "stress score",
+      "activity": "activity",
+      "recovery": "recovery",
+      "metabolic": "metabolic health",
+      "recomposition": "recomposition",
+      "physical": "physical capacity",
+      "functional": "functional fitness",
+      "longevity": "longevity",
+      "physique": "physique",
+      "stress": "stress",
+      "pace_of_aging": "pace of aging",
+      "waist_shape": "waist shape",
+      "sleep": "sleep"
+    },
+    "verbs": {
+      "increased": "increased",
+      "decreased": "decreased",
+      "stable": "remained stable",
+      "strengthening": "is strengthening",
+      "weakening": "is slipping",
+      "mixed": "is mixed",
+      "holding": "is holding",
+      "trend_up": "is rising",
+      "trend_down": "is falling",
+      "improving": "is easing",
+      "worsening": "is picking up",
+      "held": "held steady"
+    },
+    "phrases": {
+      "physique_drift_positive": "your physique score improved between scans",
+      "physique_drift_negative": "your physique score fell between scans"
+    },
+    "templates": {
+      "corroborated_by": "{label} supports this",
+      "driven_by": "mostly driven by {label}"
+    },
+    "explanation": "Over {period}, {facts}.",
+    "join": {
+      "same_verb": " and ",
+      "between_groups": " while ",
+      "corroboration": ", and ",
+      "list": ", "
+    },
+    "periods": {
+      "1 weeks": "the last week"
+    },
+    "explanation_bare": "{facts}."
   }
 }

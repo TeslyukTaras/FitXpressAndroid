@@ -79,6 +79,8 @@ internal fun evaluateRules(trends: Map<String, Trend>): List<Candidate> {
         rhr == Directions.DOWN || rhr == Directions.STABLE,
     )
 
+    val improving = count(sleep == Directions.UP, hrv == Directions.UP, rhr == Directions.DOWN)
+
     if (negative >= 2) {
         out += Candidate(
             id = "recovery_pressure_2w", area = Domains.RECOVERY, interpretation = "recovery_pressure",
@@ -95,7 +97,7 @@ internal fun evaluateRules(trends: Map<String, Trend>): List<Candidate> {
             agreementCount = negative, agreementExpected = RECOVERY_SIGNAL_COUNT,
             contradiction = fraction(positive, RECOVERY_SIGNAL_COUNT),
         )
-    } else if (positive >= 2) {
+    } else if (improving == RECOVERY_SIGNAL_COUNT) {
         out += Candidate(
             id = "positive_recovery_2w", area = Domains.RECOVERY, interpretation = "positive_recovery",
             direction = FindingDirection.POSITIVE,
