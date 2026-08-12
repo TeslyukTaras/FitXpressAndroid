@@ -32,8 +32,14 @@ private object TerraSleepJsonKeys {
         const val OTHER = "other"
         const val HYPNOGRAM_SAMPLES = "hypnogram_samples"
         const val HYPNOGRAM_LEVEL = "level"
+        const val AWAKE = "awake"
         const val DURATION_IN_BED_SECONDS = "duration_in_bed_seconds"
         const val DURATION_ASLEEP_STATE_SECONDS = "duration_asleep_state_seconds"
+        const val DURATION_DEEP_SECONDS = "duration_deep_sleep_state_seconds"
+        const val DURATION_LIGHT_SECONDS = "duration_light_sleep_state_seconds"
+        const val DURATION_REM_SECONDS = "duration_REM_sleep_state_seconds"
+        const val DURATION_REM_SECONDS_LOWER = "duration_rem_sleep_state_seconds"
+        const val DURATION_AWAKE_SECONDS = "duration_awake_state_seconds"
     }
 
     object Efficiency {
@@ -153,10 +159,29 @@ internal object TerraSleepJsonMapper {
             hrvMs = hrvMs,
             sdnnMs = sdnnMs,
             stages = parseStages(obj, wakeTime),
+            summaryStageSeconds = summaryStageSeconds(durations),
             isNap = metadata?.boolean(TerraSleepJsonKeys.Metadata.IS_NAP) ?: false,
             heartRateSamples = heartRateSamples,
             hrvSamples = hrvSamples,
         )
+    }
+
+    private fun summaryStageSeconds(durations: TerraNode?): Map<SleepStage, Long> {
+        val asleep = durations?.objectOrNull(TerraSleepJsonKeys.Durations.ASLEEP)
+        val awake = durations?.objectOrNull(TerraSleepJsonKeys.Durations.AWAKE)
+        val rem = asleep?.float(TerraSleepJsonKeys.Durations.DURATION_REM_SECONDS)
+            ?: asleep?.float(TerraSleepJsonKeys.Durations.DURATION_REM_SECONDS_LOWER)
+        return buildMap {
+            positiveSeconds(SleepStage.Deep, asleep?.float(TerraSleepJsonKeys.Durations.DURATION_DEEP_SECONDS))
+            positiveSeconds(SleepStage.Light, asleep?.float(TerraSleepJsonKeys.Durations.DURATION_LIGHT_SECONDS))
+            positiveSeconds(SleepStage.REM, rem)
+            positiveSeconds(SleepStage.Awake, awake?.float(TerraSleepJsonKeys.Durations.DURATION_AWAKE_SECONDS))
+        }
+    }
+
+    private fun MutableMap<SleepStage, Long>.positiveSeconds(stage: SleepStage, value: Float?) {
+        val seconds = value?.toLong() ?: return
+        if (seconds > 0) put(stage, seconds)
     }
 
     private fun normalizeEfficiencyPercent(value: Float?): Float {

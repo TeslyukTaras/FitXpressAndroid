@@ -67,12 +67,16 @@ data class SleepSession(
     val hrvSamples: List<SleepSample> = emptyList(),
     val sessionCount: Int = 1,
     val aggregateStageTotals: SleepStageTotals? = null,
+    val summaryStageSeconds: Map<SleepStage, Long> = emptyMap(),
 ) {
+    fun stageSecondsFor(stage: SleepStage): Long =
+        stages.stageSeconds(stage).takeIf { it > 0 } ?: summaryStageSeconds[stage] ?: 0L
+
     val stageTotals: SleepStageTotals
         get() = aggregateStageTotals ?: SleepStageTotals(
-            deepMinutes = stages.stageSeconds(SleepStage.Deep).wholeMinutes(),
-            lightMinutes = stages.stageSeconds(SleepStage.Light).wholeMinutes(),
-            remMinutes = stages.stageSeconds(SleepStage.REM).wholeMinutes(),
-            awakeMinutes = stages.stageSeconds(SleepStage.Awake).wholeMinutes(),
+            deepMinutes = stageSecondsFor(SleepStage.Deep).wholeMinutes(),
+            lightMinutes = stageSecondsFor(SleepStage.Light).wholeMinutes(),
+            remMinutes = stageSecondsFor(SleepStage.REM).wholeMinutes(),
+            awakeMinutes = stageSecondsFor(SleepStage.Awake).wholeMinutes(),
         )
 }

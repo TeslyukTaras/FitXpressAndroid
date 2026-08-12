@@ -121,6 +121,33 @@
           }
         ]
       }
+    },
+    {
+      "metadata": {
+        "start_time": "2026-07-20T23:00:00",
+        "end_time": "2026-07-21T06:30:00",
+        "is_nap": false,
+        "summary_id": "C"
+      },
+      "sleep_durations_data": {
+        "sleep_efficiency": 88,
+        "asleep": {
+          "duration_asleep_state_seconds": 25200,
+          "duration_deep_sleep_state_seconds": 4500,
+          "duration_light_sleep_state_seconds": 15300,
+          "duration_REM_sleep_state_seconds": 5400
+        },
+        "awake": {
+          "duration_awake_state_seconds": 1800
+        }
+      },
+      "heart_rate_data": {
+        "summary": {
+          "resting_hr_bpm": 55,
+          "avg_hrv_rmssd": 48
+        },
+        "detailed": {}
+      }
     }
   ],
   "expected": {
@@ -217,6 +244,50 @@
           "session_count": 2,
           "has_timeline": true,
           "has_hr_samples": true,
+          "has_hrv_samples": false
+        }
+      },
+      "2026-07-21": {
+        "_aggregate_version": 4,
+        "record_type": "daily_sleep",
+        "source": "sleep",
+        "day": "2026-07-21",
+        "period": {
+          "start": "2026-07-20T23:00:00",
+          "end": "2026-07-21T06:30:00"
+        },
+        "provenance": {
+          "provider": "merged"
+        },
+        "metrics": {
+          "sleep_duration_seconds": 25200.0,
+          "sleep_efficiency_ratio": 0.88,
+          "deep_sleep_seconds": 4500.0,
+          "rem_sleep_seconds": 5400.0,
+          "resting_hr_bpm": 55,
+          "hrv_rmssd_ms": 48
+        },
+        "ui": {
+          "bedtime": "2026-07-20T23:00:00",
+          "wake_time": "2026-07-21T06:30:00",
+          "duration_minutes": 420,
+          "efficiency_percent": 88.0,
+          "sdnn_ms": 0,
+          "is_nap": false,
+          "stage_minutes": {
+            "deep": 75,
+            "light": 255,
+            "rem": 90,
+            "awake": 30
+          },
+          "timeline_intervals": [],
+          "heart_rate_samples": [],
+          "hrv_samples": []
+        },
+        "quality": {
+          "session_count": 1,
+          "has_timeline": false,
+          "has_hr_samples": false,
           "has_hrv_samples": false
         }
       }
