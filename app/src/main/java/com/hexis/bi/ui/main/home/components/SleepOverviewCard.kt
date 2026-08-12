@@ -1,5 +1,9 @@
 package com.hexis.bi.ui.main.home.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -30,6 +34,7 @@ import com.hexis.bi.utils.constants.SleepConstants
 @Composable
 internal fun SleepOverviewCard(
     data: SleepOverview,
+    isSyncing: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -49,18 +54,34 @@ internal fun SleepOverviewCard(
             .copy(color = MaterialTheme.colorScheme.onBackground)
         val unitStyle = MaterialTheme.typography.bodyMedium.toSpanStyle()
             .copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(
-            text = buildAnnotatedString {
-                withStyle(numberStyle) { append(hours.toString()) }
-                append(" ")
-                withStyle(unitStyle) { append(stringResource(R.string.unit_hours_short)) }
-                append(" ")
-                withStyle(numberStyle) { append(minutes.toString()) }
-                append(" ")
-                withStyle(unitStyle) { append(stringResource(R.string.unit_minutes_short)) }
-            },
-            style = MaterialTheme.typography.titleLarge,
-        )
+        AnimatedContent(
+            targetState = isSyncing,
+            transitionSpec = { fadeIn() togetherWith fadeOut() },
+            label = "sleep-overview-value",
+        ) { syncing ->
+            if (syncing) {
+                Text(
+                    text = stringResource(R.string.health_data_syncing),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                Text(
+                    text = buildAnnotatedString {
+                        withStyle(numberStyle) { append(hours.toString()) }
+                        append(" ")
+                        withStyle(unitStyle) { append(stringResource(R.string.unit_hours_short)) }
+                        append(" ")
+                        withStyle(numberStyle) { append(minutes.toString()) }
+                        append(" ")
+                        withStyle(unitStyle) { append(stringResource(R.string.unit_minutes_short)) }
+                    },
+                    style = MaterialTheme.typography.titleLarge,
+                )
+            }
+        }
+
+        if (isSyncing) return@BodyGlassCard
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
 

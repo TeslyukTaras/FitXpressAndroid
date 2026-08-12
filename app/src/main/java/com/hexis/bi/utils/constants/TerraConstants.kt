@@ -170,6 +170,7 @@ internal object TerraProviders {
 
 internal object TerraCacheConstants {
     const val RANGE_CACHE_TTL_MS = 60_000L
+    const val IDENTITY_CACHE_TTL_MS = 5L * 60L * 1000L
 }
 
 internal object TerraSyncConstants {
@@ -178,11 +179,8 @@ internal object TerraSyncConstants {
 }
 
 internal object CanonicalCacheConstants {
-    /** 365-day display window + 28-day causal baseline, with room to spare. */
-    const val DAY_RETENTION_DAYS = 400L
-
-    /** A provider set untouched for this long stops being worth a parallel history. */
-    val PARTITION_RETENTION: Duration = Duration.ofDays(30)
+    /** One year of display history, plus today. */
+    const val DAY_RETENTION_DAYS = 366L
 
     /** How long a "no data" day stays re-checkable, covering provider backfill. */
     const val CONFIRMED_EMPTY_RECHECK_DAYS = 30L
@@ -202,6 +200,30 @@ internal object CanonicalCacheConstants {
      * cold start always forces; returning from background past this interval forces again.
      */
     val FORCED_REFRESH_INTERVAL: Duration = Duration.ofMinutes(15)
+
+    const val UPDATE_DEBOUNCE_MS = 750L
+}
+
+internal object HealthAnalysisConstants {
+    const val ANALYSIS_DAYS = 30L
+
+    const val HISTORY_DAYS = 30L
+
+    const val REQUIRED_DAYS = ANALYSIS_DAYS + HISTORY_DAYS
+
+    const val MAX_CONSECUTIVE_FAILURES = 3
+}
+
+internal object HealthSyncWorkConstants {
+    const val UNIQUE_WORK_NAME = "health-history-backfill"
+
+    const val BACKFILL_CHUNK_DAYS = 56L
+
+    val BACKFILL_BUDGET: Duration = Duration.ofMinutes(4)
+
+    val RETRY_BACKOFF: Duration = Duration.ofMinutes(1)
+
+    const val MAX_RUN_ATTEMPTS = 6
 }
 
 internal object HealthConnectConstants {

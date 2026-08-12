@@ -2,6 +2,7 @@ package com.hexis.bi.data.sleep
 
 import java.time.Duration
 import java.time.LocalDateTime
+import java.time.ZoneOffset
 
 enum class SleepStage { Deep, REM, Light, Awake }
 
@@ -16,16 +17,29 @@ data class SleepStageInterval(
 
 /** A single timestamped reading from the night, e.g. a heart-rate or HRV sample. */
 data class SleepSample(
-    val time: LocalDateTime,
+    val epochMillis: Long,
     val value: Int,
 )
+
+/**
+ * Sample times are wall-clock [LocalDateTime] with no zone, so a fixed offset keeps every
+ * comparison and delta in this file exact while costing one primitive instead of an object.
+ */
+internal fun LocalDateTime.toSampleMillis(): Long = toInstant(ZoneOffset.UTC).toEpochMilli()
 
 data class SleepStageTotals(
     val deepMinutes: Int = 0,
     val lightMinutes: Int = 0,
     val remMinutes: Int = 0,
     val awakeMinutes: Int = 0,
-)
+) {
+    fun minutesFor(stage: SleepStage): Int = when (stage) {
+        SleepStage.Deep -> deepMinutes
+        SleepStage.REM -> remMinutes
+        SleepStage.Light -> lightMinutes
+        SleepStage.Awake -> awakeMinutes
+    }
+}
 
 data class SleepSession(
     val bedtime: LocalDateTime,
@@ -45,4 +59,12 @@ data class SleepSession(
     val hrvSamples: List<SleepSample> = emptyList(),
     val sessionCount: Int = 1,
     val aggregateStageTotals: SleepStageTotals? = null,
-)
+) {
+    val stageTotals: SleepStageTotals
+        get() = aggregateStageTotals ?: SleepStageTotals(
+            deepMinutes = stages.filter { it.stage == SleepStage.Deep }.sumOf { it.durationMinutes },
+            lightMinutes = stages.filter { it.stage == SleepStage.Light }.sumOf { it.durationMinutes },
+            remMinutes = stages.filter { it.stage == SleepStage.REM }.sumOf { it.durationMinutes },
+            awakeMinutes = stages.filter { it.stage == SleepStage.Awake }.sumOf { it.durationMinutes },
+        )
+}

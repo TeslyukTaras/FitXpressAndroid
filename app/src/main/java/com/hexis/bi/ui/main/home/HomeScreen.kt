@@ -163,6 +163,7 @@ fun HomeScreen(
             ) {
                 ActivityOverviewCard(
                     data = state.activity,
+                    isSyncing = state.isActivitySyncing,
                     onClick = onActivityClick,
                     modifier = Modifier
                         .weight(1f)
@@ -170,6 +171,7 @@ fun HomeScreen(
                 )
                 SleepOverviewCard(
                     data = state.sleep,
+                    isSyncing = state.isSleepSyncing,
                     onClick = onSleepClick,
                     modifier = Modifier
                         .weight(1f)

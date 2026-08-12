@@ -194,10 +194,28 @@ fun HealthConnectionsScreen(
                     if (filteredSdk.isNotEmpty()) {
                         filteredSdk.forEach { provider ->
                             key(provider.code) {
+                                val isHealthConnect = provider.code
+                                    .equals(TerraProviders.HEALTH_CONNECT, ignoreCase = true)
+                                val attention = if (!isHealthConnect) null else when (
+                                    state.healthConnectRowState
+                                ) {
+                                    HealthConnectRowState.NeedsRelink ->
+                                        R.string.health_connect_needs_relink
+
+                                    HealthConnectRowState.NeedsPermission ->
+                                        R.string.health_connect_needs_permission
+
+                                    else -> null
+                                }
                                 HealthConnectionRow(
                                     iconRes = provider.iconRes,
                                     title = labelOf(provider),
-                                    connected = state.wearableConnections.hasProvider(provider.code),
+                                    connected = attention == null &&
+                                        state.wearableConnections.hasProvider(provider.code),
+                                    connectedLabel = attention?.let { stringResource(it) },
+                                    statusColorOverride = attention?.let {
+                                        NocturnePulseTheme.extendedColors.yellow
+                                    },
                                     onClick = {
                                         if (provider.code.equals(
                                                 TerraProviders.HEALTH_CONNECT,
@@ -300,6 +318,7 @@ private fun HealthConnectionRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     connectedLabel: String? = null,
+    statusColorOverride: Color? = null,
 ) {
     BodyGlassCard(
         modifier = modifier.clickable(onClick = onClick),
@@ -326,8 +345,9 @@ private fun HealthConnectionRow(
                 )
                 Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    val statusColor =
-                        if (connected) NocturnePulseTheme.extendedColors.positive else MaterialTheme.colorScheme.onSurfaceVariant
+                    val statusColor = statusColorOverride
+                        ?: if (connected) NocturnePulseTheme.extendedColors.positive
+                        else MaterialTheme.colorScheme.onSurfaceVariant
                     Box(
                         modifier = Modifier
                             .size(dimensionResource(R.dimen.size_indicator))

@@ -118,4 +118,9 @@ data class SleepState(
             SleepTab.Day -> dayLoadState == SleepLoadState.Loading
             SleepTab.Summary -> summaryLoadState == SleepLoadState.Loading
         }
+
+    fun loadStateOf(tab: SleepTab): SleepLoadState = when (tab) {
+        SleepTab.Day -> dayLoadState
+        SleepTab.Summary -> summaryLoadState
+    }
 }

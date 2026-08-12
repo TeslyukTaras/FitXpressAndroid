@@ -43,9 +43,13 @@ import com.hexis.bi.utils.constants.ScanFirestoreConstants.SUB_SIDE_LINEAR_PARAM
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.SUB_SUBSCRIPTION_INFO
 import com.hexis.bi.utils.formatAsScanDocId
 import com.hexis.bi.utils.snakeToCamel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -100,6 +104,19 @@ class ScanHistoryRepository internal constructor(
     private val auth: FirebaseAuth,
     private val canonical: HealthLocalDataSource,
 ) {
+    val updates: Flow<Unit> = canonical.changes
+        .filter { it == HealthLocalDataSource.SOURCE_SCAN }
+        .map { }
+
+    suspend fun sync(): Result<Unit> = try {
+        cachedFullSnapshot()
+        Result.success(Unit)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
     private fun scansCollection() =
         firestore.collection(COLLECTION_USERS)
             .document(auth.currentUser?.uid ?: error("Not authenticated"))

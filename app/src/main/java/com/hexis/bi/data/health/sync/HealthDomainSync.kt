@@ -5,23 +5,25 @@ import com.hexis.bi.data.health.local.HealthLocalDataSource
 import com.hexis.bi.data.health.local.contiguousDateRanges
 import com.hexis.bi.data.health.model.CanonicalDailyAggregate
 import com.hexis.bi.data.health.remote.HealthRemoteDataSource
+import com.hexis.bi.utils.constants.HealthAnalysisConstants
 import com.hexis.bi.utils.constants.TerraCacheConstants
 import com.hexis.bi.utils.constants.TerraSyncConstants
 import java.time.Duration
 import java.time.LocalDate
 import com.hexis.bi.data.terra.MergedSourceResult
 import com.hexis.bi.data.terra.TerraRestIdentity
+import com.hexis.bi.data.terra.decodeTerraRestIdentity
+import com.hexis.bi.data.terra.encodeForCursor
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
-import kotlinx.serialization.json.JsonElement
 import timber.log.Timber
 
 internal interface HealthDomainSpec<T> {
@@ -29,9 +31,11 @@ internal interface HealthDomainSpec<T> {
 
     val label: String
 
+    val fetchLookbackDays: Long get() = 0L
+
     fun dayOf(item: T): LocalDate
 
-    fun parse(rows: List<JsonElement>): List<T>
+    fun parse(rows: List<Any?>): List<T>
 
     fun merge(perSource: List<List<T>>): List<T>
 
@@ -39,7 +43,7 @@ internal interface HealthDomainSpec<T> {
 
     fun toDomain(aggregate: CanonicalDailyAggregate): T
 
-    suspend fun fetchJson(terraUserId: String, start: LocalDate, end: LocalDate): Result<List<JsonElement>>
+    suspend fun fetchJson(terraUserId: String, start: LocalDate, end: LocalDate): Result<List<Any?>>
 }
 
 internal class HealthDomainSync<T>(
@@ -48,131 +52,177 @@ internal class HealthDomainSync<T>(
     private val auth: FirebaseAuth,
     private val spec: HealthDomainSpec<T>,
     private val io: CoroutineDispatcher = Dispatchers.IO,
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + io),
 ) {
 
     val updates: Flow<Unit> = local.changes.filter { it == spec.source }.map { }
 
-    suspend fun cached(start: LocalDate, end: LocalDate): List<T> {
-        val uid = auth.currentUser?.uid ?: return emptyList()
-        val fingerprint = local.storedFingerprint(uid) ?: return emptyList()
-        return local.allAggregates(uid, spec.source, dateRange(start, end), fingerprint).toDomainList()
+    private val pendingFills = ConcurrentHashMap.newKeySet<String>()
+
+    suspend fun coverage(start: LocalDate, end: LocalDate): HealthRangeCoverage = withContext(io) {
+        val uid = auth.currentUser?.uid ?: return@withContext HealthRangeCoverage.SETTLED
+        val identities = remote.fetchableIdentities(storedIdentities(uid)).ids()
+        if (identities.isEmpty()) return@withContext HealthRangeCoverage.SETTLED
+        local.coverage(uid, identities, spec.source, dateRange(start, end))
     }
 
     suspend fun sync(start: LocalDate, end: LocalDate): Result<Unit> {
         val uid = auth.currentUser?.uid ?: return Result.failure(notAuthenticated())
-        return refresh(uid, start, end).map { }
-    }
-
-    suspend fun range(start: LocalDate, end: LocalDate): Result<List<T>> {
-        val uid = auth.currentUser?.uid ?: return Result.failure(notAuthenticated())
-        val known = local.storedFingerprint(uid)
-        if (known != null) {
-            val days = dateRange(start, end)
-            if (local.staleDays(uid, known, spec.source, days, TTL).isEmpty()) {
-                return Result.success(local.aggregates(uid, known, spec.source, days, TTL).toDomainList())
-            }
-        }
         return refresh(uid, start, end)
     }
 
-    private suspend fun refresh(uid: String, start: LocalDate, end: LocalDate): Result<List<T>> =
+    suspend fun range(start: LocalDate, end: LocalDate, withSamples: Boolean = false): Result<List<T>> {
+        val uid = auth.currentUser?.uid ?: return Result.failure(notAuthenticated())
+        val days = dateRange(start, end)
+        val known = storedIdentities(uid)
+        if (hasGaps(uid, known, days)) fillInBackground(uid, start, end)
+        return Result.success(mergedAny(uid, known.ids(), days, withSamples))
+    }
+
+    private suspend fun hasGaps(
+        uid: String,
+        known: List<TerraRestIdentity>,
+        days: List<LocalDate>,
+    ): Boolean = withContext(io) {
+        if (known.isEmpty()) return@withContext true
+        val fetchable = remote.fetchableIdentities(known).ids()
+        if (fetchable.isEmpty()) return@withContext false
+        local.hasUnsyncedDays(uid, fetchable, spec.source, days, TTL)
+    }
+
+    private fun fillInBackground(uid: String, start: LocalDate, end: LocalDate) {
+        val key = "$uid:$start:$end"
+        if (!pendingFills.add(key)) return
+        scope.launch {
+            try {
+                refresh(uid, start, end)
+            } finally {
+                pendingFills.remove(key)
+            }
+        }
+    }
+
+    private suspend fun refresh(uid: String, start: LocalDate, end: LocalDate): Result<Unit> =
         withContext(io) {
             local.singleFlight(uid, spec.source) {
                 val days = dateRange(start, end)
                 val identities = remote.identities().getOrElse { error ->
-                    return@singleFlight staleOr(uid, days, null, error, "Provider lookup failed")
+                    Timber.w(error, "Provider lookup failed")
+                    return@singleFlight Result.failure(error)
                 }
-                val fingerprint = remote.fingerprint(identities)
-                local.rememberFingerprint(uid, fingerprint)
+                local.rememberIdentityOrder(uid, identities.all.map { it.encodeForCursor() })
 
-                val missing = local.missingDays(uid, fingerprint, spec.source, days, TTL)
+                val fetchable = identities.fetchable
+                if (fetchable.isEmpty()) {
+                    Timber.w("%s has no queryable source; serving cache only", spec.label)
+                    return@singleFlight Result.success(Unit)
+                }
+
+                val missing = local.missingDays(uid, fetchable.ids(), spec.source, days, TTL)
                 if (missing.isEmpty()) {
-                    local.logStats(uid)
-                    return@singleFlight Result.success(
-                        local.aggregates(uid, fingerprint, spec.source, days, TTL).toDomainList(),
+                    recordSynced(uid, fetchable, days.first()..days.last())
+                    return@singleFlight Result.success(Unit)
+                }
+
+                val windows = contiguousDateRanges(missing).flatMap { it.windowed() }
+                var failure: Throwable? = null
+                var stored = 0
+                var consecutiveFailures = 0
+                var unreachable = false
+
+                for (window in windows) {
+                    val merged = fetchWindow(fetchable, window).getOrElse { error ->
+                        failure = error
+                        consecutiveFailures++
+                        null
+                    }
+                    if (merged == null) {
+                        if (consecutiveFailures >= HealthAnalysisConstants.MAX_CONSECUTIVE_FAILURES) {
+                            unreachable = true
+                            break
+                        }
+                        continue
+                    }
+                    consecutiveFailures = 0
+                    local.recordProviderCalls(uid, spec.source, merged.totalSources)
+                    store(uid, window, merged)
+                    stored++
+                }
+
+                val error = failure
+                if (error != null) {
+                    val unreachableSource = unreachable || stored == 0
+                    Timber.w(
+                        "%s refresh %s: %d/%d windows stored (%s)",
+                        spec.label, if (unreachableSource) "aborted, source unreachable" else "incomplete",
+                        stored, windows.size, error.message ?: error::class.simpleName,
+                    )
+                    return@singleFlight Result.failure(
+                        if (unreachableSource) HealthSourceUnavailable(error) else error,
                     )
                 }
 
-                val transient = mutableListOf<T>()
-                var failure: Throwable? = null
-                val windows = contiguousDateRanges(missing).flatMap { it.windowed() }
-
-                coroutineScope {
-                    var pending = windows.firstOrNull()?.let { first -> asyncFetch(identities, first) }
-                    for ((index, window) in windows.withIndex()) {
-                        val inFlight = pending ?: break
-                        pending = windows.getOrNull(index + 1)?.let { next -> asyncFetch(identities, next) }
-
-                        val merged = inFlight.await().getOrElse { error ->
-                            failure = error
-                            pending?.cancel()
-                            return@coroutineScope
-                        }
-                        local.recordProviderCalls(uid, spec.source, merged.totalSources)
-
-                        val windowRows = merged.rows.filter { spec.dayOf(it) in window }
-                        if (merged.complete) {
-                            local.storeDays(uid, fingerprint, windowRows.map(spec::toAggregate))
-                            local.storeEmptyDays(
-                                uid, fingerprint, spec.source,
-                                window.toDateList() - windowRows.map(spec::dayOf).toSet(),
-                            )
-                        } else {
-                            // Served but not cached: a partial answer is not authoritative.
-                            transient += windowRows
-                            Timber.w(
-                                "%s provider refresh partial (%d/%d); results served but not cached",
-                                spec.label, merged.successfulSources, merged.totalSources,
-                            )
-                        }
-                    }
-                }
-
-                failure?.let { error ->
-                    return@singleFlight staleOr(uid, days, fingerprint, error, "${spec.label} refresh failed")
-                }
-
-                local.logStats(uid)
-                val final = local.allAggregates(uid, spec.source, days, fingerprint)
-                    .mapValues { (_, aggregate) -> spec.toDomain(aggregate) }
-                    .toMutableMap()
-                transient.forEach { final.putIfAbsent(spec.dayOf(it), it) }
-                Result.success(final.toDomainSorted())
+                Result.success(Unit)
             }
         }
 
-    private fun CoroutineScope.asyncFetch(
+    private suspend fun store(uid: String, window: ClosedRange<LocalDate>, merged: MergedSourceResult<T>) {
+        if (auth.currentUser?.uid != uid) {
+            Timber.w("%s refresh finished for a signed-out user; discarding %s", spec.label, window)
+            return
+        }
+        if (!merged.complete) {
+            Timber.w(
+                "%s refresh partial (%d/%d sources); caching the sources that answered",
+                spec.label, merged.successfulSources, merged.totalSources,
+            )
+        }
+        for ((terraUserId, rows) in merged.perIdentity) {
+            val windowRows = spec.merge(listOf(rows)).filter { spec.dayOf(it) in window }
+            local.storeDays(uid, terraUserId, windowRows.map(spec::toAggregate))
+            local.storeEmptyDays(
+                uid, terraUserId, spec.source,
+                window.toDateList() - windowRows.map(spec::dayOf).toSet(),
+            )
+            local.recordSyncedRange(uid, terraUserId, spec.source, window)
+        }
+    }
+
+    private suspend fun recordSynced(
+        uid: String,
         identities: List<TerraRestIdentity>,
         window: ClosedRange<LocalDate>,
-    ): Deferred<Result<MergedSourceResult<T>>> = async {
+    ) {
+        identities.forEach { local.recordSyncedRange(uid, it.terraUserId, spec.source, window) }
+    }
+
+    private suspend fun storedIdentities(uid: String): List<TerraRestIdentity> =
+        local.storedIdentityOrder(uid).mapNotNull(::decodeTerraRestIdentity)
+
+    private fun List<TerraRestIdentity>.ids(): List<String> = map { it.terraUserId }
+
+    private suspend fun fetchWindow(
+        identities: List<TerraRestIdentity>,
+        window: ClosedRange<LocalDate>,
+    ): Result<MergedSourceResult<T>> =
         remote.fetchRange(
             identities = identities,
-            start = window.start,
+            start = window.start.minusDays(spec.fetchLookbackDays),
             end = window.endInclusive,
             fetchJson = spec::fetchJson,
             parse = spec::parse,
-            merge = spec::merge,
         )
-    }
 
-    private suspend fun staleOr(
+    private suspend fun mergedAny(
         uid: String,
+        identities: List<String>,
         days: List<LocalDate>,
-        fingerprint: String?,
-        error: Throwable,
-        reason: String,
-    ): Result<List<T>> {
-        val stale = local.allAggregates(uid, spec.source, days, fingerprint)
-        if (stale.isEmpty()) return Result.failure(error)
-        local.recordStaleFallback(uid, spec.source, stale.size)
-        Timber.w(error, "%s; serving %d stale %s days", reason, stale.size, spec.label)
-        return Result.success(stale.toDomainList())
-    }
+        withSamples: Boolean,
+    ): List<T> =
+        local.allAggregatesByIdentity(uid, identities, spec.source, days, withSamples).mergeToDomain()
 
-    private fun Map<LocalDate, CanonicalDailyAggregate>.toDomainList(): List<T> =
-        toSortedMap().values.map(spec::toDomain)
-
-    private fun Map<LocalDate, T>.toDomainSorted(): List<T> = toSortedMap().values.toList()
+    private fun List<List<CanonicalDailyAggregate>>.mergeToDomain(): List<T> =
+        spec.merge(map { identityRows -> identityRows.map(spec::toDomain) })
 
     private fun notAuthenticated() = IllegalStateException("Not authenticated")
 

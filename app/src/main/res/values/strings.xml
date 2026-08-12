@@ -571,6 +571,9 @@
     <!-- Health connection errors & messages -->
     <string name="error_sign_in_required">Sign in to connect a wearable</string>
     <string name="error_health_connect_failed">Couldn\'t connect Health Connect. Make sure it\'s installed and try again.</string>
+    <string name="health_connect_needs_relink">Tap to reconnect</string>
+    <string name="health_data_syncing">Syncing…</string>
+    <string name="health_connect_needs_permission">Permission needed — tap to allow</string>
     <string name="error_terra_invalid_dev_id">Terra rejected the developer credentials. Check terra.dev.id / terra.api.key.</string>
     <string name="error_terra_invalid_token">Terra session expired. Please try again.</string>
     <string name="error_terra_user_limit">Terra account user limit reached. Contact support.</string>

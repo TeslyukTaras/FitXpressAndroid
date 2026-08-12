@@ -17,8 +17,10 @@ import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.data.reminder.ScanReminderScheduler
 import com.hexis.bi.data.health.sync.HealthSyncCoordinator
+import com.hexis.bi.data.health.sync.HealthSyncScheduler
 import com.hexis.bi.data.terra.TerraCallbackHandler
 import com.hexis.bi.data.terra.TerraManagerHolder
+import com.hexis.bi.data.terra.TerraSdkConnectionOwnership
 import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.ui.navigation.AppNavGraph
 import com.hexis.bi.ui.theme.NocturnePulseTheme
@@ -36,6 +38,8 @@ class MainActivity : ComponentActivity() {
     private val notificationPermissionCoordinator: NotificationPermissionCoordinator by inject()
     private val scanReminderScheduler: ScanReminderScheduler by inject()
     private val healthSyncCoordinator: HealthSyncCoordinator by inject()
+    private val healthSyncScheduler: HealthSyncScheduler by inject()
+    private val terraSdkConnectionOwnership: TerraSdkConnectionOwnership by inject()
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -46,19 +50,20 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private var lastAuthUid: String? = null
+
     private val authListener = FirebaseAuth.AuthStateListener { auth ->
         val uid = auth.currentUser?.uid
+        val identityChanged = uid != lastAuthUid
+        lastAuthUid = uid
         // Re-init Terra on sign-in/out so the SDK stays bound to the current Firebase UID.
-        lifecycleScope.launch {
-            terraManagerHolder.init(activity = this@MainActivity, referenceId = uid)
-                .onFailure { Timber.e(it, "Terra re-init after auth change failed") }
-                .onSuccess {
-                    TerraSdkSync.syncLinkedConnections(
-                        terraManagerHolder.current,
-                        reason = "auth_state",
-                        force = false,
-                    )
-                }
+        if (identityChanged) {
+            lifecycleScope.launch {
+                terraManagerHolder.init(activity = this@MainActivity, referenceId = uid)
+                    .onFailure { Timber.e(it, "Terra re-init after auth change failed") }
+                    .onSuccess { pullOwnedSdkConnections(reason = "auth_state") }
+            }
+            if (uid != null) startHealthSync(reason = "sign_in")
         }
         if (uid != null) lifecycleScope.launch {
             notificationPermissionCoordinator.reconcilePushSetting()
@@ -78,6 +83,7 @@ class MainActivity : ComponentActivity() {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         splashScreen.setKeepOnScreenCondition { !viewModel.isReady.value }
+        lastAuthUid = firebaseAuth.currentUser?.uid
         firebaseAuth.addAuthStateListener(authListener)
         handleTerraDeepLink(intent)
         enableEdgeToEdge(
@@ -97,15 +103,29 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             terraManagerHolder.init(activity = this@MainActivity, referenceId = uid)
                 .onFailure { Timber.e(it, "Terra foreground init failed") }
-                .onSuccess {
-                    TerraSdkSync.syncLinkedConnections(
-                        terraManagerHolder.current,
-                        reason = "foreground",
-                        force = false,
-                    )
-                }
+                .onSuccess { pullOwnedSdkConnections(reason = "foreground") }
+        }
+        startHealthSync(reason = "app_open")
+    }
+
+    private fun startHealthSync(reason: String) {
+        lifecycleScope.launch {
+            if (firebaseAuth.currentUser == null) return@launch
+            healthSyncScheduler.enqueueHistoryBackfill(reason)
             healthSyncCoordinator.syncRecentWindow()
         }
+    }
+
+    private suspend fun pullOwnedSdkConnections(reason: String) {
+        if (firebaseAuth.currentUser == null) return
+        TerraSdkSync.syncLinkedConnections(
+            manager = terraManagerHolder.current,
+            ownedUserIds = terraSdkConnectionOwnership.syncableSdkUserIds()
+                .onFailure { Timber.w(it, "Terra connection ownership unknown; pulling unfiltered") }
+                .getOrNull(),
+            reason = reason,
+            force = false,
+        )
     }
 
     override fun onNewIntent(intent: Intent) {

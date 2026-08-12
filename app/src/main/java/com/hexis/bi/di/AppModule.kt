@@ -1,6 +1,7 @@
 package com.hexis.bi.di
 
 import androidx.credentials.CredentialManager
+import androidx.work.WorkManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.FirebaseFunctions
@@ -15,6 +16,7 @@ import com.hexis.bi.data.auth.AuthRepository
 import com.hexis.bi.data.auth.EmailVerificationApi
 import com.hexis.bi.data.auth.FirebaseAuthRepository
 import com.hexis.bi.data.auth.SessionCleaner
+import com.hexis.bi.data.healthconnect.HealthConnectPermissionChecker
 import com.hexis.bi.data.healthconnections.FirestoreHealthConnectionsRepository
 import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
 import com.hexis.bi.data.network.httpLoggingInterceptor
@@ -31,6 +33,8 @@ import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.health.remote.HealthRemoteDataSource
 import com.hexis.bi.data.health.sync.HealthSyncCoordinator
+import com.hexis.bi.data.health.sync.HealthSyncScheduler
+import com.hexis.bi.data.health.sync.WorkManagerHealthSyncScheduler
 import com.hexis.bi.data.scan.ThreeDLookRepository
 import com.hexis.bi.data.scan.api.ThreeDLookApi
 import com.hexis.bi.data.sleep.SleepRepository
@@ -44,6 +48,7 @@ import com.hexis.bi.data.terra.TerraConnectionReconciler
 import com.hexis.bi.data.terra.TerraConnector
 import com.hexis.bi.data.terra.TerraManagerHolder
 import com.hexis.bi.data.terra.TerraRestSourceResolver
+import com.hexis.bi.data.terra.TerraSdkConnectionOwnership
 import com.hexis.bi.data.terra.TerraWidgetApi
 import com.hexis.bi.data.user.FirestoreUserRepository
 import com.hexis.bi.data.user.UserRepository
@@ -114,8 +119,11 @@ val appModule = module {
     single { NotificationPermissionCoordinator(androidContext(), get(), get(), get(), get()) }
     single { EmailVerificationApi(get()) }
     single<AuthRepository> { FirebaseAuthRepository(get(), get(), get(), androidContext()) }
-    single { HealthRemoteDataSource(get()) }
-    single { HealthSyncCoordinator(get(), get(), get(), get()) }
+    single { HealthConnectPermissionChecker(androidContext()) }
+    single { HealthRemoteDataSource(get(), get()) }
+    single { HealthSyncCoordinator(get(), get(), get(), get(), get(), get()) }
+    single { WorkManager.getInstance(androidContext()) }
+    single<HealthSyncScheduler> { WorkManagerHealthSyncScheduler(get()) }
     single { SessionCleaner(get(), get(), get(), get(), get(), get(), get()) }
     single<SuitRepository> { MockSuitRepository(get()) }
     single<UserRepository> { FirestoreUserRepository(get(), get(), androidContext()) }
@@ -144,6 +152,7 @@ val appModule = module {
     }
     single { TerraManagerHolder() }
     single { TerraRestSourceResolver(get(), get()) }
+    single { TerraSdkConnectionOwnership(get(), get(), get()) }
     single { TerraConnectionReconciler(get(), get()) }
     single { TerraCallbackHandler(get()) }
     single { TerraWidgetApi(get()) }
@@ -171,7 +180,9 @@ val appModule = module {
             get(),
             get(),
             get(),
-            get()
+            get(),
+            get(),
+            get(),
         )
     }
     viewModel { EditProfileViewModel(androidApplication(), get(), get(), get(), get()) }
@@ -188,6 +199,8 @@ val appModule = module {
             get(),
             get(),
             get(),
+            get(),
+            get(),
             get()
         )
     }
@@ -195,11 +208,11 @@ val appModule = module {
     viewModel { NotificationsSettingsViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { NotificationsViewModel(androidApplication(), get()) }
     viewModel { BodyViewModel(androidApplication(), get(), get(), get(), get()) }
-    viewModel { SleepViewModel(androidApplication(), get(), get(), get()) }
-    viewModel { ActivityViewModel(androidApplication(), get(), get(), get()) }
+    viewModel { SleepViewModel(androidApplication(), get(), get(), get(), get()) }
+    viewModel { ActivityViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { RecoveryViewModel(androidApplication(), get()) }
-    viewModel { LongevityViewModel(androidApplication(), get(), get(), get(), get(), get()) }
-    viewModel { PaceOfAgingViewModel(androidApplication(), get(), get(), get(), get(), get()) }
+    viewModel { LongevityViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
+    viewModel { PaceOfAgingViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { PhysiqueDriftViewModel(androidApplication(), get(), get()) }
     viewModel { RecompositionViewModel(androidApplication(), get()) }
     viewModel { ScanViewModel(androidApplication(), get()) }

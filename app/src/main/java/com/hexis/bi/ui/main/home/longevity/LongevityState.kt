@@ -27,6 +27,7 @@ data class LongevityFoundationUi(
     @StringRes val titleRes: Int,
     val status: FoundationStatus,
     val evidence: List<LongevityEvidenceUi> = emptyList(),
+    val isSyncing: Boolean = false,
 )
 
 data class LongevityState(

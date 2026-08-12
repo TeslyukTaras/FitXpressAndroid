@@ -1,19 +1,17 @@
 package com.hexis.bi.data.terra
 
-import co.tryterra.terra.enums.Connections
-import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.data.healthconnections.HealthConnection
 import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
+import com.hexis.bi.utils.constants.TerraCacheConstants
 import com.hexis.bi.utils.constants.TerraProviders
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import kotlinx.serialization.json.JsonElement
 import timber.log.Timber
 import java.time.LocalDate
-import java.security.MessageDigest
 
 /**
  * One identity in a multi-source pull: [terraUserId] is the query key for Terra REST v2;
@@ -29,60 +27,33 @@ data class TerraRestIdentity(
  *
  * Order:
  *  1. Wearable widget connections (Oura, Whoop, Garmin, …), most recently connected first.
- *  2. Health Connect rows from Firestore, then the live SDK-only Health Connect user id.
+ *  2. Health Connect rows.
  *  3. App widget connections (Peloton, Strava-likes, nutrition apps, …), most recently connected first.
  *
  * Higher tiers win on per-key conflicts during gap-fill merge.
  */
 class TerraRestSourceResolver(
     private val healthConnections: HealthConnectionsRepository,
-    private val terraManagerHolder: TerraManagerHolder,
+    private val auth: FirebaseAuth,
 ) {
 
+    private val identities = TtlCache<String, List<TerraRestIdentity>>(
+        ttlMs = TerraCacheConstants.IDENTITY_CACHE_TTL_MS,
+        generation = { TerraSdkSync.syncGeneration },
+    )
+
     suspend fun resolveOrderedIdentities(): Result<List<TerraRestIdentity>> {
-        val connections = healthConnections.getConnections().getOrElse { e ->
-            Timber.w(
-                e,
-                "healthConnections.getConnections failed; continuing with SDK Health Connect id only"
-            )
-            emptyList()
-        }
-
-        val sdkHealthConnectId = terraManagerHolder.current?.getUserId(Connections.HEALTH_CONNECT)
-        val sdkConnectedAt = Timestamp.now()
-        if (!sdkHealthConnectId.isNullOrBlank() && connections.none { it.terraUserId == sdkHealthConnectId }) {
-            healthConnections.upsertConnection(
-                HealthConnection(
-                    terraUserId = sdkHealthConnectId,
-                    provider = TerraProviders.HEALTH_CONNECT,
-                    source = HealthConnection.SOURCE_SDK,
-                    connectedAt = sdkConnectedAt,
-                    active = true,
-                ),
-            ).onFailure {
-                Timber.w(it, "Unable to persist live SDK Health Connect id before Terra REST fetch")
-            }
-        }
-
-        return Result.success(orderTerraIdentities(connections, sdkHealthConnectId, sdkConnectedAt))
+        val uid = auth.currentUser?.uid ?: return Result.success(emptyList())
+        identities.get(uid)?.let { return Result.success(it) }
+        return healthConnections.getConnections()
+            .onFailure { Timber.w(it, "Terra identity lookup failed; no source list for this refresh") }
+            .map(::orderTerraIdentities)
+            .onSuccess { identities.put(uid, it) }
     }
 }
 
-internal fun orderTerraIdentities(
-    connections: List<HealthConnection>,
-    sdkHealthConnectId: String? = null,
-    sdkConnectedAt: Timestamp = Timestamp.now(),
-): List<TerraRestIdentity> {
-    val active = connections.filter { it.active }.toMutableList()
-    if (!sdkHealthConnectId.isNullOrBlank() && active.none { it.terraUserId == sdkHealthConnectId }) {
-        active += HealthConnection(
-            terraUserId = sdkHealthConnectId,
-            provider = TerraProviders.HEALTH_CONNECT,
-            source = HealthConnection.SOURCE_SDK,
-            connectedAt = sdkConnectedAt,
-            active = true,
-        )
-    }
+internal fun orderTerraIdentities(connections: List<HealthConnection>): List<TerraRestIdentity> {
+    val active = connections.filter { it.active }
     val seen = LinkedHashSet<String>()
     return active
         .mapNotNull { connection -> providerTier(connection.provider)?.let { it to connection } }
@@ -100,6 +71,19 @@ internal fun orderTerraIdentities(
         }
 }
 
+private const val IDENTITY_FIELD_SEPARATOR = ":"
+
+internal fun TerraRestIdentity.encodeForCursor(): String =
+    "$provider$IDENTITY_FIELD_SEPARATOR$terraUserId"
+
+internal fun decodeTerraRestIdentity(encoded: String): TerraRestIdentity? {
+    val separator = encoded.indexOf(IDENTITY_FIELD_SEPARATOR)
+    if (separator < 0) return encoded.takeIf { it.isNotBlank() }?.let { TerraRestIdentity(it, "") }
+    return encoded.substring(separator + 1)
+        .takeIf { it.isNotBlank() }
+        ?.let { TerraRestIdentity(it, encoded.substring(0, separator)) }
+}
+
 private fun providerTier(provider: String): Int? = when (val code = provider.uppercase()) {
     in TerraProviders.WEARABLE_CODES -> 0
     TerraProviders.HEALTH_CONNECT -> 1
@@ -108,15 +92,9 @@ private fun providerTier(provider: String): Int? = when (val code = provider.upp
     else -> null.also { if (code.isNotEmpty()) Timber.w("Unknown Terra provider code %s excluded", code) }
 }
 
-internal fun sourceFingerprint(identities: List<TerraRestIdentity>): String {
-    val material = identities.joinToString("|") { "${it.provider.uppercase()}:${it.terraUserId}" }
-    return MessageDigest.getInstance("SHA-256").digest(material.toByteArray())
-        .joinToString("") { (it.toInt() and 0xff).toString(16).padStart(2, '0') }
-}
-
 /**
- * Resolves identities, fetches JSON per identity, parses to rows, then merges with gap-fill so
- * higher-priority sources win per logical key (e.g. wake day for sleep).
+ * Resolves identities, fetches JSON per identity and parses to rows. Rows stay grouped by
+ * identity; the caller merges per stored partition.
  *
  * Share this across Terra REST repositories (sleep today, daily / activity later).
  */
@@ -125,11 +103,14 @@ internal suspend fun <T> fetchMergedFromAllSources(
     gate: Semaphore,
     start: LocalDate,
     end: LocalDate,
-    fetchJson: suspend (terraUserId: String, LocalDate, LocalDate) -> Result<List<JsonElement>>,
-    parse: (List<JsonElement>) -> List<T>,
-    merge: (List<List<T>>) -> List<T>,
+    fetchJson: suspend (terraUserId: String, LocalDate, LocalDate) -> Result<List<Any?>>,
+    parse: (List<Any?>) -> List<T>,
 ): Result<MergedSourceResult<T>> {
-    if (identities.isEmpty()) return Result.success(MergedSourceResult(emptyList(), false, 0, 0))
+    if (identities.isEmpty()) {
+        return Result.success(
+            MergedSourceResult(complete = true, successfulSources = 0, totalSources = 0),
+        )
+    }
 
     val results: List<Result<List<T>>> = coroutineScope {
         identities.map { id ->
@@ -158,7 +139,9 @@ internal suspend fun <T> fetchMergedFromAllSources(
     }
     return Result.success(
         MergedSourceResult(
-            rows = merge(perSource),
+            perIdentity = identities.zip(results).mapNotNull { (identity, result) ->
+                result.getOrNull()?.let { IdentityRows(identity.terraUserId, it) }
+            },
             complete = results.all { it.isSuccess },
             successfulSources = results.count { it.isSuccess },
             totalSources = results.size,
@@ -166,8 +149,10 @@ internal suspend fun <T> fetchMergedFromAllSources(
     )
 }
 
+internal data class IdentityRows<T>(val terraUserId: String, val rows: List<T>)
+
 internal data class MergedSourceResult<T>(
-    val rows: List<T>,
+    val perIdentity: List<IdentityRows<T>> = emptyList(),
     val complete: Boolean,
     val successfulSources: Int,
     val totalSources: Int,

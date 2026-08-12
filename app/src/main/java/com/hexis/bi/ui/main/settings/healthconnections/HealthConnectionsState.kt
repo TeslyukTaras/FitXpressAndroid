@@ -12,6 +12,8 @@ data class TerraProviderUi(
     @DrawableRes val iconRes: Int = R.drawable.ic_connect,
 )
 
+enum class HealthConnectRowState { NotConnected, NeedsRelink, NeedsPermission, Connected }
+
 data class HealthConnectionsState(
     val connectedProviders: Set<HealthProvider> = emptySet(),
     val wearableConnections: List<HealthConnection> = emptyList(),
@@ -20,4 +22,5 @@ data class HealthConnectionsState(
     val wearableProviders: List<TerraProviderUi> = emptyList(),
     val otherProviders: List<TerraProviderUi> = emptyList(),
     val pendingAuthProvider: String? = null,
+    val healthConnectRowState: HealthConnectRowState = HealthConnectRowState.NotConnected,
 )

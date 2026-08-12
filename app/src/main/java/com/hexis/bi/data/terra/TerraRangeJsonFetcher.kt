@@ -1,7 +1,6 @@
 package com.hexis.bi.data.terra
 
 import kotlinx.coroutines.CancellationException
-import kotlinx.serialization.json.JsonElement
 import timber.log.Timber
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
@@ -18,13 +17,13 @@ object TerraRangeJsonFetcher {
         start: LocalDate,
         end: LocalDate,
         fetch: suspend (LocalDate, LocalDate) -> Result<TerraDataListResponse>,
-    ): Result<List<JsonElement>> {
+    ): Result<List<Any?>> {
         require(!start.isAfter(end)) { "start after end" }
 
         val effectiveEnd = minOf(end, LocalDate.now().plusDays(1))
         if (start.isAfter(effectiveEnd)) return Result.success(emptyList())
 
-        val out = ArrayList<JsonElement>()
+        val out = ArrayList<Any?>()
         return try {
             var cursor = start
             while (!cursor.isAfter(effectiveEnd)) {
@@ -44,7 +43,7 @@ object TerraRangeJsonFetcher {
     private suspend fun collectChunk(
         rangeStart: LocalDate,
         rangeEnd: LocalDate,
-        into: MutableList<JsonElement>,
+        into: MutableList<Any?>,
         fetch: suspend (LocalDate, LocalDate) -> Result<TerraDataListResponse>,
     ) {
         val response = fetch(rangeStart, rangeEnd).getOrElse { throw it }

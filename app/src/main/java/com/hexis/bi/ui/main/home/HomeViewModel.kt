@@ -2,8 +2,10 @@ package com.hexis.bi.ui.main.home
 
 import android.app.Application
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.R
 import com.hexis.bi.data.activity.ActivityRepository
+import com.hexis.bi.data.health.sync.HealthSyncScheduler
 import com.hexis.bi.data.notification.NotificationInboxRepository
 import com.hexis.bi.data.recovery.RecoveryRepository
 import com.hexis.bi.data.scan.MeasurementMapper
@@ -11,6 +13,7 @@ import com.hexis.bi.data.scan.ScanFetchProjection
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanRecord
 import com.hexis.bi.data.sleep.SleepRepository
+import com.hexis.bi.data.sleep.aggregateSleepSessionsForWakeDay
 import com.hexis.bi.data.terra.TerraManagerHolder
 import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.data.user.UserRepository
@@ -28,6 +31,7 @@ import com.hexis.bi.domain.order.OrderStatus
 import com.hexis.bi.domain.recomposition.RecompositionCalculator
 import com.hexis.bi.domain.suit.SuitRepository
 import com.hexis.bi.ui.base.BaseViewModel
+import com.hexis.bi.utils.constants.CanonicalCacheConstants
 import com.hexis.bi.ui.base.UiEvent
 import com.hexis.bi.ui.main.buysuit.orderdetails.OrderDetailsUi
 import com.hexis.bi.ui.main.buysuit.orderdetails.OrderTimelineStepUi
@@ -55,9 +59,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
 import java.time.LocalDate
 import java.time.ZoneId
@@ -68,6 +76,7 @@ sealed interface HomeEvent : UiEvent {
     data object NavigateToLogin : HomeEvent
 }
 
+@OptIn(FlowPreview::class)
 class HomeViewModel(
     application: Application,
     private val userRepository: UserRepository,
@@ -79,6 +88,8 @@ class HomeViewModel(
     private val terraManagerHolder: TerraManagerHolder,
     notificationInbox: NotificationInboxRepository,
     private val orderRepository: OrderRepository,
+    private val firebaseAuth: FirebaseAuth,
+    private val healthSyncScheduler: HealthSyncScheduler,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(HomeState())
@@ -86,6 +97,17 @@ class HomeViewModel(
 
     /** Pokes the overview pipeline; replay-less since every Home RESUME re-pokes. */
     private var terraTileContext: TerraTileContext? = null
+    private val overviewMutex = Mutex()
+    private var backfillInFlight = false
+    private var activeUserId: String? = firebaseAuth.currentUser?.uid
+    private val authStateListener = FirebaseAuth.AuthStateListener { auth ->
+        val newUserId = auth.currentUser?.uid
+        if (newUserId == activeUserId) return@AuthStateListener
+        activeUserId = newUserId
+        terraTileContext = null
+        _state.value = HomeState()
+        if (newUserId != null) refreshTrigger.tryEmit(Unit)
+    }
 
     private val refreshTrigger = MutableSharedFlow<Unit>(
         extraBufferCapacity = 1,
@@ -157,12 +179,34 @@ class HomeViewModel(
             .launchIn(viewModelScope)
 
         merge(activityRepository.updates, sleepRepository.updates)
-            .onEach { refreshTerraTiles() }
+            .debounce(CanonicalCacheConstants.UPDATE_DEBOUNCE_MS)
+            .onEach { onHealthDataChanged() }
+            .launchIn(viewModelScope)
+
+        scanHistoryRepository.updates
+            .debounce(CanonicalCacheConstants.UPDATE_DEBOUNCE_MS)
+            .onEach { reloadOverview() }
+            .launchIn(viewModelScope)
+
+        healthSyncScheduler.backfillInFlight()
+            .onEach { inFlight ->
+                val settled = backfillInFlight && !inFlight
+                backfillInFlight = inFlight
+                terraTileContext?.let { refreshSyncingState(it.today, it.window.first()) }
+                if (settled) refreshTerraTiles()
+            }
             .launchIn(viewModelScope)
 
         refreshTrigger
             .onEach { loadSuitOrder() }
             .launchIn(viewModelScope)
+
+        firebaseAuth.addAuthStateListener(authStateListener)
+    }
+
+    override fun onCleared() {
+        firebaseAuth.removeAuthStateListener(authStateListener)
+        super.onCleared()
     }
 
     private suspend fun loadSuitOrder() {
@@ -253,7 +297,11 @@ class HomeViewModel(
      * score (which shares their data) can't drift apart. Errors degrade the affected card to its
      * empty state rather than blocking the screen — individual reads already return null on failure.
      */
-    private suspend fun reloadOverview() {
+    private suspend fun reloadOverview() = overviewMutex.withLock {
+        reloadOverviewLocked()
+    }
+
+    private suspend fun reloadOverviewLocked() {
         try {
             TerraSdkSync.invalidateCaches()
             coroutineScope {
@@ -296,7 +344,8 @@ class HomeViewModel(
 
                 val terra = terraDeferred.await()
                 val latestScan = scans?.firstOrNull()
-                applyTerraTiles(today, window, terra, latestScan, heightCm)
+                applyTerraTiles(today, terra, latestScan, heightCm)
+                refreshSyncingState(today, windowStart)
             }
         } catch (e: CancellationException) {
             throw e
@@ -305,17 +354,20 @@ class HomeViewModel(
         }
     }
 
-    private suspend fun refreshTerraTiles() {
-        val context = terraTileContext ?: return reloadOverview()
+    private suspend fun onHealthDataChanged() {
+        if (!backfillInFlight) return refreshTerraTiles()
+        val context = terraTileContext ?: return
+        val wasSyncing = _state.value.isAnyHealthDataSyncing
+        refreshSyncingState(context.today, context.window.first())
+        if (wasSyncing && !_state.value.isAnyHealthDataSyncing) refreshTerraTiles()
+    }
+
+    private suspend fun refreshTerraTiles() = overviewMutex.withLock {
+        val context = terraTileContext ?: return@withLock reloadOverviewLocked()
         try {
             val terra = loadTerraOverview(context.today, context.window.first())
-            applyTerraTiles(
-                context.today,
-                context.window,
-                terra,
-                context.latestScan,
-                context.heightCm
-            )
+            applyTerraTiles(context.today, terra, context.latestScan, context.heightCm)
+            refreshSyncingState(context.today, context.window.first())
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -325,42 +377,51 @@ class HomeViewModel(
 
     private fun applyTerraTiles(
         today: LocalDate,
-        window: List<LocalDate>,
         terra: TerraOverview,
         latestScan: ScanRecord?,
         heightCm: Float?,
     ) {
-        run {
-            run {
-                val todayActivity = terra.activity.firstOrNull { it.date == today }
-                val todayRecovery = terra.recovery.firstOrNull { it.date == today }
-                val pace = computePaceOfAging(
-                    PaceOfAgingInputs(
-                        hrvMs = todayRecovery?.hrvMs,
-                        restingHeartRateBpm = todayRecovery?.restingHeartRateBpm,
-                        sleepScore = todayRecovery?.sleepScore,
-                        recoveryScore = todayRecovery?.score,
-                        steps = todayActivity?.steps,
-                        bodyFatPercent = latestScan?.fatPercentage,
-                        waistToHeightRatio = waistToHeightRatio(latestScan, heightCm),
-                        vo2Max = todayActivity?.vo2MaxMlPerMinPerKg,
-                        stressLevel = todayRecovery?.stressLevel,
-                    )
-                )?.pace
+        val todayActivity = terra.activity.firstOrNull { it.date == today }
+        val todayRecovery = terra.recovery.firstOrNull { it.date == today }
+        val pace = computePaceOfAging(
+            PaceOfAgingInputs(
+                hrvMs = todayRecovery?.hrvMs,
+                restingHeartRateBpm = todayRecovery?.restingHeartRateBpm,
+                sleepScore = todayRecovery?.sleepScore,
+                recoveryScore = todayRecovery?.score,
+                steps = todayActivity?.steps,
+                bodyFatPercent = latestScan?.fatPercentage,
+                waistToHeightRatio = waistToHeightRatio(latestScan, heightCm),
+                vo2Max = todayActivity?.vo2MaxMlPerMinPerKg,
+                stressLevel = todayRecovery?.stressLevel,
+            )
+        )?.pace
 
-                _state.update {
-                    it.copy(
-                        paceOfAgingValue = pace?.let { p ->
-                            String.format(
-                                Locale.US,
-                                PACE_FORMAT,
-                                p
-                            )
-                        },
-                        paceOfAgingScore = pace?.let { p -> agingScore(p) },
+        _state.update {
+            it.copy(
+                paceOfAgingValue = pace?.let { p ->
+                    String.format(
+                        Locale.US,
+                        PACE_FORMAT,
+                        p
                     )
-                }
-            }
+                },
+                paceOfAgingScore = pace?.let { p -> agingScore(p) },
+            )
+        }
+    }
+
+    /**
+     * Sleep is filed under its wake day, so its window opens a day earlier than activity's — the
+     * same offset [loadTerraOverview] reads with. Local-cache read only; no extra requests.
+     */
+    private suspend fun refreshSyncingState(today: LocalDate, windowStart: LocalDate) {
+        val activitySyncing =
+            backfillInFlight && activityRepository.coverage(windowStart, today).isPartial
+        val sleepSyncing =
+            backfillInFlight && sleepRepository.coverage(windowStart.minusDays(1), today).isPartial
+        _state.update {
+            it.copy(isActivitySyncing = activitySyncing, isSleepSyncing = sleepSyncing)
         }
     }
 
@@ -374,13 +435,22 @@ class HomeViewModel(
     private suspend fun loadTerraOverview(today: LocalDate, windowStart: LocalDate): TerraOverview {
         terraManagerHolder.awaitCurrentOrTimeout()
         return coroutineScope {
-            val sleepDeferred =
-                async { sleepRepository.cachedSessions(windowStart.minusDays(1), today) }
-            val activityDeferred = async { activityRepository.cachedSummaries(windowStart, today) }
+            val sleepDeferred = async {
+                sleepRepository.getSessionsForRange(windowStart.minusDays(1), today)
+                    .getOrNull()
+                    .orEmpty()
+            }
+            val activityDeferred = async {
+                activityRepository.getSummariesForRange(windowStart, today)
+                    .getOrNull()
+                    .orEmpty()
+            }
 
             val sleep = sleepDeferred.await()
             val activity = activityDeferred.await()
-            val sleepSession = sleep.firstOrNull { it.wakeTime.toLocalDate() == today }
+            val sleepSession = aggregateSleepSessionsForWakeDay(
+                sleep.filter { it.wakeTime.toLocalDate() == today },
+            )
             val todayActivity = activity.firstOrNull { it.date == today }
             val steps = (todayActivity?.steps ?: 0).coerceAtLeast(0)
             val hourlySteps = todayActivity?.let { s ->

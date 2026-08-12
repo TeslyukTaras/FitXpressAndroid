@@ -100,7 +100,11 @@ data class HomeState(
     val longevityDirection: LongevityDirection = LongevityDirection.BuildingYourTrend,
     val paceOfAgingValue: String? = null,
     val paceOfAgingScore: Int? = null,
+    val isActivitySyncing: Boolean = false,
+    val isSleepSyncing: Boolean = false,
 ) {
+    val isAnyHealthDataSyncing: Boolean get() = isActivitySyncing || isSleepSyncing
+
     val suitSection: SuitSection
         get() = when {
             suitOrder != null -> SuitSection.Order(suitOrder)

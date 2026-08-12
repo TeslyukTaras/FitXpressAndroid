@@ -3,7 +3,9 @@ package com.hexis.bi.ui.main.home.sleep
 import android.app.Application
 import androidx.lifecycle.viewModelScope
 import com.hexis.bi.R
+import com.hexis.bi.data.health.sync.HealthSyncScheduler
 import com.hexis.bi.data.sleep.SleepRepository
+import com.hexis.bi.data.sleep.toSampleMillis
 import com.hexis.bi.data.sleep.SleepSample
 import com.hexis.bi.data.sleep.SleepSession
 import com.hexis.bi.data.sleep.SleepStage
@@ -14,6 +16,7 @@ import com.hexis.bi.data.user.FirestoreSchema
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.main.home.sleep.SleepViewModel.Companion.MAX_CHART_POINTS
+import com.hexis.bi.utils.constants.CanonicalCacheConstants
 import com.hexis.bi.utils.constants.SleepConstants
 import com.hexis.bi.utils.constants.TerraProviders
 import com.hexis.bi.utils.formatFullMonthDay
@@ -27,17 +30,21 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 import java.time.Duration
 import java.time.LocalDate
 import kotlin.math.roundToInt
 
+@OptIn(FlowPreview::class)
 class SleepViewModel(
     application: Application,
     private val sleepRepository: SleepRepository,
     private val userRepository: UserRepository,
     private val sourceResolver: TerraRestSourceResolver,
+    private val healthSyncScheduler: HealthSyncScheduler,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(SleepState())
@@ -46,9 +53,23 @@ class SleepViewModel(
     private var weekOffset = 0
     private var dayOffset = 0
     private val loadedTabs = mutableSetOf<SleepTab>()
+    private val loadedTabRanges = mutableMapOf<SleepTab, ClosedRange<LocalDate>>()
+
+    @Volatile
+    private var backfillInFlight = false
 
     init {
         observeDataSource()
+        sleepRepository.updates
+            .debounce(CanonicalCacheConstants.UPDATE_DEBOUNCE_MS)
+            .onEach { if (backfillInFlight) reloadTabsThatSettled() else reloadLoadedTabs() }
+            .launchIn(viewModelScope)
+        healthSyncScheduler.backfillInFlight()
+            .onEach { inFlight ->
+                backfillInFlight = inFlight
+                reloadLoadedTabs()
+            }
+            .launchIn(viewModelScope)
         userRepository.observeUserSettings()
             .onEach { settings ->
                 val goal = settings.sleepGoalHours ?: SleepConstants.DEFAULT_SLEEP_GOAL_HOURS
@@ -84,6 +105,25 @@ class SleepViewModel(
     fun selectTab(tab: SleepTab) {
         _state.update { it.copy(selectedTab = tab) }
         if (tab !in loadedTabs) loadDataForTab(tab)
+    }
+
+    private fun reloadLoadedTabs() {
+        loadedTabs.toList().forEach(::loadDataForTab)
+    }
+
+    private suspend fun loadStateFor(range: ClosedRange<LocalDate>): SleepLoadState =
+        if (backfillInFlight && sleepRepository.coverage(range.start, range.endInclusive).isPartial) {
+            SleepLoadState.Loading
+        } else {
+            SleepLoadState.Ready
+        }
+
+    private suspend fun reloadTabsThatSettled() {
+        loadedTabRanges.toMap().forEach { (tab, range) ->
+            if (_state.value.loadStateOf(tab) != SleepLoadState.Loading) return@forEach
+            if (loadStateFor(range) != SleepLoadState.Ready) return@forEach
+            loadDataForTab(tab)
+        }
     }
 
     private fun loadDataForTab(tab: SleepTab) {
@@ -159,6 +199,7 @@ class SleepViewModel(
 
     private fun loadDaySession(offset: Int) {
         val targetDay = LocalDate.now().plusDays(offset.toLong())
+        loadedTabRanges[SleepTab.Day] = targetDay..targetDay
         val dateLabel = targetDay.formatFullMonthDay()
         _state.update {
             it.copy(
@@ -173,23 +214,25 @@ class SleepViewModel(
                 sleepRepository.getSessionForNight(targetDay)
             }
             if (offset != dayOffset) return@launch
+            val loadState = loadStateFor(targetDay..targetDay)
             (result ?: Result.success(null)).fold(
                 onSuccess = { session ->
-                    if (session.hasAnySleepData()) applySession(session!!) else applyEmptySession()
+                    if (session.hasAnySleepData()) applySession(session!!, loadState)
+                    else applyEmptySession(loadState)
                 },
                 onFailure = { err ->
-                    applyEmptySession()
+                    applyEmptySession(loadState)
                     _state.update { it.copy(errorMessage = err.message) }
                 },
             )
         }
     }
 
-    private fun applyEmptySession() {
+    private fun applyEmptySession(loadState: SleepLoadState = SleepLoadState.Ready) {
         loadedTabs.add(SleepTab.Day)
         _state.update {
             it.copy(
-                dayLoadState = SleepLoadState.Ready,
+                dayLoadState = loadState,
                 errorMessage = null,
                 totalSleepMinutes = 0,
                 stages = emptyStageData(),
@@ -206,14 +249,14 @@ class SleepViewModel(
         prefetchSummaryIfNeeded()
     }
 
-    private fun applySession(session: SleepSession) {
+    private fun applySession(session: SleepSession, loadState: SleepLoadState = SleepLoadState.Ready) {
         loadedTabs.add(SleepTab.Day)
         val score = computeSleepScore(session.durationMinutes, session.efficiencyPercent)
         val quality = qualityFor(score)
 
         _state.update {
             it.copy(
-                dayLoadState = SleepLoadState.Ready,
+                dayLoadState = loadState,
                 errorMessage = null,
                 totalSleepMinutes = session.durationMinutes,
                 stages = buildStageData(session),
@@ -294,9 +337,10 @@ class SleepViewModel(
         intervals: List<SleepStageInterval>,
     ): Int? {
         if (samples.isEmpty() || intervals.isEmpty()) return null
+        val bounds = intervals.map { it.start.toSampleMillis() to it.end.toSampleMillis() }
         val values = samples
             .filter { sample ->
-                intervals.any { !sample.time.isBefore(it.start) && sample.time.isBefore(it.end) }
+                bounds.any { (start, end) -> sample.epochMillis in start until end }
             }
             .map { it.value }
         return if (values.isEmpty()) null else values.average().roundToInt()
@@ -314,9 +358,10 @@ class SleepViewModel(
         val totalMinutes = Duration.between(session.bedtime, session.wakeTime).toMinutes()
             .toFloat()
             .coerceAtLeast(1f)
+        val bedtimeMillis = session.bedtime.toSampleMillis()
         val points = samples
             .map { sample ->
-                val offset = Duration.between(session.bedtime, sample.time).toMinutes().toFloat()
+                val offset = ((sample.epochMillis - bedtimeMillis) / SleepConstants.MILLIS_PER_MINUTE).toFloat()
                 ChartPoint(
                     fraction = (offset / totalMinutes).coerceIn(0f, 1f),
                     value = sample.value
@@ -359,6 +404,7 @@ class SleepViewModel(
         val start = end.minusDays(DAYS_PER_WEEK - 1)
         val previousEnd = start.minusDays(1)
         val previousStart = previousEnd.minusDays(DAYS_PER_WEEK - 1)
+        loadedTabRanges[SleepTab.Summary] = previousStart..end
         val label = formatShortDateRange(start, end)
 
         _state.update {
@@ -387,9 +433,10 @@ class SleepViewModel(
                         val stages = buildWeeklyStages(current, previous)
 
                         loadedTabs.add(SleepTab.Summary)
+                        val summaryState = loadStateFor(previousStart..end)
                         _state.update {
                             it.copy(
-                                summaryLoadState = SleepLoadState.Ready,
+                                summaryLoadState = summaryState,
                                 summaryErrorMessage = null,
                                 weeklyStructure = structure,
                                 weeklyStages = stages,
@@ -418,9 +465,7 @@ class SleepViewModel(
             val day = start.plusDays(index)
             val daySessions = if (day.isAfter(today)) emptyList() else byDate[day].orEmpty()
             val stageMinutes = SleepStage.entries.associateWith { stage ->
-                daySessions.sumOf { session ->
-                    session.stages.filter { it.stage == stage }.sumOf { it.durationMinutes }
-                }
+                daySessions.sumOf { session -> session.stageTotals.minutesFor(stage) }
             }
             DailyStructure(
                 dayLabel = day.weekDayAbbreviation(),
@@ -453,8 +498,8 @@ class SleepViewModel(
     private fun averageStageMinutes(sessions: List<SleepSession>): Map<SleepStage, Int> {
         val totals = mutableMapOf<SleepStage, Int>()
         sessions.forEach { session ->
-            session.stages.forEach { interval ->
-                totals.merge(interval.stage, interval.durationMinutes, Int::plus)
+            SleepStage.entries.forEach { stage ->
+                totals.merge(stage, session.stageTotals.minutesFor(stage), Int::plus)
             }
         }
         return totals.mapValues { (_, total) -> total / sessions.size }

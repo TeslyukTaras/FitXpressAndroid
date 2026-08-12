@@ -68,6 +68,7 @@ object TerraSdkSync {
     suspend fun reset() {
         generation.incrementAndGet()
         debounceMutex.withLock { lastSyncElapsedRealtimeMs = 0L }
+        _dataSynced.tryEmit(Unit)
     }
 
     /**
@@ -76,12 +77,16 @@ object TerraSdkSync {
      */
     suspend fun syncLinkedConnections(
         manager: TerraManager?,
+        ownedUserIds: Set<String>?,
         reason: String,
         force: Boolean = false,
         lookbackDays: Long = DEFAULT_LOOKBACK_DAYS,
     ): Boolean {
         val mgr = manager ?: return false
-        val linked = enumValues<Connections>().filter { mgr.getUserId(it) != null }
+        val linked = enumValues<Connections>().filter { connection ->
+            val userId = mgr.getUserId(connection) ?: return@filter false
+            ownedUserIds == null || userId in ownedUserIds
+        }
         if (linked.isEmpty()) return false
 
         if (!shouldProceed(force)) {
