@@ -30,6 +30,8 @@ import com.hexis.bi.domain.order.OrderShippingAddress
 import com.hexis.bi.domain.order.OrderStatus
 import com.hexis.bi.domain.recomposition.RecompositionCalculator
 import com.hexis.bi.domain.suit.SuitRepository
+import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
+import com.hexis.bi.ui.main.home.intelligence.EngineFindingsMapper
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.constants.CanonicalCacheConstants
 import com.hexis.bi.ui.base.UiEvent
@@ -64,6 +66,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
@@ -77,7 +80,7 @@ sealed interface HomeEvent : UiEvent {
 }
 
 @OptIn(FlowPreview::class)
-class HomeViewModel(
+class HomeViewModel internal constructor(
     application: Application,
     private val userRepository: UserRepository,
     suitRepository: SuitRepository,
@@ -90,10 +93,28 @@ class HomeViewModel(
     private val orderRepository: OrderRepository,
     private val firebaseAuth: FirebaseAuth,
     private val healthSyncScheduler: HealthSyncScheduler,
+    private val runIntelligence: RunIntelligenceUseCase,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(HomeState())
     val state = _state.asStateFlow()
+
+    private fun loadInsights() {
+        viewModelScope.launch {
+            val cards = runIntelligence().fold(
+                onSuccess = { run ->
+                    EngineFindingsMapper.simpleFindings(
+                        report = run.report,
+                        copy = run.copy,
+                        windowDays = run.report.primaryWindowDays,
+                        isMetric = run.isMetric,
+                    )
+                },
+                onFailure = { emptyList() },
+            )
+            _state.update { it.copy(insights = cards, insightsLoaded = true) }
+        }
+    }
 
     /** Pokes the overview pipeline; replay-less since every Home RESUME re-pokes. */
     private var terraTileContext: TerraTileContext? = null
@@ -115,6 +136,7 @@ class HomeViewModel(
     )
 
     init {
+        loadInsights()
         combine(
             userRepository.observeUser(),
             userRepository.observeUserSettings(),

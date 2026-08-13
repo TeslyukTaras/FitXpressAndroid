@@ -1,5 +1,7 @@
 package com.hexis.bi.ui.main.home
 
+import com.hexis.bi.ui.main.home.intelligence.InsightCard
+
 import androidx.annotation.StringRes
 import com.hexis.bi.R
 import com.hexis.bi.domain.longevity.LongevityDirection
@@ -95,6 +97,8 @@ data class HomeState(
     val activity: ActivityOverview = ActivityOverview(),
     val sleep: SleepOverview = SleepOverview(),
     val scan: ScanOverview = ScanOverview(),
+    val insights: List<InsightCard> = emptyList(),
+    val insightsLoaded: Boolean = false,
     val recompositionValue: String = "0",
     val physiqueScore: Float? = null,
     val longevityDirection: LongevityDirection = LongevityDirection.BuildingYourTrend,

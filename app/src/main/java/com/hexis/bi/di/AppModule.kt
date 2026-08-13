@@ -76,6 +76,7 @@ import com.hexis.bi.ui.main.buysuit.suitsize.SuitSizeResultsViewModel
 import com.hexis.bi.ui.main.home.HomeViewModel
 import com.hexis.bi.ui.main.home.activity.ActivityViewModel
 import com.hexis.bi.ui.main.home.longevity.LongevityViewModel
+import com.hexis.bi.ui.main.home.intelligence.InsightsViewModel
 import com.hexis.bi.ui.main.home.paceofaging.PaceOfAgingViewModel
 import com.hexis.bi.ui.main.home.physiquedrift.PhysiqueDriftViewModel
 import com.hexis.bi.ui.main.home.recomposition.RecompositionViewModel
@@ -219,6 +220,7 @@ val appModule = module {
             get(),
             get(),
             get(),
+            get(),
         )
     }
     viewModel { EditProfileViewModel(androidApplication(), get(), get(), get(), get()) }
@@ -250,6 +252,7 @@ val appModule = module {
     viewModel { LongevityViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { PaceOfAgingViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { PhysiqueDriftViewModel(androidApplication(), get(), get(), get()) }
+    viewModel { InsightsViewModel(androidApplication(), get(), get()) }
     viewModel { RecompositionViewModel(androidApplication(), get()) }
     viewModel { ScanViewModel(androidApplication(), get()) }
     viewModel { StartScanViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get()) }
