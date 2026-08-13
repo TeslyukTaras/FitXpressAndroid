@@ -37,7 +37,9 @@ import com.hexis.bi.data.intelligence.AssetIntelligenceConfigSource
 import com.hexis.bi.data.intelligence.RemoteIntelligenceConfigSource
 import com.hexis.bi.utils.constants.IntelligenceRemoteConfig
 import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
+import com.hexis.bi.data.intelligence.BUNDLED_WORDING_ASSET
 import com.hexis.bi.data.intelligence.IntelligenceConfigRepository
+import com.hexis.bi.data.intelligence.IntelligenceWordingRepository
 import com.hexis.bi.data.intelligence.IntelligenceInputProvider
 import com.hexis.bi.data.health.sync.HealthSyncCoordinator
 import com.hexis.bi.data.health.sync.HealthSyncScheduler
@@ -135,18 +137,27 @@ val appModule = module {
             overrides = listOf(
                 RemoteIntelligenceConfigSource(
                     remoteConfig = get(),
-                    minimumFetchIntervalSeconds = if (BuildConfig.DEBUG) {
-                        IntelligenceRemoteConfig.DEBUG_FETCH_INTERVAL_SECONDS
-                    } else {
-                        IntelligenceRemoteConfig.RELEASE_FETCH_INTERVAL_SECONDS
-                    },
+                    key = IntelligenceRemoteConfig.CONFIG_KEY,
+                    minimumFetchIntervalSeconds = intelligenceFetchInterval(),
                 ),
             ),
             baseline = AssetIntelligenceConfigSource(androidContext()),
         )
     }
+    single {
+        IntelligenceWordingRepository(
+            overrides = listOf(
+                RemoteIntelligenceConfigSource(
+                    remoteConfig = get(),
+                    key = IntelligenceRemoteConfig.WORDING_KEY,
+                    minimumFetchIntervalSeconds = intelligenceFetchInterval(),
+                ),
+            ),
+            baseline = AssetIntelligenceConfigSource(androidContext(), BUNDLED_WORDING_ASSET),
+        )
+    }
     single { IntelligenceInputProvider(get(), get(), get()) }
-    single { RunIntelligenceUseCase(get(), get()) }
+    single { RunIntelligenceUseCase(get(), get(), get(), get()) }
     single { WorkManager.getInstance(androidContext()) }
     single<HealthSyncScheduler> { WorkManagerHealthSyncScheduler(get()) }
     single { SessionCleaner(get(), get(), get(), get(), get(), get(), get()) }
@@ -252,3 +263,9 @@ val appModule = module {
 }
 
 private const val FIREBASE_FUNCTIONS_REGION = "us-central1"
+
+private fun intelligenceFetchInterval(): Long = if (BuildConfig.DEBUG) {
+    IntelligenceRemoteConfig.DEBUG_FETCH_INTERVAL_SECONDS
+} else {
+    IntelligenceRemoteConfig.RELEASE_FETCH_INTERVAL_SECONDS
+}

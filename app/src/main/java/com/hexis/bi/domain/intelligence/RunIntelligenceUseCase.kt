@@ -1,6 +1,10 @@
 package com.hexis.bi.domain.intelligence
 
 import com.hexis.bi.data.intelligence.IntelligenceConfigRepository
+import com.hexis.bi.data.intelligence.IntelligenceWordingRepository
+import com.hexis.bi.data.user.UserRepository
+import com.hexis.bi.utils.isMetricUnitSystem
+import com.hexis.bi.intelligence.config.CopyConfig
 import com.hexis.bi.data.intelligence.IntelligenceInputProvider
 import com.hexis.bi.intelligence.config.EngineConfig
 import com.hexis.bi.intelligence.engine.EngineReport
@@ -12,9 +16,18 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 
+internal data class IntelligenceRun(
+    val report: EngineReport,
+    val config: EngineConfig,
+    val copy: CopyConfig,
+    val isMetric: Boolean = true,
+)
+
 internal class RunIntelligenceUseCase(
     private val inputProvider: IntelligenceInputProvider,
+    private val userRepository: UserRepository,
     private val configRepository: IntelligenceConfigRepository,
+    private val wordingRepository: IntelligenceWordingRepository,
     private val computation: CoroutineDispatcher = Dispatchers.Default,
 ) {
 
@@ -22,11 +35,16 @@ internal class RunIntelligenceUseCase(
 
     private val memo = AtomicReference<Memo>()
 
-    suspend operator fun invoke(): Result<EngineReport> {
+    suspend operator fun invoke(): Result<IntelligenceRun> {
         val config = configRepository.config().getOrElse { return Result.failure(it) }
         val input = inputProvider.load(config.windows.analysisDays, config.windows.baselineDays)
             .getOrElse { return Result.failure(it) }
-        return runReport(input, config.withHeight(input.heightCm))
+        val copy = wordingRepository.config().map { it.copy }.getOrElse {
+            Timber.w(it, "Insight wording unavailable; findings render without sentences")
+            CopyConfig()
+        }
+        val isMetric = userRepository.getUser().getOrNull()?.unitSystem?.isMetricUnitSystem() ?: true
+        return runReport(input, config.withHeight(input.heightCm), copy, isMetric)
     }
 
     private fun EngineConfig.withHeight(heightCm: Double?): EngineConfig {
@@ -37,10 +55,15 @@ internal class RunIntelligenceUseCase(
         return copy(composites = composites.copy(heightCm = heightCm))
     }
 
-    private suspend fun runReport(input: EngineInput, config: EngineConfig): Result<EngineReport> {
+    private suspend fun runReport(
+        input: EngineInput,
+        config: EngineConfig,
+        copy: CopyConfig,
+        isMetric: Boolean,
+    ): Result<IntelligenceRun> {
         memo.get()?.let { cached ->
             if (cached.input == input && cached.config == config) {
-                return Result.success(cached.report)
+                return Result.success(IntelligenceRun(cached.report, cached.config, copy, isMetric))
             }
         }
         val startedAt = System.currentTimeMillis()
@@ -50,6 +73,7 @@ internal class RunIntelligenceUseCase(
             memo.set(Memo(input, config, report))
             log(report, input, System.currentTimeMillis() - startedAt)
         }.onFailure { Timber.w(it, "Intelligence run failed") }
+            .map { IntelligenceRun(it, config, copy, isMetric) }
     }
 
     private fun log(report: EngineReport, input: EngineInput, elapsedMs: Long) {

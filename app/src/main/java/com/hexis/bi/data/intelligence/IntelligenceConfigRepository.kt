@@ -3,6 +3,8 @@ package com.hexis.bi.data.intelligence
 import android.content.Context
 import com.hexis.bi.intelligence.config.EngineConfig
 import com.hexis.bi.intelligence.config.EngineConfigParser
+import com.hexis.bi.intelligence.config.WordingConfigParser
+import com.hexis.bi.intelligence.config.WordingDocument
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -27,23 +29,26 @@ internal class AssetIntelligenceConfigSource(
     }
 }
 
-internal class IntelligenceConfigRepository(
+internal class VersionedConfigRepository<T : Any>(
+    private val label: String,
     private val overrides: List<IntelligenceConfigSource>,
     private val baseline: IntelligenceConfigSource,
+    private val parse: (String) -> Result<T>,
+    private val versionOf: (T) -> String,
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) {
 
-    private val lastKnownGood = AtomicReference<EngineConfig>()
+    private val lastKnownGood = AtomicReference<T>()
 
-    suspend fun config(): Result<EngineConfig> = withContext(io) {
+    suspend fun config(): Result<T> = withContext(io) {
         val failures = mutableListOf<String>()
         val bundled = parsed(baseline, failures)
 
         for (source in overrides) {
             val candidate = parsed(source, failures) ?: continue
-            if (bundled != null && isOlderThan(candidate.configVersion, bundled.configVersion)) {
-                failures += "${source.name}: rejected (version ${candidate.configVersion} " +
-                    "predates bundled ${bundled.configVersion})"
+            if (bundled != null && isOlderThan(versionOf(candidate), versionOf(bundled))) {
+                failures += "${source.name}: rejected (version ${versionOf(candidate)} " +
+                    "predates bundled ${versionOf(bundled)})"
                 continue
             }
             return@withContext accept(candidate, source.name, failures)
@@ -52,34 +57,36 @@ internal class IntelligenceConfigRepository(
         bundled?.let { return@withContext accept(it, baseline.name, failures) }
 
         lastKnownGood.get()?.let { cached ->
-            Timber.w("Intelligence config unusable from every source %s; serving last known good", failures)
+            Timber.w("%s unusable from every source %s; serving last known good", label, failures)
             return@withContext Result.success(cached)
         }
-        Timber.e("Intelligence config unusable and nothing cached: %s", failures)
-        Result.failure(IllegalStateException("no usable intelligence config: ${failures.joinToString("; ")}"))
+        Timber.e("%s unusable and nothing cached: %s", label, failures)
+        Result.failure(IllegalStateException("no usable $label: ${failures.joinToString("; ")}"))
     }
 
     private suspend fun parsed(
         source: IntelligenceConfigSource,
         failures: MutableList<String>,
-    ): EngineConfig? {
+    ): T? {
         val text = source.load().getOrElse { error ->
             failures += "${source.name}: unavailable (${error.message ?: error::class.simpleName})"
             return null
         }
-        return EngineConfigParser.parse(text).getOrElse { error ->
+        return parse(text).getOrElse { error ->
             failures += "${source.name}: rejected (${error.message})"
             null
         }
     }
 
     private fun accept(
-        config: EngineConfig,
+        config: T,
         sourceName: String,
         failures: List<String>,
-    ): Result<EngineConfig> {
+    ): Result<T> {
         if (failures.isNotEmpty()) {
-            Timber.w("Intelligence config fell back to %s after %s", sourceName, failures)
+            Timber.w("%s fell back to %s after %s", label, sourceName, failures)
+        } else {
+            Timber.i("%s accepted %s from %s", label, versionOf(config), sourceName)
         }
         lastKnownGood.set(config)
         return Result.success(config)
@@ -105,3 +112,34 @@ private fun numericVersion(value: String): List<Int>? {
 private const val VERSION_PREFIX = "v"
 
 internal const val BUNDLED_CONFIG_ASSET = "intelligence_config_v1.json"
+internal const val BUNDLED_WORDING_ASSET = "intelligence_wording_v1.json"
+
+internal class IntelligenceConfigRepository(
+    overrides: List<IntelligenceConfigSource>,
+    baseline: IntelligenceConfigSource,
+) {
+    private val delegate = VersionedConfigRepository(
+        label = "Intelligence config",
+        overrides = overrides,
+        baseline = baseline,
+        parse = EngineConfigParser::parse,
+        versionOf = EngineConfig::configVersion,
+    )
+
+    suspend fun config(): Result<EngineConfig> = delegate.config()
+}
+
+internal class IntelligenceWordingRepository(
+    overrides: List<IntelligenceConfigSource>,
+    baseline: IntelligenceConfigSource,
+) {
+    private val delegate = VersionedConfigRepository(
+        label = "Intelligence wording",
+        overrides = overrides,
+        baseline = baseline,
+        parse = WordingConfigParser::parse,
+        versionOf = WordingDocument::wordingVersion,
+    )
+
+    suspend fun config(): Result<WordingDocument> = delegate.config()
+}

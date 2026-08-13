@@ -1073,4 +1073,42 @@
     <!-- Longevity insight -->
 
     <!-- Longevity info sheet -->
+
+    <string name="engine_findings_title">Insight</string>
+    <string name="engine_findings_confidence_high">High</string>
+    <string name="engine_findings_confidence_medium">Medium</string>
+    <string name="engine_findings_confidence_low">Low</string>
+    <string name="engine_findings_value_arrow">→</string>
+    <string name="engine_findings_value_separator">" · "</string>
+    <string name="engine_findings_label_separator">": "</string>
+    <string name="insights_screen_title">Insights</string>
+    <string name="insights_subtitle">Based on Latest Scan · %1$s</string>
+    <string name="insights_updating">Updating</string>
+    <string name="insights_updating_body">We\'re analyzing your latest data.</string>
+    <string name="insights_value_placeholder">-</string>
+    <string name="insights_info_title">How Insights work</string>
+    <string name="insights_info_intro">Insights help you understand meaningful changes and patterns in your health and body data over time. They are based on your available scan, activity, sleep, recovery, and other connected data.</string>
+    <string name="insights_info_heading_1">1. Insight</string>
+    <string name="insights_info_body_1">Shows a trend or change identified in your data, together with the values that support it.</string>
+    <string name="insights_info_heading_2">2. Confidence</string>
+    <string name="insights_info_body_2">Shows how reliable the insight is based on the available data and the strength of the detected pattern.</string>
+    <string name="insights_info_confidence_high">High — strong and consistent evidence</string>
+    <string name="insights_info_confidence_medium">Medium — a meaningful pattern is present, but with less certainty</string>
+    <string name="insights_info_confidence_low">Low — the pattern is less reliable and supporting values may not yet be available</string>
+    <string name="insights_info_heading_3">3. Updates</string>
+    <string name="insights_info_body_3">Insights are refreshed as new data becomes available. While an update is in progress, your latest available insights may continue to be shown.</string>
+    <string name="insights_home_title">Insights</string>
+    <string name="insights_low_section">Low</string>
+    <string name="insights_low_caption">Supporting values will be shown once enough reliable data is available.</string>
+    <string name="insights_area_sleep">Sleep</string>
+    <string name="insights_area_recovery">Recovery</string>
+    <string name="insights_area_activity">Activity</string>
+    <string name="insights_area_body">Body</string>
+    <string name="insights_area_aging">Pace of Aging</string>
+    <string name="insights_area_stress">Stress</string>
+    <string name="insights_area_recomposition">Recomposition</string>
+    <string name="insights_area_physique_drift">Physique Drift</string>
+    <string name="insights_area_longevity">Longevity</string>
+    <string name="engine_findings_empty_title">No insights yet</string>
+    <string name="engine_findings_empty_body">Insights will appear here when enough data is available to identify a meaningful trend.</string>
 </resources>

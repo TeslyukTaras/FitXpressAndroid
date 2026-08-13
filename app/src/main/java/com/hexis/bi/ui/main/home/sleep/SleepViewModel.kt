@@ -54,7 +54,7 @@ class SleepViewModel internal constructor(
 
     private fun loadFindings() {
         viewModelScope.launch {
-            val resolved = runIntelligence.findingsFor(Domains.SLEEP, Domains.RECOVERY)
+            val resolved = runIntelligence.findingsFor(Domains.SLEEP, Domains.RECOVERY, Domains.STRESS)
             _state.update { it.copy(findings = resolved) }
         }
     }

@@ -211,4 +211,9 @@
     <dimen name="proportion_indicator_marker_height">8dp</dimen>
     <dimen name="proportion_indicator_marker_gap">2.5dp</dimen>
 
+    <dimen name="insight_card_spacing">14dp</dimen>
+    <dimen name="insight_card_value_gap">10dp</dimen>
+    <dimen name="insight_card_text_gap">11dp</dimen>
+    <dimen name="insight_card_padding">13dp</dimen>
+    <dimen name="insight_card_corner">6dp</dimen>
 </resources>

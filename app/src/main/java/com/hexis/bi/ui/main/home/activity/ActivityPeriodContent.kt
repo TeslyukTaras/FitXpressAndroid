@@ -48,6 +48,13 @@ fun ActivityPeriodContent(
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
     }
 
+    EngineFindingsSection(
+        state = state.findings.forWindow(windowDays),
+        topSpacing = dimensionResource(R.dimen.spacer_xs),
+    )
+
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
     BodyGlassCard(
         loading = loading,
         contentPadding = PaddingValues(
@@ -112,8 +119,6 @@ fun ActivityPeriodContent(
         separateInsightGlass = separateInsightGlass,
         loading = loading,
     )
-
-    EngineFindingsSection(state = state.findings.forWindow(windowDays))
 }
 
 private fun PeriodSummary.totalDistanceKmDisplay(isMetric: Boolean): Float =
