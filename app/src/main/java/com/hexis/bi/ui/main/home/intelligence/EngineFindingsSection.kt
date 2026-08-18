@@ -52,7 +52,7 @@ fun EngineFindingsSection(
                     InsightHeader(stringResource(R.string.engine_findings_title), current.confidence)
                     if (current.values.isNotEmpty()) {
                         Spacer(Modifier.height(dimensionResource(R.dimen.insight_card_value_gap)))
-                        InsightValues(current.values)
+                        InsightValues(current.values, showLabels = true)
                     }
                     current.rows.forEach { row ->
                         Spacer(Modifier.height(dimensionResource(R.dimen.insight_card_text_gap)))
@@ -95,45 +95,46 @@ internal fun InsightHeader(title: String, confidence: FindingConfidence) {
 }
 
 @Composable
-internal fun InsightValues(values: List<FindingValue>) {
+internal fun InsightValues(values: List<FindingValue>, showLabels: Boolean) {
     val bright = MaterialTheme.colorScheme.onSurface
     val accent = MaterialTheme.colorScheme.primary
     val muted = NocturnePulseTheme.extendedColors.gray200
     val unitSize = MaterialTheme.typography.bodyMedium.fontSize
     val arrow = stringResource(R.string.engine_findings_value_arrow)
-    val separator = stringResource(R.string.engine_findings_value_separator)
     val labelSeparator = stringResource(R.string.engine_findings_label_separator)
-    val labelled = values.size > 1
 
-    val text = buildAnnotatedString {
-        values.forEachIndexed { index, value ->
-            if (index > 0) withStyle(SpanStyle(color = muted)) { append(separator) }
-            if (labelled && value.label.isNotBlank()) {
-                withStyle(SpanStyle(color = bright)) {
-                    append(value.label.toInsightLabel())
-                    append(labelSeparator)
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_xxs)),
+    ) {
+        values.forEach { value ->
+            val text = buildAnnotatedString {
+                if (showLabels && value.label.isNotBlank()) {
+                    withStyle(SpanStyle(color = bright)) {
+                        append(value.label.toInsightLabel())
+                        append(labelSeparator)
+                    }
+                }
+                value.from.forEach { part ->
+                    withStyle(part.span(bright, muted, unitSize)) { append(part.text) }
+                }
+                withStyle(SpanStyle(color = bright)) { append(" $arrow ") }
+                value.to.forEach { part ->
+                    withStyle(part.span(accent, muted, unitSize)) { append(part.text) }
+                }
+                if (value.unit.isNotBlank()) {
+                    withStyle(SpanStyle(color = muted, fontSize = unitSize)) {
+                        append(" ${value.unit}")
+                    }
                 }
             }
-            value.from.forEach { part ->
-                withStyle(part.span(bright, muted, unitSize)) { append(part.text) }
-            }
-            withStyle(SpanStyle(color = bright)) { append(" $arrow ") }
-            value.to.forEach { part ->
-                withStyle(part.span(accent, muted, unitSize)) { append(part.text) }
-            }
-            if (value.unit.isNotBlank()) {
-                withStyle(SpanStyle(color = muted, fontSize = unitSize)) {
-                    append(" ${value.unit}")
-                }
-            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
-
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyLarge,
-        modifier = Modifier.fillMaxWidth(),
-    )
 }
 
 private fun String.toInsightLabel(): String = split(' ').joinToString(" ") { word ->

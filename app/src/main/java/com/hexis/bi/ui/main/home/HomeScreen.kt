@@ -27,6 +27,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import com.hexis.bi.BuildConfig
 import com.hexis.bi.R
 import com.hexis.bi.ui.main.home.intelligence.HomeInsightsSection
 import com.hexis.bi.ui.base.BaseScreen
@@ -208,11 +209,13 @@ fun HomeScreen(
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
 
-            HomeInsightsSection(
-                cards = state.insights,
-                loaded = state.insightsLoaded,
-                onClick = onInsightsClick,
-            )
+            if (BuildConfig.INTELLIGENCE_ENGINE_ENABLED) {
+                HomeInsightsSection(
+                    cards = state.insights,
+                    loaded = state.insightsLoaded,
+                    onClick = onInsightsClick,
+                )
+            }
         }
     }
 

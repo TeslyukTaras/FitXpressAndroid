@@ -60,8 +60,9 @@ internal class MetricFormat private constructor(
 
         fun of(engineUnit: String, isMetric: Boolean): MetricFormat? = when (engineUnit) {
             EngineUnits.COUNT -> MetricFormat(Style.WHOLE, unit = null)
-            EngineUnits.MINUTES, EngineUnits.KCAL, EngineUnits.BPM, EngineUnits.MILLISECONDS ->
-                MetricFormat(Style.WHOLE, engineUnit)
+            EngineUnits.KCAL -> MetricFormat(Style.WHOLE, engineUnit)
+            EngineUnits.MINUTES, EngineUnits.BPM, EngineUnits.MILLISECONDS ->
+                MetricFormat(Style.DECIMAL, engineUnit)
 
             EngineUnits.PERCENT, EngineUnits.VO2MAX -> MetricFormat(Style.DECIMAL, engineUnit)
             EngineUnits.RATIO -> MetricFormat(Style.PERCENT_OF_RATIO, EngineUnits.PERCENT)

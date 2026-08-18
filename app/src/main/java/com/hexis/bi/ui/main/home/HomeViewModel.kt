@@ -3,6 +3,7 @@ package com.hexis.bi.ui.main.home
 import android.app.Application
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
+import com.hexis.bi.BuildConfig
 import com.hexis.bi.R
 import com.hexis.bi.data.activity.ActivityRepository
 import com.hexis.bi.data.health.sync.HealthSyncScheduler
@@ -100,6 +101,7 @@ class HomeViewModel internal constructor(
     val state = _state.asStateFlow()
 
     private fun loadInsights() {
+        if (!BuildConfig.INTELLIGENCE_ENGINE_ENABLED) return
         viewModelScope.launch {
             val cards = runIntelligence().fold(
                 onSuccess = { run ->
@@ -127,7 +129,10 @@ class HomeViewModel internal constructor(
         activeUserId = newUserId
         terraTileContext = null
         _state.value = HomeState()
-        if (newUserId != null) refreshTrigger.tryEmit(Unit)
+        if (newUserId != null) {
+            loadInsights()
+            refreshTrigger.tryEmit(Unit)
+        }
     }
 
     private val refreshTrigger = MutableSharedFlow<Unit>(
@@ -202,12 +207,18 @@ class HomeViewModel internal constructor(
 
         merge(activityRepository.updates, sleepRepository.updates)
             .debounce(CanonicalCacheConstants.UPDATE_DEBOUNCE_MS)
-            .onEach { onHealthDataChanged() }
+            .onEach {
+                onHealthDataChanged()
+                loadInsights()
+            }
             .launchIn(viewModelScope)
 
         scanHistoryRepository.updates
             .debounce(CanonicalCacheConstants.UPDATE_DEBOUNCE_MS)
-            .onEach { reloadOverview() }
+            .onEach {
+                reloadOverview()
+                loadInsights()
+            }
             .launchIn(viewModelScope)
 
         healthSyncScheduler.backfillInFlight()

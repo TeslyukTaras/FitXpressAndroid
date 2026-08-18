@@ -174,7 +174,7 @@ internal fun InsightCardView(card: InsightCard) {
         InsightHeader(title = card.area.areaLabel(), confidence = card.confidence)
         if (card.values.isNotEmpty()) {
             Spacer(Modifier.height(dimensionResource(R.dimen.insight_card_value_gap)))
-            InsightValues(card.values)
+            InsightValues(card.values, showLabels = card.values.size > 1)
         } else if (card.confidence == FindingConfidence.LOW) {
             Spacer(Modifier.height(dimensionResource(R.dimen.insight_card_value_gap)))
             Text(

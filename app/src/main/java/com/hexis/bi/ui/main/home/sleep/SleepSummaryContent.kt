@@ -65,6 +65,13 @@ private fun SleepSummaryReady(
     state: SleepState,
     onInfoClick: () -> Unit,
 ) {
+    EngineFindingsSection(
+        state = state.findings.forWindow(FindingWindows.SLEEP_SUMMARY),
+        topSpacing = dimensionResource(R.dimen.spacer_xs),
+    )
+
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
     SleepStructureCard(
         loading = state.summaryLoadState == SleepLoadState.Loading,
         structure = state.weeklyStructure,
@@ -75,7 +82,6 @@ private fun SleepSummaryReady(
 
     SleepRecoveryBanner(onInfoClick = onInfoClick)
 
-    EngineFindingsSection(state = state.findings.forWindow(FindingWindows.SLEEP_SUMMARY))
     EngineDebugSection(
         info = state.findings.debugForWindow(FindingWindows.SLEEP_SUMMARY),
         presentation = EngineDebugPresentation.COMPACT,

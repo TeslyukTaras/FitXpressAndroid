@@ -15,6 +15,8 @@ import com.hexis.bi.intelligence.model.EngineInput
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 
@@ -36,6 +38,8 @@ internal class RunIntelligenceUseCase(
     private data class Memo(val input: EngineInput, val config: EngineConfig, val report: EngineReport)
 
     private val memo = AtomicReference<Memo>()
+
+    private val runLock = Mutex()
 
     suspend operator fun invoke(): Result<IntelligenceRun> {
         val loadedConfig = configRepository.config().getOrElse { return Result.failure(it) }
@@ -68,19 +72,20 @@ internal class RunIntelligenceUseCase(
         config: EngineConfig,
         copy: CopyConfig,
         isMetric: Boolean,
-    ): Result<IntelligenceRun> {
+    ): Result<IntelligenceRun> = runLock.withLock {
         memo.get()?.let { cached ->
             if (cached.input == input && cached.config == config) {
                 return Result.success(IntelligenceRun(cached.report, cached.config, copy, isMetric))
             }
         }
         val startedAt = System.currentTimeMillis()
-        return runCatching {
-            withContext(computation) { IntelligenceEngine.run(input, config) }
-        }.onSuccess { report ->
-            memo.set(Memo(input, config, report))
-            log(report, input, System.currentTimeMillis() - startedAt)
-        }.onFailure { Timber.w(it, "Intelligence run failed") }
+        runCatching {
+            withContext(computation) {
+                IntelligenceEngine.run(input, config)
+                    .also { log(it, input, System.currentTimeMillis() - startedAt) }
+            }
+        }.onSuccess { report -> memo.set(Memo(input, config, report)) }
+            .onFailure { Timber.w(it, "Intelligence run failed") }
             .map { IntelligenceRun(it, config, copy, isMetric) }
     }
 

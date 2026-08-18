@@ -153,15 +153,11 @@ object EngineFindingsMapper {
 
         if (rows.isEmpty()) return EngineFindingsState.Empty
 
-        val leading = mostConfidentChange(patterns.map { it.first } + ranked)
+        val section = patterns.map { it.first } + ranked
         return EngineFindingsState.Ready(
             rows = rows,
-            confidence = leading.confidenceLevel,
-            values = if (leading.informational) {
-                emptyList()
-            } else {
-                valuesFor(leading, report, copy, windowDays, isMetric)
-            },
+            confidence = mostConfidentChange(section).confidenceLevel,
+            values = valuesFor(section, report, copy, windowDays, isMetric),
         )
     }
 
@@ -187,11 +183,7 @@ object EngineFindingsMapper {
                     area = finding.subject,
                     explanation = sentence,
                     confidence = finding.confidenceLevel,
-                    values = if (finding.informational) {
-                        emptyList()
-                    } else {
-                        valuesFor(finding, report, copy, windowDays, isMetric)
-                    },
+                    values = valuesFor(listOf(finding), report, copy, windowDays, isMetric),
                 )
             }
             .sortedWith(compareBy({ it.confidence.ordinal }, { it.area }))
@@ -209,25 +201,31 @@ object EngineFindingsMapper {
     }
 
     private fun valuesFor(
-        finding: Finding,
+        findings: List<Finding>,
         report: EngineReport,
         copy: CopyConfig,
         windowDays: Int,
         isMetric: Boolean,
     ): List<FindingValue> {
-        if (windowDays != report.primaryWindowDays) return emptyList()
-        return finding.supportingValues.keys.map(::resolveMetric).mapNotNull { metric ->
-            val row = report.metricTrends.firstOrNull { it.metric == metric } ?: return@mapNotNull null
-            val baseline = row.baseline ?: return@mapNotNull null
-            val change = row.trendsByWindow[windowDays]?.absChange ?: return@mapNotNull null
-            val format = MetricFormat.of(row.unit, isMetric) ?: return@mapNotNull null
-            FindingValue(
-                label = copy.labels[metric].orEmpty(),
-                from = format.render(baseline.median),
-                to = format.render(baseline.median + change),
-                unit = format.unit(copy.labels[metric].orEmpty()),
-            )
-        }.take(FindingValues.MAX_VALUES)
+        return findings.filterNot { it.informational }
+            .sortedBy { it.priorityRank }
+            .flatMap { it.supportingValues.keys }
+            .map(::resolveMetric)
+            .distinct()
+            .mapNotNull { metric ->
+                val row = report.metricTrends.firstOrNull { it.metric == metric }
+                    ?: return@mapNotNull null
+                val baseline = report.baselineFor(windowDays, metric) ?: return@mapNotNull null
+                val change = row.trendsByWindow[windowDays]?.absChange ?: return@mapNotNull null
+                val format = MetricFormat.of(row.unit, isMetric) ?: return@mapNotNull null
+                FindingValue(
+                    label = copy.labels[metric].orEmpty(),
+                    from = format.render(baseline.median),
+                    to = format.render(baseline.median + change),
+                    unit = format.unit(copy.labels[metric].orEmpty()),
+                )
+            }
+            .take(FindingValues.MAX_VALUES)
     }
 }
 

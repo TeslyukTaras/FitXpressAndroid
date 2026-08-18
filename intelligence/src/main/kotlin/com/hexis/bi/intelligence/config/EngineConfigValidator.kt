@@ -1,6 +1,16 @@
 package com.hexis.bi.intelligence.config
 
+import com.hexis.bi.intelligence.engine.Foundations
+import com.hexis.bi.intelligence.engine.LongevitySignals
+import com.hexis.bi.intelligence.engine.PhysiqueComponents
+
 private val KNOWN_ESTIMATORS = setOf("linear_ols", TrendConfig.ESTIMATOR_THEIL_SEN)
+private val FOUNDATION_KEYS = listOf(
+    Foundations.METABOLIC,
+    Foundations.RECOMPOSITION,
+    Foundations.PHYSICAL,
+    Foundations.FUNCTIONAL,
+)
 private val KNOWN_AREAS = setOf("sleep", "recovery", "activity", "aging", "body", "stress", "metabolic")
 private const val MAX_WINSORIZE_PCT = 0.5
 private const val ANCHOR_PAIR_SIZE = 2
@@ -29,7 +39,7 @@ object EngineConfigValidator {
         validateConfidence(config.confidence)
         validateFeaturesAndFindings(config)
         validateQuality(config.quality)
-        validateComposites(config.composites)
+        validateComposites(config.composites, config.features)
 
         config.domains.forEach { (metric, area) ->
             if (area !in KNOWN_AREAS) add("domains.$metric maps to unknown area '$area'")
@@ -151,7 +161,10 @@ object EngineConfigValidator {
         if (overlap.isNotEmpty()) add("findings metric polarity overlaps for ${overlap.sorted()}")
     }
 
-    private fun MutableList<String>.validateComposites(composites: CompositesConfig) {
+    private fun MutableList<String>.validateComposites(
+        composites: CompositesConfig,
+        features: FeaturesConfig,
+    ) {
         if (composites.requiredDailyInputs.isEmpty()) add("composites.required_daily_inputs is empty")
         composites.carryForwardDays.forEach { (metric, days) ->
             if (days < 0) add("composites.carry_forward_days.$metric is negative")
@@ -159,6 +172,14 @@ object EngineConfigValidator {
 
         if (composites.longevity.weights.values.sum() <= 0.0) {
             add("composites.longevity.weights sum to zero")
+        }
+        if (features.longevity || features.paceOfAging) {
+            LongevitySignals.ANCHORED.filterNot { it in composites.longevity.anchors }
+                .forEach { add("composites.longevity.anchors.$it is missing") }
+        }
+        if (features.longevity) {
+            LongevitySignals.WEIGHTED.filterNot { it in composites.longevity.weights }
+                .forEach { add("composites.longevity.weights.$it is missing") }
         }
         composites.longevity.anchors.forEach { (signal, anchor) ->
             when {
@@ -175,10 +196,29 @@ object EngineConfigValidator {
             add("composites.pace_of_aging.baseline is outside [min, max]")
         }
         if (pace.neutralScore <= 0.0) add("composites.pace_of_aging.neutral_score must be > 0")
+        if (features.paceOfAging) {
+            LongevitySignals.WEIGHTED.filterNot { it in pace.effects }
+                .forEach { add("composites.pace_of_aging.effects.$it is missing") }
+        }
+
+        val physiqueWeights = composites.physique.weights
+        if (features.physique) {
+            PhysiqueComponents.REQUIRED_WEIGHTS.filterNot { it in physiqueWeights }
+                .forEach { add("composites.physique.weights.$it is missing") }
+            if (composites.physique.enableProportion &&
+                PhysiqueComponents.PROPORTION !in physiqueWeights
+            ) {
+                add("composites.physique.weights.${PhysiqueComponents.PROPORTION} is missing")
+            }
+        }
 
         val foundations = composites.foundations
         if (foundations.windowDays <= 0) add("composites.foundations.window_days must be > 0")
         if (foundations.weights.values.sum() <= 0.0) add("composites.foundations.weights sum to zero")
+        if (features.foundations) {
+            FOUNDATION_KEYS.filterNot { it in foundations.weights }
+                .forEach { add("composites.foundations.weights.$it is missing") }
+        }
         if (foundations.majorLeanLossKg <= 0.0) add("composites.foundations.major_lean_loss_kg must be > 0")
 
         if (composites.stress.hrvAnchors.size != ANCHOR_PAIR_SIZE) {

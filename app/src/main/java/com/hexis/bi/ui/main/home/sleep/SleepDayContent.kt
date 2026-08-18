@@ -69,6 +69,13 @@ fun SleepDayContent(
 
 @Composable
 private fun SleepDayReady(state: SleepState, onInfoClick: () -> Unit) {
+    EngineFindingsSection(
+        state = state.findings.forWindow(FindingWindows.SLEEP_DAY),
+        topSpacing = dimensionResource(R.dimen.spacer_xs),
+    )
+
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
     SleepStatusCard(
         loading = state.dayLoadState == SleepLoadState.Loading,
         totalSleepMinutes = state.totalSleepMinutes,
@@ -105,7 +112,6 @@ private fun SleepDayReady(state: SleepState, onInfoClick: () -> Unit) {
         onInfoClick = onInfoClick,
     )
 
-    EngineFindingsSection(state = state.findings.forWindow(FindingWindows.SLEEP_DAY))
     EngineDebugSection(
         info = state.findings.debugForWindow(FindingWindows.SLEEP_DAY),
         presentation = EngineDebugPresentation.COMPACT,

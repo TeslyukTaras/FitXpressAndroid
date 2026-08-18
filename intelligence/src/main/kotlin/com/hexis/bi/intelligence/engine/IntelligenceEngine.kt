@@ -51,8 +51,12 @@ data class EngineReport(
     val suppressed: List<SuppressedFinding>,
     val findingsByWindow: Map<Int, WindowFindings>,
     val areaWeights: Map<String, Double>,
+    val baselinesByWindow: Map<Int, Map<String, Baseline>> = emptyMap(),
 ) {
     fun forWindow(windowDays: Int): WindowFindings? = findingsByWindow[windowDays]
+
+    fun baselineFor(windowDays: Int, metric: String): Baseline? =
+        baselinesByWindow[windowDays]?.get(metric)
 
     val availableWindows: List<Int> get() = findingsByWindow.keys.sorted()
 
@@ -172,6 +176,7 @@ object IntelligenceEngine {
             findingsByArea = primaryFindings.findingsByArea,
             suppressed = primaryFindings.suppressed,
             findingsByWindow = findingsByWindow,
+            baselinesByWindow = baselinesByWindow.filterKeys { it in findingsByWindow },
             areaWeights = findingsByWindow.values
                 .flatMap { it.findings }
                 .map { it.area }

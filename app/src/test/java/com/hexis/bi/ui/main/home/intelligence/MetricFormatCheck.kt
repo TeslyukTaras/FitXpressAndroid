@@ -1,10 +1,21 @@
 package com.hexis.bi.ui.main.home.intelligence
 
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Before
 import org.junit.Test
+import java.util.Locale
 
 class MetricFormatCheck {
+
+    private val systemLocale = Locale.getDefault()
+
+    @Before
+    fun pinLocale() = Locale.setDefault(Locale.US)
+
+    @After
+    fun restoreLocale() = Locale.setDefault(systemLocale)
 
     private fun render(unit: String, value: Double, isMetric: Boolean): String {
         val f = MetricFormat.of(unit, isMetric)
