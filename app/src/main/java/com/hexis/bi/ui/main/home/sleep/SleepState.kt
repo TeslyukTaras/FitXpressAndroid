@@ -3,6 +3,7 @@ package com.hexis.bi.ui.main.home.sleep
 import androidx.annotation.StringRes
 import com.hexis.bi.R
 import com.hexis.bi.data.sleep.SleepStage
+import com.hexis.bi.ui.main.home.intelligence.AreaFindings
 import com.hexis.bi.utils.constants.SleepConstants
 import com.hexis.bi.utils.constants.TerraProviders
 
@@ -112,12 +113,9 @@ data class SleepState(
 
     // Recovery bottom sheet
     val showRecoverySheet: Boolean = false,
+
+    val findings: AreaFindings = AreaFindings(),
 ) {
-    val isTabLoading: Boolean
-        get() = when (selectedTab) {
-            SleepTab.Day -> dayLoadState == SleepLoadState.Loading
-            SleepTab.Summary -> summaryLoadState == SleepLoadState.Loading
-        }
 
     fun loadStateOf(tab: SleepTab): SleepLoadState = when (tab) {
         SleepTab.Day -> dayLoadState

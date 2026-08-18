@@ -2,6 +2,7 @@ package com.hexis.bi.ui.main.home.activity
 
 import androidx.annotation.StringRes
 import com.hexis.bi.R
+import com.hexis.bi.ui.main.home.intelligence.AreaFindings
 import com.hexis.bi.utils.constants.ActivityConstants
 import com.hexis.bi.utils.constants.TerraProviders
 import com.hexis.bi.utils.kmToMiles
@@ -82,6 +83,7 @@ data class ActivityState(
     val yearLoadState: ActivityLoadState = ActivityLoadState.Loading,
     val yearErrorMessage: String? = null,
     val year: PeriodSummary = PeriodSummary(),
+    val findings: AreaFindings = AreaFindings(),
 
     // Info bottom sheet
     val showInfoSheet: Boolean = false,
@@ -117,7 +119,4 @@ data class ActivityState(
         ActivityTab.Month -> monthLoadState
         ActivityTab.Year -> yearLoadState
     }
-
-    val isTabLoading: Boolean
-        get() = loadStateOf(selectedTab) == ActivityLoadState.Loading
 }

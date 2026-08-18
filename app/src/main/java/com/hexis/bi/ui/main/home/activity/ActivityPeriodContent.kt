@@ -15,11 +15,14 @@ import com.hexis.bi.ui.main.home.activity.components.ActivityGridCell
 import com.hexis.bi.ui.main.home.activity.components.ActivityMetricsGrid
 import com.hexis.bi.ui.main.home.activity.components.MetricSegment
 import com.hexis.bi.ui.main.home.activity.components.rememberDurationSegments
+import com.hexis.bi.ui.main.home.intelligence.EngineFindingsSection
 
 @Composable
 fun ActivityPeriodContent(
     state: ActivityState,
     period: PeriodSummary,
+    windowDays: Int,
+    loading: Boolean,
     trendTitle: String,
     trendDescription: String,
     separateInsightGlass: Boolean,
@@ -46,6 +49,7 @@ fun ActivityPeriodContent(
     }
 
     BodyGlassCard(
+        loading = loading,
         contentPadding = PaddingValues(
             start = dimensionResource(R.dimen.spacer_m),
             top = dimensionResource(R.dimen.spacer_l),
@@ -106,7 +110,10 @@ fun ActivityPeriodContent(
         trendTitle = trendTitle,
         trendDescription = trendDescription,
         separateInsightGlass = separateInsightGlass,
+        loading = loading,
     )
+
+    EngineFindingsSection(state = state.findings.forWindow(windowDays))
 }
 
 private fun PeriodSummary.totalDistanceKmDisplay(isMetric: Boolean): Float =

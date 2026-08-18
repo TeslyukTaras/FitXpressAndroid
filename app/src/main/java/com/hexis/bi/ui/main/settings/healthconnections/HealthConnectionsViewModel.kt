@@ -13,6 +13,7 @@ import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.R
 import com.hexis.bi.data.health.sync.HealthSyncScheduler
+import com.hexis.bi.data.health.sync.HealthSyncTrigger
 import com.hexis.bi.data.healthconnect.HealthConnectPermissionChecker
 import com.hexis.bi.data.healthconnections.HealthConnection
 import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
@@ -208,7 +209,7 @@ class HealthConnectionsViewModel internal constructor(
     private suspend fun reconcileAndBackfillNewSources(): Set<String> {
         val recovered = terraConnectionReconciler.reconcile().getOrElse { emptySet() }
         if (recovered.isNotEmpty()) {
-            healthSyncScheduler.enqueueHistoryBackfill(reason = "source_connected")
+            healthSyncScheduler.enqueueHistoryBackfill(HealthSyncTrigger.SourceConnected)
         }
         return recovered
     }
@@ -233,7 +234,7 @@ class HealthConnectionsViewModel internal constructor(
         val previous = _state.value.healthConnectRowState
         _state.update { it.copy(healthConnectRowState = rowState) }
         if (rowState == HealthConnectRowState.Connected && previous != HealthConnectRowState.Connected) {
-            healthSyncScheduler.enqueueHistoryBackfill(reason = "health_connect_readable")
+            healthSyncScheduler.enqueueHistoryBackfill(HealthSyncTrigger.HealthConnectReadable)
         }
     }
 
@@ -487,7 +488,7 @@ class HealthConnectionsViewModel internal constructor(
         }
         refreshHealthConnectRowState()
         if (liveTerraUserId != null) {
-            healthSyncScheduler.enqueueHistoryBackfill(reason = "source_connected")
+            healthSyncScheduler.enqueueHistoryBackfill(HealthSyncTrigger.SourceConnected)
         }
         if (provider.equals(TerraProviders.HEALTH_CONNECT, ignoreCase = true)) {
             setMessage(R.string.msg_health_connect_connected)

@@ -10,6 +10,9 @@ import com.hexis.bi.domain.body.PhysiqueScoreBreakdown
 import com.hexis.bi.domain.body.muscleMassPercentage
 import com.hexis.bi.domain.body.physiqueScoreBreakdown
 import com.hexis.bi.ui.base.BaseViewModel
+import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
+import com.hexis.bi.intelligence.engine.Domains
+import com.hexis.bi.ui.main.home.intelligence.findingsFor
 import com.hexis.bi.utils.millisToShortMonthDayYear
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -20,16 +23,25 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.math.roundToInt
 
-class PhysiqueDriftViewModel(
+class PhysiqueDriftViewModel internal constructor(
     application: Application,
     private val scanHistoryRepository: ScanHistoryRepository,
     private val userRepository: UserRepository,
+    private val runIntelligence: RunIntelligenceUseCase,
 ) : BaseViewModel(application, initialLoading = true) {
+
+    private fun loadFindings() {
+        viewModelScope.launch {
+            val resolved = runIntelligence.findingsFor(Domains.BODY)
+            _state.update { it.copy(findings = resolved) }
+        }
+    }
 
     private val _state = MutableStateFlow(PhysiqueDriftState())
     val state = _state.asStateFlow()
 
     init {
+        loadFindings()
         load()
     }
 

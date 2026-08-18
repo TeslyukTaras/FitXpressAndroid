@@ -16,6 +16,7 @@ import com.hexis.bi.ui.main.home.activity.components.ActivitySelectedDayHeader
 import com.hexis.bi.ui.main.home.activity.components.ActivityStepsBarChart
 import com.hexis.bi.ui.main.home.activity.components.ActivityWeekDayCircles
 import com.hexis.bi.utils.constants.ActivityConstants
+import com.hexis.bi.utils.constants.FindingWindows
 
 @Composable
 fun ActivityWeekContent(
@@ -85,6 +86,8 @@ private fun ActivityWeekReady(
     ActivityPeriodContent(
         state = state,
         period = state.week,
+        loading = state.weekLoadState == ActivityLoadState.Loading,
+        windowDays = FindingWindows.ACTIVITY_WEEK,
         trendTitle = stringResource(R.string.activity_trend_label_week),
         trendDescription = trendDescription,
         separateInsightGlass = true,
@@ -142,6 +145,7 @@ private fun ActivityWeekSelectedDay(
     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
     ActivityDayDetail(
+        loading = state.weekLoadState == ActivityLoadState.Loading,
         state = state,
         steps = selectedDay.steps,
         distanceKm = selectedDay.distanceKm,

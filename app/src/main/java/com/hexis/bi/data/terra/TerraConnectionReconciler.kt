@@ -4,7 +4,12 @@ import com.google.firebase.Timestamp
 import com.hexis.bi.data.healthconnections.HealthConnection
 import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
 import com.hexis.bi.utils.constants.TerraProviders
+import com.hexis.bi.utils.constants.TerraSyncConstants
 import com.hexis.bi.utils.redactSensitiveId
+import java.time.Clock
+import java.time.Duration
+import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 import timber.log.Timber
 
 /**
@@ -14,6 +19,7 @@ import timber.log.Timber
 class TerraConnectionReconciler(
     private val terraApi: TerraApi,
     private val healthConnections: HealthConnectionsRepository,
+    private val clock: Clock = Clock.systemUTC(),
 ) {
 
     suspend fun reconcile(): Result<Set<String>> {
@@ -77,14 +83,24 @@ class TerraConnectionReconciler(
                 it.terraUserId !in liveIds &&
                 it.provider.uppercase() in RETIRABLE_PROVIDERS
         }
-        val confirmed = absentLastPass intersect absent.mapTo(mutableSetOf()) { it.terraUserId }
-        absentLastPass = absent.mapTo(mutableSetOf()) { it.terraUserId }
-        val retired = absent.filter { it.terraUserId in confirmed }
+        val absentIds = absent.mapTo(mutableSetOf()) { it.terraUserId }
+        val now = clock.instant()
+        absentSince.keys.retainAll(absentIds)
+        absentIds.forEach { absentSince.putIfAbsent(it, now) }
+
+        val retired = absent.filter { connection ->
+            val since = absentSince[connection.terraUserId] ?: now
+            Duration.between(since, now) >= TerraSyncConstants.MIN_ABSENCE_BEFORE_RETIRE
+        }
         if (retired.isEmpty()) {
             if (absent.isNotEmpty()) {
                 Timber.i(
-                    "Terra reconcile: %d connection(s) absent for the first time; awaiting confirmation",
+                    "Terra reconcile: %d connection(s) absent; retiring after %d more minute(s) absent",
                     absent.size,
+                    absent.minOf { connection ->
+                        val since = absentSince[connection.terraUserId] ?: now
+                        (TerraSyncConstants.MIN_ABSENCE_BEFORE_RETIRE - Duration.between(since, now)).toMinutes()
+                    },
                 )
             }
             return
@@ -99,11 +115,11 @@ class TerraConnectionReconciler(
                 )
             }
         }
+        absentSince.keys.removeAll(retired.mapTo(mutableSetOf()) { it.terraUserId })
         TerraSdkSync.invalidateCachesAndNotify()
     }
 
-    @Volatile
-    private var absentLastPass: Set<String> = emptySet()
+    private val absentSince = ConcurrentHashMap<String, Instant>()
 
     private fun sourceFor(provider: String): String =
         if (provider == TerraProviders.HEALTH_CONNECT) {

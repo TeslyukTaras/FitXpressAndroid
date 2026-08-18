@@ -24,8 +24,9 @@ class SessionCleaner(
         clearLocalDataFor(outgoingUserId)
     }
 
-    suspend fun clearLocalData() {
-        clearLocalDataFor(firebaseAuth.currentUser?.uid)
+    suspend fun deleteAccount(delete: suspend () -> Result<Unit>): Result<Unit> {
+        val outgoingUserId = firebaseAuth.currentUser?.uid
+        return delete().onSuccess { clearLocalDataFor(outgoingUserId) }
     }
 
     private suspend fun clearLocalDataFor(userId: String?) {

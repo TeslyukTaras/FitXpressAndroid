@@ -1,5 +1,21 @@
 package com.hexis.bi.utils.constants
 
+internal object FindingWindows {
+
+    const val SLEEP_SUMMARY = 7
+    const val ACTIVITY_WEEK = 30
+    const val ACTIVITY_MONTH = 30
+    const val ACTIVITY_YEAR = 365
+}
+
+internal object IntelligenceRemoteConfig {
+
+    const val CONFIG_KEY = "intelligence_engine_config"
+
+    const val DEBUG_FETCH_INTERVAL_SECONDS = 60L
+    const val RELEASE_FETCH_INTERVAL_SECONDS = 12L * 60 * 60
+}
+
 internal object IntelligenceConstants {
 
     const val MAX_SCORE = 100f

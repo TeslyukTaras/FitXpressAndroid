@@ -143,14 +143,13 @@ private fun TerraNode.extractVo2Max(): Float? {
 
 private fun TerraNode.dateOrNull(): LocalDate? {
     val metadata = objectOrNull(TerraActivityJsonKeys.Common.METADATA)
-    val fromDateField = TerraActivityJsonKeys.DateTime.CANDIDATES
-        .firstNotNullOfOrNull { key ->
-            metadata?.get(key)?.toString()?.trim('"')?.toLocalDateOrNull()
-        }
-    if (fromDateField != null) return fromDateField
-    return TerraActivityJsonKeys.DateTime.CANDIDATES
-        .firstNotNullOfOrNull { key -> this[key]?.toString()?.trim('"')?.toLocalDateOrNull() }
+    return TerraActivityJsonKeys.DateTime.CANDIDATES.firstNotNullOfOrNull { key ->
+        metadata?.dayOrNull(key) ?: dayOrNull(key)
+    }
 }
+
+private fun TerraNode.dayOrNull(key: String): LocalDate? =
+    this[key]?.toString()?.trim('"')?.toLocalDateOrNull()
 
 private fun String.toLocalDateOrNull(): LocalDate? =
     runCatching {

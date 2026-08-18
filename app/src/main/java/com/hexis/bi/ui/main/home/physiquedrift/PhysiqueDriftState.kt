@@ -1,5 +1,7 @@
 package com.hexis.bi.ui.main.home.physiquedrift
 
+import com.hexis.bi.ui.main.home.intelligence.AreaFindings
+
 enum class PhysiqueDriftLevel {
     Athletic,
     Improving,
@@ -13,6 +15,7 @@ data class PhysiqueMetric(
 )
 
 data class PhysiqueDriftState(
+    val findings: AreaFindings = AreaFindings(),
     val hasData: Boolean = false,
     val score: String = "",
     val level: PhysiqueDriftLevel = PhysiqueDriftLevel.NoData,

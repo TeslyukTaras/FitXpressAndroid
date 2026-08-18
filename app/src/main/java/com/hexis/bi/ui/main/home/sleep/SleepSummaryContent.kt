@@ -12,8 +12,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.AppDateNavigator
+import com.hexis.bi.ui.main.home.intelligence.EngineFindingsSection
 import com.hexis.bi.ui.main.home.sleep.components.SleepRecoveryBanner
 import com.hexis.bi.ui.main.home.sleep.components.SleepStructureCard
+import com.hexis.bi.utils.constants.FindingWindows
 
 @Composable
 fun SleepSummaryContent(
@@ -62,6 +64,7 @@ private fun SleepSummaryReady(
     onInfoClick: () -> Unit,
 ) {
     SleepStructureCard(
+        loading = state.summaryLoadState == SleepLoadState.Loading,
         structure = state.weeklyStructure,
         stages = state.weeklyStages,
     )
@@ -69,4 +72,6 @@ private fun SleepSummaryReady(
     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
     SleepRecoveryBanner(onInfoClick = onInfoClick)
+
+    EngineFindingsSection(state = state.findings.forWindow(FindingWindows.SLEEP_SUMMARY))
 }

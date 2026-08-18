@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -29,10 +28,6 @@ internal fun StatsContent(
     onRetry: () -> Unit,
 ) {
     when (state.loadState) {
-        BodyLoadState.Loading -> StatsPlaceholder {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-        }
-
         BodyLoadState.Error -> StatsPlaceholder {
             Text(
                 text = stringResource(R.string.body_error_title),
@@ -50,9 +45,11 @@ internal fun StatsContent(
             }
         }
 
-        BodyLoadState.Ready -> {
+        BodyLoadState.Loading, BodyLoadState.Ready -> {
+            val loading = state.loadState == BodyLoadState.Loading
             Column(modifier = Modifier.fillMaxWidth()) {
                 BodyCompositionCard(
+                    loading = loading,
                     composition = state.composition,
                     massUnit = state.massUnit,
                     isMetric = state.isMetric,
@@ -62,6 +59,7 @@ internal fun StatsContent(
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
                 BodyTrendChart(
+                    loading = loading,
                     chart = state.chart,
                     timeRange = state.timeRange,
                     onTimeRangeChange = onTimeRangeChange,

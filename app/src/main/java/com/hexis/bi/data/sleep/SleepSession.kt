@@ -11,9 +11,17 @@ data class SleepStageInterval(
     val start: LocalDateTime,
     val end: LocalDateTime,
 ) {
+    val durationSeconds: Long
+        get() = Duration.between(start, end).seconds
+
     val durationMinutes: Int
         get() = Duration.between(start, end).toMinutes().toInt()
 }
+
+internal fun List<SleepStageInterval>.stageSeconds(stage: SleepStage): Long =
+    filter { it.stage == stage && it.durationSeconds > 0 }.sumOf { it.durationSeconds }
+
+internal fun Long.wholeMinutes(): Int = Duration.ofSeconds(this).toMinutes().toInt()
 
 /** A single timestamped reading from the night, e.g. a heart-rate or HRV sample. */
 data class SleepSample(
@@ -59,12 +67,16 @@ data class SleepSession(
     val hrvSamples: List<SleepSample> = emptyList(),
     val sessionCount: Int = 1,
     val aggregateStageTotals: SleepStageTotals? = null,
+    val summaryStageSeconds: Map<SleepStage, Long> = emptyMap(),
 ) {
+    fun stageSecondsFor(stage: SleepStage): Long =
+        stages.stageSeconds(stage).takeIf { it > 0 } ?: summaryStageSeconds[stage] ?: 0L
+
     val stageTotals: SleepStageTotals
         get() = aggregateStageTotals ?: SleepStageTotals(
-            deepMinutes = stages.filter { it.stage == SleepStage.Deep }.sumOf { it.durationMinutes },
-            lightMinutes = stages.filter { it.stage == SleepStage.Light }.sumOf { it.durationMinutes },
-            remMinutes = stages.filter { it.stage == SleepStage.REM }.sumOf { it.durationMinutes },
-            awakeMinutes = stages.filter { it.stage == SleepStage.Awake }.sumOf { it.durationMinutes },
+            deepMinutes = stageSecondsFor(SleepStage.Deep).wholeMinutes(),
+            lightMinutes = stageSecondsFor(SleepStage.Light).wholeMinutes(),
+            remMinutes = stageSecondsFor(SleepStage.REM).wholeMinutes(),
+            awakeMinutes = stageSecondsFor(SleepStage.Awake).wholeMinutes(),
         )
 }

@@ -35,6 +35,7 @@ fun ActivityAvgTrendRow(
     trendTitle: String,
     trendDescription: String,
     separateInsightGlass: Boolean,
+    loading: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val fmt = NumberFormat.getNumberInstance(Locale.US)
@@ -60,6 +61,7 @@ fun ActivityAvgTrendRow(
                 .weight(1f)
                 .fillMaxHeight(),
             highlighted = true,
+            loading = loading,
         ) {
             Text(
                 text = stringResource(R.string.activity_avg_steps_per_day),
@@ -90,7 +92,7 @@ fun ActivityAvgTrendRow(
                 .weight(1f)
                 .fillMaxHeight(),
         ) {
-            BodyGlassCard(modifier = Modifier.fillMaxWidth()) {
+            BodyGlassCard(modifier = Modifier.fillMaxWidth(), loading = loading) {
                 TrendHeaderRow(trendTitle, trendText, trendColor)
             }
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
@@ -98,6 +100,7 @@ fun ActivityAvgTrendRow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
+                loading = loading,
             ) {
                 Text(
                     text = trendDescription,
@@ -110,6 +113,7 @@ fun ActivityAvgTrendRow(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight(),
+            loading = loading,
         ) {
             TrendHeaderRow(trendTitle, trendText, trendColor)
             Spacer(Modifier.weight(1f))

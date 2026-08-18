@@ -84,10 +84,12 @@ fun SleepStructureCard(
     structure: List<DailyStructure>,
     stages: List<WeeklyStageData>,
     modifier: Modifier = Modifier,
+    loading: Boolean = false,
 ) {
     var selectedIndex by remember(structure) { mutableIntStateOf(-1) }
     val selectedDay = structure.getOrNull(selectedIndex)
     BodyGlassCard(
+        loading = loading,
         modifier = modifier,
         contentPadding = PaddingValues(
             vertical = dimensionResource(R.dimen.padding_medium),

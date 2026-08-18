@@ -9,7 +9,11 @@ internal fun CanonicalBodyScanAggregate.toScanRecord(): ScanRecord = ScanRecord(
     measurementId = measurementId,
     timestamp = savedAt.asInstant().toEpochMilli(),
     model3dUrl = model3dUrl,
-    measurements = (circumferenceParamsCm + frontLinearParamsCm + sideLinearParamsCm).mapValues { it.value.toFloat() },
+    measurements = MeasurementMapper.mergeMeasurementParams(
+        circumference = circumferenceParamsCm.mapValues { it.value.toFloat() },
+        frontLinear = frontLinearParamsCm.mapValues { it.value.toFloat() },
+        sideLinear = sideLinearParamsCm.mapValues { it.value.toFloat() },
+    ),
     frontLinearParams = frontLinearParamsCm.mapValues { it.value.toFloat() },
     sideLinearParams = sideLinearParamsCm.mapValues { it.value.toFloat() },
     heightCm = heightCm?.toFloat(),
@@ -22,8 +26,10 @@ internal fun CanonicalBodyScanAggregate.toScanRecord(): ScanRecord = ScanRecord(
 )
 
 internal fun ScanRecord.toCanonicalAggregate(): CanonicalBodyScanAggregate {
-    val frontKeys = frontLinearParams.keys
-    val sideKeys = sideLinearParams.keys
+    val supersededByLinear = { key: String ->
+        val linear = frontLinearParams[key] ?: sideLinearParams[key]
+        linear != null && linear == measurements[key]
+    }
     return CanonicalBodyScanAggregate(
         documentId = id,
         measurementId = measurementId,
@@ -38,7 +44,7 @@ internal fun ScanRecord.toCanonicalAggregate(): CanonicalBodyScanAggregate {
         leanBodyMassKg = leanBodyMassKg?.toDouble(),
         fatBodyMassKg = fatBodyMassKg?.toDouble(),
         circumferenceParamsCm = measurements
-            .filterKeys { it !in frontKeys && it !in sideKeys }
+            .filterKeys { !supersededByLinear(it) }
             .mapValues { it.value.toDouble() },
         frontLinearParamsCm = frontLinearParams.mapValues { it.value.toDouble() },
         sideLinearParamsCm = sideLinearParams.mapValues { it.value.toDouble() },

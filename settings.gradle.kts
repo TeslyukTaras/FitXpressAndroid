@@ -40,4 +40,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "FitXpress"
 include(":app")
+include(":intelligence")
  

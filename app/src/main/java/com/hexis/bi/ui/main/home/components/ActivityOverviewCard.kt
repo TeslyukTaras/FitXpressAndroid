@@ -12,10 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.ActivityOverview
@@ -27,7 +23,7 @@ internal fun ActivityOverviewCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    BodyGlassCard(modifier = modifier, onClick = onClick) {
+    BodyGlassCard(modifier = modifier, onClick = onClick, loading = isSyncing) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -38,24 +34,12 @@ internal fun ActivityOverviewCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
-            AnimatedContent(
-                targetState = isSyncing,
-                transitionSpec = { fadeIn() togetherWith fadeOut() },
-                label = "activity-overview-value",
-            ) { syncing ->
-                Text(
-                    text = if (syncing) stringResource(R.string.health_data_syncing) else data.steps,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = if (syncing) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.onBackground
-                    },
-                )
-            }
+            Text(
+                text = data.steps,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
         }
-
-        if (isSyncing) return@BodyGlassCard
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
 

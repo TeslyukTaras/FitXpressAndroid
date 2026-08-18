@@ -17,6 +17,7 @@ import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.data.reminder.ScanReminderScheduler
 import com.hexis.bi.data.health.sync.HealthSyncCoordinator
+import com.hexis.bi.data.health.sync.HealthSyncTrigger
 import com.hexis.bi.data.health.sync.HealthSyncScheduler
 import com.hexis.bi.data.terra.TerraCallbackHandler
 import com.hexis.bi.data.terra.TerraManagerHolder
@@ -63,7 +64,7 @@ class MainActivity : ComponentActivity() {
                     .onFailure { Timber.e(it, "Terra re-init after auth change failed") }
                     .onSuccess { pullOwnedSdkConnections(reason = "auth_state") }
             }
-            if (uid != null) startHealthSync(reason = "sign_in")
+            if (uid != null) startHealthSync(HealthSyncTrigger.SignIn)
         }
         if (uid != null) lifecycleScope.launch {
             notificationPermissionCoordinator.reconcilePushSetting()
@@ -105,13 +106,13 @@ class MainActivity : ComponentActivity() {
                 .onFailure { Timber.e(it, "Terra foreground init failed") }
                 .onSuccess { pullOwnedSdkConnections(reason = "foreground") }
         }
-        startHealthSync(reason = "app_open")
+        startHealthSync(HealthSyncTrigger.AppOpen)
     }
 
-    private fun startHealthSync(reason: String) {
+    private fun startHealthSync(trigger: HealthSyncTrigger) {
         lifecycleScope.launch {
             if (firebaseAuth.currentUser == null) return@launch
-            healthSyncScheduler.enqueueHistoryBackfill(reason)
+            healthSyncScheduler.enqueueHistoryBackfill(trigger)
             healthSyncCoordinator.syncRecentWindow()
         }
     }

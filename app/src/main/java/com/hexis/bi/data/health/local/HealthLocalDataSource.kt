@@ -8,7 +8,6 @@ import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneOffset
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
@@ -42,7 +41,7 @@ internal fun contiguousDateRanges(days: Collection<LocalDate>): List<ClosedRange
     return ranges
 }
 
-internal fun canonicalToday(clock: Clock): LocalDate = LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC)
+internal fun canonicalToday(clock: Clock): LocalDate = LocalDate.now(clock)
 
 internal fun canonicalRetentionFloor(clock: Clock): LocalDate =
     canonicalToday(clock).minusDays(CanonicalCacheConstants.DAY_RETENTION_DAYS)

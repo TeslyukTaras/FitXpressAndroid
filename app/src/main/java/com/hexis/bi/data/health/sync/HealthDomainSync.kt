@@ -61,7 +61,12 @@ internal class HealthDomainSync<T>(
 
     suspend fun coverage(start: LocalDate, end: LocalDate): HealthRangeCoverage = withContext(io) {
         val uid = auth.currentUser?.uid ?: return@withContext HealthRangeCoverage.SETTLED
-        val identities = remote.fetchableIdentities(storedIdentities(uid)).ids()
+        val stored = storedIdentities(uid)
+        val identities = if (stored.isEmpty()) {
+            remote.identities().getOrNull()?.fetchable.orEmpty()
+        } else {
+            remote.fetchableIdentities(stored)
+        }.ids()
         if (identities.isEmpty()) return@withContext HealthRangeCoverage.SETTLED
         local.coverage(uid, identities, spec.source, dateRange(start, end))
     }

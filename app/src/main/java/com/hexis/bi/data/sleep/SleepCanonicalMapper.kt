@@ -52,8 +52,8 @@ internal fun SleepSession.toCanonicalAggregate(day: LocalDate = wakeTime.toLocal
         metrics = CanonicalMetrics(
             sleepDurationSeconds = durationMinutes * 60.0,
             sleepEfficiencyRatio = efficiencyPercent / 100.0,
-            deepSleepSeconds = (totals?.deepMinutes ?: stages.filter { it.stage == SleepStage.Deep }.sumOf { it.durationMinutes }) * 60.0,
-            remSleepSeconds = (totals?.remMinutes ?: stages.filter { it.stage == SleepStage.REM }.sumOf { it.durationMinutes }) * 60.0,
+            deepSleepSeconds = (totals?.deepMinutes ?: stageSecondsFor(SleepStage.Deep).wholeMinutes()) * 60.0,
+            remSleepSeconds = (totals?.remMinutes ?: stageSecondsFor(SleepStage.REM).wholeMinutes()) * 60.0,
             restingHeartRateBpm = restingHeartRateBpm.toDouble(),
             hrvRmssdMs = hrvMs.toDouble(),
         ),
@@ -61,10 +61,10 @@ internal fun SleepSession.toCanonicalAggregate(day: LocalDate = wakeTime.toLocal
             bedtime = bedtime.toCanonicalTimestamp(), wakeTime = wakeTime.toCanonicalTimestamp(), durationMinutes = durationMinutes,
             efficiencyPercent = efficiencyPercent.toDouble(), sdnnMs = sdnnMs.toDouble(), isNap = isNap,
             stageMinutes = CanonicalStageMinutes(
-                deep = totals?.deepMinutes ?: stages.filter { it.stage == SleepStage.Deep }.sumOf { it.durationMinutes },
-                light = totals?.lightMinutes ?: stages.filter { it.stage == SleepStage.Light }.sumOf { it.durationMinutes },
-                rem = totals?.remMinutes ?: stages.filter { it.stage == SleepStage.REM }.sumOf { it.durationMinutes },
-                awake = totals?.awakeMinutes ?: stages.filter { it.stage == SleepStage.Awake }.sumOf { it.durationMinutes },
+                deep = totals?.deepMinutes ?: stageSecondsFor(SleepStage.Deep).wholeMinutes(),
+                light = totals?.lightMinutes ?: stageSecondsFor(SleepStage.Light).wholeMinutes(),
+                rem = totals?.remMinutes ?: stageSecondsFor(SleepStage.REM).wholeMinutes(),
+                awake = totals?.awakeMinutes ?: stageSecondsFor(SleepStage.Awake).wholeMinutes(),
             ),
             timelineIntervals = stages.map {
                 CanonicalStageInterval(

@@ -34,6 +34,7 @@ import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
 fun ActivityProgressCard(
+    loading: Boolean = false,
     progressPercent: Int,
     stepsProgress: Float,
     distanceProgress: Float,
@@ -53,6 +54,7 @@ fun ActivityProgressCard(
     val fallbackIndicatorColor = MaterialTheme.colorScheme.primary
 
     BodyGlassCard(
+        loading = loading,
         modifier = modifier,
         contentPadding = PaddingValues(
             top = dimensionResource(R.dimen.spacer_xxs),
