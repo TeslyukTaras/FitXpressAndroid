@@ -4,7 +4,7 @@ internal object FindingWindows {
 
     const val SLEEP_DAY = 7
     const val SLEEP_SUMMARY = 30
-    const val ACTIVITY_WEEK = 30
+    const val ACTIVITY_WEEK = 7
     const val ACTIVITY_MONTH = 30
     const val ACTIVITY_YEAR = 365
 }

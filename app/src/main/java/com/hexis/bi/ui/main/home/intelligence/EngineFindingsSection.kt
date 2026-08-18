@@ -110,7 +110,7 @@ internal fun InsightValues(values: List<FindingValue>) {
             if (index > 0) withStyle(SpanStyle(color = muted)) { append(separator) }
             if (labelled && value.label.isNotBlank()) {
                 withStyle(SpanStyle(color = bright)) {
-                    append(value.label.replaceFirstChar { it.uppercase() })
+                    append(value.label.toInsightLabel())
                     append(labelSeparator)
                 }
             }
@@ -134,6 +134,10 @@ internal fun InsightValues(values: List<FindingValue>) {
         style = MaterialTheme.typography.bodyLarge,
         modifier = Modifier.fillMaxWidth(),
     )
+}
+
+private fun String.toInsightLabel(): String = split(' ').joinToString(" ") { word ->
+    word.replaceFirstChar { it.uppercase() }
 }
 
 private fun ValuePart.span(value: Color, muted: Color, unitSize: TextUnit): SpanStyle =

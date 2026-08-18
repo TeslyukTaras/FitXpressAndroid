@@ -19,6 +19,8 @@ import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.AppDateNavigator
 import com.hexis.bi.ui.main.home.intelligence.EngineFindingsSection
+import com.hexis.bi.ui.main.home.intelligence.EngineDebugSection
+import com.hexis.bi.ui.main.home.intelligence.EngineDebugPresentation
 import com.hexis.bi.ui.main.home.sleep.components.SleepMetricsCard
 import com.hexis.bi.ui.main.home.sleep.components.SleepRecoveryBanner
 import com.hexis.bi.ui.main.home.sleep.components.SleepStatusCard
@@ -104,6 +106,10 @@ private fun SleepDayReady(state: SleepState, onInfoClick: () -> Unit) {
     )
 
     EngineFindingsSection(state = state.findings.forWindow(FindingWindows.SLEEP_DAY))
+    EngineDebugSection(
+        info = state.findings.debugForWindow(FindingWindows.SLEEP_DAY),
+        presentation = EngineDebugPresentation.COMPACT,
+    )
 }
 
 @Composable

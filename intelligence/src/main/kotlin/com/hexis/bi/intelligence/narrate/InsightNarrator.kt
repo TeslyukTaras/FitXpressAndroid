@@ -97,6 +97,7 @@ object InsightNarrator {
         0, 1 -> parts.firstOrNull().orEmpty()
         2 -> parts.joinToString(copy.joiner(JOIN_SAME_VERB, DEFAULT_SAME_VERB))
         else -> parts.dropLast(1).joinToString(copy.joiner(JOIN_LIST, DEFAULT_LIST)) +
+            copy.joiner(JOIN_LIST, DEFAULT_LIST).trimEnd() +
             copy.joiner(JOIN_SAME_VERB, DEFAULT_SAME_VERB) + parts.last()
     }
 

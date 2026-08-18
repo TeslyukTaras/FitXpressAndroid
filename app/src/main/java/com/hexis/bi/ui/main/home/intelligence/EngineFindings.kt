@@ -5,6 +5,7 @@ import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
 import com.hexis.bi.intelligence.config.CopyConfig
 import com.hexis.bi.intelligence.engine.ConfidenceBuckets
 import com.hexis.bi.intelligence.engine.EngineReport
+import com.hexis.bi.intelligence.engine.SuppressedFinding
 import com.hexis.bi.intelligence.model.Finding
 import com.hexis.bi.intelligence.narrate.InsightNarrator
 import com.hexis.bi.utils.constants.FindingMetricAliases
@@ -32,6 +33,22 @@ data class InsightCard(
     val values: List<FindingValue>,
 )
 
+data class DebugFinding(
+    val insightId: String,
+    val priorityRank: Int,
+    val confidence: String,
+    val confidenceScore: Double,
+)
+
+data class EngineDebugInfo(
+    val windowDays: Int,
+    val areas: Set<String>,
+    val findings: List<DebugFinding>,
+    val trendCount: Int,
+    val suppressed: List<SuppressedFinding>,
+    val qualityFailureCount: Int,
+)
+
 sealed interface EngineFindingsState {
     data object Hidden : EngineFindingsState
 
@@ -46,6 +63,7 @@ sealed interface EngineFindingsState {
 
 data class AreaFindings(
     private val byWindow: Map<Int, EngineFindingsState> = emptyMap(),
+    private val debugByWindow: Map<Int, EngineDebugInfo> = emptyMap(),
     val primaryWindowDays: Int = 0,
     private val engineRan: Boolean = false,
 ) {
@@ -53,6 +71,10 @@ data class AreaFindings(
         ?: if (engineRan) EngineFindingsState.Empty else EngineFindingsState.Hidden
 
     val primary: EngineFindingsState get() = forWindow(primaryWindowDays)
+
+    fun debugForWindow(windowDays: Int): EngineDebugInfo? = debugByWindow[windowDays]
+
+    val primaryDebug: EngineDebugInfo? get() = debugForWindow(primaryWindowDays)
 }
 
 object EngineFindingsMapper {
@@ -62,13 +84,34 @@ object EngineFindingsMapper {
         copy: CopyConfig,
         areas: Set<String>,
         isMetric: Boolean,
+        analysisWindowDays: Int = report.primaryWindowDays,
     ): AreaFindings = AreaFindings(
         byWindow = report.availableWindows.associateWith { window ->
             rowsFor(report, copy, areas, window, isMetric)
         },
-        primaryWindowDays = report.primaryWindowDays,
+        debugByWindow = if (BuildConfig.DEBUG) {
+            report.availableWindows.associateWith { window -> debugFor(report, areas, window) }
+        } else {
+            emptyMap()
+        },
+        primaryWindowDays = analysisWindowDays,
         engineRan = true,
     )
+
+    private fun debugFor(report: EngineReport, areas: Set<String>, windowDays: Int): EngineDebugInfo {
+        val window = report.forWindow(windowDays)
+        return EngineDebugInfo(
+            windowDays = windowDays,
+            areas = areas,
+            findings = window?.findings.orEmpty()
+                .filter { it.area in areas }
+                .map { DebugFinding(it.insightId, it.priorityRank, it.confidence, it.confidenceScore) },
+            trendCount = report.metricTrends.count { it.domain in areas && windowDays in it.trendsByWindow },
+            suppressed = window?.suppressed.orEmpty().filter { it.area in areas },
+            qualityFailureCount = window?.verdicts.orEmpty()
+                .count { !it.ok && report.metricTrends.any { row -> row.metric == it.metric && row.domain in areas } },
+        )
+    }
 
     private fun rowsFor(
         report: EngineReport,
@@ -114,7 +157,11 @@ object EngineFindingsMapper {
         return EngineFindingsState.Ready(
             rows = rows,
             confidence = leading.confidenceLevel,
-            values = valuesFor(leading, report, copy, windowDays, isMetric),
+            values = if (leading.informational) {
+                emptyList()
+            } else {
+                valuesFor(leading, report, copy, windowDays, isMetric)
+            },
         )
     }
 
@@ -200,7 +247,15 @@ internal suspend fun RunIntelligenceUseCase.findingsFor(vararg areas: String): A
     if (!BuildConfig.INTELLIGENCE_ENGINE_ENABLED) return AreaFindings()
     val scope = areas.toSet()
     return invoke().fold(
-        onSuccess = { EngineFindingsMapper.forAreas(it.report, it.copy, scope, it.isMetric) },
+        onSuccess = {
+            EngineFindingsMapper.forAreas(
+                report = it.report,
+                copy = it.copy,
+                areas = scope,
+                isMetric = it.isMetric,
+                analysisWindowDays = it.config.windows.analysisDays,
+            )
+        },
         onFailure = { AreaFindings() },
     )
 }

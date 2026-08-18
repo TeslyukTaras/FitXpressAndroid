@@ -13,6 +13,8 @@ import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.AppDateNavigator
 import com.hexis.bi.ui.main.home.intelligence.EngineFindingsSection
+import com.hexis.bi.ui.main.home.intelligence.EngineDebugSection
+import com.hexis.bi.ui.main.home.intelligence.EngineDebugPresentation
 import com.hexis.bi.ui.main.home.sleep.components.SleepRecoveryBanner
 import com.hexis.bi.ui.main.home.sleep.components.SleepStructureCard
 import com.hexis.bi.utils.constants.FindingWindows
@@ -74,4 +76,8 @@ private fun SleepSummaryReady(
     SleepRecoveryBanner(onInfoClick = onInfoClick)
 
     EngineFindingsSection(state = state.findings.forWindow(FindingWindows.SLEEP_SUMMARY))
+    EngineDebugSection(
+        info = state.findings.debugForWindow(FindingWindows.SLEEP_SUMMARY),
+        presentation = EngineDebugPresentation.COMPACT,
+    )
 }

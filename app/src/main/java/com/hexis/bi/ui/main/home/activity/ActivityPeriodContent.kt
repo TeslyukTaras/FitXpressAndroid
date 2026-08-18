@@ -16,6 +16,8 @@ import com.hexis.bi.ui.main.home.activity.components.ActivityMetricsGrid
 import com.hexis.bi.ui.main.home.activity.components.MetricSegment
 import com.hexis.bi.ui.main.home.activity.components.rememberDurationSegments
 import com.hexis.bi.ui.main.home.intelligence.EngineFindingsSection
+import com.hexis.bi.ui.main.home.intelligence.EngineDebugSection
+import com.hexis.bi.ui.main.home.intelligence.EngineDebugPresentation
 
 @Composable
 fun ActivityPeriodContent(
@@ -118,6 +120,11 @@ fun ActivityPeriodContent(
         trendDescription = trendDescription,
         separateInsightGlass = separateInsightGlass,
         loading = loading,
+    )
+
+    EngineDebugSection(
+        info = state.findings.debugForWindow(windowDays),
+        presentation = EngineDebugPresentation.COMPACT_WITHOUT_WINDOW,
     )
 }
 

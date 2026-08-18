@@ -33,6 +33,7 @@ import com.hexis.bi.ui.main.home.paceofaging.components.PaceOfAgingTrendCard
 import com.hexis.bi.ui.theme.screenBackground
 import org.koin.androidx.compose.koinViewModel
 import com.hexis.bi.ui.main.home.intelligence.EngineFindingsSection
+import com.hexis.bi.ui.main.home.intelligence.EngineDebugSection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,6 +101,7 @@ fun PaceOfAgingScreen(
                 PaceOfAgingInsightCard(insight = state.insight)
 
                 EngineFindingsSection(state = state.findings.primary)
+                EngineDebugSection(info = state.findings.primaryDebug)
 
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
             }

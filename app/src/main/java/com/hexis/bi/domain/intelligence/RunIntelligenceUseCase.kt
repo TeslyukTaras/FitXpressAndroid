@@ -1,5 +1,6 @@
 package com.hexis.bi.domain.intelligence
 
+import com.hexis.bi.BuildConfig
 import com.hexis.bi.data.intelligence.IntelligenceConfigRepository
 import com.hexis.bi.data.intelligence.IntelligenceWordingRepository
 import com.hexis.bi.data.user.UserRepository
@@ -7,6 +8,7 @@ import com.hexis.bi.utils.isMetricUnitSystem
 import com.hexis.bi.intelligence.config.CopyConfig
 import com.hexis.bi.data.intelligence.IntelligenceInputProvider
 import com.hexis.bi.intelligence.config.EngineConfig
+import com.hexis.bi.intelligence.engine.Domains
 import com.hexis.bi.intelligence.engine.EngineReport
 import com.hexis.bi.intelligence.engine.IntelligenceEngine
 import com.hexis.bi.intelligence.model.EngineInput
@@ -36,8 +38,14 @@ internal class RunIntelligenceUseCase(
     private val memo = AtomicReference<Memo>()
 
     suspend operator fun invoke(): Result<IntelligenceRun> {
-        val config = configRepository.config().getOrElse { return Result.failure(it) }
-        val input = inputProvider.load(config.windows.analysisDays, config.windows.baselineDays)
+        val loadedConfig = configRepository.config().getOrElse { return Result.failure(it) }
+        val config = loadedConfig.withLocalActivityPersistenceOverride()
+        val historyDays = config.windows.trendDays.maxOrNull() ?: config.windows.analysisDays
+        val input = inputProvider.load(
+            analysisDays = config.windows.analysisDays,
+            baselineDays = config.windows.baselineDays,
+            historyDays = historyDays,
+        )
             .getOrElse { return Result.failure(it) }
         val copy = wordingRepository.config().map { it.copy }.getOrElse {
             Timber.w(it, "Insight wording unavailable; findings render without sentences")
@@ -88,6 +96,20 @@ internal class RunIntelligenceUseCase(
             "  windows: %s",
             report.availableWindows.joinToString { "${it}d=${report.forWindow(it)?.findings?.size ?: 0}" },
         )
+        if (BuildConfig.DEBUG) {
+            report.availableWindows.forEach { windowDays ->
+                report.forWindow(windowDays)?.findings.orEmpty().forEach { finding ->
+                    Timber.d(
+                        "  %3dd #%d %-28s %-8s %.3f",
+                        windowDays,
+                        finding.priorityRank,
+                        finding.insightId,
+                        finding.confidence,
+                        finding.confidenceScore,
+                    )
+                }
+            }
+        }
         report.verdicts.filterNot { it.ok }.forEach { verdict ->
             Timber.d("  gated %-16s %-20s %s", verdict.metric, verdict.status, verdict.reasons)
         }
@@ -103,3 +125,30 @@ internal class RunIntelligenceUseCase(
         }
     }
 }
+
+/**
+ * Temporary Android-side parity override. Remove this when the shared engine config changes
+ * activity's min_persist_days from 14 to 7.
+ *
+ * Keep this after config parsing/validation so the bundled and Remote Config documents remain
+ * untouched, and pass the resulting config through the entire run so execution, memoization, and
+ * debug UI all describe the same effective rules.
+ */
+internal fun EngineConfig.withLocalActivityPersistenceOverride(): EngineConfig {
+    val configuredDays = trend.minPersistDaysFor(Domains.ACTIVITY)
+    if (configuredDays == LOCAL_ACTIVITY_MIN_PERSIST_DAYS) return this
+
+    Timber.i(
+        "Applying local activity min_persist_days override: %d -> %d",
+        configuredDays,
+        LOCAL_ACTIVITY_MIN_PERSIST_DAYS,
+    )
+    return copy(
+        trend = trend.copy(
+            minPersistDays = trend.minPersistDays +
+                (Domains.ACTIVITY to LOCAL_ACTIVITY_MIN_PERSIST_DAYS),
+        ),
+    )
+}
+
+private const val LOCAL_ACTIVITY_MIN_PERSIST_DAYS = 7

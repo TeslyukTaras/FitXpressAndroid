@@ -34,6 +34,7 @@ import com.hexis.bi.ui.main.home.physiquedrift.components.PhysiqueScoreCard
 import com.hexis.bi.ui.theme.screenBackground
 import org.koin.androidx.compose.koinViewModel
 import com.hexis.bi.ui.main.home.intelligence.EngineFindingsSection
+import com.hexis.bi.ui.main.home.intelligence.EngineDebugSection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -105,6 +106,7 @@ fun PhysiqueDriftScreen(
                 PhysiqueInsightCard(insight = state.insight)
 
                 EngineFindingsSection(state = state.findings.primary)
+                EngineDebugSection(info = state.findings.primaryDebug)
 
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
             }

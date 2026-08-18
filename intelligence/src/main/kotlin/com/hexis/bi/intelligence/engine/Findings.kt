@@ -15,6 +15,7 @@ data class SuppressedFinding(
     val insightId: String,
     val interpretation: String,
     val reason: String,
+    val area: String = "",
     val message: String? = null,
     val detail: Map<String, List<String>> = emptyMap(),
     val confidence: String? = null,
@@ -94,6 +95,7 @@ internal fun buildFindings(
                     insightId = candidate.id,
                     interpretation = candidate.interpretation,
                     reason = SuppressionReason.NO_SUPPORTING_TREND,
+                    area = candidate.area,
                 )
                 continue
             }
@@ -106,6 +108,7 @@ internal fun buildFindings(
                 insightId = candidate.id,
                 interpretation = candidate.interpretation,
                 reason = SuppressionReason.STRESS_UNCORROBORATED,
+                area = candidate.area,
                 message = STRESS_GATE_DETAIL,
                 confidence = confidence.bucket,
                 confidenceScore = confidence.score,
@@ -119,6 +122,7 @@ internal fun buildFindings(
                 insightId = candidate.id,
                 interpretation = candidate.interpretation,
                 reason = SuppressionReason.DATA_QUALITY,
+                area = candidate.area,
                 message = qualityMessage(failed),
                 detail = failed.associate { it.metric to it.reasons },
                 confidence = confidence.bucket,
