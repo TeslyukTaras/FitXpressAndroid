@@ -1,7 +1,7 @@
 {
   "_comment": "Insight wording, projected from config.yaml by tests/gen_parity_fixtures.py. Ships as app/src/main/assets/intelligence_wording_v1.json and as the Remote Config parameter intelligence_wording_config. Changing a sentence here never moves ruleset_version - the engine does not read this document.",
   "schema_version": 1,
-  "wording_version": "v1.2.0",
+  "wording_version": "v1.3.0",
   "copy": {
     "headings": {
       "positive_recomposition": "Your body is heading in the right direction.",
@@ -76,7 +76,10 @@
     },
     "templates": {
       "corroborated_by": "{label} supports this",
-      "driven_by": "mostly driven by {label}"
+      "driven_by": "mostly driven by {label}",
+      "day_title": "Last night",
+      "day_above": "{metric} is above your usual {usual}",
+      "day_below": "{metric} is below your usual {usual}"
     },
     "explanation": "Over {period}, {facts}.",
     "join": {

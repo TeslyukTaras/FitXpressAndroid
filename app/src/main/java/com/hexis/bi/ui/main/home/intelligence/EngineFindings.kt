@@ -11,6 +11,7 @@ import com.hexis.bi.intelligence.narrate.InsightNarrator
 import com.hexis.bi.utils.constants.FindingMetricAliases
 import com.hexis.bi.utils.constants.FindingValues
 import com.hexis.bi.utils.constants.InsightSubjects
+import kotlin.math.abs
 
 enum class FindingConfidence { HIGH, MEDIUM, LOW }
 
@@ -31,6 +32,15 @@ data class InsightCard(
     val explanation: String,
     val confidence: FindingConfidence,
     val values: List<FindingValue>,
+)
+
+data class NightComparison(
+    val title: String,
+    val template: String,
+    val label: String,
+    val value: List<ValuePart>,
+    val usual: List<ValuePart>,
+    val unit: String,
 )
 
 data class DebugFinding(
@@ -76,6 +86,12 @@ data class AreaFindings(
 
     val primaryDebug: EngineDebugInfo? get() = debugForWindow(primaryWindowDays)
 }
+
+internal const val DAY_TITLE = "day_title"
+private const val DAY_ABOVE = "day_above"
+private const val DAY_BELOW = "day_below"
+internal const val METRIC_PLACEHOLDER = "{metric}"
+internal const val USUAL_PLACEHOLDER = "{usual}"
 
 object EngineFindingsMapper {
 
@@ -187,6 +203,39 @@ object EngineFindingsMapper {
                 )
             }
             .sortedWith(compareBy({ it.confidence.ordinal }, { it.area }))
+
+    fun dayComparisons(
+        report: EngineReport,
+        copy: CopyConfig,
+        windowDays: Int,
+        isMetric: Boolean,
+        dayValues: Map<String, Double>,
+    ): List<NightComparison> {
+        val title = copy.templates[DAY_TITLE] ?: return emptyList()
+        return dayValues
+            .mapNotNull { (metric, value) ->
+                val baseline = report.baselineFor(windowDays, metric) ?: return@mapNotNull null
+                val z = baseline.z(value)
+                if (abs(z) < FindingValues.DAY_Z_THRESHOLD) return@mapNotNull null
+                val template = copy.templates[if (z > 0) DAY_ABOVE else DAY_BELOW]
+                    ?: return@mapNotNull null
+                val row = report.metricTrends.firstOrNull { it.metric == metric }
+                    ?: return@mapNotNull null
+                val format = MetricFormat.of(row.unit, isMetric) ?: return@mapNotNull null
+                val label = copy.labels[metric] ?: return@mapNotNull null
+                abs(z) to NightComparison(
+                    title = title,
+                    template = template,
+                    label = label,
+                    value = format.render(value),
+                    usual = format.render(baseline.median),
+                    unit = format.unit(label),
+                )
+            }
+            .sortedByDescending { it.first }
+            .map { it.second }
+            .take(FindingValues.MAX_VALUES)
+    }
 
     private fun resolveMetric(supportingKey: String): String =
         if (supportingKey == FindingMetricAliases.PHYSIQUE_DRIFT_KEY) {

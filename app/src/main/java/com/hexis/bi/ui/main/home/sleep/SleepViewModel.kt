@@ -16,6 +16,11 @@ import com.hexis.bi.data.terra.TerraRestSourceResolver
 import com.hexis.bi.data.user.FirestoreSchema
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
+import com.hexis.bi.domain.intelligence.IntelligenceRun
+import com.hexis.bi.ui.main.home.intelligence.EngineFindingsMapper
+import com.hexis.bi.ui.main.home.intelligence.NightComparison
+import com.hexis.bi.intelligence.engine.Metrics
+import com.hexis.bi.utils.constants.FindingWindows
 import com.hexis.bi.intelligence.engine.Domains
 import com.hexis.bi.ui.main.home.intelligence.findingsFor
 import com.hexis.bi.ui.base.BaseViewModel
@@ -42,6 +47,8 @@ import java.time.Duration
 import java.time.LocalDate
 import kotlin.math.roundToInt
 
+private const val MINUTES_PER_HOUR = 60.0
+
 @OptIn(FlowPreview::class)
 class SleepViewModel internal constructor(
     application: Application,
@@ -52,11 +59,37 @@ class SleepViewModel internal constructor(
     private val runIntelligence: RunIntelligenceUseCase,
 ) : BaseViewModel(application) {
 
+    private var lastRun: IntelligenceRun? = null
+
     private fun loadFindings() {
         viewModelScope.launch {
+            lastRun = runIntelligence().getOrNull()
             val resolved = runIntelligence.findingsFor(Domains.SLEEP, Domains.RECOVERY, Domains.STRESS)
-            _state.update { it.copy(findings = resolved) }
+            _state.update { it.copy(findings = resolved, dayComparisons = dayComparisons()) }
         }
+    }
+
+    private fun dayComparisons(): List<NightComparison> {
+        val run = lastRun ?: return emptyList()
+        val day = _state.value
+        val stageMinutes = day.stages.associate { it.stage to it.durationMinutes }
+        val values = buildMap {
+            day.hrv.takeIf { it > 0 }?.let { put(Metrics.HRV_RMSSD, it.toDouble()) }
+            day.restingHeartRate.takeIf { it > 0 }?.let { put(Metrics.RESTING_HR, it.toDouble()) }
+            day.totalSleepMinutes.takeIf { it > 0 }
+                ?.let { put(Metrics.SLEEP_DURATION, it / MINUTES_PER_HOUR) }
+            stageMinutes[SleepStage.REM]?.takeIf { it > 0 }
+                ?.let { put(Metrics.REM_SLEEP, it / MINUTES_PER_HOUR) }
+            stageMinutes[SleepStage.Deep]?.takeIf { it > 0 }
+                ?.let { put(Metrics.DEEP_SLEEP, it / MINUTES_PER_HOUR) }
+        }
+        return EngineFindingsMapper.dayComparisons(
+            report = run.report,
+            copy = run.copy,
+            windowDays = FindingWindows.SLEEP_DAY,
+            isMetric = run.isMetric,
+            dayValues = values,
+        )
     }
 
     private val _state = MutableStateFlow(SleepState())
@@ -283,6 +316,7 @@ class SleepViewModel internal constructor(
                 insightRes = insightFor(quality),
             )
         }
+        _state.update { it.copy(dayComparisons = dayComparisons()) }
         prefetchSummaryIfNeeded()
     }
 

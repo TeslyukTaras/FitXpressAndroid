@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.AppDateNavigator
 import com.hexis.bi.ui.main.home.intelligence.EngineFindingsSection
+import com.hexis.bi.ui.main.home.intelligence.NightComparisonSection
 import com.hexis.bi.ui.main.home.intelligence.EngineDebugSection
 import com.hexis.bi.ui.main.home.intelligence.EngineDebugPresentation
 import com.hexis.bi.ui.main.home.sleep.components.SleepMetricsCard
@@ -69,9 +70,8 @@ fun SleepDayContent(
 
 @Composable
 private fun SleepDayReady(state: SleepState, onInfoClick: () -> Unit) {
-    EngineFindingsSection(
-        state = state.findings.forWindow(FindingWindows.SLEEP_DAY),
-        topSpacing = dimensionResource(R.dimen.spacer_xs),
+    NightComparisonSection(
+        comparisons = state.dayComparisons,
     )
 
     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))

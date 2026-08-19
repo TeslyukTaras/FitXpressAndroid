@@ -63,7 +63,7 @@ class InsightsViewModel internal constructor(
                     EngineFindingsMapper.simpleFindings(
                         report = run.report,
                         copy = run.copy,
-                        windowDays = run.report.primaryWindowDays,
+                        windowDays = run.config.windows.analysisDays,
                         isMetric = run.isMetric,
                     )
                 },
