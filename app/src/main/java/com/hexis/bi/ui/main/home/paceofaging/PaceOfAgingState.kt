@@ -6,6 +6,7 @@ import com.hexis.bi.ui.main.home.longevity.LongevityTrend
 
 data class PaceOfAgingState(
     val findings: AreaFindings = AreaFindings(),
+    val insightsUpdating: Boolean = false,
     val hasData: Boolean = false,
     val level: AgingLevel = AgingLevel.Normal,
     val paceText: String = "",

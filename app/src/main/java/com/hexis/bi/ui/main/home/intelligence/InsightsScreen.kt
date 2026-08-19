@@ -70,46 +70,44 @@ fun InsightsScreen(
                 )
             },
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
-            ) {
-                InsightsHeader(state)
-
-                if (state.loaded && state.cards.isEmpty()) {
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
+            val contentModifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = dimensionResource(R.dimen.padding_medium))
+            if (showFullInsightsEmpty(state.loaded, state.updating, state.cards.isNotEmpty())) {
+                Box(modifier = contentModifier, contentAlignment = Alignment.Center) {
                     InsightsEmpty()
-                    return@Column
                 }
+            } else {
+                Column(modifier = contentModifier.verticalScroll(rememberScrollState())) {
+                    InsightsHeader(state)
 
-                val ranked = state.cards.groupBy { it.confidence == FindingConfidence.LOW }
-                ranked[false].orEmpty().forEach { card ->
-                    Spacer(Modifier.height(dimensionResource(R.dimen.insight_card_spacing)))
-                    InsightCardView(card)
-                }
-                val low = ranked[true].orEmpty()
-                if (low.isNotEmpty()) {
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-                    Text(
-                        text = stringResource(R.string.insights_low_section),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxs)))
-                    Text(
-                        text = stringResource(R.string.insights_low_caption),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    low.forEach { card ->
+                    val ranked = state.cards.groupBy { it.confidence == FindingConfidence.LOW }
+                    ranked[false].orEmpty().forEach { card ->
                         Spacer(Modifier.height(dimensionResource(R.dimen.insight_card_spacing)))
                         InsightCardView(card)
                     }
-                }
+                    val low = ranked[true].orEmpty()
+                    if (low.isNotEmpty()) {
+                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+                        Text(
+                            text = stringResource(R.string.insights_low_section),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxs)))
+                        Text(
+                            text = stringResource(R.string.insights_low_caption),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        low.forEach { card ->
+                            Spacer(Modifier.height(dimensionResource(R.dimen.insight_card_spacing)))
+                            InsightCardView(card)
+                        }
+                    }
 
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
+                }
             }
         }
 
@@ -119,20 +117,8 @@ fun InsightsScreen(
 
 @Composable
 private fun InsightsHeader(state: InsightsState) {
-    if (state.updating) {
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
-        Text(
-            text = stringResource(R.string.insights_updating),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxs)))
-        Text(
-            text = stringResource(R.string.insights_updating_body),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    } else {
+    InsightsUpdatingHeader(visible = state.updating)
+    if (!state.updating) {
         state.latestScanDate?.let { date ->
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
             Text(

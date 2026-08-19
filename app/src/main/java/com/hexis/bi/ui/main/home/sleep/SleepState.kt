@@ -117,6 +117,7 @@ data class SleepState(
 
     val findings: AreaFindings = AreaFindings(),
     val dayComparisons: List<NightComparison> = emptyList(),
+    val insightsUpdating: Boolean = false,
 ) {
 
     fun loadStateOf(tab: SleepTab): SleepLoadState = when (tab) {

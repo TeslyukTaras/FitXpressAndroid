@@ -17,11 +17,13 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
+import com.hexis.bi.BuildConfig
 import com.hexis.bi.ui.components.AppDateNavigator
 import com.hexis.bi.ui.main.home.intelligence.EngineFindingsSection
 import com.hexis.bi.ui.main.home.intelligence.NightComparisonSection
 import com.hexis.bi.ui.main.home.intelligence.EngineDebugSection
 import com.hexis.bi.ui.main.home.intelligence.EngineDebugPresentation
+import com.hexis.bi.ui.main.home.intelligence.InsightsUpdatingHeader
 import com.hexis.bi.ui.main.home.sleep.components.SleepMetricsCard
 import com.hexis.bi.ui.main.home.sleep.components.SleepRecoveryBanner
 import com.hexis.bi.ui.main.home.sleep.components.SleepStatusCard
@@ -70,6 +72,8 @@ fun SleepDayContent(
 
 @Composable
 private fun SleepDayReady(state: SleepState, onInfoClick: () -> Unit) {
+    InsightsUpdatingHeader(visible = state.insightsUpdating)
+
     NightComparisonSection(
         comparisons = state.dayComparisons,
     )
@@ -105,12 +109,13 @@ private fun SleepDayReady(state: SleepState, onInfoClick: () -> Unit) {
         timeEndHour = state.timelineEndHour,
     )
 
-    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-    SleepRecoveryBanner(
-        insightText = stringResource(state.insightRes),
-        onInfoClick = onInfoClick,
-    )
+    if (BuildConfig.DEBUG) {
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+        SleepRecoveryBanner(
+            insightText = stringResource(state.insightRes),
+            onInfoClick = onInfoClick,
+        )
+    }
 
     EngineDebugSection(
         info = state.findings.debugForWindow(FindingWindows.SLEEP_DAY),

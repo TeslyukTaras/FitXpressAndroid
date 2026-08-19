@@ -99,6 +99,7 @@ data class HomeState(
     val scan: ScanOverview = ScanOverview(),
     val insights: List<InsightCard> = emptyList(),
     val insightsLoaded: Boolean = false,
+    val insightsUpdating: Boolean = false,
     val recompositionValue: String = "0",
     val physiqueScore: Float? = null,
     val longevityDirection: LongevityDirection = LongevityDirection.BuildingYourTrend,

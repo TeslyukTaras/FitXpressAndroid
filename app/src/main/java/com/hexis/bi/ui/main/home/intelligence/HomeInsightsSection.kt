@@ -27,6 +27,7 @@ import com.hexis.bi.utils.constants.FindingValues
 fun HomeInsightsSection(
     cards: List<InsightCard>,
     loaded: Boolean,
+    updating: Boolean = false,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -34,7 +35,7 @@ fun HomeInsightsSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(enabled = cards.isNotEmpty(), onClick = onClick),
+                .clickable(enabled = loaded, onClick = onClick),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -43,7 +44,7 @@ fun HomeInsightsSection(
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
-            if (cards.isNotEmpty()) {
+            if (loaded) {
                 Icon(
                     painter = painterResource(R.drawable.ic_arrow),
                     contentDescription = stringResource(R.string.insights_screen_title),
@@ -53,7 +54,12 @@ fun HomeInsightsSection(
             }
         }
 
-        AnimatedVisibility(visible = loaded, enter = fadeIn()) {
+        InsightsUpdatingHeader(visible = updating)
+
+        AnimatedVisibility(
+            visible = showHomeInsightContent(loaded, updating, cards.isNotEmpty()),
+            enter = fadeIn(),
+        ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 if (cards.isEmpty()) {
                     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))

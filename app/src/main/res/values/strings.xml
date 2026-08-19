@@ -1079,6 +1079,7 @@
     <string name="engine_findings_confidence_medium">Medium</string>
     <string name="engine_findings_confidence_low">Low</string>
     <string name="engine_findings_value_arrow">→</string>
+    <string name="engine_findings_value_separator">" · "</string>
     <string name="engine_findings_label_separator">": "</string>
     <string name="insights_screen_title">Insights</string>
     <string name="insights_subtitle">Based on Latest Scan · %1$s</string>

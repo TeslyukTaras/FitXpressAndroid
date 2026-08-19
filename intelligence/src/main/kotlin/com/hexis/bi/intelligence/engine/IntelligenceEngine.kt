@@ -52,6 +52,7 @@ data class EngineReport(
     val findingsByWindow: Map<Int, WindowFindings>,
     val areaWeights: Map<String, Double>,
     val baselinesByWindow: Map<Int, Map<String, Baseline>> = emptyMap(),
+    val latestValues: Map<String, Double> = emptyMap(),
 ) {
     fun forWindow(windowDays: Int): WindowFindings? = findingsByWindow[windowDays]
 
@@ -177,6 +178,9 @@ object IntelligenceEngine {
             suppressed = primaryFindings.suppressed,
             findingsByWindow = findingsByWindow,
             baselinesByWindow = baselinesByWindow.filterKeys { it in findingsByWindow },
+            latestValues = series.mapNotNull { metricSeries ->
+                metricSeries.points.lastOrNull()?.let { metricSeries.metric to it.value }
+            }.toMap(),
             areaWeights = findingsByWindow.values
                 .flatMap { it.findings }
                 .map { it.area }

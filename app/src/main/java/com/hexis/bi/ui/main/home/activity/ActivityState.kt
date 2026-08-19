@@ -84,6 +84,7 @@ data class ActivityState(
     val yearErrorMessage: String? = null,
     val year: PeriodSummary = PeriodSummary(),
     val findings: AreaFindings = AreaFindings(),
+    val insightsUpdating: Boolean = false,
 
     // Info bottom sheet
     val showInfoSheet: Boolean = false,

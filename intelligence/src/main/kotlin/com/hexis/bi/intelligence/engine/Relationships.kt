@@ -221,6 +221,27 @@ internal fun singleMetricCandidates(
     trends: Map<String, Trend>,
     config: EngineConfig,
 ): List<Candidate> = trends.entries.sortedBy { it.key }.mapNotNull { (metric, trend) ->
+    // Composite scores normally use dedicated rules so that their direction is interpreted
+    // correctly. A stable aging score is still useful to the user, though, and has dedicated
+    // wording; allow it through as an informational finding instead of silently dropping it.
+    if (metric == Metrics.AGING_SCORE && trend.direction == Directions.STABLE) {
+        if (!config.features.stableFindings || !config.features.paceOfAging) {
+            return@mapNotNull null
+        }
+        return@mapNotNull Candidate(
+            id = "aging_score_stable",
+            area = config.domains[metric] ?: Domains.AGING,
+            interpretation = "aging_score_holding",
+            direction = FindingDirection.NEUTRAL,
+            facts = listOf("aging_score_stable"),
+            metrics = listOf(metric),
+            agreementCount = 1,
+            agreementExpected = 1,
+            contradiction = 0.0,
+            source = FindingSource.METRIC,
+            informational = true,
+        )
+    }
     if (metric.endsWith("_score")) return@mapNotNull null
     if (trend.direction !in VERB.keys) return@mapNotNull null
     val area = config.domains[metric] ?: config.findings.defaultMetricArea

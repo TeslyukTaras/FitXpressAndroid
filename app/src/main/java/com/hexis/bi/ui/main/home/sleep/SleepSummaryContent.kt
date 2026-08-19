@@ -11,6 +11,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
+import com.hexis.bi.BuildConfig
 import com.hexis.bi.ui.components.AppDateNavigator
 import com.hexis.bi.ui.main.home.intelligence.EngineFindingsSection
 import com.hexis.bi.ui.main.home.intelligence.EngineDebugSection
@@ -67,6 +68,7 @@ private fun SleepSummaryReady(
 ) {
     EngineFindingsSection(
         state = state.findings.forWindow(FindingWindows.SLEEP_SUMMARY),
+        updating = state.insightsUpdating,
         topSpacing = dimensionResource(R.dimen.spacer_xs),
     )
 
@@ -78,9 +80,10 @@ private fun SleepSummaryReady(
         stages = state.weeklyStages,
     )
 
-    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-
-    SleepRecoveryBanner(onInfoClick = onInfoClick)
+    if (BuildConfig.DEBUG) {
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+        SleepRecoveryBanner(onInfoClick = onInfoClick)
+    }
 
     EngineDebugSection(
         info = state.findings.debugForWindow(FindingWindows.SLEEP_SUMMARY),

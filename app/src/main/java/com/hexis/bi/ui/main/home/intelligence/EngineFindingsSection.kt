@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -34,15 +35,18 @@ import com.hexis.bi.ui.theme.NocturnePulseTheme
 fun EngineFindingsSection(
     state: EngineFindingsState,
     modifier: Modifier = Modifier,
+    updating: Boolean = false,
+    animateUpdatingDots: Boolean = true,
     topSpacing: Dp = dimensionResource(R.dimen.spacer_l),
 ) {
-    AnimatedContent(
-        targetState = state,
-        transitionSpec = { fadeIn() togetherWith fadeOut() },
-        label = "engine-findings",
-        modifier = modifier,
-    ) { current ->
-        when (current) {
+    Column(modifier = modifier) {
+        InsightsUpdatingHeader(visible = updating, animateDots = animateUpdatingDots)
+        AnimatedContent(
+            targetState = state,
+            transitionSpec = { fadeIn() togetherWith fadeOut() },
+            label = "engine-findings",
+        ) { current ->
+            when (current) {
             is EngineFindingsState.Ready -> Column {
                 Spacer(Modifier.height(topSpacing))
                 BodyGlassCard(
@@ -61,15 +65,20 @@ fun EngineFindingsSection(
                 }
             }
 
-            EngineFindingsState.Empty -> Column {
-                Spacer(Modifier.height(topSpacing))
-                BodyGlassCard(
-                    contentPadding = PaddingValues(dimensionResource(R.dimen.insight_card_padding)),
-                    shape = RoundedCornerShape(dimensionResource(R.dimen.insight_card_corner)),
-                ) { EmptyFindings() }
-            }
+                EngineFindingsState.Empty -> if (showEngineFindingsEmpty(updating)) {
+                    Column {
+                        Spacer(Modifier.height(topSpacing))
+                        BodyGlassCard(
+                            contentPadding = PaddingValues(dimensionResource(R.dimen.insight_card_padding)),
+                            shape = RoundedCornerShape(dimensionResource(R.dimen.insight_card_corner)),
+                        ) { EmptyFindings() }
+                    }
+                } else {
+                    Spacer(Modifier)
+                }
 
-            EngineFindingsState.Hidden -> Spacer(Modifier)
+                EngineFindingsState.Hidden -> Spacer(Modifier)
+            }
         }
     }
 }
@@ -102,37 +111,69 @@ internal fun InsightValues(values: List<FindingValue>, showLabels: Boolean) {
     val unitSize = MaterialTheme.typography.bodyMedium.fontSize
     val arrow = stringResource(R.string.engine_findings_value_arrow)
     val labelSeparator = stringResource(R.string.engine_findings_label_separator)
+    val separator = stringResource(R.string.engine_findings_value_separator)
+    val rowGap = dimensionResource(R.dimen.spacer_xxs)
 
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_xxs)),
-    ) {
-        values.forEach { value ->
-            val text = buildAnnotatedString {
-                if (showLabels && value.label.isNotBlank()) {
-                    withStyle(SpanStyle(color = bright)) {
-                        append(value.label.toInsightLabel())
-                        append(labelSeparator)
-                    }
-                }
-                value.from.forEach { part ->
-                    withStyle(part.span(bright, muted, unitSize)) { append(part.text) }
-                }
-                withStyle(SpanStyle(color = bright)) { append(" $arrow ") }
-                value.to.forEach { part ->
-                    withStyle(part.span(accent, muted, unitSize)) { append(part.text) }
-                }
-                if (value.unit.isNotBlank()) {
-                    withStyle(SpanStyle(color = muted, fontSize = unitSize)) {
-                        append(" ${value.unit}")
-                    }
+    val texts = values.map { value ->
+        buildAnnotatedString {
+            if (showLabels && value.label.isNotBlank()) {
+                withStyle(SpanStyle(color = bright)) {
+                    append(value.label.toInsightLabel())
+                    append(labelSeparator)
                 }
             }
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            value.from.forEach { part ->
+                withStyle(part.span(bright, muted, unitSize)) { append(part.text) }
+            }
+            withStyle(SpanStyle(color = bright)) { append(" $arrow ") }
+            value.to.forEach { part ->
+                withStyle(part.span(accent, muted, unitSize)) { append(part.text) }
+            }
+            if (value.unit.isNotBlank()) {
+                withStyle(SpanStyle(color = muted, fontSize = unitSize)) {
+                    append(" ${value.unit}")
+                }
+            }
+        }
+    }
+
+    Layout(
+        modifier = Modifier.fillMaxWidth(),
+        content = {
+            texts.forEachIndexed { index, text ->
+                if (index > 0) {
+                    Text(text = separator, style = MaterialTheme.typography.bodyLarge, color = muted)
+                }
+                Text(text = text, style = MaterialTheme.typography.bodyLarge)
+            }
+        },
+    ) { measurables, constraints ->
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val rowGapPx = rowGap.roundToPx()
+        var measurableIndex = 0
+        val separators = mutableListOf<androidx.compose.ui.layout.Placeable?>()
+        val valuePlaceables = mutableListOf<androidx.compose.ui.layout.Placeable>()
+        texts.indices.forEach { index ->
+            separators += if (index > 0) measurables[measurableIndex++].measure(loose) else null
+            valuePlaceables += measurables[measurableIndex++].measure(loose)
+        }
+        val separatorSize = separators.filterNotNull().firstOrNull()?.let {
+            InsightValueSize(it.width, it.height)
+        } ?: InsightValueSize(0, 0)
+        val result = calculateInsightValueLayout(
+            values = valuePlaceables.map { InsightValueSize(it.width, it.height) },
+            separator = separatorSize,
+            maxWidth = constraints.maxWidth,
+            rowGap = rowGapPx,
+        )
+
+        layout(constraints.maxWidth, result.height) {
+            result.positions.forEachIndexed { index, position ->
+                if (position.separatorX != null && position.separatorY != null) {
+                    separators[index]?.placeRelative(position.separatorX, position.separatorY)
+                }
+                valuePlaceables[index].placeRelative(position.valueX, position.valueY)
+            }
         }
     }
 }

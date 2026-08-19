@@ -5,6 +5,7 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.viewModelScope
 import com.hexis.bi.R
 import com.hexis.bi.data.activity.ActivityRepository
+import com.hexis.bi.data.health.sync.HealthSyncScheduler
 import com.hexis.bi.data.recovery.RecoveryRepository
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanRecord
@@ -22,15 +23,21 @@ import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
 import com.hexis.bi.intelligence.engine.Domains
 import com.hexis.bi.ui.main.home.intelligence.findingsFor
+import com.hexis.bi.ui.main.home.intelligence.BackfillTransition
+import com.hexis.bi.ui.main.home.intelligence.backfillTransition
 import com.hexis.bi.ui.main.home.longevity.LongevityTrend
 import com.hexis.bi.ui.main.home.longevity.waistToHeightRatio
 import com.hexis.bi.utils.constants.LongevityConstants
 import com.hexis.bi.utils.constants.PaceOfAgingConstants
 import com.hexis.bi.utils.formatShortMonthDayYear
 import kotlinx.coroutines.async
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -47,20 +54,59 @@ class PaceOfAgingViewModel internal constructor(
     private val terraManagerHolder: TerraManagerHolder,
     private val terraSdkConnectionOwnership: TerraSdkConnectionOwnership,
     private val runIntelligence: RunIntelligenceUseCase,
+    private val healthSyncScheduler: HealthSyncScheduler,
 ) : BaseViewModel(application, initialLoading = true) {
 
-    private fun loadFindings() {
-        viewModelScope.launch {
+    private var findingsJob: Job? = null
+
+    private fun loadFindings(clearUpdatingOnComplete: Boolean = false) {
+        findingsJob?.cancel()
+        findingsJob = viewModelScope.launch {
             val resolved = runIntelligence.findingsFor(Domains.AGING)
-            _state.update { it.copy(findings = resolved) }
+            _state.update {
+                it.copy(
+                    findings = resolved,
+                    insightsUpdating = if (clearUpdatingOnComplete) false else it.insightsUpdating,
+                )
+            }
+        }
+    }
+
+    private fun refreshAfterBackfill() {
+        findingsJob?.cancel()
+        findingsJob = viewModelScope.launch {
+            try {
+                renderFromRepositories()
+                val resolved = runIntelligence.findingsFor(Domains.AGING)
+                _state.update { it.copy(findings = resolved, insightsUpdating = false) }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Throwable) {
+                _state.update { it.copy(insightsUpdating = false) }
+            }
         }
     }
 
     private val _state = MutableStateFlow(PaceOfAgingState())
     val state = _state.asStateFlow()
+    private var backfillInFlight = false
 
     init {
         loadFindings()
+        healthSyncScheduler.backfillInFlight()
+            .onEach { inFlight ->
+                val transition = backfillTransition(backfillInFlight, inFlight)
+                backfillInFlight = inFlight
+                when (transition) {
+                    BackfillTransition.ACTIVE -> {
+                        findingsJob?.cancel()
+                        _state.update { it.copy(insightsUpdating = true) }
+                    }
+                    BackfillTransition.SETTLED -> refreshAfterBackfill()
+                    BackfillTransition.IDLE -> _state.update { it.copy(insightsUpdating = false) }
+                }
+            }
+            .launchIn(viewModelScope)
         load()
     }
 

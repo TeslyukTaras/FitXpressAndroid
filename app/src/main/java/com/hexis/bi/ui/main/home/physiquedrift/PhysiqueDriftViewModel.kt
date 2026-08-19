@@ -2,7 +2,9 @@ package com.hexis.bi.ui.main.home.physiquedrift
 
 import android.app.Application
 import androidx.lifecycle.viewModelScope
+import com.hexis.bi.BuildConfig
 import com.hexis.bi.R
+import com.hexis.bi.data.health.sync.HealthSyncScheduler
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanRecord
 import com.hexis.bi.data.user.UserRepository
@@ -12,12 +14,17 @@ import com.hexis.bi.domain.body.physiqueScoreBreakdown
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
 import com.hexis.bi.intelligence.engine.Domains
-import com.hexis.bi.ui.main.home.intelligence.findingsFor
+import com.hexis.bi.ui.main.home.intelligence.EngineFindingsMapper
+import com.hexis.bi.ui.main.home.intelligence.BackfillTransition
+import com.hexis.bi.ui.main.home.intelligence.backfillTransition
 import com.hexis.bi.utils.millisToShortMonthDayYear
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -28,20 +35,66 @@ class PhysiqueDriftViewModel internal constructor(
     private val scanHistoryRepository: ScanHistoryRepository,
     private val userRepository: UserRepository,
     private val runIntelligence: RunIntelligenceUseCase,
+    private val healthSyncScheduler: HealthSyncScheduler,
 ) : BaseViewModel(application, initialLoading = true) {
 
-    private fun loadFindings() {
-        viewModelScope.launch {
-            val resolved = runIntelligence.findingsFor(Domains.BODY)
-            _state.update { it.copy(findings = resolved) }
+    private var findingsJob: Job? = null
+
+    private fun loadFindings(clearUpdatingOnComplete: Boolean = false) {
+        if (!BuildConfig.INTELLIGENCE_ENGINE_ENABLED) {
+            if (clearUpdatingOnComplete) {
+                _state.update { it.copy(insightsUpdating = false) }
+            }
+            return
+        }
+        findingsJob?.cancel()
+        findingsJob = viewModelScope.launch {
+            val run = runIntelligence().getOrNull()
+            if (run == null) {
+                if (clearUpdatingOnComplete) {
+                    _state.update { it.copy(insightsUpdating = false) }
+                }
+                return@launch
+            }
+            val resolved = EngineFindingsMapper.forAreas(
+                report = run.report,
+                copy = run.copy,
+                areas = setOf(Domains.BODY),
+                isMetric = run.isMetric,
+                analysisWindowDays = run.config.windows.analysisDays,
+                valueOverrides = _state.value.score.toDoubleOrNull()
+                    ?.let { mapOf("physique_score" to it) }
+                    .orEmpty(),
+            )
+            _state.update {
+                it.copy(
+                    findings = resolved,
+                    insightsUpdating = if (clearUpdatingOnComplete) false else it.insightsUpdating,
+                )
+            }
         }
     }
 
     private val _state = MutableStateFlow(PhysiqueDriftState())
     val state = _state.asStateFlow()
+    private var backfillInFlight = false
 
     init {
         loadFindings()
+        healthSyncScheduler.backfillInFlight()
+            .onEach { inFlight ->
+                val transition = backfillTransition(backfillInFlight, inFlight)
+                backfillInFlight = inFlight
+                when (transition) {
+                    BackfillTransition.ACTIVE -> {
+                        findingsJob?.cancel()
+                        _state.update { it.copy(insightsUpdating = true) }
+                    }
+                    BackfillTransition.SETTLED -> loadFindings(clearUpdatingOnComplete = true)
+                    BackfillTransition.IDLE -> _state.update { it.copy(insightsUpdating = false) }
+                }
+            }
+            .launchIn(viewModelScope)
         load()
     }
 
@@ -53,6 +106,7 @@ class PhysiqueDriftViewModel internal constructor(
         viewModelScope.launch {
             setLoading(true)
             renderFromRepositories()
+            loadFindings()
             setLoading(false)
         }
     }

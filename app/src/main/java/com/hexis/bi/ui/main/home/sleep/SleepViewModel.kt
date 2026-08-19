@@ -18,11 +18,12 @@ import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
 import com.hexis.bi.domain.intelligence.IntelligenceRun
 import com.hexis.bi.ui.main.home.intelligence.EngineFindingsMapper
+import com.hexis.bi.ui.main.home.intelligence.BackfillTransition
+import com.hexis.bi.ui.main.home.intelligence.backfillTransition
 import com.hexis.bi.ui.main.home.intelligence.NightComparison
 import com.hexis.bi.intelligence.engine.Metrics
 import com.hexis.bi.utils.constants.FindingWindows
 import com.hexis.bi.intelligence.engine.Domains
-import com.hexis.bi.ui.main.home.intelligence.findingsFor
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.main.home.sleep.SleepViewModel.Companion.MAX_CHART_POINTS
 import com.hexis.bi.utils.constants.CanonicalCacheConstants
@@ -40,6 +41,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
@@ -59,13 +61,34 @@ class SleepViewModel internal constructor(
     private val runIntelligence: RunIntelligenceUseCase,
 ) : BaseViewModel(application) {
 
+    private var findingsJob: Job? = null
     private var lastRun: IntelligenceRun? = null
 
-    private fun loadFindings() {
-        viewModelScope.launch {
-            lastRun = runIntelligence().getOrNull()
-            val resolved = runIntelligence.findingsFor(Domains.SLEEP, Domains.RECOVERY, Domains.STRESS)
-            _state.update { it.copy(findings = resolved, dayComparisons = dayComparisons()) }
+    private fun loadFindings(clearUpdatingOnComplete: Boolean = false) {
+        findingsJob?.cancel()
+        findingsJob = viewModelScope.launch {
+            val run = runIntelligence().getOrNull()
+            if (run == null) {
+                if (clearUpdatingOnComplete) {
+                    _state.update { it.copy(insightsUpdating = false) }
+                }
+                return@launch
+            }
+            lastRun = run
+            val resolved = EngineFindingsMapper.forAreas(
+                report = run.report,
+                copy = run.copy,
+                areas = setOf(Domains.SLEEP, Domains.RECOVERY, Domains.STRESS),
+                isMetric = run.isMetric,
+                analysisWindowDays = run.config.windows.analysisDays,
+            )
+            _state.update {
+                it.copy(
+                    findings = resolved,
+                    dayComparisons = dayComparisons(),
+                    insightsUpdating = if (clearUpdatingOnComplete) false else it.insightsUpdating,
+                )
+            }
         }
     }
 
@@ -112,7 +135,16 @@ class SleepViewModel internal constructor(
             .launchIn(viewModelScope)
         healthSyncScheduler.backfillInFlight()
             .onEach { inFlight ->
+                val transition = backfillTransition(backfillInFlight, inFlight)
                 backfillInFlight = inFlight
+                when (transition) {
+                    BackfillTransition.ACTIVE -> {
+                        findingsJob?.cancel()
+                        _state.update { it.copy(insightsUpdating = true) }
+                    }
+                    BackfillTransition.SETTLED -> loadFindings(clearUpdatingOnComplete = true)
+                    BackfillTransition.IDLE -> _state.update { it.copy(insightsUpdating = false) }
+                }
                 reloadLoadedTabs()
             }
             .launchIn(viewModelScope)
@@ -290,8 +322,10 @@ class SleepViewModel internal constructor(
                 timelineEndHour = 6,
                 timelineSegments = emptyList(),
                 insightRes = R.string.sleep_recovery_subtitle,
+                dayComparisons = emptyList(),
             )
         }
+        _state.update { it.copy(dayComparisons = dayComparisons()) }
         prefetchSummaryIfNeeded()
     }
 
@@ -316,7 +350,6 @@ class SleepViewModel internal constructor(
                 insightRes = insightFor(quality),
             )
         }
-        _state.update { it.copy(dayComparisons = dayComparisons()) }
         prefetchSummaryIfNeeded()
     }
 

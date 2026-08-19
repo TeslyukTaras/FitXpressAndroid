@@ -213,6 +213,7 @@ fun HomeScreen(
                 HomeInsightsSection(
                     cards = state.insights,
                     loaded = state.insightsLoaded,
+                    updating = state.insightsUpdating,
                     onClick = onInsightsClick,
                 )
             }

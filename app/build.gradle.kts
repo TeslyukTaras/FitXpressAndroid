@@ -17,15 +17,15 @@ fun terraDevId(key: String): String =
         ?: providers.environmentVariable(key.replace('.', '_').uppercase()).orNull
         ?: ""
 
-val buildsProdFlavor =
-    gradle.startParameter.taskNames.any { it.contains("prod", ignoreCase = true) }
-
-val prodTerraDevId: String = terraDevId("terra.prod.dev.id").also {
-    if (buildsProdFlavor && it.isBlank()) {
-        error(
+val prodTerraDevId: String = terraDevId("terra.prod.dev.id")
+val validateProductionConfig = tasks.register("validateProductionConfig") {
+    group = "verification"
+    description = "Validates secrets required by production-environment variants."
+    doLast {
+        check(prodTerraDevId.isNotBlank()) {
             "terra.prod.dev.id is not set. Add it to local.properties (or TERRA_PROD_DEV_ID in the " +
-                    "environment). It must equal the PROD_TERRA_DEV_ID Firebase secret."
-        )
+                "environment). It must equal the PROD_TERRA_DEV_ID Firebase secret."
+        }
     }
 }
 
@@ -75,7 +75,7 @@ android {
             buildConfigField("String", "TERRA_DEV_ID", "\"${terraDevId("terra.dev.id")}\"")
             buildConfigField("boolean", "TERRA_INCLUDE_DUMMY_PROVIDER", "false")
         }
-        create("prod") {
+        create("production") {
             dimension = "env"
             resValue("string", "app_name", "Hexis-BI")
             buildConfigField("String", "ENVIRONMENT", "\"prod\"")
@@ -88,6 +88,12 @@ android {
     }
 
     buildTypes {
+        create("prod") {
+            initWith(getByName("release"))
+            isDebuggable = false
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -107,6 +113,15 @@ android {
         resValues = true
     }
 
+}
+
+androidComponents {
+    onVariants(selector().withFlavor("env" to "production")) { variant ->
+        val preBuildTask = "pre${variant.name.replaceFirstChar(Char::uppercase)}Build"
+        tasks.configureEach {
+            if (name == preBuildTask) dependsOn(validateProductionConfig)
+        }
+    }
 }
 
 kotlin {

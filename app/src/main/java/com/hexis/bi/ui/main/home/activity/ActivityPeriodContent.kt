@@ -52,6 +52,7 @@ fun ActivityPeriodContent(
 
     EngineFindingsSection(
         state = state.findings.forWindow(windowDays),
+        updating = state.insightsUpdating,
         topSpacing = dimensionResource(R.dimen.spacer_xs),
     )
 
