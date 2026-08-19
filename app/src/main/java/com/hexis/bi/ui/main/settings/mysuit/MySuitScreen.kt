@@ -223,6 +223,7 @@ private fun DisconnectedContent(
             value = suitIdInput,
             onValueChange = onSuitIdChange,
             label = stringResource(R.string.label_suit_id),
+            placeholder = stringResource(R.string.placeholder_suit_id),
             modifier = Modifier.fillMaxWidth(),
         )
 

@@ -124,6 +124,7 @@
     <string name="my_suit_connect_title">Connect Your Hexis-BI Suit</string>
     <string name="my_suit_connect_subtitle">Your scanning suit provides the most accurate body measurements.</string>
     <string name="label_suit_id">Suit ID</string>
+    <string name="placeholder_suit_id">Enter Suit ID</string>
     <string name="my_suit_id_hint">You can find the ID on your suit tag or packaging</string>
     <string name="action_connect">Connect</string>
     <string name="my_suit_no_suit">No scanning suit yet? </string>
