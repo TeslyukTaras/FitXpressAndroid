@@ -13,6 +13,7 @@ import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
 import com.hexis.bi.domain.body.BodyMeasurementRegion
 import com.hexis.bi.ui.components.AppTabSelector
+import com.hexis.bi.ui.components.MedicalDisclaimerFooter
 import com.hexis.bi.ui.main.body.BodyVisualMode
 import com.hexis.bi.ui.main.body.CompareContent
 import com.hexis.bi.ui.main.body.MyBodyContent
@@ -89,5 +90,12 @@ internal fun ScanResultsContent(
             )
         }
 
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+        MedicalDisclaimerFooter(
+            modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+        )
+
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
     }
 }

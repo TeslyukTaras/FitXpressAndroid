@@ -26,6 +26,7 @@ import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.components.MedicalDisclaimerFooter
 import com.hexis.bi.ui.main.home.paceofaging.components.PaceOfAgingInfoBottomSheet
 import com.hexis.bi.ui.main.home.paceofaging.components.PaceOfAgingInsightCard
 import com.hexis.bi.ui.main.home.paceofaging.components.PaceOfAgingStatsCard
@@ -98,7 +99,11 @@ fun PaceOfAgingScreen(
 
                 PaceOfAgingInsightCard(insight = state.insight)
 
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+                MedicalDisclaimerFooter()
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
             }
         }
 

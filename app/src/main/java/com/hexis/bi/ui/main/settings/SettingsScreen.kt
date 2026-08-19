@@ -27,6 +27,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -44,6 +47,7 @@ import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.components.MedicalDisclaimerSheet
 import com.hexis.bi.ui.main.settings.deleteaccount.AuthProvider
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountDialog
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountEvent
@@ -102,6 +106,8 @@ fun SettingsScreen(
         AuthProvider.UNKNOWN -> { -> }
     }
 
+    var showMedicalDisclaimer by rememberSaveable { mutableStateOf(false) }
+
     val groups = buildSettingsGroups(
         onNavigateToEditProfile = onNavigateToEditProfile,
         onNavigateToNotificationSettings = onNavigateToNotificationSettings,
@@ -124,6 +130,7 @@ fun SettingsScreen(
             )
         },
         onOpenTerms = { uriHandler.openUri(LegalUrls.TERMS_AND_CONDITIONS) },
+        onShowMedicalDisclaimer = { showMedicalDisclaimer = true },
         onShowDeleteDialog = viewModel::showDialog,
         onLogout = onLogout,
     )
@@ -163,6 +170,10 @@ fun SettingsScreen(
                 onCancel = viewModel::dismissDialog,
                 onDelete = onDelete,
             )
+        }
+
+        if (showMedicalDisclaimer) {
+            MedicalDisclaimerSheet(onDismiss = { showMedicalDisclaimer = false })
         }
     }
 }
@@ -237,6 +248,7 @@ private fun buildSettingsGroups(
     onOpenHelp: () -> Unit,
     onReportProblem: () -> Unit,
     onOpenTerms: () -> Unit,
+    onShowMedicalDisclaimer: () -> Unit,
     onShowDeleteDialog: () -> Unit,
     onLogout: () -> Unit,
 ): List<SettingsGroup> {
@@ -295,6 +307,11 @@ private fun buildSettingsGroups(
                     R.drawable.ic_lock,
                     R.string.settings_terms_privacy,
                     onClick = onOpenTerms
+                ),
+                SettingsRow(
+                    R.drawable.ic_medical,
+                    R.string.settings_medical_disclaimer,
+                    onClick = onShowMedicalDisclaimer,
                 ),
                 SettingsRow(
                     R.drawable.ic_warning,
