@@ -225,7 +225,6 @@ fun HomeScreen(
                 if (BuildConfig.INTELLIGENCE_ENGINE_ENABLED) {
                     HomeInsightsSection(
                         cards = state.insights,
-                        loaded = state.insightsLoaded,
                         updating = state.insightsUpdating,
                         onClick = onInsightsClick,
                     )

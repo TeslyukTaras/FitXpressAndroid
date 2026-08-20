@@ -106,11 +106,8 @@ class HomeViewModel internal constructor(
 
     private fun loadInsights(clearUpdatingOnComplete: Boolean = false) {
         if (!BuildConfig.INTELLIGENCE_ENGINE_ENABLED) {
-            _state.update {
-                it.copy(
-                    insightsLoaded = true,
-                    insightsUpdating = if (clearUpdatingOnComplete) false else it.insightsUpdating,
-                )
+            if (clearUpdatingOnComplete) {
+                _state.update { it.copy(insightsUpdating = false) }
             }
             return
         }
@@ -130,7 +127,6 @@ class HomeViewModel internal constructor(
             _state.update {
                 it.copy(
                     insights = result.getOrNull() ?: it.insights,
-                    insightsLoaded = true,
                     insightsUpdating = if (clearUpdatingOnComplete) false else it.insightsUpdating,
                 )
             }

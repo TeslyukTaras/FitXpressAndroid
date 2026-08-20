@@ -60,8 +60,6 @@ data class EngineDebugInfo(
 )
 
 sealed interface EngineFindingsState {
-    data object Hidden : EngineFindingsState
-
     data object Empty : EngineFindingsState
 
     data class Ready(
@@ -75,10 +73,9 @@ data class AreaFindings(
     private val byWindow: Map<Int, EngineFindingsState> = emptyMap(),
     private val debugByWindow: Map<Int, EngineDebugInfo> = emptyMap(),
     val primaryWindowDays: Int = 0,
-    private val engineRan: Boolean = false,
 ) {
-    fun forWindow(windowDays: Int): EngineFindingsState = byWindow[windowDays]
-        ?: if (engineRan) EngineFindingsState.Empty else EngineFindingsState.Hidden
+    fun forWindow(windowDays: Int): EngineFindingsState =
+        byWindow[windowDays] ?: EngineFindingsState.Empty
 
     val primary: EngineFindingsState get() = forWindow(primaryWindowDays)
 
@@ -112,7 +109,6 @@ object EngineFindingsMapper {
             emptyMap()
         },
         primaryWindowDays = analysisWindowDays,
-        engineRan = true,
     )
 
     private fun debugFor(report: EngineReport, areas: Set<String>, windowDays: Int): EngineDebugInfo {

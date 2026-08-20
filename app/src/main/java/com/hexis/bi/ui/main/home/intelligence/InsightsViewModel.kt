@@ -17,7 +17,6 @@ import kotlinx.coroutines.launch
 
 data class InsightsState(
     val cards: List<InsightCard> = emptyList(),
-    val loaded: Boolean = false,
     val updating: Boolean = false,
     val latestScanDate: String? = null,
     val showInfoSheet: Boolean = false,
@@ -75,11 +74,8 @@ class InsightsViewModel internal constructor(
 
     private fun load(clearUpdatingOnComplete: Boolean) {
         if (!BuildConfig.INTELLIGENCE_ENGINE_ENABLED) {
-            _state.update {
-                it.copy(
-                    loaded = true,
-                    updating = if (clearUpdatingOnComplete) false else it.updating,
-                )
+            if (clearUpdatingOnComplete) {
+                _state.update { it.copy(updating = false) }
             }
             return
         }
@@ -95,7 +91,6 @@ class InsightsViewModel internal constructor(
             _state.update {
                 it.copy(
                     cards = cards ?: it.cards,
-                    loaded = true,
                     updating = if (clearUpdatingOnComplete) false else it.updating,
                 )
             }

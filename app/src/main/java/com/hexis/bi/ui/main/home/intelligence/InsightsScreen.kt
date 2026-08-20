@@ -74,9 +74,13 @@ fun InsightsScreen(
             val contentModifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = dimensionResource(R.dimen.padding_medium))
-            if (showFullInsightsEmpty(state.loaded, state.updating, state.cards.isNotEmpty())) {
-                Box(modifier = contentModifier, contentAlignment = Alignment.Center) {
-                    InsightsEmpty()
+            if (state.cards.isEmpty()) {
+                Column(modifier = contentModifier) {
+                    InsightsHeader(state)
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) { InsightsEmpty() }
                 }
             } else {
                 Column(modifier = contentModifier.verticalScroll(rememberScrollState())) {

@@ -65,19 +65,13 @@ fun EngineFindingsSection(
                 }
             }
 
-                EngineFindingsState.Empty -> if (showEngineFindingsEmpty(updating)) {
-                    Column {
-                        Spacer(Modifier.height(topSpacing))
-                        BodyGlassCard(
-                            contentPadding = PaddingValues(dimensionResource(R.dimen.insight_card_padding)),
-                            shape = RoundedCornerShape(dimensionResource(R.dimen.insight_card_corner)),
-                        ) { EmptyFindings() }
-                    }
-                } else {
-                    Spacer(Modifier)
+                EngineFindingsState.Empty -> Column {
+                    Spacer(Modifier.height(topSpacing))
+                    BodyGlassCard(
+                        contentPadding = PaddingValues(dimensionResource(R.dimen.insight_card_padding)),
+                        shape = RoundedCornerShape(dimensionResource(R.dimen.insight_card_corner)),
+                    ) { EmptyFindings() }
                 }
-
-                EngineFindingsState.Hidden -> Spacer(Modifier)
             }
         }
     }
