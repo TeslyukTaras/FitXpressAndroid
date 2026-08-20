@@ -4,7 +4,9 @@ import com.hexis.bi.BuildConfig
 import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
 import com.hexis.bi.intelligence.config.CopyConfig
 import com.hexis.bi.intelligence.engine.ConfidenceBuckets
+import com.hexis.bi.intelligence.engine.Domains
 import com.hexis.bi.intelligence.engine.EngineReport
+import com.hexis.bi.intelligence.engine.PhysiqueDrift
 import com.hexis.bi.intelligence.engine.SuppressedFinding
 import com.hexis.bi.intelligence.model.Finding
 import com.hexis.bi.intelligence.narrate.InsightNarrator
@@ -58,6 +60,7 @@ data class EngineDebugInfo(
     val trendCount: Int,
     val suppressed: List<SuppressedFinding>,
     val qualityFailureCount: Int,
+    val drift: PhysiqueDrift? = null,
 )
 
 sealed interface EngineFindingsState {
@@ -129,6 +132,7 @@ object EngineFindingsMapper {
             suppressed = window?.suppressed.orEmpty().filter { it.area in areas },
             qualityFailureCount = window?.verdicts.orEmpty()
                 .count { !it.ok && report.metricTrends.any { row -> row.metric == it.metric && row.domain in areas } },
+            drift = report.physiqueDrift.takeIf { Domains.BODY in areas },
         )
     }
 
