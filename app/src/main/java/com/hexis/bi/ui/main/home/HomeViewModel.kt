@@ -20,7 +20,6 @@ import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.body.BodyMeasurementKeys
 import com.hexis.bi.domain.body.BodyMeasurementRegion
-import com.hexis.bi.domain.body.physiqueScore
 import com.hexis.bi.domain.longevity.LongevityCalculator
 import com.hexis.bi.domain.longevity.PaceOfAgingInputs
 import com.hexis.bi.domain.longevity.agingScore
@@ -46,6 +45,7 @@ import com.hexis.bi.ui.main.scan.results.MeasurementChange
 import com.hexis.bi.utils.calculateAge
 import com.hexis.bi.utils.cmToInches
 import com.hexis.bi.utils.constants.ActivityConstants
+import com.hexis.bi.utils.constants.FindingMetricAliases
 import com.hexis.bi.utils.constants.LongevityFoundationConstants
 import com.hexis.bi.utils.constants.OrderConstants
 import com.hexis.bi.utils.constants.RecompositionConstants
@@ -115,18 +115,16 @@ class HomeViewModel internal constructor(
         insightsJob = viewModelScope.launch {
             val result = runIntelligence().map { run ->
                 EngineFindingsMapper.simpleFindings(
-                        report = run.report,
-                        copy = run.copy,
-                        windowDays = run.config.windows.analysisDays,
-                        isMetric = run.isMetric,
-                        valueOverrides = _state.value.physiqueScore?.toDouble()
-                            ?.let { mapOf("physique_score" to it) }
-                            .orEmpty(),
-                )
+                    report = run.report,
+                    copy = run.copy,
+                    windowDays = run.config.windows.analysisDays,
+                    isMetric = run.isMetric,
+                ) to run.report.latestValues[FindingMetricAliases.PHYSIQUE_SCORE_METRIC]
             }
             _state.update {
                 it.copy(
-                    insights = result.getOrNull() ?: it.insights,
+                    insights = result.getOrNull()?.first ?: it.insights,
+                    physiqueScore = result.getOrNull()?.second?.toFloat() ?: it.physiqueScore,
                     insightsUpdating = if (clearUpdatingOnComplete) false else it.insightsUpdating,
                 )
             }
@@ -402,10 +400,6 @@ class HomeViewModel internal constructor(
                 publishScanOverview(scans, isMetric)
                 publishRecompositionOverview(recompositionScans, today)
                 publishLongevityDirection(recompositionScans, heightCm, today)
-                val latestFullScan = scans?.firstOrNull()?.id
-                    ?.let { scanHistoryRepository.getScanRecordById(it).getOrNull() }
-                _state.update { it.copy(physiqueScore = latestFullScan?.physiqueScore(heightCm)) }
-
                 val terra = terraDeferred.await()
                 val latestScan = scans?.firstOrNull()
                 applyTerraTiles(today, terra, latestScan, heightCm)

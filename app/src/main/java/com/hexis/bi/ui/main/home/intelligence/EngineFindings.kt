@@ -102,10 +102,9 @@ object EngineFindingsMapper {
         areas: Set<String>,
         isMetric: Boolean,
         analysisWindowDays: Int = report.primaryWindowDays,
-        valueOverrides: Map<String, Double> = emptyMap(),
     ): AreaFindings = AreaFindings(
         byWindow = report.availableWindows.associateWith { window ->
-            rowsFor(report, copy, areas, window, isMetric, valueOverrides)
+            rowsFor(report, copy, areas, window, isMetric)
         },
         debugByWindow = if (BuildConfig.DEBUG) {
             report.availableWindows.associateWith { window -> debugFor(report, areas, window) }
@@ -142,7 +141,6 @@ object EngineFindingsMapper {
         areas: Set<String>,
         windowDays: Int,
         isMetric: Boolean,
-        valueOverrides: Map<String, Double>,
     ): EngineFindingsState {
         val findings = report.forWindow(windowDays)?.findings.orEmpty().filter { it.area in areas }
 
@@ -181,7 +179,7 @@ object EngineFindingsMapper {
         return EngineFindingsState.Ready(
             rows = rows,
             confidence = mostConfidentChange(section).confidenceLevel,
-            values = valuesFor(section, report, copy, windowDays, isMetric, valueOverrides),
+            values = valuesFor(section, report, copy, windowDays, isMetric),
         )
     }
 
@@ -190,7 +188,6 @@ object EngineFindingsMapper {
         copy: CopyConfig,
         windowDays: Int,
         isMetric: Boolean,
-        valueOverrides: Map<String, Double> = emptyMap(),
     ): List<InsightCard> =
         report.forWindow(windowDays)?.findings.orEmpty()
             .filter { InsightNarrator.narrate(it, copy) != null }
@@ -208,9 +205,7 @@ object EngineFindingsMapper {
                     area = finding.subject,
                     explanation = sentence,
                     confidence = finding.confidenceLevel,
-                    values = valuesFor(
-                        listOf(finding), report, copy, windowDays, isMetric, valueOverrides,
-                    ),
+                    values = valuesFor(listOf(finding), report, copy, windowDays, isMetric),
                 )
             }
             .sortedWith(compareBy({ it.confidence.ordinal }, { it.area }))
@@ -266,7 +261,6 @@ object EngineFindingsMapper {
         copy: CopyConfig,
         windowDays: Int,
         isMetric: Boolean,
-        valueOverrides: Map<String, Double> = emptyMap(),
     ): List<FindingValue> {
         return findings.filterNot { it.informational }
             .sortedBy { it.priorityRank }
@@ -284,8 +278,7 @@ object EngineFindingsMapper {
                     from = format.render(baseline.median),
                     to = format.render(
                         if (metric == FindingMetricAliases.PHYSIQUE_SCORE_METRIC) {
-                            valueOverrides[metric] ?: report.latestValues[metric]
-                            ?: baseline.median + change
+                            report.latestValues[metric] ?: baseline.median + change
                         } else {
                             baseline.median + change
                         },

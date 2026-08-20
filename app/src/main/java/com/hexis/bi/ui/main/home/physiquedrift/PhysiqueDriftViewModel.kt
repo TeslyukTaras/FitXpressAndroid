@@ -62,9 +62,6 @@ class PhysiqueDriftViewModel internal constructor(
                 areas = setOf(Domains.BODY),
                 isMetric = run.isMetric,
                 analysisWindowDays = run.config.windows.analysisDays,
-                valueOverrides = _state.value.score.toDoubleOrNull()
-                    ?.let { mapOf("physique_score" to it) }
-                    .orEmpty(),
             )
             _state.update {
                 it.copy(
