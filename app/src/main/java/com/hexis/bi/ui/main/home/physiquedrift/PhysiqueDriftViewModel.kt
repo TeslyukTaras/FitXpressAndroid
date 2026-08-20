@@ -10,6 +10,7 @@ import com.hexis.bi.data.scan.ScanRecord
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.body.PhysiqueScoreBreakdown
 import com.hexis.bi.domain.body.muscleMassPercentage
+import com.hexis.bi.data.intelligence.IntelligenceConfigRepository
 import com.hexis.bi.domain.body.physiqueScoreBreakdown
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
@@ -35,6 +36,7 @@ class PhysiqueDriftViewModel internal constructor(
     private val scanHistoryRepository: ScanHistoryRepository,
     private val userRepository: UserRepository,
     private val runIntelligence: RunIntelligenceUseCase,
+    private val intelligenceConfigRepository: IntelligenceConfigRepository,
     private val healthSyncScheduler: HealthSyncScheduler,
 ) : BaseViewModel(application, initialLoading = true) {
 
@@ -112,12 +114,14 @@ class PhysiqueDriftViewModel internal constructor(
         val scansDef =
             async { scanHistoryRepository.getRecentScans(limit = 2).getOrNull().orEmpty() }
         val heightDef = async { userRepository.getUser().getOrNull()?.heightCm?.toFloat() }
+        val configDef = async { intelligenceConfigRepository.config().getOrNull() }
 
         val scans = scansDef.await()
         val heightCm = heightDef.await()
+        val config = configDef.await()
         val latest = scans.getOrNull(0)
         val previous = scans.getOrNull(1)
-        val breakdown = latest?.physiqueScoreBreakdown(heightCm)
+        val breakdown = config?.let { latest?.physiqueScoreBreakdown(it, heightCm) }
 
         if (latest == null || breakdown == null) {
             _state.update {
@@ -139,7 +143,7 @@ class PhysiqueDriftViewModel internal constructor(
             return@coroutineScope
         }
 
-        val previousBreakdown = previous?.physiqueScoreBreakdown(heightCm)
+        val previousBreakdown = config?.let { previous?.physiqueScoreBreakdown(it, heightCm) }
         val level = levelFor(breakdown.score)
         _state.update {
             it.copy(

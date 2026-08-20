@@ -5,7 +5,7 @@ import com.hexis.bi.intelligence.config.PhysiqueConfig
 import com.hexis.bi.intelligence.model.MetricPoint
 import com.hexis.bi.intelligence.model.MetricSeries
 
-internal object PhysiqueComponents {
+object PhysiqueComponents {
     const val BODY_FAT = "body_fat"
     const val LEAN_MASS = "lean_mass"
     const val WAIST_SHAPE = "waist_shape"
@@ -28,7 +28,7 @@ internal object LongevitySignals {
     val ANCHORED = listOf(HRV, ACTIVITY, RHR, BODY_FAT, WAIST_TO_HEIGHT, VO2)
 }
 
-internal data class ScorePart(val weight: Double, val score: Double)
+data class ScorePart(val weight: Double, val score: Double)
 
 private const val SCORE_DIGITS = 1
 private const val PHYSIQUE_DIGITS = 2
@@ -112,7 +112,7 @@ internal fun stressScore(day: Map<String, Double>, config: EngineConfig): Double
     return roundHalfEven(linearScore(hrv, anchors[0], anchors[1]), SCORE_DIGITS)
 }
 
-internal fun physiqueParts(day: Map<String, Double>, config: EngineConfig): Map<String, ScorePart> {
+fun physiqueParts(day: Map<String, Double>, config: EngineConfig): Map<String, ScorePart> {
     val physique = config.composites.physique
     val weights = physique.weights
     val height = config.composites.heightCm
@@ -153,14 +153,14 @@ internal fun physiqueParts(day: Map<String, Double>, config: EngineConfig): Map<
 private fun interpolate(value: Double, anchor: List<Double>): Double =
     interpolate(value, anchor[0], anchor[1], anchor[2], anchor[3])
 
-internal fun scoreFromParts(parts: Map<String, ScorePart>, physique: PhysiqueConfig): Double? {
+fun scoreFromParts(parts: Map<String, ScorePart>, physique: PhysiqueConfig): Double? {
     val totalWeight = compensatedSum(parts.values.map { it.weight })
     if (totalWeight <= 0.0) return null
     val score = compensatedSum(parts.values.map { it.weight * it.score }) / totalWeight
     return roundHalfEven(score.coerceIn(physique.min, physique.max), PHYSIQUE_DIGITS)
 }
 
-internal fun physiqueScore(day: Map<String, Double>, config: EngineConfig): Double? =
+fun physiqueScore(day: Map<String, Double>, config: EngineConfig): Double? =
     scoreFromParts(physiqueParts(day, config), config.composites.physique)
 
 internal fun anchorScore(value: Double, anchors: List<List<Double>>): Double {

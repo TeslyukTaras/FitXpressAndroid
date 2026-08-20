@@ -245,13 +245,13 @@ val appModule = module {
     viewModel { MySuitViewModel(androidApplication(), get(), get()) }
     viewModel { NotificationsSettingsViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { NotificationsViewModel(androidApplication(), get()) }
-    viewModel { BodyViewModel(androidApplication(), get(), get(), get(), get()) }
+    viewModel { BodyViewModel(androidApplication(), get(), get(), get(), get(), get()) }
     viewModel { SleepViewModel(androidApplication(), get(), get(), get(), get(), get()) }
     viewModel { ActivityViewModel(androidApplication(), get(), get(), get(), get(), get()) }
     viewModel { RecoveryViewModel(androidApplication(), get()) }
     viewModel { LongevityViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { PaceOfAgingViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get(), get()) }
-    viewModel { PhysiqueDriftViewModel(androidApplication(), get(), get(), get(), get()) }
+    viewModel { PhysiqueDriftViewModel(androidApplication(), get(), get(), get(), get(), get()) }
     viewModel { InsightsViewModel(androidApplication(), get(), get(), get()) }
     viewModel { RecompositionViewModel(androidApplication(), get()) }
     viewModel { ScanViewModel(androidApplication(), get()) }
