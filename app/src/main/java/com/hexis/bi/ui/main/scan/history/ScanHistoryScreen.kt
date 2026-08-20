@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -39,6 +41,7 @@ import com.hexis.bi.data.scan.TopChangeVsPrevious
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppDatePicker
+import com.hexis.bi.ui.components.MedicalDisclaimerFooter
 import com.hexis.bi.ui.components.AppHorizontalGradientDivider
 import com.hexis.bi.ui.components.LightStatusBarIcons
 import com.hexis.bi.ui.main.scan.results.MeasurementChange
@@ -116,7 +119,7 @@ fun ScanHistoryScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
                     top = dimensionResource(R.dimen.spacer_s),
-                    bottom = dimensionResource(R.dimen.spacer_3xl),
+                    bottom = dimensionResource(R.dimen.spacer_m),
                 ),
                 verticalArrangement = Arrangement.Top,
             ) {
@@ -127,6 +130,11 @@ fun ScanHistoryScreen(
                         showDivider = true, //previously index < state.items.lastIndex,
                         onClick = { onOpenScan(item.scanId) },
                     )
+                }
+
+                item {
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+                    MedicalDisclaimerFooter()
                 }
             }
         }

@@ -34,6 +34,7 @@ import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppDialog
 import com.hexis.bi.ui.components.AppTabSelector
 import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.components.MedicalDisclaimerFooter
 import com.hexis.bi.ui.main.home.activity.components.ActivitySettingsDialogContent
 import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.utils.providerDisplayName
@@ -133,7 +134,11 @@ fun ActivityScreen(
                     )
                 }
 
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+                MedicalDisclaimerFooter()
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
             }
         }
 

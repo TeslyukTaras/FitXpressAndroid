@@ -30,6 +30,7 @@ import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.components.AppTabSelector
 import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.components.MedicalDisclaimerFooter
 import com.hexis.bi.ui.main.body.components.BisInfoBottomSheet
 import com.hexis.bi.ui.main.body.components.BodyProportionInfoBottomSheet
 import com.hexis.bi.ui.theme.screenBackground
@@ -118,6 +119,11 @@ fun BodyScreen(
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
                 ) {
+                    val navClearance =
+                        dimensionResource(R.dimen.size_bottom_nav_center) +
+                                dimensionResource(R.dimen.spacer_l) +
+                                dimensionResource(R.dimen.spacer_2xl)
+
                     StatsContent(
                         state = state,
                         onMassUnitChange = viewModel::selectMassUnit,
@@ -125,7 +131,12 @@ fun BodyScreen(
                         onPhysiqueBalanceClick = onPhysiqueBalanceClick,
                         onRetry = viewModel::retry,
                     )
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
+
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+                    MedicalDisclaimerFooter()
+
+                    Spacer(Modifier.height(navClearance))
                 }
 
                 BodyTab.Visual -> VisualContent(
