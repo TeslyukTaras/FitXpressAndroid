@@ -289,6 +289,12 @@ class HomeViewModel internal constructor(
     fun dismissOrderDetails() =
         _state.update { it.copy(showOrderDetails = false) }
 
+    fun showMedicalDisclaimer() =
+        _state.update { it.copy(showMedicalDisclaimer = true) }
+
+    fun dismissMedicalDisclaimer() =
+        _state.update { it.copy(showMedicalDisclaimer = false) }
+
     /** The card tracks the order until the delivered suit is activated (linked via suitId). */
     private val Order.isShownOnHome: Boolean
         get() = status != OrderStatus.CANCELLED &&

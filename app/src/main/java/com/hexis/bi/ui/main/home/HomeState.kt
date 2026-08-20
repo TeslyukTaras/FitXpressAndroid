@@ -91,6 +91,7 @@ data class HomeState(
     val orderDetails: OrderDetailsUi? = null,
     val suitSectionResolved: Boolean = false,
     val showOrderDetails: Boolean = false,
+    val showMedicalDisclaimer: Boolean = false,
     val hasUnreadNotifications: Boolean = false,
     val sleepGoalHours: Int = SleepConstants.DEFAULT_SLEEP_GOAL_HOURS,
     val activityGoalSteps: Int = ActivityConstants.DEFAULT_STEP_GOAL,

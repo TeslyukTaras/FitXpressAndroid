@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,12 +31,14 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.hexis.bi.R
+import com.hexis.bi.data.preferences.UserPreferencesRepository
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.components.AppDialog
 import com.hexis.bi.ui.components.AppMainNavBottomBar
 import com.hexis.bi.ui.components.AppOutlinedButton
 import com.hexis.bi.ui.components.AppPrimaryButton
+import com.hexis.bi.ui.components.MedicalDisclaimerSheet
 import com.hexis.bi.ui.components.my_suit.BuySuitDialogContent
 import com.hexis.bi.ui.main.body.BodyScreen
 import com.hexis.bi.ui.main.body.PhysiqueBalanceScreen
@@ -84,9 +87,15 @@ fun MainScreen(
 
     val userRepository: UserRepository = koinInject()
     val scanResultRepository: ScanResultRepository = koinInject()
+    val preferencesRepository: UserPreferencesRepository = koinInject()
     val scope = rememberCoroutineScope()
     var showProfileIncompleteDialog by remember { mutableStateOf(false) }
     var showBuySuitDialog by remember { mutableStateOf(false) }
+    var showDisclaimerAcknowledgement by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        showDisclaimerAcknowledgement = !preferencesRepository.isMedicalDisclaimerAcknowledged()
+    }
     val startSuitSizeScan: () -> Unit = {
         scope.launch {
             val profile = userRepository.getUser().getOrNull()
@@ -127,7 +136,7 @@ fun MainScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         val dialogBlurModifier =
-            if (showProfileIncompleteDialog || showBuySuitDialog) {
+            if (showProfileIncompleteDialog || showBuySuitDialog || showDisclaimerAcknowledgement) {
                 Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
             } else {
                 Modifier
@@ -361,6 +370,16 @@ fun MainScreen(
             BuySuitDialog(
                 onDismiss = { showBuySuitDialog = false },
                 onBuySuit = startSuitSizeScan,
+            )
+        }
+
+        if (showDisclaimerAcknowledgement) {
+            MedicalDisclaimerSheet(
+                requireAcknowledgement = true,
+                onDismiss = {
+                    showDisclaimerAcknowledgement = false
+                    scope.launch { preferencesRepository.setMedicalDisclaimerAcknowledged() }
+                },
             )
         }
     }

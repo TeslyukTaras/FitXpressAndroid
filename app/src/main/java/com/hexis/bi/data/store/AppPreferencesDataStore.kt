@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -28,6 +29,7 @@ object AppPreferencesKeys {
         val askedNotifPermissionUids = stringSetPreferencesKey("asked_notif_permission_uids")
         val bodyVisualMode = stringPreferencesKey("body_visual_mode")
         val personalizeResultsHintShown = booleanPreferencesKey("personalize_results_hint_shown")
+        val medicalDisclaimerAcknowledgedAt = longPreferencesKey("medical_disclaimer_acknowledged_at")
     }
 
     object NotificationInbox {

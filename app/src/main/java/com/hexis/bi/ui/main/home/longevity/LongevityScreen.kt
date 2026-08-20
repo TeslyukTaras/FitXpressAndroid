@@ -28,6 +28,7 @@ import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppTabSelector
 import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.components.MedicalDisclaimerFooter
 import com.hexis.bi.ui.main.home.longevity.components.LongevityDirectionCard
 import com.hexis.bi.ui.main.home.longevity.components.LongevityFoundationCard
 import com.hexis.bi.ui.main.home.longevity.components.LongevityInfoBottomSheet
@@ -103,7 +104,11 @@ fun LongevityScreen(
                     LongevityFoundationCard(foundation = foundation)
                 }
 
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+                MedicalDisclaimerFooter()
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
             }
         }
 

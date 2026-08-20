@@ -27,6 +27,7 @@ import com.hexis.bi.BuildConfig
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.components.MedicalDisclaimerFooter
 import com.hexis.bi.ui.main.home.physiquedrift.components.PhysiqueCompositionCard
 import com.hexis.bi.ui.main.home.physiquedrift.components.PhysiqueContributorsCard
 import com.hexis.bi.ui.main.home.physiquedrift.components.PhysiqueDriftInfoBottomSheet
@@ -112,7 +113,11 @@ fun PhysiqueDriftScreen(
                 )
                 EngineDebugSection(info = state.findings.primaryDebug)
 
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+                MedicalDisclaimerFooter()
+
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
             }
         }
 

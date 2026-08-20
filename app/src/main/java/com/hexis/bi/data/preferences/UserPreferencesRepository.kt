@@ -112,6 +112,15 @@ class UserPreferencesRepository(
         }
     }
 
+    suspend fun isMedicalDisclaimerAcknowledged(): Boolean =
+        store.data.map { it[k.medicalDisclaimerAcknowledgedAt] != null }.first()
+
+    suspend fun setMedicalDisclaimerAcknowledged() {
+        store.edit { prefs ->
+            prefs[k.medicalDisclaimerAcknowledgedAt] = System.currentTimeMillis()
+        }
+    }
+
     suspend fun clearAccountData() {
         store.edit { prefs ->
             val keepOnboarding = prefs[k.onboardingShown] == true
