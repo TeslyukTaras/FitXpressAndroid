@@ -117,6 +117,22 @@ enum class EngineDebugPresentation {
 
 @Composable
 private fun DebugFindingRow(finding: DebugFinding) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        DebugFindingHeadline(finding)
+        if (finding.factors.isNotEmpty()) {
+            Text(
+                text = finding.factors.entries.joinToString(FACTOR_SEPARATOR) { (key, value) ->
+                    "${key.take(FACTOR_LABEL_CHARS)} ${value.iosDebugScore()}"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun DebugFindingHeadline(finding: DebugFinding) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
         Text(
             text = finding.insightId,
@@ -140,3 +156,6 @@ private fun DebugFindingRow(finding: DebugFinding) {
 }
 
 private fun Double.iosDebugScore(): String = "%.3f".format(this).replace('.', ',')
+
+private const val FACTOR_SEPARATOR = " · "
+private const val FACTOR_LABEL_CHARS = 3

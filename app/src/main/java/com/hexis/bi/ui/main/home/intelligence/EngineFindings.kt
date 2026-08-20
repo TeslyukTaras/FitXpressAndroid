@@ -48,6 +48,7 @@ data class DebugFinding(
     val priorityRank: Int,
     val confidence: String,
     val confidenceScore: Double,
+    val factors: Map<String, Double> = emptyMap(),
 )
 
 data class EngineDebugInfo(
@@ -118,7 +119,12 @@ object EngineFindingsMapper {
             areas = areas,
             findings = window?.findings.orEmpty()
                 .filter { it.area in areas }
-                .map { DebugFinding(it.insightId, it.priorityRank, it.confidence, it.confidenceScore) },
+                .map {
+                    DebugFinding(
+                        it.insightId, it.priorityRank, it.confidence, it.confidenceScore,
+                        it.confidenceFactors,
+                    )
+                },
             trendCount = report.metricTrends.count { it.domain in areas && windowDays in it.trendsByWindow },
             suppressed = window?.suppressed.orEmpty().filter { it.area in areas },
             qualityFailureCount = window?.verdicts.orEmpty()
