@@ -8,7 +8,6 @@ import com.hexis.bi.data.sleep.SleepRepository
 import com.hexis.bi.data.sleep.toSampleMillis
 import com.hexis.bi.data.sleep.SleepSample
 import com.hexis.bi.data.sleep.SleepSession
-import com.hexis.bi.data.sleep.wholeMinutes
 import com.hexis.bi.data.sleep.SleepStage
 import com.hexis.bi.data.sleep.SleepStageInterval
 import com.hexis.bi.data.terra.TerraDetail
@@ -313,6 +312,7 @@ class SleepViewModel internal constructor(
                 dayLoadState = loadState,
                 errorMessage = null,
                 totalSleepMinutes = 0,
+                timeInBedMinutes = 0,
                 stages = emptyStageData(),
                 hrv = 0,
                 restingHeartRate = 0,
@@ -339,6 +339,7 @@ class SleepViewModel internal constructor(
                 dayLoadState = loadState,
                 errorMessage = null,
                 totalSleepMinutes = session.durationMinutes,
+                timeInBedMinutes = session.timeInBedMinutes,
                 stages = buildStageData(session),
                 hrv = session.hrvMs,
                 restingHeartRate = session.restingHeartRateBpm,
@@ -396,11 +397,12 @@ class SleepViewModel internal constructor(
 
     private fun buildStageData(session: SleepSession): List<SleepStageData> {
         val byStage = session.stages.groupBy { it.stage }
+        val totals = session.stageTotals
         return STAGE_DISPLAY_ORDER.map { stage ->
             val intervals = byStage[stage].orEmpty()
             SleepStageData(
                 stage = stage,
-                durationMinutes = intervals.sumOf { it.durationSeconds }.wholeMinutes(),
+                durationMinutes = totals.minutesFor(stage),
                 hrv = averageInIntervals(session.hrvSamples, intervals) ?: session.hrvMs,
                 rhr = averageInIntervals(session.heartRateSamples, intervals)
                     ?: session.restingHeartRateBpm,

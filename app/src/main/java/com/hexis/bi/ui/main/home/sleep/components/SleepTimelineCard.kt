@@ -65,7 +65,7 @@ private fun SleepStage.shadowGoesDown(): Boolean =
 
 @Composable
 fun SleepTimelineCard(
-    totalSleepMinutes: Int,
+    timeInBedMinutes: Int,
     timeStartHour: Int,
     timeEndHour: Int,
     segments: List<TimelineSegment>,
@@ -103,7 +103,7 @@ fun SleepTimelineCard(
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
-            Text(text = timelineDurationValue(totalSleepMinutes))
+            Text(text = timelineDurationValue(timeInBedMinutes))
         }
 
         Box(
@@ -134,7 +134,7 @@ fun SleepTimelineCard(
     }
 }
 
-/** Total sleep header value: white bodyLarge numbers with muted bodyMedium h/m units (matches Sleep Stages). */
+/** Time-in-bed header value: white bodyLarge numbers with muted bodyMedium h/m units (matches Sleep Stages). */
 @Composable
 private fun timelineDurationValue(totalMinutes: Int): AnnotatedString {
     val hours = totalMinutes / SleepConstants.MINUTES_PER_HOUR

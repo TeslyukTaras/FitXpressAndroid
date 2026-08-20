@@ -528,7 +528,7 @@ class HomeViewModel internal constructor(
             _state.update {
                 it.copy(
                     sleep = it.sleep.copy(
-                        durationMinutes = (sleepSession?.durationMinutes ?: 0).coerceAtLeast(0),
+                        durationMinutes = (sleepSession?.timeInBedMinutes ?: 0).coerceAtLeast(0),
                         goalHours = it.sleepGoalHours,
                     ),
                     activity = ActivityOverview(

@@ -47,6 +47,9 @@ data class SleepStageTotals(
         SleepStage.Light -> lightMinutes
         SleepStage.Awake -> awakeMinutes
     }
+
+    val totalMinutes: Int
+        get() = deepMinutes + lightMinutes + remMinutes + awakeMinutes
 }
 
 data class SleepSession(
@@ -79,4 +82,7 @@ data class SleepSession(
             remMinutes = stageSecondsFor(SleepStage.REM).wholeMinutes(),
             awakeMinutes = stageSecondsFor(SleepStage.Awake).wholeMinutes(),
         )
+
+    val timeInBedMinutes: Int
+        get() = stageTotals.totalMinutes.takeIf { it > 0 } ?: durationMinutes
 }

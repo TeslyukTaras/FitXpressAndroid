@@ -49,7 +49,7 @@ private fun SleepStage.connectorDistanceRes(): Int = when (this) {
 fun SleepStatusCard(
     modifier: Modifier = Modifier,
     loading: Boolean = false,
-    totalSleepMinutes: Int,
+    timeInBedMinutes: Int,
     sleepGoalHours: Int,
     stages: List<SleepStageData>,
 ) {
@@ -74,7 +74,7 @@ fun SleepStatusCard(
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
-                text = stageHeaderValue(totalSleepMinutes, sleepGoalHours),
+                text = stageHeaderValue(timeInBedMinutes, sleepGoalHours),
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
@@ -110,9 +110,9 @@ fun SleepStatusCard(
 }
 
 @Composable
-private fun stageHeaderValue(totalSleepMinutes: Int, sleepGoalHours: Int): AnnotatedString {
-    val hours = totalSleepMinutes / 60
-    val minutes = totalSleepMinutes % 60
+private fun stageHeaderValue(timeInBedMinutes: Int, sleepGoalHours: Int): AnnotatedString {
+    val hours = timeInBedMinutes / SleepConstants.MINUTES_PER_HOUR
+    val minutes = timeInBedMinutes % SleepConstants.MINUTES_PER_HOUR
     val numberStyle = MaterialTheme.typography.bodyLarge.toSpanStyle().copy(color = Color.White)
     val unitStyle =
         MaterialTheme.typography.bodyMedium.toSpanStyle()
