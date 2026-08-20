@@ -182,8 +182,8 @@ internal object TerraSyncConstants {
 }
 
 internal object CanonicalCacheConstants {
-    /** One year of display history, plus today. */
-    const val DAY_RETENTION_DAYS = 366L
+    /** One year of display history, plus the baseline the widest trend window is measured against. */
+    const val DAY_RETENTION_DAYS = 393L
 
     /** How long a "no data" day stays re-checkable, covering provider backfill. */
     const val CONFIRMED_EMPTY_RECHECK_DAYS = 30L

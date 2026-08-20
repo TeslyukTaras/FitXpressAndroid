@@ -37,7 +37,9 @@ import com.hexis.bi.data.intelligence.AssetIntelligenceConfigSource
 import com.hexis.bi.data.intelligence.RemoteIntelligenceConfigSource
 import com.hexis.bi.utils.constants.IntelligenceRemoteConfig
 import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
+import com.hexis.bi.data.intelligence.BUNDLED_WORDING_ASSET
 import com.hexis.bi.data.intelligence.IntelligenceConfigRepository
+import com.hexis.bi.data.intelligence.IntelligenceWordingRepository
 import com.hexis.bi.data.intelligence.IntelligenceInputProvider
 import com.hexis.bi.data.health.sync.HealthSyncCoordinator
 import com.hexis.bi.data.health.sync.HealthSyncScheduler
@@ -74,6 +76,7 @@ import com.hexis.bi.ui.main.buysuit.suitsize.SuitSizeResultsViewModel
 import com.hexis.bi.ui.main.home.HomeViewModel
 import com.hexis.bi.ui.main.home.activity.ActivityViewModel
 import com.hexis.bi.ui.main.home.longevity.LongevityViewModel
+import com.hexis.bi.ui.main.home.intelligence.InsightsViewModel
 import com.hexis.bi.ui.main.home.paceofaging.PaceOfAgingViewModel
 import com.hexis.bi.ui.main.home.physiquedrift.PhysiqueDriftViewModel
 import com.hexis.bi.ui.main.home.recomposition.RecompositionViewModel
@@ -135,18 +138,27 @@ val appModule = module {
             overrides = listOf(
                 RemoteIntelligenceConfigSource(
                     remoteConfig = get(),
-                    minimumFetchIntervalSeconds = if (BuildConfig.DEBUG) {
-                        IntelligenceRemoteConfig.DEBUG_FETCH_INTERVAL_SECONDS
-                    } else {
-                        IntelligenceRemoteConfig.RELEASE_FETCH_INTERVAL_SECONDS
-                    },
+                    key = IntelligenceRemoteConfig.CONFIG_KEY,
+                    minimumFetchIntervalSeconds = intelligenceFetchInterval(),
                 ),
             ),
             baseline = AssetIntelligenceConfigSource(androidContext()),
         )
     }
+    single {
+        IntelligenceWordingRepository(
+            overrides = listOf(
+                RemoteIntelligenceConfigSource(
+                    remoteConfig = get(),
+                    key = IntelligenceRemoteConfig.WORDING_KEY,
+                    minimumFetchIntervalSeconds = intelligenceFetchInterval(),
+                ),
+            ),
+            baseline = AssetIntelligenceConfigSource(androidContext(), BUNDLED_WORDING_ASSET),
+        )
+    }
     single { IntelligenceInputProvider(get(), get(), get()) }
-    single { RunIntelligenceUseCase(get(), get()) }
+    single { RunIntelligenceUseCase(get(), get(), get(), get()) }
     single { WorkManager.getInstance(androidContext()) }
     single<HealthSyncScheduler> { WorkManagerHealthSyncScheduler(get()) }
     single { SessionCleaner(get(), get(), get(), get(), get(), get(), get()) }
@@ -208,6 +220,7 @@ val appModule = module {
             get(),
             get(),
             get(),
+            get(),
         )
     }
     viewModel { EditProfileViewModel(androidApplication(), get(), get(), get(), get()) }
@@ -237,8 +250,9 @@ val appModule = module {
     viewModel { ActivityViewModel(androidApplication(), get(), get(), get(), get(), get()) }
     viewModel { RecoveryViewModel(androidApplication(), get()) }
     viewModel { LongevityViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
-    viewModel { PaceOfAgingViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get()) }
-    viewModel { PhysiqueDriftViewModel(androidApplication(), get(), get(), get()) }
+    viewModel { PaceOfAgingViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { PhysiqueDriftViewModel(androidApplication(), get(), get(), get(), get()) }
+    viewModel { InsightsViewModel(androidApplication(), get(), get(), get()) }
     viewModel { RecompositionViewModel(androidApplication(), get()) }
     viewModel { ScanViewModel(androidApplication(), get()) }
     viewModel { StartScanViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get()) }
@@ -252,3 +266,9 @@ val appModule = module {
 }
 
 private const val FIREBASE_FUNCTIONS_REGION = "us-central1"
+
+private fun intelligenceFetchInterval(): Long = if (BuildConfig.DEBUG) {
+    IntelligenceRemoteConfig.DEBUG_FETCH_INTERVAL_SECONDS
+} else {
+    IntelligenceRemoteConfig.RELEASE_FETCH_INTERVAL_SECONDS
+}

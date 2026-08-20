@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
+import com.hexis.bi.BuildConfig
 import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.activity.TrendComparison
 import com.hexis.bi.ui.theme.ActivityMediumTitleStyle
@@ -92,21 +93,26 @@ fun ActivityAvgTrendRow(
                 .weight(1f)
                 .fillMaxHeight(),
         ) {
-            BodyGlassCard(modifier = Modifier.fillMaxWidth(), loading = loading) {
-                TrendHeaderRow(trendTitle, trendText, trendColor)
-            }
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
             BodyGlassCard(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f),
+                    .then(if (BuildConfig.DEBUG) Modifier else Modifier.fillMaxHeight()),
                 loading = loading,
             ) {
-                Text(
-                    text = trendDescription,
-                    style = TitleDimTextStyle,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                TrendHeaderRow(trendTitle, trendText, trendColor)
+            }
+            if (BuildConfig.DEBUG) {
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
+                BodyGlassCard(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    loading = loading,
+                ) {
+                    Text(
+                        text = trendDescription,
+                        style = TitleDimTextStyle,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
         else BodyGlassCard(
@@ -116,12 +122,14 @@ fun ActivityAvgTrendRow(
             loading = loading,
         ) {
             TrendHeaderRow(trendTitle, trendText, trendColor)
-            Spacer(Modifier.weight(1f))
-            Text(
-                text = trendDescription,
-                style = TitleDimTextStyle,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (BuildConfig.DEBUG) {
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text = trendDescription,
+                    style = TitleDimTextStyle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }

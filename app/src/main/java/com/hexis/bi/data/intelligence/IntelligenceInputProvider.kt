@@ -19,12 +19,16 @@ internal class IntelligenceInputProvider(
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) {
 
-    suspend fun load(analysisDays: Int, baselineDays: Int): Result<EngineInput> = withContext(io) {
+    suspend fun load(
+        analysisDays: Int,
+        baselineDays: Int,
+        historyDays: Int = analysisDays,
+    ): Result<EngineInput> = withContext(io) {
         val uid = auth.currentUser?.uid
             ?: return@withContext Result.failure(IllegalStateException("Not authenticated"))
         runCatching {
             val runDate = LocalDate.now(clock)
-            val days = observationWindow(runDate, analysisDays, baselineDays)
+            val days = observationWindow(runDate, historyDays, baselineDays)
             val identities = local.storedIdentityOrder(uid)
                 .mapNotNull(::decodeTerraRestIdentity)
                 .map { it.terraUserId }

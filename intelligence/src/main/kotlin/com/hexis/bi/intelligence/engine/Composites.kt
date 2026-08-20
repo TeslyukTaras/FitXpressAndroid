@@ -10,6 +10,22 @@ internal object PhysiqueComponents {
     const val LEAN_MASS = "lean_mass"
     const val WAIST_SHAPE = "waist_shape"
     const val PROPORTION = "proportion"
+
+    val REQUIRED_WEIGHTS = listOf(BODY_FAT, LEAN_MASS, WAIST_SHAPE)
+}
+
+internal object LongevitySignals {
+    const val HRV = "hrv"
+    const val SLEEP = "sleep"
+    const val ACTIVITY = "activity"
+    const val RHR = "rhr"
+    const val BODY_FAT = "body_fat"
+    const val WAIST = "waist"
+    const val VO2 = "vo2"
+    const val WAIST_TO_HEIGHT = "waist_to_height"
+
+    val WEIGHTED = listOf(HRV, SLEEP, ACTIVITY, RHR, BODY_FAT, WAIST, VO2)
+    val ANCHORED = listOf(HRV, ACTIVITY, RHR, BODY_FAT, WAIST_TO_HEIGHT, VO2)
 }
 
 internal data class ScorePart(val weight: Double, val score: Double)
@@ -37,17 +53,30 @@ private fun signalScores(day: Map<String, Double>, config: EngineConfig): List<P
     val anchors = config.composites.longevity.anchors
     val height = config.composites.heightCm
     val scores = mutableListOf<Pair<String, Double>>()
-    positive(day, Metrics.HRV_RMSSD)?.let { scores += "hrv" to linearScore(it, anchors.getValue("hrv")) }
-    positive(day, Metrics.SLEEP_EFFICIENCY)?.let { scores += "sleep" to minOf(MAX_SCORE, it * PERCENT) }
-    positive(day, Metrics.STEPS)?.let { scores += "activity" to linearScore(it, anchors.getValue("activity")) }
-    positive(day, Metrics.RESTING_HR)?.let { scores += "rhr" to linearScore(it, anchors.getValue("rhr")) }
-    positive(day, Metrics.BODY_FAT_PCT)?.let { scores += "body_fat" to linearScore(it, anchors.getValue("body_fat")) }
+    positive(day, Metrics.HRV_RMSSD)?.let {
+        scores += LongevitySignals.HRV to linearScore(it, anchors.getValue(LongevitySignals.HRV))
+    }
+    positive(day, Metrics.SLEEP_EFFICIENCY)?.let {
+        scores += LongevitySignals.SLEEP to minOf(MAX_SCORE, it * PERCENT)
+    }
+    positive(day, Metrics.STEPS)?.let {
+        scores += LongevitySignals.ACTIVITY to linearScore(it, anchors.getValue(LongevitySignals.ACTIVITY))
+    }
+    positive(day, Metrics.RESTING_HR)?.let {
+        scores += LongevitySignals.RHR to linearScore(it, anchors.getValue(LongevitySignals.RHR))
+    }
+    positive(day, Metrics.BODY_FAT_PCT)?.let {
+        scores += LongevitySignals.BODY_FAT to linearScore(it, anchors.getValue(LongevitySignals.BODY_FAT))
+    }
     if (height != null && height > 0.0) {
         positive(day, Metrics.WAIST)?.let {
-            scores += "waist" to linearScore(it / height, anchors.getValue("waist_to_height"))
+            scores += LongevitySignals.WAIST to
+                linearScore(it / height, anchors.getValue(LongevitySignals.WAIST_TO_HEIGHT))
         }
     }
-    positive(day, Metrics.VO2MAX)?.let { scores += "vo2" to linearScore(it, anchors.getValue("vo2")) }
+    positive(day, Metrics.VO2MAX)?.let {
+        scores += LongevitySignals.VO2 to linearScore(it, anchors.getValue(LongevitySignals.VO2))
+    }
     return scores
 }
 

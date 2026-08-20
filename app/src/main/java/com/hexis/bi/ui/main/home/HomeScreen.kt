@@ -27,7 +27,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import com.hexis.bi.BuildConfig
 import com.hexis.bi.R
+import com.hexis.bi.ui.main.home.intelligence.HomeInsightsSection
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.components.LightStatusBarIcons
 import com.hexis.bi.ui.main.buysuit.orderdetails.OrderDetailsSheet
@@ -54,6 +56,7 @@ fun HomeScreen(
     onLongevityClick: () -> Unit = {},
     onPhysiqueDriftClick: () -> Unit = {},
     onPaceOfAgingClick: () -> Unit = {},
+    onInsightsClick: () -> Unit = {},
     onScanClick: () -> Unit = {},
     onBuySuitClick: () -> Unit = {},
     onEditOrderAddress: (orderId: String) -> Unit = {},
@@ -203,6 +206,17 @@ fun HomeScreen(
                     }
                 },
             )
+
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+
+            if (BuildConfig.INTELLIGENCE_ENGINE_ENABLED) {
+                HomeInsightsSection(
+                    cards = state.insights,
+                    loaded = state.insightsLoaded,
+                    updating = state.insightsUpdating,
+                    onClick = onInsightsClick,
+                )
+            }
         }
     }
 

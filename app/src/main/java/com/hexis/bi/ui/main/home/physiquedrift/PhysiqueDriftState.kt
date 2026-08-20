@@ -16,6 +16,7 @@ data class PhysiqueMetric(
 
 data class PhysiqueDriftState(
     val findings: AreaFindings = AreaFindings(),
+    val insightsUpdating: Boolean = false,
     val hasData: Boolean = false,
     val score: String = "",
     val level: PhysiqueDriftLevel = PhysiqueDriftLevel.NoData,

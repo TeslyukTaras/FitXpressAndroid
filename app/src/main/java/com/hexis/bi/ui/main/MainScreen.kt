@@ -45,6 +45,7 @@ import com.hexis.bi.ui.main.buysuit.suitsize.SuitSizeResultsScreen
 import com.hexis.bi.ui.main.home.HomeScreen
 import com.hexis.bi.ui.main.home.activity.ActivityScreen
 import com.hexis.bi.ui.main.home.longevity.LongevityScreen
+import com.hexis.bi.ui.main.home.intelligence.InsightsScreen
 import com.hexis.bi.ui.main.home.paceofaging.PaceOfAgingScreen
 import com.hexis.bi.ui.main.home.physiquedrift.PhysiqueDriftScreen
 import com.hexis.bi.ui.main.home.recomposition.RecompositionScreen
@@ -150,6 +151,7 @@ fun MainScreen(
                     onPhysiqueDriftClick = { navController.navigate(Route.Main.PHYSIQUE_DRIFT) },
                     onPaceOfAgingClick = { navController.navigate(Route.Main.PACE_OF_AGING) },
                     onActivityClick = { navController.navigate(Route.Main.ACTIVITY) },
+                    onInsightsClick = { navController.navigate(Route.Main.INSIGHTS) },
                     onScanClick = launchScan,
                     onBuySuitClick = { showBuySuitDialog = true },
                     onEditOrderAddress = { orderId ->
@@ -174,6 +176,9 @@ fun MainScreen(
             }
             composable(Route.Main.PACE_OF_AGING) {
                 PaceOfAgingScreen(onBack = { navController.popBackStackOnce() })
+            }
+            composable(Route.Main.INSIGHTS) {
+                InsightsScreen(onBack = { navController.popBackStackOnce() })
             }
             composable(Route.Main.ACTIVITY) {
                 ActivityScreen(onBack = { navController.popBackStackOnce() })

@@ -3,6 +3,7 @@ package com.hexis.bi.ui.main.home
 import android.app.Application
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
+import com.hexis.bi.BuildConfig
 import com.hexis.bi.R
 import com.hexis.bi.data.activity.ActivityRepository
 import com.hexis.bi.data.health.sync.HealthSyncScheduler
@@ -30,6 +31,10 @@ import com.hexis.bi.domain.order.OrderShippingAddress
 import com.hexis.bi.domain.order.OrderStatus
 import com.hexis.bi.domain.recomposition.RecompositionCalculator
 import com.hexis.bi.domain.suit.SuitRepository
+import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
+import com.hexis.bi.ui.main.home.intelligence.EngineFindingsMapper
+import com.hexis.bi.ui.main.home.intelligence.BackfillTransition
+import com.hexis.bi.ui.main.home.intelligence.backfillTransition
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.constants.CanonicalCacheConstants
 import com.hexis.bi.ui.base.UiEvent
@@ -50,6 +55,7 @@ import com.hexis.bi.utils.isMetricUnitSystem
 import com.hexis.bi.utils.millisToOrderTimelineTimestamp
 import com.hexis.bi.utils.millisToShortMonthDay
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.coroutineScope
@@ -64,6 +70,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
@@ -77,7 +84,7 @@ sealed interface HomeEvent : UiEvent {
 }
 
 @OptIn(FlowPreview::class)
-class HomeViewModel(
+class HomeViewModel internal constructor(
     application: Application,
     private val userRepository: UserRepository,
     suitRepository: SuitRepository,
@@ -90,10 +97,45 @@ class HomeViewModel(
     private val orderRepository: OrderRepository,
     private val firebaseAuth: FirebaseAuth,
     private val healthSyncScheduler: HealthSyncScheduler,
+    private val runIntelligence: RunIntelligenceUseCase,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(HomeState())
     val state = _state.asStateFlow()
+    private var insightsJob: Job? = null
+
+    private fun loadInsights(clearUpdatingOnComplete: Boolean = false) {
+        if (!BuildConfig.INTELLIGENCE_ENGINE_ENABLED) {
+            _state.update {
+                it.copy(
+                    insightsLoaded = true,
+                    insightsUpdating = if (clearUpdatingOnComplete) false else it.insightsUpdating,
+                )
+            }
+            return
+        }
+        insightsJob?.cancel()
+        insightsJob = viewModelScope.launch {
+            val result = runIntelligence().map { run ->
+                EngineFindingsMapper.simpleFindings(
+                        report = run.report,
+                        copy = run.copy,
+                        windowDays = run.config.windows.analysisDays,
+                        isMetric = run.isMetric,
+                        valueOverrides = _state.value.physiqueScore?.toDouble()
+                            ?.let { mapOf("physique_score" to it) }
+                            .orEmpty(),
+                )
+            }
+            _state.update {
+                it.copy(
+                    insights = result.getOrNull() ?: it.insights,
+                    insightsLoaded = true,
+                    insightsUpdating = if (clearUpdatingOnComplete) false else it.insightsUpdating,
+                )
+            }
+        }
+    }
 
     /** Pokes the overview pipeline; replay-less since every Home RESUME re-pokes. */
     private var terraTileContext: TerraTileContext? = null
@@ -104,9 +146,13 @@ class HomeViewModel(
         val newUserId = auth.currentUser?.uid
         if (newUserId == activeUserId) return@AuthStateListener
         activeUserId = newUserId
+        insightsJob?.cancel()
         terraTileContext = null
         _state.value = HomeState()
-        if (newUserId != null) refreshTrigger.tryEmit(Unit)
+        if (newUserId != null) {
+            loadInsights()
+            refreshTrigger.tryEmit(Unit)
+        }
     }
 
     private val refreshTrigger = MutableSharedFlow<Unit>(
@@ -115,6 +161,7 @@ class HomeViewModel(
     )
 
     init {
+        loadInsights()
         combine(
             userRepository.observeUser(),
             userRepository.observeUserSettings(),
@@ -180,18 +227,33 @@ class HomeViewModel(
 
         merge(activityRepository.updates, sleepRepository.updates)
             .debounce(CanonicalCacheConstants.UPDATE_DEBOUNCE_MS)
-            .onEach { onHealthDataChanged() }
+            .onEach {
+                onHealthDataChanged()
+                if (!backfillInFlight) loadInsights()
+            }
             .launchIn(viewModelScope)
 
         scanHistoryRepository.updates
             .debounce(CanonicalCacheConstants.UPDATE_DEBOUNCE_MS)
-            .onEach { reloadOverview() }
+            .onEach {
+                reloadOverview()
+                if (!backfillInFlight) loadInsights()
+            }
             .launchIn(viewModelScope)
 
         healthSyncScheduler.backfillInFlight()
             .onEach { inFlight ->
-                val settled = backfillInFlight && !inFlight
+                val transition = backfillTransition(backfillInFlight, inFlight)
+                val settled = transition == BackfillTransition.SETTLED
                 backfillInFlight = inFlight
+                when (transition) {
+                    BackfillTransition.ACTIVE -> {
+                        insightsJob?.cancel()
+                        _state.update { it.copy(insightsUpdating = true) }
+                    }
+                    BackfillTransition.SETTLED -> loadInsights(clearUpdatingOnComplete = true)
+                    BackfillTransition.IDLE -> _state.update { it.copy(insightsUpdating = false) }
+                }
                 terraTileContext?.let { refreshSyncingState(it.today, it.window.first()) }
                 if (settled) refreshTerraTiles()
             }

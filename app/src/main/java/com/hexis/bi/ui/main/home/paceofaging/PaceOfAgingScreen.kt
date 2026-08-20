@@ -23,6 +23,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
+import com.hexis.bi.BuildConfig
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.LightStatusBarIcons
@@ -33,6 +34,7 @@ import com.hexis.bi.ui.main.home.paceofaging.components.PaceOfAgingTrendCard
 import com.hexis.bi.ui.theme.screenBackground
 import org.koin.androidx.compose.koinViewModel
 import com.hexis.bi.ui.main.home.intelligence.EngineFindingsSection
+import com.hexis.bi.ui.main.home.intelligence.EngineDebugSection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -97,9 +99,13 @@ fun PaceOfAgingScreen(
 
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-                PaceOfAgingInsightCard(insight = state.insight)
+                if (BuildConfig.DEBUG) PaceOfAgingInsightCard(insight = state.insight)
 
-                EngineFindingsSection(state = state.findings.primary)
+                EngineFindingsSection(
+                    state = state.findings.primary,
+                    updating = state.insightsUpdating,
+                )
+                EngineDebugSection(info = state.findings.primaryDebug)
 
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_3xl)))
             }

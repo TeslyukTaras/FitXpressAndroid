@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Shape
 import com.hexis.bi.R
 import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.bodyGlassCardFillBrush
@@ -36,6 +37,7 @@ import com.hexis.bi.utils.glass
 fun BodyGlassCard(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(dimensionResource(R.dimen.spacer_m)),
+    shape: Shape = MaterialTheme.shapes.medium,
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
     onClick: (() -> Unit)? = null,
     highlighted: Boolean = false,
@@ -60,7 +62,7 @@ fun BodyGlassCard(
             .fillMaxWidth()
             .glass(
                 tint = NocturnePulseTheme.extendedColors.glassRimHighlight,
-                shape = MaterialTheme.shapes.medium,
+                shape = shape,
                 level = GlassConstants.LEVEL_DEFAULT,
                 fillBrush = { bodyGlassCardFillBrush(it) },
                 backgroundBlur = dimensionResource(R.dimen.glass_background_blur),

@@ -2,6 +2,7 @@ package com.hexis.bi.ui.main.home.activity
 
 import android.app.Application
 import androidx.lifecycle.viewModelScope
+import com.hexis.bi.BuildConfig
 import com.hexis.bi.data.activity.ActivityRepository
 import com.hexis.bi.data.activity.ActivitySummary
 import com.hexis.bi.data.health.sync.HealthSyncScheduler
@@ -10,7 +11,9 @@ import com.hexis.bi.data.user.FirestoreSchema
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
 import com.hexis.bi.intelligence.engine.Domains
-import com.hexis.bi.ui.main.home.intelligence.findingsFor
+import com.hexis.bi.ui.main.home.intelligence.EngineFindingsMapper
+import com.hexis.bi.ui.main.home.intelligence.BackfillTransition
+import com.hexis.bi.ui.main.home.intelligence.backfillTransition
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.caloriesGoal
 import com.hexis.bi.utils.constants.ActivityConstants
@@ -47,6 +50,7 @@ import java.time.temporal.WeekFields
 import java.util.Locale
 import kotlin.math.abs
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 
 @OptIn(FlowPreview::class)
 class ActivityViewModel internal constructor(
@@ -58,10 +62,37 @@ class ActivityViewModel internal constructor(
     private val runIntelligence: RunIntelligenceUseCase,
 ) : BaseViewModel(application) {
 
-    private fun loadFindings() {
-        viewModelScope.launch {
-            val resolved = runIntelligence.findingsFor(Domains.ACTIVITY)
-            _state.update { it.copy(findings = resolved) }
+    private var findingsJob: Job? = null
+
+    private fun loadFindings(clearUpdatingOnComplete: Boolean = false) {
+        if (!BuildConfig.INTELLIGENCE_ENGINE_ENABLED) {
+            if (clearUpdatingOnComplete) {
+                _state.update { it.copy(insightsUpdating = false) }
+            }
+            return
+        }
+        findingsJob?.cancel()
+        findingsJob = viewModelScope.launch {
+            val run = runIntelligence().getOrNull()
+            if (run == null) {
+                if (clearUpdatingOnComplete) {
+                    _state.update { it.copy(insightsUpdating = false) }
+                }
+                return@launch
+            }
+            val resolved = EngineFindingsMapper.forAreas(
+                report = run.report,
+                copy = run.copy,
+                areas = setOf(Domains.ACTIVITY),
+                isMetric = run.isMetric,
+                analysisWindowDays = run.config.windows.analysisDays,
+            )
+            _state.update {
+                it.copy(
+                    findings = resolved,
+                    insightsUpdating = if (clearUpdatingOnComplete) false else it.insightsUpdating,
+                )
+            }
         }
     }
 
@@ -93,7 +124,16 @@ class ActivityViewModel internal constructor(
             .launchIn(viewModelScope)
         healthSyncScheduler.backfillInFlight()
             .onEach { inFlight ->
+                val transition = backfillTransition(backfillInFlight, inFlight)
                 backfillInFlight = inFlight
+                when (transition) {
+                    BackfillTransition.ACTIVE -> {
+                        findingsJob?.cancel()
+                        _state.update { it.copy(insightsUpdating = true) }
+                    }
+                    BackfillTransition.SETTLED -> loadFindings(clearUpdatingOnComplete = true)
+                    BackfillTransition.IDLE -> _state.update { it.copy(insightsUpdating = false) }
+                }
                 reloadLoadedTabs(showLoading = false)
             }
             .launchIn(viewModelScope)

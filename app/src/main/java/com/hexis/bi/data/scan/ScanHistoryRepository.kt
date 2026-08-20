@@ -183,10 +183,15 @@ class ScanHistoryRepository internal constructor(
         }
 
         batch.commit().await()
-        canonical.storeScans(
-            requireNotNull(auth.currentUser?.uid),
-            listOf(buildScanRecordFromResponse(response, docId, savedAtMillis).toCanonicalAggregate()),
-        )
+        runCatching {
+            canonical.storeScans(
+                requireNotNull(auth.currentUser?.uid),
+                listOf(buildScanRecordFromResponse(response, docId, savedAtMillis).toCanonicalAggregate()),
+            )
+        }.onFailure {
+            if (it is CancellationException) throw it
+            Timber.w(it, "saveScan: cached %s failed after the batch committed", docId)
+        }
         Timber.d("saveScan: wrote %s with %d fields", docId, mainData.size)
         docId
     }

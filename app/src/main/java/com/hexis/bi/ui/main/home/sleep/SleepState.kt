@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import com.hexis.bi.R
 import com.hexis.bi.data.sleep.SleepStage
 import com.hexis.bi.ui.main.home.intelligence.AreaFindings
+import com.hexis.bi.ui.main.home.intelligence.NightComparison
 import com.hexis.bi.utils.constants.SleepConstants
 import com.hexis.bi.utils.constants.TerraProviders
 
@@ -115,6 +116,8 @@ data class SleepState(
     val showRecoverySheet: Boolean = false,
 
     val findings: AreaFindings = AreaFindings(),
+    val dayComparisons: List<NightComparison> = emptyList(),
+    val insightsUpdating: Boolean = false,
 ) {
 
     fun loadStateOf(tab: SleepTab): SleepLoadState = when (tab) {

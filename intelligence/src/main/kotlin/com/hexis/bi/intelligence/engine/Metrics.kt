@@ -1,6 +1,6 @@
 package com.hexis.bi.intelligence.engine
 
-internal object Metrics {
+object Metrics {
 
     const val STEPS = "steps"
     const val DISTANCE = "distance"
