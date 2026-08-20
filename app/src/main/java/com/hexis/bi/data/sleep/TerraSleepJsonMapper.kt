@@ -2,7 +2,7 @@ package com.hexis.bi.data.sleep
 
 import com.hexis.bi.data.terra.arrayOrNull
 import com.hexis.bi.data.terra.float
-import com.hexis.bi.data.terra.int
+import com.hexis.bi.data.terra.numberAsInt
 import com.hexis.bi.data.terra.objectOrNull
 import com.hexis.bi.data.terra.parseTerraDateTimeField
 import com.hexis.bi.data.terra.TerraNode
@@ -136,8 +136,8 @@ internal object TerraSleepJsonMapper {
 
         val heartRateNode = obj.objectOrNull(TerraSleepJsonKeys.HeartRate.NODE)
         val heartRate = heartRateNode?.objectOrNull(TerraSleepJsonKeys.HeartRate.SUMMARY)
-        val restingHr = heartRate?.int(TerraSleepJsonKeys.HeartRate.RESTING_HR_BPM)
-            ?: heartRate?.int(TerraSleepJsonKeys.HeartRate.AVG_HR_BPM)
+        val restingHr = heartRate?.measuredBpm(TerraSleepJsonKeys.HeartRate.RESTING_HR_BPM)
+            ?: heartRate?.measuredBpm(TerraSleepJsonKeys.HeartRate.AVG_HR_BPM)
             ?: 0
         val hrvMs = heartRate?.float(TerraSleepJsonKeys.HeartRate.AVG_HRV_RMSSD)?.toInt() ?: 0
 
@@ -266,7 +266,7 @@ internal object TerraSleepJsonMapper {
                 val time = o.parseTerraDateTimeField(TerraSleepJsonKeys.HeartRate.SAMPLE_TIMESTAMP_LOCAL)
                     ?: o.parseTerraDateTimeField(TerraSleepJsonKeys.HeartRate.SAMPLE_TIMESTAMP)
                     ?: return@mapNotNull null
-                val stage = o.int(TerraSleepJsonKeys.Durations.HYPNOGRAM_LEVEL)?.toSleepStage()
+                val stage = o.numberAsInt(TerraSleepJsonKeys.Durations.HYPNOGRAM_LEVEL)?.toSleepStage()
                     ?: return@mapNotNull null
                 stage to time
             }
@@ -279,6 +279,8 @@ internal object TerraSleepJsonMapper {
             SleepStageInterval(stage = stage, start = start, end = end)
         }
     }
+
+    private fun TerraNode.measuredBpm(key: String): Int? = numberAsInt(key)?.takeIf { it > 0 }
 
     private fun Int.toSleepStage(): SleepStage? = when (this) {
         TERRA_AWAKE_LEVEL -> SleepStage.Awake
