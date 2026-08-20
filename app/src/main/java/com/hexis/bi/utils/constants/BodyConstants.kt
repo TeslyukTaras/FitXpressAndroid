@@ -71,6 +71,9 @@ internal object BodyConstants {
     const val PHYSIQUE_WEIGHT_WAIST_SHAPE = 0.15f
     const val PHYSIQUE_WEIGHT_PROPORTION = 0.1f
 
+    /** Mirrors `composites.physique.enable_proportion` in the engine config. */
+    const val PHYSIQUE_ENABLE_PROPORTION = false
+
     /** Month X-axis label count. */
     const val MONTH_LABEL_COUNT = 5
 

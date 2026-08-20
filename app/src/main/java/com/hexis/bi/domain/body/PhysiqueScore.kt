@@ -46,7 +46,7 @@ internal fun ScanRecord.physiqueScoreBreakdown(heightCm: Float?): PhysiqueScoreB
         bodyFatScore = parts[PhysiqueScoreMetric.BodyFat]?.score,
         leanMassScore = parts[PhysiqueScoreMetric.LeanMass]?.score,
         waistShapeScore = parts[PhysiqueScoreMetric.WaistShape]?.score,
-        proportionScore = parts[PhysiqueScoreMetric.Proportion]?.score,
+        proportionScore = shoulderRatio?.let(::proportionScore),
     )
 }
 
@@ -111,11 +111,13 @@ private fun physiqueScoreParts(
                 ScorePart(BodyConstants.PHYSIQUE_WEIGHT_WAIST_SHAPE, waistShapeScore(it)),
             )
         }
-        shoulderToWaistRatio?.let {
-            put(
-                PhysiqueScoreMetric.Proportion,
-                ScorePart(BodyConstants.PHYSIQUE_WEIGHT_PROPORTION, proportionScore(it)),
-            )
+        if (BodyConstants.PHYSIQUE_ENABLE_PROPORTION) {
+            shoulderToWaistRatio?.let {
+                put(
+                    PhysiqueScoreMetric.Proportion,
+                    ScorePart(BodyConstants.PHYSIQUE_WEIGHT_PROPORTION, proportionScore(it)),
+                )
+            }
         }
     }
 
