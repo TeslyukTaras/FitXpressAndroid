@@ -179,6 +179,9 @@ internal object TerraSyncConstants {
 
     /** How long a connection must stay absent from Terra's list before it is retired. */
     val MIN_ABSENCE_BEFORE_RETIRE: Duration = Duration.ofMinutes(5)
+
+    const val PENDING_RANGE_RETRIES = 3
+    val PENDING_RANGE_BACKOFF: Duration = Duration.ofSeconds(2)
 }
 
 internal object CanonicalCacheConstants {

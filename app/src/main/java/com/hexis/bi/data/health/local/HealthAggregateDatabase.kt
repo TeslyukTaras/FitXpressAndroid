@@ -42,9 +42,19 @@ internal class HealthAggregateDatabase(
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        if (oldVersion == CONFIRMED_EMPTY_RECOVERY_FROM_VERSION && newVersion == DATABASE_VERSION) {
+            clearConfirmedEmpty(db)
+            return
+        }
         // This DB contains only reproducible cache data. An incompatible canonical schema is
         // safely rebuilt; Firestore/Terra remain the source of truth.
         rebuild(db)
+    }
+
+    private fun clearConfirmedEmpty(db: SQLiteDatabase) {
+        val removed = db.delete("canonical_days", "payload IS NULL", null)
+        db.delete("canonical_sync", "source LIKE ?", arrayOf("$SYNCED_RANGE_PREFIX%"))
+        Timber.i("Health cache re-opened %d confirmed-empty day(s) for a fresh fetch", removed)
     }
 
     override fun onDowngrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) = rebuild(db)
@@ -446,7 +456,8 @@ internal class HealthAggregateDatabase(
         const val SYNCED_RANGE_SEPARATOR = ".."
         const val SYNCED_RANGE_LIST_SEPARATOR = ","
         const val DATABASE_NAME = "canonical_health_cache.db"
-        const val DATABASE_VERSION = 8
+        const val DATABASE_VERSION = 9
+        const val CONFIRMED_EMPTY_RECOVERY_FROM_VERSION = 8
         const val CREATE_DAYS = """CREATE TABLE canonical_days (
             environment TEXT NOT NULL, user_id TEXT NOT NULL, terra_user_id TEXT NOT NULL,
             source TEXT NOT NULL, day TEXT NOT NULL,
