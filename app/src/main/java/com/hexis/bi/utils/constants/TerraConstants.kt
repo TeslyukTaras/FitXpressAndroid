@@ -245,6 +245,12 @@ internal object IntelligenceCacheConstants {
     val BACKFILL_RERUN_INTERVAL: Duration = Duration.ofSeconds(20)
 }
 
+internal object StrideConstants {
+    const val MALE_STRIDE_FACTOR = 0.415
+    const val FEMALE_STRIDE_FACTOR = 0.413
+    const val CM_PER_KILOMETER = 100_000.0
+}
+
 internal object HealthConnectConstants {
     const val PACKAGE_NAME = "com.google.android.apps.healthdata"
     const val MARKET_URI = "market://details?id=$PACKAGE_NAME"

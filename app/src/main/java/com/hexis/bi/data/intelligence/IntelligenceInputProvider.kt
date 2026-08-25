@@ -4,6 +4,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.data.health.local.HealthLocalDataSource
 import com.hexis.bi.data.terra.decodeTerraRestIdentity
 import com.hexis.bi.data.user.UserRepository
+import com.hexis.bi.domain.enums.GenderOption
+import com.hexis.bi.domain.activity.withStrideDistance
 import com.hexis.bi.intelligence.model.EngineInput
 import java.time.Clock
 import java.time.LocalDate
@@ -33,11 +35,17 @@ internal class IntelligenceInputProvider(
                 .mapNotNull(::decodeTerraRestIdentity)
                 .map { it.terraUserId }
 
+            val profile = userRepository.getUser().getOrNull()
+            val heightCm = profile?.heightCm?.toDouble()
+            val gender = profile?.gender?.let { name ->
+                GenderOption.entries.firstOrNull { it.name.equals(name, ignoreCase = true) }
+            }
+
             val daily = CanonicalEngineInputAdapter.mergeByDay(
                 local.allAggregatesByIdentity(
                     uid, identities, HealthLocalDataSource.SOURCE_DAILY, days, withSamples = false,
                 ),
-            )
+            ).map { it.withStrideDistance(heightCm, gender) }
             val sleep = CanonicalEngineInputAdapter.mergeByDay(
                 local.allAggregatesByIdentity(
                     uid, identities, HealthLocalDataSource.SOURCE_SLEEP, days, withSamples = false,
@@ -52,7 +60,7 @@ internal class IntelligenceInputProvider(
                 window = days.first()..days.last(),
                 runDate = runDate,
                 analysisDays = analysisDays,
-                heightCm = userRepository.getUser().getOrNull()?.heightCm?.toDouble(),
+                heightCm = heightCm,
             )
         }
     }

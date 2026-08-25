@@ -9,6 +9,8 @@ import com.hexis.bi.data.health.sync.HealthSyncScheduler
 import com.hexis.bi.data.terra.TerraRestSourceResolver
 import com.hexis.bi.data.user.FirestoreSchema
 import com.hexis.bi.data.user.UserRepository
+import com.hexis.bi.domain.enums.GenderOption
+import com.hexis.bi.domain.activity.strideDistanceKm
 import com.hexis.bi.domain.intelligence.IntelligenceCoordinator
 import com.hexis.bi.intelligence.engine.Domains
 import com.hexis.bi.ui.main.home.intelligence.EngineFindingsMapper
@@ -350,7 +352,7 @@ class ActivityViewModel internal constructor(
         viewModelScope.launch {
             activityRepository.getSummaryForDate(day).fold(
                 onSuccess = { summary ->
-                    applyDaySummary(day, summary, loadStateFor(day, day))
+                    applyDaySummary(day, summary?.withStrideDistance(), loadStateFor(day, day))
                 },
                 onFailure = { err ->
                     _state.update {
@@ -382,6 +384,7 @@ class ActivityViewModel internal constructor(
         viewModelScope.launch {
             activityRepository
                 .getSummariesForRange(previousStart, weekEnd)
+                .map { it.withStrideDistance() }
                 .fold(
                     onSuccess = { allRows ->
                         val rows = allRows.filterByDateRange(weekStart, weekEnd)
@@ -434,6 +437,7 @@ class ActivityViewModel internal constructor(
         viewModelScope.launch {
             activityRepository
                 .getSummariesForRange(prevStart, monthEnd)
+                .map { it.withStrideDistance() }
                 .fold(
                     onSuccess = { allRows ->
                         val rows = allRows.filterByDateRange(monthStart, monthEnd)
@@ -480,7 +484,9 @@ class ActivityViewModel internal constructor(
             )
         }
         viewModelScope.launch {
-            activityRepository.getSummariesForRange(yearStart, yearEnd).fold(
+            activityRepository.getSummariesForRange(yearStart, yearEnd)
+                .map { it.withStrideDistance() }
+                .fold(
                 onSuccess = { rows ->
                     loadedTabs.add(ActivityTab.Year)
                     val loadState = loadStateFor(yearStart, yearEnd)
@@ -584,6 +590,18 @@ class ActivityViewModel internal constructor(
             canGoNext = canGoNext,
         )
     }
+
+    private fun ActivitySummary.withStrideDistance(): ActivitySummary {
+        val km = strideDistanceKm(
+            steps = steps.toDouble(),
+            heightCm = heightCm?.toDouble(),
+            gender = if (isFemale) GenderOption.Female else GenderOption.Male,
+        ) ?: return this
+        return copy(distanceKm = km.toFloat())
+    }
+
+    private fun List<ActivitySummary>.withStrideDistance(): List<ActivitySummary> =
+        map { it.withStrideDistance() }
 
     private fun buildWeekDays(
         weekStart: LocalDate,
