@@ -168,6 +168,10 @@ internal object TerraProviders {
     }
 }
 
+internal object TerraSdkStorage {
+    const val PREFS_NAME = "co.tryterra.terra.prefs"
+}
+
 internal object TerraCacheConstants {
     const val RANGE_CACHE_TTL_MS = 60_000L
     const val IDENTITY_CACHE_TTL_MS = 5L * 60L * 1000L

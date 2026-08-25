@@ -1,8 +1,10 @@
 package com.hexis.bi.data.terra
 
 import android.app.Activity
+import android.content.Context
 import co.tryterra.terra.Terra
 import co.tryterra.terra.TerraManager
+import com.hexis.bi.utils.constants.TerraSdkStorage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
@@ -60,6 +62,14 @@ class TerraManagerHolder {
      */
     fun clearLocalManager() {
         manager = null
+    }
+
+    fun clearSdkIdentity(context: Context) {
+        manager = null
+        context.getSharedPreferences(TerraSdkStorage.PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .clear()
+            .apply()
     }
 
     /**

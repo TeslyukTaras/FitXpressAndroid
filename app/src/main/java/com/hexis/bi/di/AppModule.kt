@@ -161,7 +161,7 @@ val appModule = module {
     single { RunIntelligenceUseCase(get(), get(), get(), get()) }
     single { WorkManager.getInstance(androidContext()) }
     single<HealthSyncScheduler> { WorkManagerHealthSyncScheduler(get()) }
-    single { SessionCleaner(get(), get(), get(), get(), get(), get(), get()) }
+    single { SessionCleaner(get(), get(), get(), get(), get(), get(), get(), androidContext()) }
     single<SuitRepository> { MockSuitRepository(get()) }
     single<UserRepository> { FirestoreUserRepository(get(), get(), androidContext()) }
     single {
