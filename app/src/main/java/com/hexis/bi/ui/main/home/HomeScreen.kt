@@ -61,7 +61,6 @@ fun HomeScreen(
     onPhysiqueDriftClick: () -> Unit = {},
     onPaceOfAgingClick: () -> Unit = {},
     onInsightsClick: () -> Unit = {},
-    onScanClick: () -> Unit = {},
     onBuySuitClick: () -> Unit = {},
     onEditOrderAddress: (orderId: String) -> Unit = {},
     viewModel: HomeViewModel = koinViewModel(),
@@ -197,10 +196,7 @@ fun HomeScreen(
 
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
 
-                ScanOverviewCard(
-                    data = state.scan,
-                    onClick = onScanClick,
-                )
+                ScanOverviewCard(data = state.scan)
 
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
 
