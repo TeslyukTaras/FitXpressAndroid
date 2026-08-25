@@ -2,7 +2,6 @@ package com.hexis.bi.ui.main.settings.mysuit
 
 import android.app.Application
 import androidx.lifecycle.viewModelScope
-import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.suit.SuitRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +14,6 @@ import kotlinx.coroutines.flow.update
 class MySuitViewModel(
     application: Application,
     private val suitRepository: SuitRepository,
-    private val userRepository: UserRepository,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(MySuitState())
@@ -50,10 +48,7 @@ class MySuitViewModel(
     fun connect() {
         val suitId = _state.value.suitIdInput.trim()
         if (suitId.isBlank()) return
-        launch {
-            suitRepository.connect(suitId)
-            userRepository.updateFields(mapOf("suitId" to suitId))
-        }
+        launch { suitRepository.connect(suitId) }
     }
 
     fun showReconnectDialog() {
@@ -71,9 +66,6 @@ class MySuitViewModel(
                 suitIdInput = it.connectedSuitId,
             )
         }
-        launch {
-            suitRepository.disconnect()
-            userRepository.updateFields(mapOf("suitId" to null))
-        }
+        launch { suitRepository.disconnect() }
     }
 }

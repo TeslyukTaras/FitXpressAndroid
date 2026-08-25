@@ -22,7 +22,6 @@ object AppPreferencesKeys {
         val onboardingShown = booleanPreferencesKey("onboarding_shown")
         val voiceGuidanceEnabled = booleanPreferencesKey("voice_guidance_enabled")
         val voiceMigratedToFirestore = booleanPreferencesKey("voice_migrated_to_firestore")
-        val connectedSuitId = stringPreferencesKey("connected_suit_id")
         val lastScanTodayIsoWeek = stringPreferencesKey("last_scan_today_iso_week")
         val lastScanNudgeIsoWeek = stringPreferencesKey("last_scan_nudge_iso_week")
         val lastScanMissedIsoWeek = stringPreferencesKey("last_scan_missed_iso_week")

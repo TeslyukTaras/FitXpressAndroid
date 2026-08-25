@@ -49,7 +49,7 @@ import com.hexis.bi.data.scan.api.ThreeDLookApi
 import com.hexis.bi.data.sleep.SleepRepository
 import com.hexis.bi.data.sleep.DefaultSleepRepository
 import com.hexis.bi.data.store.AppPreferencesDataStore
-import com.hexis.bi.data.suit.MockSuitRepository
+import com.hexis.bi.data.suit.UserProfileSuitRepository
 import com.hexis.bi.data.terra.TerraApi
 import com.hexis.bi.data.terra.TerraAuthApi
 import com.hexis.bi.data.terra.TerraCallbackHandler
@@ -162,7 +162,7 @@ val appModule = module {
     single { WorkManager.getInstance(androidContext()) }
     single<HealthSyncScheduler> { WorkManagerHealthSyncScheduler(get()) }
     single { SessionCleaner(get(), get(), get(), get(), get(), get(), get(), androidContext()) }
-    single<SuitRepository> { MockSuitRepository(get()) }
+    single<SuitRepository> { UserProfileSuitRepository(get()) }
     single<UserRepository> { FirestoreUserRepository(get(), get(), androidContext()) }
     single {
         OkHttpClient.Builder()
@@ -242,7 +242,7 @@ val appModule = module {
             get()
         )
     }
-    viewModel { MySuitViewModel(androidApplication(), get(), get()) }
+    viewModel { MySuitViewModel(androidApplication(), get()) }
     viewModel { NotificationsSettingsViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { NotificationsViewModel(androidApplication(), get()) }
     viewModel { BodyViewModel(androidApplication(), get(), get(), get(), get(), get()) }
