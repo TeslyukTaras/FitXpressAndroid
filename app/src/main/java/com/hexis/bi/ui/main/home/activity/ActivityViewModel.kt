@@ -9,7 +9,7 @@ import com.hexis.bi.data.health.sync.HealthSyncScheduler
 import com.hexis.bi.data.terra.TerraRestSourceResolver
 import com.hexis.bi.data.user.FirestoreSchema
 import com.hexis.bi.data.user.UserRepository
-import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
+import com.hexis.bi.domain.intelligence.IntelligenceCoordinator
 import com.hexis.bi.intelligence.engine.Domains
 import com.hexis.bi.ui.main.home.intelligence.EngineFindingsMapper
 import com.hexis.bi.ui.main.home.intelligence.BackfillTransition
@@ -36,7 +36,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -50,7 +49,6 @@ import java.time.temporal.WeekFields
 import java.util.Locale
 import kotlin.math.abs
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.Job
 
 @OptIn(FlowPreview::class)
 class ActivityViewModel internal constructor(
@@ -59,10 +57,8 @@ class ActivityViewModel internal constructor(
     private val userRepository: UserRepository,
     private val sourceResolver: TerraRestSourceResolver,
     private val healthSyncScheduler: HealthSyncScheduler,
-    private val runIntelligence: RunIntelligenceUseCase,
+    private val intelligenceCoordinator: IntelligenceCoordinator,
 ) : BaseViewModel(application) {
-
-    private var findingsJob: Job? = null
 
     private fun loadFindings(clearUpdatingOnComplete: Boolean = false) {
         if (!BuildConfig.INTELLIGENCE_ENGINE_ENABLED) {
@@ -71,15 +67,12 @@ class ActivityViewModel internal constructor(
             }
             return
         }
-        findingsJob?.cancel()
-        findingsJob = viewModelScope.launch {
-            val run = runIntelligence().getOrNull()
-            if (run == null) {
-                if (clearUpdatingOnComplete) {
-                    _state.update { it.copy(insightsUpdating = false) }
-                }
-                return@launch
-            }
+        intelligenceCoordinator.refreshNow()
+    }
+
+    private fun observeFindings() {
+        intelligenceCoordinator.state.onEach { reportState ->
+            val run = reportState.run ?: return@onEach
             val resolved = EngineFindingsMapper.forAreas(
                 report = run.report,
                 copy = run.copy,
@@ -90,10 +83,10 @@ class ActivityViewModel internal constructor(
             _state.update {
                 it.copy(
                     findings = resolved,
-                    insightsUpdating = if (clearUpdatingOnComplete) false else it.insightsUpdating,
+                    insightsUpdating = reportState.updating,
                 )
             }
-        }
+        }.launchIn(viewModelScope)
     }
 
     private val _state = MutableStateFlow(ActivityState())
@@ -114,6 +107,7 @@ class ActivityViewModel internal constructor(
 
     init {
         loadFindings()
+        observeFindings()
         observeDataSource()
         loadDataForTab(_state.value.selectedTab)
         activityRepository.updates
@@ -128,7 +122,6 @@ class ActivityViewModel internal constructor(
                 backfillInFlight = inFlight
                 when (transition) {
                     BackfillTransition.ACTIVE -> {
-                        findingsJob?.cancel()
                         _state.update { it.copy(insightsUpdating = true) }
                     }
                     BackfillTransition.SETTLED -> loadFindings(clearUpdatingOnComplete = true)

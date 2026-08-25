@@ -30,8 +30,8 @@ fun NightComparisonSection(
 ) {
     AnimatedVisibility(
         visible = comparisons.isNotEmpty(),
-        enter = fadeIn(),
-        exit = fadeOut(),
+        enter = insightEnter(),
+        exit = insightExit(),
         modifier = modifier,
     ) {
         Column {

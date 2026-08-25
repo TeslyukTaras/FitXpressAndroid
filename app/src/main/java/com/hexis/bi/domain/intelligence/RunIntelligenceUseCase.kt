@@ -12,9 +12,12 @@ import com.hexis.bi.intelligence.engine.Domains
 import com.hexis.bi.intelligence.engine.EngineReport
 import com.hexis.bi.intelligence.engine.IntelligenceEngine
 import com.hexis.bi.intelligence.model.EngineInput
+import java.time.LocalDate
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -25,6 +28,11 @@ internal data class IntelligenceRun(
     val config: EngineConfig,
     val copy: CopyConfig,
     val isMetric: Boolean = true,
+)
+
+internal data class IntelligenceRunUpdate(
+    val userId: String,
+    val run: IntelligenceRun,
 )
 
 internal class RunIntelligenceUseCase(
@@ -40,6 +48,8 @@ internal class RunIntelligenceUseCase(
     private val memo = AtomicReference<Memo>()
 
     private val runLock = Mutex()
+    private val _updates = MutableSharedFlow<IntelligenceRunUpdate>(extraBufferCapacity = 1)
+    val updates = _updates.asSharedFlow()
 
     suspend operator fun invoke(): Result<IntelligenceRun> {
         val loadedConfig = configRepository.config().getOrElse { return Result.failure(it) }
@@ -56,7 +66,13 @@ internal class RunIntelligenceUseCase(
             CopyConfig()
         }
         val isMetric = userRepository.getUser().getOrNull()?.unitSystem?.isMetricUnitSystem() ?: true
-        return runReport(input, config.withHeight(input.heightCm), copy, isMetric)
+        val result = runReport(input, config.withHeight(input.heightCm), copy, isMetric)
+        result.getOrNull()?.let { run ->
+            userRepository.getUser().getOrNull()?.uid?.takeIf { it.isNotEmpty() }?.let { uid ->
+                _updates.tryEmit(IntelligenceRunUpdate(uid, run))
+            }
+        }
+        return result
     }
 
     private fun EngineConfig.withHeight(heightCm: Double?): EngineConfig {

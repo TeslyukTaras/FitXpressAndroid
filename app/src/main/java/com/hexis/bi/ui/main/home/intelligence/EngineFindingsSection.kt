@@ -43,7 +43,7 @@ fun EngineFindingsSection(
         InsightsUpdatingHeader(visible = updating, animateDots = animateUpdatingDots)
         AnimatedContent(
             targetState = state,
-            transitionSpec = { fadeIn() togetherWith fadeOut() },
+            transitionSpec = { insightCrossfade() },
             label = "engine-findings",
         ) { current ->
             when (current) {
@@ -64,6 +64,15 @@ fun EngineFindingsSection(
                     }
                 }
             }
+
+                EngineFindingsState.Loading -> Column {
+                    Spacer(Modifier.height(topSpacing))
+                    BodyGlassCard(
+                        contentPadding = PaddingValues(dimensionResource(R.dimen.insight_card_padding)),
+                        shape = RoundedCornerShape(dimensionResource(R.dimen.insight_card_corner)),
+                        loading = true,
+                    ) { EmptyFindings() }
+                }
 
                 EngineFindingsState.Empty -> Column {
                     Spacer(Modifier.height(topSpacing))

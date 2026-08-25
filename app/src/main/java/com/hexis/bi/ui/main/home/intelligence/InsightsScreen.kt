@@ -1,9 +1,10 @@
 package com.hexis.bi.ui.main.home.intelligence
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,11 +28,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.intelligence.engine.Domains
 import com.hexis.bi.utils.constants.InsightSubjects
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
-import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.components.LightStatusBarIcons
 import com.hexis.bi.ui.components.MedicalDisclaimerFooter
 import com.hexis.bi.ui.theme.screenBackground
@@ -74,7 +75,12 @@ fun InsightsScreen(
             val contentModifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = dimensionResource(R.dimen.padding_medium))
-            if (state.cards.isEmpty()) {
+            AnimatedContent(
+                targetState = state.cards.isEmpty(),
+                transitionSpec = { insightCrossfade() },
+                label = "insights-content",
+            ) { isEmpty ->
+            if (isEmpty) {
                 Column(modifier = contentModifier) {
                     InsightsHeader(state)
                     Box(
@@ -117,6 +123,7 @@ fun InsightsScreen(
 
                     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
                 }
+            }
             }
         }
 

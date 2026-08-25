@@ -57,7 +57,7 @@ fun HomeInsightsSection(
 
         AnimatedContent(
             targetState = cards.take(FindingValues.HOME_PREVIEW_CARDS),
-            transitionSpec = { fadeIn() togetherWith fadeOut() },
+            transitionSpec = { insightCrossfade() },
             label = "home-insights",
         ) { preview ->
             Column(modifier = Modifier.fillMaxWidth()) {

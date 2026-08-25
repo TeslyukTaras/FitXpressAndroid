@@ -212,6 +212,8 @@ internal object CanonicalCacheConstants {
     val FORCED_REFRESH_INTERVAL: Duration = Duration.ofMinutes(15)
 
     const val UPDATE_DEBOUNCE_MS = 750L
+
+    const val FORCED_REFRESH_CURSOR_PREFIX = "forced:"
 }
 
 internal object HealthAnalysisConstants {
@@ -231,6 +233,16 @@ internal object HealthSyncWorkConstants {
     val RETRY_BACKOFF: Duration = Duration.ofMinutes(1)
 
     const val MAX_RUN_ATTEMPTS = 6
+}
+
+internal object IntelligenceCacheConstants {
+    /**
+     * How long a resolved engine/wording document is reused before the sources are consulted
+     * again. Without it every screen and every cache write re-reads the asset and Remote Config.
+     */
+    val CONFIG_TTL: Duration = Duration.ofMinutes(15)
+
+    val BACKFILL_RERUN_INTERVAL: Duration = Duration.ofSeconds(20)
 }
 
 internal object HealthConnectConstants {

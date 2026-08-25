@@ -64,6 +64,8 @@ data class EngineDebugInfo(
 )
 
 sealed interface EngineFindingsState {
+    data object Loading : EngineFindingsState
+
     data object Empty : EngineFindingsState
 
     data class Ready(
@@ -77,9 +79,14 @@ data class AreaFindings(
     private val byWindow: Map<Int, EngineFindingsState> = emptyMap(),
     private val debugByWindow: Map<Int, EngineDebugInfo> = emptyMap(),
     val primaryWindowDays: Int = 0,
+    private val engineRan: Boolean = false,
 ) {
-    fun forWindow(windowDays: Int): EngineFindingsState =
-        byWindow[windowDays] ?: EngineFindingsState.Empty
+    companion object {
+        fun completed(): AreaFindings = AreaFindings(engineRan = true)
+    }
+
+    fun forWindow(windowDays: Int): EngineFindingsState = byWindow[windowDays]
+        ?: if (engineRan) EngineFindingsState.Empty else EngineFindingsState.Loading
 
     val primary: EngineFindingsState get() = forWindow(primaryWindowDays)
 
@@ -112,6 +119,7 @@ object EngineFindingsMapper {
             emptyMap()
         },
         primaryWindowDays = analysisWindowDays,
+        engineRan = true,
     )
 
     private fun debugFor(report: EngineReport, areas: Set<String>, windowDays: Int): EngineDebugInfo {
@@ -303,7 +311,7 @@ private val Finding.subject: String
     get() = InsightSubjects.BY_INTERPRETATION[interpretation] ?: area
 
 internal suspend fun RunIntelligenceUseCase.findingsFor(vararg areas: String): AreaFindings {
-    if (!BuildConfig.INTELLIGENCE_ENGINE_ENABLED) return AreaFindings()
+    if (!BuildConfig.INTELLIGENCE_ENGINE_ENABLED) return AreaFindings.completed()
     val scope = areas.toSet()
     return invoke().fold(
         onSuccess = {
@@ -315,6 +323,6 @@ internal suspend fun RunIntelligenceUseCase.findingsFor(vararg areas: String): A
                 analysisWindowDays = it.config.windows.analysisDays,
             )
         },
-        onFailure = { AreaFindings() },
+        onFailure = { AreaFindings.completed() },
     )
 }

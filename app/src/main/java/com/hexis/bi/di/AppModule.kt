@@ -37,6 +37,7 @@ import com.hexis.bi.data.intelligence.AssetIntelligenceConfigSource
 import com.hexis.bi.data.intelligence.RemoteIntelligenceConfigSource
 import com.hexis.bi.utils.constants.IntelligenceRemoteConfig
 import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
+import com.hexis.bi.domain.intelligence.IntelligenceCoordinator
 import com.hexis.bi.data.intelligence.BUNDLED_WORDING_ASSET
 import com.hexis.bi.data.intelligence.IntelligenceConfigRepository
 import com.hexis.bi.data.intelligence.IntelligenceWordingRepository
@@ -161,6 +162,7 @@ val appModule = module {
     single { RunIntelligenceUseCase(get(), get(), get(), get()) }
     single { WorkManager.getInstance(androidContext()) }
     single<HealthSyncScheduler> { WorkManagerHealthSyncScheduler(get()) }
+    single { IntelligenceCoordinator(get(), get(), get(), get(), get()) }
     single { SessionCleaner(get(), get(), get(), get(), get(), get(), get(), androidContext()) }
     single<SuitRepository> { UserProfileSuitRepository(get()) }
     single<UserRepository> { FirestoreUserRepository(get(), get(), androidContext()) }
@@ -252,7 +254,7 @@ val appModule = module {
     viewModel { LongevityViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { PaceOfAgingViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { PhysiqueDriftViewModel(androidApplication(), get(), get(), get(), get(), get()) }
-    viewModel { InsightsViewModel(androidApplication(), get(), get(), get()) }
+    viewModel { InsightsViewModel(androidApplication(), get(), get()) }
     viewModel { RecompositionViewModel(androidApplication(), get()) }
     viewModel { ScanViewModel(androidApplication(), get()) }
     viewModel { StartScanViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get()) }
