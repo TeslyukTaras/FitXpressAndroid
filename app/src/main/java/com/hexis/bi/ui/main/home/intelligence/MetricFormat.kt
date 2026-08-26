@@ -13,6 +13,7 @@ internal class MetricFormat private constructor(
     private val style: Style,
     private val unit: String?,
     private val divisor: Double = 1.0,
+    private val refine: Style? = null,
 ) {
 
     private enum class Style { WHOLE, DECIMAL, PERCENT_OF_RATIO, DURATION }
@@ -53,6 +54,12 @@ internal class MetricFormat private constructor(
 
     fun unit(metricLabel: String): String = unit ?: metricLabel
 
+    fun distinguishing(from: Double, to: Double): MetricFormat {
+        val finer = refine ?: return this
+        if (from == to || render(from) != render(to)) return this
+        return MetricFormat(finer, unit, divisor)
+    }
+
     companion object {
 
         private fun integerFormat(): NumberFormat =
@@ -61,10 +68,10 @@ internal class MetricFormat private constructor(
         fun of(engineUnit: String, isMetric: Boolean): MetricFormat? = when (engineUnit) {
             EngineUnits.COUNT -> MetricFormat(Style.WHOLE, unit = null)
             EngineUnits.KCAL -> MetricFormat(Style.WHOLE, engineUnit)
-            EngineUnits.MINUTES, EngineUnits.BPM, EngineUnits.MILLISECONDS ->
-                MetricFormat(Style.DECIMAL, engineUnit)
+            EngineUnits.MINUTES, EngineUnits.BPM, EngineUnits.MILLISECONDS, EngineUnits.VO2MAX ->
+                MetricFormat(Style.WHOLE, engineUnit, refine = Style.DECIMAL)
 
-            EngineUnits.PERCENT, EngineUnits.VO2MAX -> MetricFormat(Style.DECIMAL, engineUnit)
+            EngineUnits.PERCENT -> MetricFormat(Style.DECIMAL, engineUnit)
             EngineUnits.RATIO -> MetricFormat(Style.PERCENT_OF_RATIO, EngineUnits.PERCENT)
             EngineUnits.HOURS -> MetricFormat(Style.DURATION, unit = "")
             EngineUnits.SCORE_100, EngineUnits.SCORE_10 -> MetricFormat(Style.DECIMAL, unit = "")
@@ -82,9 +89,14 @@ internal class MetricFormat private constructor(
             }
 
             EngineUnits.CENTIMETRES -> if (isMetric) {
-                MetricFormat(Style.DECIMAL, EngineUnits.CENTIMETRES)
+                MetricFormat(Style.WHOLE, EngineUnits.CENTIMETRES, refine = Style.DECIMAL)
             } else {
-                MetricFormat(Style.DECIMAL, EngineUnits.INCHES, MeasurementConstants.CM_TO_IN.toDouble())
+                MetricFormat(
+                    Style.WHOLE,
+                    EngineUnits.INCHES,
+                    MeasurementConstants.CM_TO_IN.toDouble(),
+                    refine = Style.DECIMAL,
+                )
             }
 
             else -> null

@@ -27,6 +27,7 @@ data class FindingValue(
 data class EngineFindingRow(
     val heading: String?,
     val explanation: String,
+    val values: List<FindingValue> = emptyList(),
 )
 
 data class InsightCard(
@@ -71,7 +72,6 @@ sealed interface EngineFindingsState {
     data class Ready(
         val rows: List<EngineFindingRow>,
         val confidence: FindingConfidence,
-        val values: List<FindingValue>,
     ) : EngineFindingsState
 }
 
@@ -167,8 +167,14 @@ object EngineFindingsMapper {
         val supporting = ranked.sortedBy { it.priorityRank }
 
         val rows = buildList {
-            patterns.forEach { (_, narrated) ->
-                add(EngineFindingRow(narrated.heading, narrated.explanation))
+            patterns.forEach { (finding, narrated) ->
+                add(
+                    EngineFindingRow(
+                        heading = narrated.heading,
+                        explanation = narrated.explanation,
+                        values = valuesFor(listOf(finding), report, copy, windowDays, isMetric),
+                    ),
+                )
             }
             if (supporting.isNotEmpty()) {
                 val sentence = InsightNarrator.sentence(
@@ -177,7 +183,15 @@ object EngineFindingsMapper {
                     copy = copy,
                     bare = patterns.isNotEmpty(),
                 )
-                if (sentence.isNotBlank()) add(EngineFindingRow(null, sentence))
+                if (sentence.isNotBlank()) {
+                    add(
+                        EngineFindingRow(
+                            heading = null,
+                            explanation = sentence,
+                            values = valuesFor(supporting, report, copy, windowDays, isMetric),
+                        ),
+                    )
+                }
             }
         }.distinctBy { it.explanation }
 
@@ -187,7 +201,6 @@ object EngineFindingsMapper {
         return EngineFindingsState.Ready(
             rows = rows,
             confidence = mostConfidentChange(section).confidenceLevel,
-            values = valuesFor(section, report, copy, windowDays, isMetric),
         )
     }
 
@@ -237,13 +250,14 @@ object EngineFindingsMapper {
                     ?: return@mapNotNull null
                 val format = MetricFormat.of(row.unit, isMetric) ?: return@mapNotNull null
                 val label = copy.labels[metric] ?: return@mapNotNull null
+                val display = format.distinguishing(value, baseline.median)
                 abs(z) to NightComparison(
                     title = title,
                     template = template,
                     label = label,
-                    value = format.render(value),
-                    usual = format.render(baseline.median),
-                    unit = format.unit(label),
+                    value = display.render(value),
+                    usual = display.render(baseline.median),
+                    unit = display.unit(label),
                 )
             }
             .sortedByDescending { it.first }
@@ -281,17 +295,17 @@ object EngineFindingsMapper {
                 val baseline = report.baselineFor(windowDays, metric) ?: return@mapNotNull null
                 val change = row.trendsByWindow[windowDays]?.absChange ?: return@mapNotNull null
                 val format = MetricFormat.of(row.unit, isMetric) ?: return@mapNotNull null
+                val latest = if (metric == FindingMetricAliases.PHYSIQUE_SCORE_METRIC) {
+                    report.latestValues[metric] ?: baseline.median + change
+                } else {
+                    baseline.median + change
+                }
+                val display = format.distinguishing(baseline.median, latest)
                 FindingValue(
                     label = copy.labels[metric].orEmpty(),
-                    from = format.render(baseline.median),
-                    to = format.render(
-                        if (metric == FindingMetricAliases.PHYSIQUE_SCORE_METRIC) {
-                            report.latestValues[metric] ?: baseline.median + change
-                        } else {
-                            baseline.median + change
-                        },
-                    ),
-                    unit = format.unit(copy.labels[metric].orEmpty()),
+                    from = display.render(baseline.median),
+                    to = display.render(latest),
+                    unit = display.unit(copy.labels[metric].orEmpty()),
                 )
             }
             .take(FindingValues.MAX_VALUES)
