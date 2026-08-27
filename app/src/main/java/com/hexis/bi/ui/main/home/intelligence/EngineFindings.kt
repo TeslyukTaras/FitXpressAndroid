@@ -248,7 +248,7 @@ object EngineFindingsMapper {
                     ?: return@mapNotNull null
                 val row = report.metricTrends.firstOrNull { it.metric == metric }
                     ?: return@mapNotNull null
-                val format = MetricFormat.of(row.unit, isMetric) ?: return@mapNotNull null
+                val format = MetricFormat.of(row.unit, isMetric, metric) ?: return@mapNotNull null
                 val label = copy.labels[metric] ?: return@mapNotNull null
                 val display = format.distinguishing(value, baseline.median)
                 abs(z) to NightComparison(
@@ -294,7 +294,7 @@ object EngineFindingsMapper {
                     ?: return@mapNotNull null
                 val baseline = report.baselineFor(windowDays, metric) ?: return@mapNotNull null
                 val change = row.trendsByWindow[windowDays]?.absChange ?: return@mapNotNull null
-                val format = MetricFormat.of(row.unit, isMetric) ?: return@mapNotNull null
+                val format = MetricFormat.of(row.unit, isMetric, metric) ?: return@mapNotNull null
                 val latest = if (metric == FindingMetricAliases.PHYSIQUE_SCORE_METRIC) {
                     report.latestValues[metric] ?: baseline.median + change
                 } else {

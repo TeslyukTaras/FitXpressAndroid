@@ -1,5 +1,6 @@
 package com.hexis.bi.ui.main.home.intelligence
 
+import com.hexis.bi.intelligence.engine.Metrics
 import com.hexis.bi.utils.constants.EngineUnits
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -69,6 +70,19 @@ class InsightRoundingCheck {
         assertEquals("54", render(EngineUnits.BPM, 53.5))
         assertEquals("22", render(EngineUnits.MILLISECONDS, 22.5))
         assertEquals("24", render(EngineUnits.MILLISECONDS, 23.5))
+    }
+
+    @Test
+    fun `stress rounds, and the other hundred-point scores do not`() {
+        fun show(raw: Double, metric: String?) =
+            MetricFormat.of(EngineUnits.SCORE_100, isMetric = true, metric = metric)!!
+                .render(raw).joinToString("") { it.text }
+
+        assertEquals("62", show(62.4, Metrics.STRESS_SCORE))
+        assertEquals("48.0", show(48.0, Metrics.LONGEVITY_SCORE))
+        assertEquals("49.9", show(49.9, Metrics.AGING_SCORE))
+        assertEquals("62.4", show(62.4, null))
+        assertEquals("5.1", render(EngineUnits.SCORE_10, 5.1))
     }
 
     @Test

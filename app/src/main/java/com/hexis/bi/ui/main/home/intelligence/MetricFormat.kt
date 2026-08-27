@@ -1,5 +1,6 @@
 package com.hexis.bi.ui.main.home.intelligence
 
+import com.hexis.bi.intelligence.engine.Metrics
 import com.hexis.bi.utils.constants.EngineUnits
 import com.hexis.bi.utils.constants.FindingValues
 import com.hexis.bi.utils.constants.MeasurementConstants
@@ -75,7 +76,11 @@ internal class MetricFormat private constructor(
         private fun integerFormat(): NumberFormat =
             NumberFormat.getIntegerInstance(Locale.getDefault())
 
-        fun of(engineUnit: String, isMetric: Boolean): MetricFormat? = when (engineUnit) {
+        fun of(
+            engineUnit: String,
+            isMetric: Boolean,
+            metric: String? = null,
+        ): MetricFormat? = when (engineUnit) {
             EngineUnits.COUNT -> MetricFormat(Style.WHOLE, unit = null)
             EngineUnits.KCAL -> MetricFormat(Style.WHOLE, engineUnit)
             EngineUnits.BPM, EngineUnits.MILLISECONDS ->
@@ -85,7 +90,13 @@ internal class MetricFormat private constructor(
                 MetricFormat(Style.DECIMAL, engineUnit)
             EngineUnits.RATIO -> MetricFormat(Style.PERCENT_OF_RATIO, EngineUnits.PERCENT)
             EngineUnits.HOURS -> MetricFormat(Style.DURATION, unit = "")
-            EngineUnits.SCORE_100, EngineUnits.SCORE_10 -> MetricFormat(Style.DECIMAL, unit = "")
+            EngineUnits.SCORE_100 -> if (metric == Metrics.STRESS_SCORE) {
+                MetricFormat(Style.WHOLE, unit = "", refine = Style.DECIMAL)
+            } else {
+                MetricFormat(Style.DECIMAL, unit = "")
+            }
+
+            EngineUnits.SCORE_10 -> MetricFormat(Style.DECIMAL, unit = "")
 
             EngineUnits.METRES -> if (isMetric) {
                 MetricFormat(Style.DECIMAL, EngineUnits.KILOMETRES, FindingValues.METRES_PER_KM)
