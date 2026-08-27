@@ -28,5 +28,6 @@ data class RecompositionCardUi(
 
 data class RecompositionState(
     val cards: List<RecompositionCardUi> = emptyList(),
+    val isMetric: Boolean = true,
     val showInfoSheet: Boolean = false,
 )

@@ -36,10 +36,10 @@ class MetricFormatCheck {
         println("  lean mass " + render("kg", 56.2, false))
 
         assertEquals("45.0 km", render("m", 45000.0, true))
-        assertEquals("82 cm", render("cm", 82.4, true))
+        assertEquals("82.4 cm", render("cm", 82.4, true))
         assertEquals("56.2 kg", render("kg", 56.2, true))
         assertEquals("28.0 mi", render("m", 45000.0, false))
-        assertEquals("32 in", render("cm", 82.4, false))
+        assertEquals("32.4 in", render("cm", 82.4, false))
         assertEquals("123.9 lb", render("kg", 56.2, false))
     }
 }
@@ -50,12 +50,31 @@ class InsightRoundingCheck {
         MetricFormat.of(unit, isMetric = true)!!.render(raw).joinToString("") { it.text }
 
     @Test
-    fun `sleep and recovery readings drop their decimals`() {
-        assertEquals("26", render(EngineUnits.MINUTES, 25.9))
+    fun `sleep readings drop their decimals`() {
         assertEquals("51", render(EngineUnits.BPM, 51.0))
         assertEquals("22", render(EngineUnits.MILLISECONDS, 22.4))
-        assertEquals("42", render(EngineUnits.VO2MAX, 42.3))
-        assertEquals("87", render(EngineUnits.CENTIMETRES, 87.1))
+    }
+
+    @Test
+    fun `everything outside sleep keeps its decimal`() {
+        assertEquals("25.9", render(EngineUnits.MINUTES, 25.9))
+        assertEquals("42.3", render(EngineUnits.VO2MAX, 42.3))
+        assertEquals("87.1", render(EngineUnits.CENTIMETRES, 87.1))
+    }
+
+    @Test
+    fun `a value sitting exactly on a half rounds to even, as the engine and iOS do`() {
+        assertEquals("52", render(EngineUnits.BPM, 52.5))
+        assertEquals("52", render(EngineUnits.BPM, 51.5))
+        assertEquals("54", render(EngineUnits.BPM, 53.5))
+        assertEquals("22", render(EngineUnits.MILLISECONDS, 22.5))
+        assertEquals("24", render(EngineUnits.MILLISECONDS, 23.5))
+    }
+
+    @Test
+    fun `a value away from a half is unaffected`() {
+        assertEquals("53", render(EngineUnits.BPM, 52.6))
+        assertEquals("52", render(EngineUnits.BPM, 52.4))
     }
 
     @Test

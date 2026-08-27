@@ -193,7 +193,7 @@ object EngineFindingsMapper {
                     )
                 }
             }
-        }.distinctBy { it.explanation }
+        }.distinctBy { it.heading to it.explanation }
 
         if (rows.isEmpty()) return EngineFindingsState.Empty
 

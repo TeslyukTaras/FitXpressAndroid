@@ -28,8 +28,11 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import com.hexis.bi.R
+import com.hexis.bi.utils.constants.FindingValues
 import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.theme.NocturnePulseTheme
+
+enum class InsightLayout { Grouped, PerFinding }
 
 @Composable
 fun EngineFindingsSection(
@@ -38,6 +41,7 @@ fun EngineFindingsSection(
     updating: Boolean = false,
     animateUpdatingDots: Boolean = true,
     topSpacing: Dp = dimensionResource(R.dimen.spacer_l),
+    layout: InsightLayout = InsightLayout.Grouped,
 ) {
     Column(modifier = modifier) {
         InsightsUpdatingHeader(visible = updating, animateDots = animateUpdatingDots)
@@ -54,9 +58,19 @@ fun EngineFindingsSection(
                     shape = RoundedCornerShape(dimensionResource(R.dimen.insight_card_corner)),
                 ) {
                     InsightHeader(stringResource(R.string.engine_findings_title), current.confidence)
+                    if (layout == InsightLayout.Grouped) {
+                        val values = current.rows
+                            .flatMap { it.values }
+                            .distinctBy { it.label }
+                            .take(FindingValues.MAX_VALUES)
+                        if (values.isNotEmpty()) {
+                            Spacer(Modifier.height(dimensionResource(R.dimen.insight_card_value_gap)))
+                            InsightValues(values, showLabels = true)
+                        }
+                    }
                     current.rows.forEach { row ->
                         Spacer(Modifier.height(dimensionResource(R.dimen.insight_card_text_gap)))
-                        FindingRow(row)
+                        FindingRow(row, showValues = layout == InsightLayout.PerFinding)
                     }
                 }
             }
@@ -177,9 +191,7 @@ internal fun InsightValues(values: List<FindingValue>, showLabels: Boolean) {
     }
 }
 
-private fun String.toInsightLabel(): String = split(' ').joinToString(" ") { word ->
-    word.replaceFirstChar { it.uppercase() }
-}
+private fun String.toInsightLabel(): String = replaceFirstChar { it.uppercase() }
 
 private fun ValuePart.span(value: Color, muted: Color, unitSize: TextUnit): SpanStyle =
     if (this.muted) SpanStyle(color = muted, fontSize = unitSize) else SpanStyle(color = value)
@@ -206,7 +218,7 @@ private fun EmptyFindings() {
 }
 
 @Composable
-private fun FindingRow(row: EngineFindingRow) {
+private fun FindingRow(row: EngineFindingRow, showValues: Boolean) {
     Column(modifier = Modifier.fillMaxWidth()) {
         row.heading?.let { heading ->
             Text(
@@ -215,14 +227,15 @@ private fun FindingRow(row: EngineFindingRow) {
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }
-        if (row.values.isNotEmpty()) {
+        val values = row.values.takeIf { showValues && it.isNotEmpty() }
+        if (values != null) {
             if (row.heading != null) {
                 Spacer(Modifier.height(dimensionResource(R.dimen.insight_card_value_gap)))
             }
-            InsightValues(row.values, showLabels = true)
+            InsightValues(values, showLabels = true)
         }
         if (row.explanation.isNotBlank()) {
-            if (row.heading != null || row.values.isNotEmpty()) {
+            if (row.heading != null || values != null) {
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
             }
             Text(

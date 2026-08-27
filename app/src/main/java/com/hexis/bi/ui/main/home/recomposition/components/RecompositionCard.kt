@@ -45,6 +45,7 @@ import com.hexis.bi.ui.theme.TitleDimTextStyle
 @Composable
 internal fun RecompositionCard(
     card: RecompositionCardUi,
+    isMetric: Boolean,
     modifier: Modifier = Modifier,
 ) {
     BodyGlassCard(
@@ -65,13 +66,13 @@ internal fun RecompositionCard(
                 .height(IntrinsicSize.Min),
             verticalAlignment = Alignment.Top,
         ) {
-            RecomposedCell(card, Modifier.weight(1f))
+            RecomposedCell(card, isMetric, Modifier.weight(1f))
 
             Spacer(Modifier.width(dimensionResource(R.dimen.spacer_l)))
             AppVerticalGradientDivider()
             Spacer(Modifier.width(dimensionResource(R.dimen.spacer_l)))
 
-            WeightChangeCell(card, Modifier.weight(1f))
+            WeightChangeCell(card, isMetric, Modifier.weight(1f))
         }
 
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
@@ -84,21 +85,22 @@ internal fun RecompositionCard(
                 .height(IntrinsicSize.Min),
             verticalAlignment = Alignment.Top,
         ) {
-            MassCell(R.string.recomposition_fat_mass, card.fat, Modifier.weight(1f))
+            MassCell(R.string.recomposition_fat_mass, card.fat, isMetric, Modifier.weight(1f))
             Spacer(Modifier.width(dimensionResource(R.dimen.spacer_l)))
             AppVerticalGradientDivider()
             Spacer(Modifier.width(dimensionResource(R.dimen.spacer_l)))
-            MassCell(R.string.recomposition_lean_mass, card.lean, Modifier.weight(1f))
+            MassCell(R.string.recomposition_lean_mass, card.lean, isMetric, Modifier.weight(1f))
         }
     }
 }
 
 @Composable
-private fun RecomposedCell(card: RecompositionCardUi, modifier: Modifier = Modifier) {
+private fun RecomposedCell(card: RecompositionCardUi, isMetric: Boolean, modifier: Modifier = Modifier) {
     CellColumn(modifier) {
         CellLabel(R.string.recomposition_recomposed)
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
         MetricValueText(
+            isMetric = isMetric,
             text = card.recomposedValue,
             recomposed = true,
             valueColor = MaterialTheme.colorScheme.primary,
@@ -107,11 +109,11 @@ private fun RecomposedCell(card: RecompositionCardUi, modifier: Modifier = Modif
 }
 
 @Composable
-private fun WeightChangeCell(card: RecompositionCardUi, modifier: Modifier = Modifier) {
+private fun WeightChangeCell(card: RecompositionCardUi, isMetric: Boolean, modifier: Modifier = Modifier) {
     CellColumn(modifier) {
         CellLabel(R.string.recomposition_weight_change)
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
-        MetricValueText(text = card.weightChangeText)
+        MetricValueText(isMetric = isMetric, text = card.weightChangeText)
         if (card.weightSubtitle.isNotBlank()) {
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xs)))
             Text(
@@ -127,6 +129,7 @@ private fun WeightChangeCell(card: RecompositionCardUi, modifier: Modifier = Mod
 private fun MassCell(
     @StringRes labelRes: Int,
     metric: RecompositionMetricUi,
+    isMetric: Boolean,
     modifier: Modifier = Modifier,
 ) {
     CellColumn(modifier) {
@@ -136,7 +139,7 @@ private fun MassCell(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_xs)),
         ) {
-            MetricValueText(text = metric.valueText)
+            MetricValueText(isMetric = isMetric, text = metric.valueText)
             metric.rising?.let { rising ->
                 DirectionArrow(
                     pointsUp = rising,
@@ -154,6 +157,7 @@ private fun MassCell(
 
 @Composable
 private fun MetricValueText(
+    isMetric: Boolean,
     text: String,
     modifier: Modifier = Modifier,
     recomposed: Boolean = false,
@@ -175,7 +179,7 @@ private fun MetricValueText(
                 unitStyle.copy(color = NocturnePulseTheme.extendedColors.gray200).toSpanStyle(),
             ) {
                 append(" ")
-                append(stringResource(R.string.recomposition_kg_suffix).trim())
+                append(stringResource(if (isMetric) R.string.unit_kg else R.string.unit_lb))
             }
         },
         modifier = modifier,
