@@ -740,7 +740,7 @@ private fun DrawScope.drawSeriesLabel(
     drawCircle(color, dotRadiusPx, Offset(centerX, y))
 
     val layout = textMeasurer.measure(
-        AnnotatedString(String.format(Locale.US, "%+.1f", value)),
+        AnnotatedString(String.format(Locale.getDefault(), "%+.1f", value)),
         style.copy(color = color),
     )
     val width = layout.size.width.toFloat()
@@ -766,7 +766,7 @@ private fun formatGridValue(value: Float): String =
 
 private const val GRID_ZERO_LABEL = "0"
 
-private fun formatOneDecimal(value: Float): String = String.format(Locale.US, "%.1f", value)
+private fun formatOneDecimal(value: Float): String = String.format(Locale.getDefault(), "%.1f", value)
 
 private fun DrawScope.drawTimeSeries(
     points: List<BodyTrendPoint>,

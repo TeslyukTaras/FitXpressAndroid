@@ -277,7 +277,7 @@ private fun physiqueDrift(state: BodyState): Float? = state.periodPhysiqueDrift
 @Composable
 private fun formatSignedValue(value: Float?): String {
     if (value == null) return stringResource(R.string.stat_unknown)
-    return String.format(Locale.US, "%+.1f", value)
+    return String.format(Locale.getDefault(), "%+.1f", value)
 }
 
 @Composable
@@ -297,5 +297,5 @@ private fun formatEstimate(composition: BodyComposition): String {
     val estimate = composition.bisScore?.let { score ->
         (score + (composition.deltaBisScore ?: 0f)).coerceIn(1f, 10f)
     } ?: return stringResource(R.string.stat_unknown)
-    return String.format(Locale.US, "%.1f", estimate)
+    return String.format(Locale.getDefault(), "%.1f", estimate)
 }

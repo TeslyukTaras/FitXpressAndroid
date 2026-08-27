@@ -155,14 +155,14 @@ private fun formatMassMetric(
 ): String {
     val unknown = stringResource(R.string.stat_unknown)
     return when (massUnit) {
-        BodyMassUnit.Percent -> percentage?.let { String.format(java.util.Locale.US, "%.1f%%", it) }
+        BodyMassUnit.Percent -> percentage?.let { String.format(java.util.Locale.getDefault(), "%.1f%%", it) }
             ?: unknown
 
         BodyMassUnit.Mass -> {
             val v = massKg ?: return unknown
             val converted = if (isMetric) v else v.kgToLb()
             val unit = stringResource(if (isMetric) R.string.unit_kg else R.string.unit_lb)
-            String.format(java.util.Locale.US, "%.1f %s", converted, unit)
+            String.format(java.util.Locale.getDefault(), "%.1f %s", converted, unit)
         }
     }
 }
@@ -173,14 +173,14 @@ private fun formatWeight(weightKg: Float?, isMetric: Boolean): String {
     val w = weightKg ?: return unknown
     val converted = if (isMetric) w else w.kgToLb()
     val unit = stringResource(if (isMetric) R.string.unit_kg else R.string.unit_lb)
-    return String.format(java.util.Locale.US, "%.1f %s", converted, unit)
+    return String.format(java.util.Locale.getDefault(), "%.1f %s", converted, unit)
 }
 
 @Composable
 private fun formatBis(bis: Float?): String {
     val unknown = stringResource(R.string.stat_unknown)
     val v = bis ?: return unknown
-    return String.format(java.util.Locale.US, "%.1f", v)
+    return String.format(java.util.Locale.getDefault(), "%.1f", v)
 }
 
 private fun massTolerance(isMetric: Boolean): ChangeTolerance =

@@ -71,4 +71,4 @@ internal fun formatDelta(delta: Float, unit: String): String =
 private fun deltaSign(delta: Float): String =
     stringResource(if (delta >= 0f) R.string.delta_sign_positive else R.string.delta_sign_negative)
 
-private fun deltaMagnitude(delta: Float): String = String.format(Locale.US, "%.1f", abs(delta))
+private fun deltaMagnitude(delta: Float): String = String.format(Locale.getDefault(), "%.1f", abs(delta))

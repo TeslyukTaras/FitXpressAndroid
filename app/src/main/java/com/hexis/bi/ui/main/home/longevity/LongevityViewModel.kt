@@ -326,7 +326,7 @@ class LongevityViewModel(
         LongevityEvidenceUi(label = label, value = string(R.string.stat_unknown))
 
     private fun format(value: Float, decimals: Int): String =
-        String.format(Locale.US, "%.${decimals}f", value)
+        String.format(Locale.getDefault(), "%.${decimals}f", value)
 
     private companion object {
         const val RATIO_DECIMALS = 2

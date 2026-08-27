@@ -171,7 +171,7 @@ class PaceOfAgingViewModel internal constructor(
 
         val waistTrend = waistTrend(latestScan, previousScan, heightCm)
         val bodyFat = latestScan?.fatPercentage?.takeIf { it > 0f }
-            ?.let { String.format(Locale.US, "%.1f%%", it) }
+            ?.let { String.format(Locale.getDefault(), "%.1f%%", it) }
         val syncedDate = today.formatShortMonthDayYear()
 
         if (result == null) {
@@ -197,7 +197,7 @@ class PaceOfAgingViewModel internal constructor(
             it.copy(
                 hasData = true,
                 level = level,
-                paceText = String.format(Locale.US, PACE_FORMAT, pace),
+                paceText = String.format(Locale.getDefault(), PACE_FORMAT, pace),
                 meterFraction = meterFraction(pace),
                 percentText = percentText(pace, level),
                 description = description(level),

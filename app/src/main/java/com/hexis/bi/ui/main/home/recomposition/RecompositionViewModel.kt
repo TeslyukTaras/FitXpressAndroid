@@ -163,7 +163,7 @@ class RecompositionViewModel(
     }
 
     private fun formatMagnitude(value: Float): String =
-        String.format(Locale.US, MAGNITUDE_FORMAT, abs(value))
+        String.format(Locale.getDefault(), MAGNITUDE_FORMAT, abs(value))
 
     private companion object {
         const val MAGNITUDE_FORMAT = "%.1f"

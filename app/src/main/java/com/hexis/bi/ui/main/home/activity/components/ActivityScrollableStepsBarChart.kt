@@ -70,7 +70,7 @@ fun ActivityScrollableStepsBarChart(
     val yGridLines = remember(yMax) {
         listOf(0f, yMax / 3f, yMax * 2f / 3f, yMax)
     }
-    val fmt = NumberFormat.getNumberInstance(Locale.US)
+    val fmt = NumberFormat.getNumberInstance(Locale.getDefault())
     var selectedIndex by remember { mutableIntStateOf(-1) }
     val selectedEntry = entries.getOrNull(selectedIndex)
     val density = LocalDensity.current

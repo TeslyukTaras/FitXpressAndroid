@@ -464,7 +464,7 @@ class HomeViewModel internal constructor(
             it.copy(
                 paceOfAgingValue = pace?.let { p ->
                     String.format(
-                        Locale.US,
+                        Locale.getDefault(),
                         PACE_FORMAT,
                         p
                     )
@@ -568,7 +568,7 @@ class HomeViewModel internal constructor(
             ChangeDirection.None -> ""
         }
         return ScanOverview(
-            value = String.format(Locale.US, "%.1f", magnitude),
+            value = String.format(Locale.getDefault(), "%.1f", magnitude),
             unit = unit,
             valueLabel = appContext.getString(
                 R.string.home_scan_change_label, arrow, appContext.getString(topChange.bodyPartRes),
@@ -597,7 +597,7 @@ class HomeViewModel internal constructor(
         val recomposed = if (isMetric) recomposedKg else recomposedKg.kgToLb()
         _state.update {
             it.copy(
-                recompositionValue = String.format(Locale.US, RECOMPOSITION_FORMAT, recomposed),
+                recompositionValue = String.format(Locale.getDefault(), RECOMPOSITION_FORMAT, recomposed),
                 isMetricUnits = isMetric,
             )
         }

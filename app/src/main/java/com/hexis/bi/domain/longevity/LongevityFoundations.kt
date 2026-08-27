@@ -9,6 +9,8 @@ import com.hexis.bi.domain.recomposition.CompositionState
 import com.hexis.bi.domain.recomposition.RecompositionCalculator
 import com.hexis.bi.domain.recomposition.RecompositionResult
 import com.hexis.bi.domain.trend.TrendPoint
+import com.hexis.bi.domain.trend.ChangeBand
+import com.hexis.bi.domain.trend.changeBand
 import com.hexis.bi.domain.trend.linearTrendChange
 import com.hexis.bi.domain.trend.trendPersistence
 import com.hexis.bi.domain.trend.winsorized
@@ -141,12 +143,15 @@ object LongevityCalculator {
         val lean = result.leanChangeKg
         if (fat == null || lean == null) return RecompositionFoundation(FoundationStatus.InsufficientData)
 
-        val threshold = LongevityFoundationConstants.MASS_MEANINGFUL_DELTA_KG
+        val threshold = ChangeTolerances.MASS_KG.forBaseline(null)
         val fatDown = fat <= -threshold
         val fatUp = fat >= threshold
         val leanDown = lean <= -threshold
         val leanUp = lean >= threshold
         val majorLeanLoss = lean <= -LongevityFoundationConstants.MAJOR_LEAN_LOSS_KG
+        val watching = listOf(fat, lean).any {
+            changeBand(it, ChangeTolerances.MASS_KG, null) == ChangeBand.Monitoring
+        }
 
         val status = when {
             result.state == CompositionState.Recomposition -> FoundationStatus.Strengthening
@@ -157,6 +162,7 @@ object LongevityCalculator {
             fatDown || leanUp -> FoundationStatus.Strengthening
             fatUp || majorLeanLoss -> FoundationStatus.Weakening
             leanDown -> FoundationStatus.Mixed
+            watching -> FoundationStatus.Monitoring
             else -> FoundationStatus.Holding
         }
 

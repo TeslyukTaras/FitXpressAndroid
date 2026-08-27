@@ -138,7 +138,7 @@ data class HomeState(
             titleRes = R.string.intelligence_physique_drift,
             value = IntelligenceTileValue.Gauge(
                 value = if (physiqueScore == null) "0"
-                else String.format(Locale.US, PHYSIQUE_SCORE_FORMAT, clamped),
+                else String.format(Locale.getDefault(), PHYSIQUE_SCORE_FORMAT, clamped),
                 fraction = clamped / PHYSIQUE_MAX_SCORE,
             ),
         )
