@@ -13,6 +13,9 @@ internal object LongevityFoundationConstants {
     /** Two observations are the minimum that can describe a direction at all. */
     const val MIN_SCANS_FOR_DIRECTION = 2
 
+    /** Scans the Physical Foundation looks back over once that many exist. */
+    const val PHYSICAL_SCAN_WINDOW = 4
+
     /** Below this share of same-direction steps a change reads as noise rather than a trend. */
     const val MIN_PERSISTENCE = 0.6f
 

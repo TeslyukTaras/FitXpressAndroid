@@ -9,7 +9,10 @@ import com.hexis.bi.data.scan.ScanRecord
 import com.hexis.bi.domain.recomposition.CompositionState
 import com.hexis.bi.domain.recomposition.RecompositionCalculator
 import com.hexis.bi.domain.recomposition.RecompositionResult
+import com.hexis.bi.domain.trend.ChangeDirection
+import com.hexis.bi.domain.trend.changeDirection
 import com.hexis.bi.ui.base.BaseViewModel
+import com.hexis.bi.utils.constants.ChangeTolerances
 import com.hexis.bi.utils.constants.RecompositionConstants
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -120,10 +123,10 @@ class RecompositionViewModel(
 
     private fun metric(changeKg: Float?, favorableWhenNegative: Boolean): RecompositionMetricUi {
         changeKg ?: return RecompositionMetricUi(string(R.string.stat_unknown))
-        val favorable = when {
-            changeKg == 0f -> null
-            changeKg < 0f -> favorableWhenNegative
-            else -> !favorableWhenNegative
+        val favorable = when (changeDirection(changeKg, ChangeTolerances.MASS_KG, null)) {
+            ChangeDirection.None -> null
+            ChangeDirection.Down -> favorableWhenNegative
+            ChangeDirection.Up -> !favorableWhenNegative
         }
         val favorableAmount = if (favorableWhenNegative) -changeKg else changeKg
         val fraction = RecompositionConstants.TREND_BAR_CENTER_FRACTION +
@@ -131,6 +134,7 @@ class RecompositionViewModel(
         return RecompositionMetricUi(
             valueText = signedValue(changeKg),
             favorable = favorable,
+            rising = favorable?.let { changeKg > 0f },
             markerFraction = fraction.coerceIn(0f, 1f),
         )
     }

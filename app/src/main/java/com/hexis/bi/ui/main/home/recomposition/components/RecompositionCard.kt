@@ -137,9 +137,9 @@ private fun MassCell(
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_xs)),
         ) {
             MetricValueText(text = metric.valueText)
-            metric.favorable?.let { favorable ->
+            metric.rising?.let { rising ->
                 DirectionArrow(
-                    pointsUp = favorable,
+                    pointsUp = rising,
                     color = recompositionTrendColor(metric.markerFraction),
                 )
             }

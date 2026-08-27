@@ -30,6 +30,7 @@ import com.hexis.bi.domain.order.OrderShippingAddress
 import com.hexis.bi.domain.order.OrderStatus
 import com.hexis.bi.domain.recomposition.RecompositionCalculator
 import com.hexis.bi.domain.suit.SuitRepository
+import com.hexis.bi.domain.trend.ChangeDirection
 import com.hexis.bi.ui.main.home.intelligence.EngineFindingsMapper
 import com.hexis.bi.ui.main.home.intelligence.BackfillTransition
 import com.hexis.bi.ui.main.home.intelligence.backfillTransition
@@ -559,9 +560,11 @@ class HomeViewModel internal constructor(
             )
         val magnitude = abs(if (isMetric) topChange.deltaCm else topChange.deltaCm.cmToInches())
         val unit = appContext.getString(if (isMetric) R.string.unit_cm else R.string.unit_in)
-        val arrow = appContext.getString(
-            if (topChange.deltaCm < 0f) R.string.home_scan_arrow_down else R.string.home_scan_arrow_up
-        )
+        val arrow = when (topChange.direction) {
+            ChangeDirection.Down -> appContext.getString(R.string.home_scan_arrow_down)
+            ChangeDirection.Up -> appContext.getString(R.string.home_scan_arrow_up)
+            ChangeDirection.None -> ""
+        }
         return ScanOverview(
             value = String.format(Locale.US, "%.1f", magnitude),
             unit = unit,

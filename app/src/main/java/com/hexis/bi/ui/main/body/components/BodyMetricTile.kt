@@ -13,12 +13,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import com.hexis.bi.R
+import com.hexis.bi.utils.constants.ChangeTolerance
 
 @Composable
 internal fun BodyMetricTile(
     label: String,
     value: String,
     delta: Float?,
+    tolerance: ChangeTolerance,
     modifier: Modifier = Modifier,
     decreaseIsPositive: Boolean = false,
 ) {
@@ -41,7 +43,13 @@ internal fun BodyMetricTile(
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            if (delta != null) BodyDelta(delta = delta, decreaseIsPositive = decreaseIsPositive)
+            if (delta != null) {
+                BodyDelta(
+                    delta = delta,
+                    tolerance = tolerance,
+                    decreaseIsPositive = decreaseIsPositive,
+                )
+            }
         }
     }
 }

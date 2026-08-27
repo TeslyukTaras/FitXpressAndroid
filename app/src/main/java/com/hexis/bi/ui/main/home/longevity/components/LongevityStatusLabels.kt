@@ -35,6 +35,7 @@ internal val FoundationStatus.labelRes: Int
     get() = when (this) {
         FoundationStatus.Strengthening -> R.string.longevity_status_strengthening
         FoundationStatus.Holding -> R.string.longevity_status_holding
+        FoundationStatus.Monitoring -> R.string.longevity_status_monitoring
         FoundationStatus.Mixed -> R.string.longevity_status_mixed
         FoundationStatus.Weakening -> R.string.longevity_status_weakening
         FoundationStatus.InsufficientData -> R.string.longevity_status_insufficient
@@ -45,6 +46,7 @@ internal val FoundationStatus.labelRes: Int
 internal fun statusColor(status: FoundationStatus): Color = when (status) {
     FoundationStatus.Strengthening -> MaterialTheme.colorScheme.primary
     FoundationStatus.Holding -> MaterialTheme.colorScheme.primary
+    FoundationStatus.Monitoring -> MaterialTheme.colorScheme.onSurfaceVariant
     FoundationStatus.Mixed -> NocturnePulseTheme.extendedColors.yellow
     FoundationStatus.Weakening -> NocturnePulseTheme.extendedColors.negative
     FoundationStatus.InsufficientData -> NocturnePulseTheme.extendedColors.gray200

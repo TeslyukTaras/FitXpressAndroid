@@ -18,6 +18,9 @@ import com.hexis.bi.domain.longevity.AgingSignal
 import com.hexis.bi.domain.longevity.PaceOfAgingInputs
 import com.hexis.bi.domain.longevity.PaceOfAgingResult
 import com.hexis.bi.domain.longevity.agingLevel
+import com.hexis.bi.domain.trend.ChangeDirection
+import com.hexis.bi.domain.trend.changeDirection
+import com.hexis.bi.utils.constants.ChangeTolerances
 import com.hexis.bi.domain.longevity.computePaceOfAging
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.domain.intelligence.IntelligenceCoordinator
@@ -270,10 +273,10 @@ class PaceOfAgingViewModel internal constructor(
         val previousRatio =
             waistToHeightRatio(previous, heightCm)?.takeIf { it > 0f } ?: return null
         val deltaPercent = (latestRatio - previousRatio) / previousRatio * 100f
-        return when {
-            deltaPercent < -LongevityConstants.TREND_FLAT_THRESHOLD -> LongevityTrend.Improving
-            deltaPercent > LongevityConstants.TREND_FLAT_THRESHOLD -> LongevityTrend.Decreasing
-            else -> LongevityTrend.Stable
+        return when (changeDirection(deltaPercent, ChangeTolerances.TREND_PERCENT, null)) {
+            ChangeDirection.Down -> LongevityTrend.Improving
+            ChangeDirection.Up -> LongevityTrend.Decreasing
+            ChangeDirection.None -> LongevityTrend.Stable
         }
     }
 

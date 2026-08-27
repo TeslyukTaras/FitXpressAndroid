@@ -20,6 +20,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import com.hexis.bi.R
+import com.hexis.bi.utils.constants.ChangeTolerance
+import com.hexis.bi.utils.constants.ChangeTolerances
 import com.hexis.bi.ui.components.AppHorizontalGradientDivider
 import com.hexis.bi.ui.components.AppVerticalGradientDivider
 import com.hexis.bi.ui.components.BodyGlassCard
@@ -142,6 +144,7 @@ internal fun PhysiqueCompositionCard(
             MetricCell(
                 labelRes = R.string.physique_drift_body_fat,
                 metric = bodyFat,
+                tolerance = ChangeTolerances.BODY_FAT_PERCENT,
                 decreaseIsPositive = true,
                 modifier = Modifier.weight(1f),
             )
@@ -149,6 +152,7 @@ internal fun PhysiqueCompositionCard(
             MetricCell(
                 labelRes = R.string.physique_drift_lean_body,
                 metric = leanBody,
+                tolerance = ChangeTolerances.LEAN_MASS_PERCENT,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -237,6 +241,7 @@ internal fun PhysiqueInsightCard(
 private fun MetricCell(
     @StringRes labelRes: Int,
     metric: PhysiqueMetric,
+    tolerance: ChangeTolerance,
     modifier: Modifier = Modifier,
     decreaseIsPositive: Boolean = false,
 ) {
@@ -258,7 +263,11 @@ private fun MetricCell(
             )
             metric.delta?.let {
                 Spacer(Modifier.width(dimensionResource(R.dimen.spacer_s)))
-                BodyDelta(delta = it, decreaseIsPositive = decreaseIsPositive)
+                BodyDelta(
+                    delta = it,
+                    tolerance = tolerance,
+                    decreaseIsPositive = decreaseIsPositive,
+                )
             }
         }
     }

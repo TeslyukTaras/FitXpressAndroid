@@ -4,6 +4,9 @@ import androidx.annotation.StringRes
 import com.hexis.bi.R
 import com.hexis.bi.data.scan.api.MeasurementResponse
 import com.hexis.bi.domain.body.BodyMeasurementKeys
+import com.hexis.bi.domain.trend.ChangeDirection
+import com.hexis.bi.domain.trend.changeDirection
+import com.hexis.bi.utils.constants.ChangeTolerances
 import com.hexis.bi.domain.body.BodyMeasurementRegion
 import com.hexis.bi.ui.main.scan.results.MeasurementChange
 import com.hexis.bi.ui.main.scan.results.MeasurementRow
@@ -22,6 +25,7 @@ data class TopChangeVsPrevious(
     @StringRes val bodyPartRes: Int,
     val deltaCm: Float,
     val change: MeasurementChange?,
+    val direction: ChangeDirection,
     val region: BodyMeasurementRegion,
 )
 
@@ -65,7 +69,7 @@ object MeasurementMapper {
                 cm = todayCm,
                 deltaCm = if (prevCm != null) todayCm - prevCm else 0f,
                 change = if (prevCm != null) {
-                    classifyChange(todayCm - prevCm, region.decreaseIsPositive)
+                    classifyChange(todayCm - prevCm, prevCm, region.decreaseIsPositive)
                 } else null,
             )
 
@@ -74,7 +78,7 @@ object MeasurementMapper {
                     cm = it,
                     deltaCm = if (beforePrevCm != null) it - beforePrevCm else 0f,
                     change = if (beforePrevCm != null) {
-                        classifyChange(it - beforePrevCm, region.decreaseIsPositive)
+                        classifyChange(it - beforePrevCm, beforePrevCm, region.decreaseIsPositive)
                     } else null,
                 )
             }
@@ -106,7 +110,7 @@ object MeasurementMapper {
             val cur = BodyMeasurementKeys.valueFor(current.measurements, region) ?: continue
             val prev = BodyMeasurementKeys.valueFor(previous.measurements, region) ?: continue
             val delta = cur - prev
-            if (abs(delta) < CHANGE_EPSILON_CM) continue
+            if (changeDirection(delta, ChangeTolerances.BODY_LENGTH_CM, prev) == ChangeDirection.None) continue
             val a = abs(delta)
             if (a > bestAbs) {
                 bestAbs = a
@@ -115,10 +119,12 @@ object MeasurementMapper {
             }
         }
         val region = bestRegion ?: return null
+        val baseline = BodyMeasurementKeys.valueFor(previous.measurements, region) ?: 0f
         return TopChangeVsPrevious(
             bodyPartRes = bodyPartRes(region),
             deltaCm = bestDelta,
-            change = classifyChange(bestDelta, region.decreaseIsPositive),
+            change = classifyChange(bestDelta, baseline, region.decreaseIsPositive),
+            direction = changeDirection(bestDelta, ChangeTolerances.BODY_LENGTH_CM, baseline),
             region = region,
         )
     }
@@ -174,9 +180,15 @@ object MeasurementMapper {
             key.snakeToCamel() to f
         }.toMap()
 
-    private fun classifyChange(delta: Float, decreaseIsPositive: Boolean): MeasurementChange? {
-        if (abs(delta) < CHANGE_EPSILON_CM) return null
-        val isDesirable = if (decreaseIsPositive) delta < 0 else delta > 0
+    private fun classifyChange(
+        delta: Float,
+        baselineCm: Float,
+        decreaseIsPositive: Boolean,
+    ): MeasurementChange? {
+        val direction = changeDirection(delta, ChangeTolerances.BODY_LENGTH_CM, baselineCm)
+        if (direction == ChangeDirection.None) return null
+        val isDesirable =
+            if (decreaseIsPositive) direction == ChangeDirection.Down else direction == ChangeDirection.Up
         return if (isDesirable) MeasurementChange.Positive else MeasurementChange.Negative
     }
 

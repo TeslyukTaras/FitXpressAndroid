@@ -13,6 +13,9 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
+import com.hexis.bi.domain.trend.ChangeDirection
+import com.hexis.bi.domain.trend.changeDirection
+import com.hexis.bi.utils.constants.ChangeTolerance
 import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.TitleHighlightTextStyle
 import java.util.Locale
@@ -22,11 +25,14 @@ import kotlin.math.abs
 internal fun BodyDelta(
     modifier: Modifier = Modifier,
     delta: Float,
+    tolerance: ChangeTolerance,
+    baseline: Float? = null,
     decreaseIsPositive: Boolean = false,
 ) {
-    val rising = delta > 0f
+    val direction = changeDirection(delta, tolerance, baseline)
+    val rising = direction == ChangeDirection.Up
     val color = when {
-        delta == 0f -> MaterialTheme.colorScheme.onSurfaceVariant
+        direction == ChangeDirection.None -> MaterialTheme.colorScheme.onSurfaceVariant
         rising != decreaseIsPositive -> NocturnePulseTheme.extendedColors.positive
         else -> NocturnePulseTheme.extendedColors.negative
     }
@@ -35,12 +41,16 @@ internal fun BodyDelta(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_xxs)),
     ) {
-        Icon(
-            painter = painterResource(if (rising) R.drawable.ic_trend_up else R.drawable.ic_trend_down),
-            contentDescription = null,
-            tint = color,
-            modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
-        )
+        if (direction != ChangeDirection.None) {
+            Icon(
+                painter = painterResource(
+                    if (rising) R.drawable.ic_trend_up else R.drawable.ic_trend_down,
+                ),
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
+            )
+        }
         Text(
             text = formatDelta(delta),
             style = TitleHighlightTextStyle,
