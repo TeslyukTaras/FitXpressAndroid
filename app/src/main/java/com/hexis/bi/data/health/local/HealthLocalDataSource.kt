@@ -273,18 +273,6 @@ internal class HealthLocalDataSource(
     fun recordProviderCalls(userId: String, source: String, count: Int) =
         diagnostics.recordProviderCalls(userId, source, count)
 
-    suspend fun contentSignature(userId: String): String = withContext(io) {
-        cache.contentSignature(environment, userId)
-    }
-
-    suspend fun readCursor(userId: String, key: String): String? = withContext(io) {
-        cache.getSyncCursor(environment, userId, key)
-    }
-
-    suspend fun writeCursor(userId: String, key: String, value: String) = withContext(io) {
-        cache.setSyncCursor(environment, userId, key, value)
-    }
-
     suspend fun logStats(userId: String): CanonicalCacheStats = withContext(io) {
         cache.stats(environment, userId).also { stats ->
             val runtime = diagnostics.snapshot(userId).values

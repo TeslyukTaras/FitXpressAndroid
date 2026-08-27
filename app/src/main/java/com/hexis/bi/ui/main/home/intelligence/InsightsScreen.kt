@@ -20,6 +20,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -75,6 +78,9 @@ fun InsightsScreen(
             val contentModifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = dimensionResource(R.dimen.padding_medium))
+            var lastCards by remember { mutableStateOf(state.cards) }
+            if (state.cards.isNotEmpty()) lastCards = state.cards
+
             AnimatedContent(
                 targetState = state.cards.isEmpty(),
                 transitionSpec = { insightCrossfade() },
@@ -92,7 +98,7 @@ fun InsightsScreen(
                 Column(modifier = contentModifier.verticalScroll(rememberScrollState())) {
                     InsightsHeader(state)
 
-                    val ranked = state.cards.groupBy { it.confidence == FindingConfidence.LOW }
+                    val ranked = lastCards.groupBy { it.confidence == FindingConfidence.LOW }
                     ranked[false].orEmpty().forEach { card ->
                         Spacer(Modifier.height(dimensionResource(R.dimen.insight_card_spacing)))
                         InsightCardView(card)

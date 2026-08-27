@@ -18,7 +18,6 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
-import java.security.MessageDigest
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import timber.log.Timber
@@ -43,20 +42,11 @@ internal class HealthAggregateDatabase(
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        if (oldVersion < CONFIRMED_EMPTY_RECOVERED_VERSION - 1) {
+        if (oldVersion < OLDEST_UPGRADABLE_VERSION) {
             rebuild(db)
             return
         }
         if (oldVersion < CONFIRMED_EMPTY_RECOVERED_VERSION) clearConfirmedEmpty(db)
-        if (oldVersion < CONTENT_HASH_VERSION) addContentHashColumns(db)
-    }
-
-    private fun addContentHashColumns(db: SQLiteDatabase) {
-        for (table in listOf("canonical_days", "canonical_scans")) {
-            runCatching {
-                db.execSQL("ALTER TABLE $table ADD COLUMN content_hash INTEGER NOT NULL DEFAULT 0")
-            }.onFailure { Timber.w(it, "Could not add content_hash to %s", table) }
-        }
     }
 
     private fun clearConfirmedEmpty(db: SQLiteDatabase) {
@@ -252,7 +242,6 @@ internal class HealthAggregateDatabase(
             put("payload", json.encodeToString(scan))
             put("schema_version", CANONICAL_HEALTH_AGGREGATE_VERSION)
             put("fetched_at_ms", clock.millis())
-            put("content_hash", json.encodeToString(scan).hashCode())
         }
         writableDatabase.insertWithOnConflict("canonical_scans", null, values, SQLiteDatabase.CONFLICT_REPLACE)
     }
@@ -391,33 +380,6 @@ internal class HealthAggregateDatabase(
         return removed
     }
 
-    fun contentSignature(environment: String, userId: String): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        fun add(value: String?) {
-            digest.update(if (value == null) 0 else 1)
-            val bytes = value.orEmpty().toByteArray(Charsets.UTF_8)
-            digest.update(bytes.size.toString().toByteArray(Charsets.UTF_8))
-            digest.update(0)
-            digest.update(bytes)
-        }
-        readableDatabase.rawQuery(
-            """SELECT terra_user_id,source,day,payload,confirmed_empty,schema_version,samples
-               FROM canonical_days WHERE environment=? AND user_id=?
-               ORDER BY terra_user_id,source,day""",
-            arrayOf(environment, userId),
-        ).use { cursor ->
-            while (cursor.moveToNext()) for (column in 0 until cursor.columnCount) add(cursor.getString(column))
-        }
-        readableDatabase.rawQuery(
-            """SELECT document_id,saved_at,payload,schema_version
-               FROM canonical_scans WHERE environment=? AND user_id=? ORDER BY document_id""",
-            arrayOf(environment, userId),
-        ).use { cursor ->
-            while (cursor.moveToNext()) for (column in 0 until cursor.columnCount) add(cursor.getString(column))
-        }
-        return digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xff) }
-    }
-
     fun stats(environment: String, userId: String): CanonicalCacheStats {
         val volumes = linkedMapOf<String, CanonicalCacheVolume>()
         readableDatabase.rawQuery(
@@ -430,7 +392,7 @@ internal class HealthAggregateDatabase(
             }
         }
         readableDatabase.rawQuery(
-            """SELECT COUNT(*), COALESCE(SUM(LENGTH(payload)),0), COALESCE(SUM(content_hash),0)
+            """SELECT COUNT(*), COALESCE(SUM(LENGTH(payload)),0)
                FROM canonical_scans WHERE environment=? AND user_id=?""",
             arrayOf(environment, userId),
         ).use { cursor ->
@@ -455,7 +417,6 @@ internal class HealthAggregateDatabase(
             put("confirmed_empty", if (confirmedEmpty) 1 else 0)
             put("schema_version", CANONICAL_HEALTH_AGGREGATE_VERSION)
             put("fetched_at_ms", clock.millis())
-            put("content_hash", payload?.hashCode() ?: 0)
         }
         writableDatabase.insertWithOnConflict("canonical_days", null, values, SQLiteDatabase.CONFLICT_REPLACE)
     }
@@ -493,20 +454,19 @@ internal class HealthAggregateDatabase(
         const val SYNCED_RANGE_SEPARATOR = ".."
         const val SYNCED_RANGE_LIST_SEPARATOR = ","
         const val DATABASE_NAME = "canonical_health_cache.db"
-        const val DATABASE_VERSION = 10
+        const val DATABASE_VERSION = 9
+        const val OLDEST_UPGRADABLE_VERSION = 8
         const val CONFIRMED_EMPTY_RECOVERED_VERSION = 9
-        const val CONTENT_HASH_VERSION = 10
         const val CREATE_DAYS = """CREATE TABLE canonical_days (
             environment TEXT NOT NULL, user_id TEXT NOT NULL, terra_user_id TEXT NOT NULL,
             source TEXT NOT NULL, day TEXT NOT NULL,
             payload TEXT, confirmed_empty INTEGER NOT NULL, schema_version INTEGER NOT NULL,
-            fetched_at_ms INTEGER NOT NULL, samples TEXT, content_hash INTEGER NOT NULL DEFAULT 0,
+            fetched_at_ms INTEGER NOT NULL, samples TEXT,
             PRIMARY KEY(environment,user_id,terra_user_id,source,day),
             CHECK ((confirmed_empty=1 AND payload IS NULL) OR (confirmed_empty=0 AND payload IS NOT NULL)))"""
         const val CREATE_SCANS = """CREATE TABLE canonical_scans (
             environment TEXT NOT NULL, user_id TEXT NOT NULL, document_id TEXT NOT NULL, saved_at TEXT NOT NULL,
             payload TEXT NOT NULL, schema_version INTEGER NOT NULL, fetched_at_ms INTEGER NOT NULL,
-            content_hash INTEGER NOT NULL DEFAULT 0,
             PRIMARY KEY(environment,user_id,document_id))"""
         const val CREATE_SYNC = """CREATE TABLE canonical_sync (
             environment TEXT NOT NULL, user_id TEXT NOT NULL, source TEXT NOT NULL, cursor_value TEXT NOT NULL,
