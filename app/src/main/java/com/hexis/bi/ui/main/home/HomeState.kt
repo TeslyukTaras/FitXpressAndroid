@@ -101,6 +101,7 @@ data class HomeState(
     val insights: List<InsightCard> = emptyList(),
     val insightsUpdating: Boolean = false,
     val recompositionValue: String = "0",
+    val isMetricUnits: Boolean = true,
     val physiqueScore: Float? = null,
     val longevityDirection: LongevityDirection = LongevityDirection.BuildingYourTrend,
     val paceOfAgingValue: String? = null,
@@ -137,7 +138,7 @@ data class HomeState(
             titleRes = R.string.intelligence_physique_drift,
             value = IntelligenceTileValue.Gauge(
                 value = if (physiqueScore == null) "0"
-                else String.format(Locale.US, PHYSIQUE_SCORE_FORMAT, clamped),
+                else String.format(Locale.getDefault(), PHYSIQUE_SCORE_FORMAT, clamped),
                 fraction = clamped / PHYSIQUE_MAX_SCORE,
             ),
         )
@@ -166,7 +167,10 @@ data class HomeState(
         IntelligenceScoreData(
             key = IntelligenceScoreKey.RECOMPOSITION,
             titleRes = R.string.intelligence_recomposition,
-            value = IntelligenceTileValue.Amount(recompositionValue, R.string.unit_kg),
+            value = IntelligenceTileValue.Amount(
+                recompositionValue,
+                if (isMetricUnits) R.string.unit_kg else R.string.unit_lb,
+            ),
         )
 
     private companion object {

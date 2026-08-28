@@ -21,6 +21,7 @@ import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.body.BodyMeasurementKeys
 import com.hexis.bi.domain.body.BodyMeasurementRegion
 import com.hexis.bi.domain.longevity.LongevityCalculator
+import com.hexis.bi.domain.longevity.LongevityCalculator.withFunctional
 import com.hexis.bi.domain.longevity.PaceOfAgingInputs
 import com.hexis.bi.domain.longevity.agingScore
 import com.hexis.bi.domain.longevity.computePaceOfAging
@@ -30,6 +31,7 @@ import com.hexis.bi.domain.order.OrderShippingAddress
 import com.hexis.bi.domain.order.OrderStatus
 import com.hexis.bi.domain.recomposition.RecompositionCalculator
 import com.hexis.bi.domain.suit.SuitRepository
+import com.hexis.bi.domain.trend.ChangeDirection
 import com.hexis.bi.ui.main.home.intelligence.EngineFindingsMapper
 import com.hexis.bi.ui.main.home.intelligence.BackfillTransition
 import com.hexis.bi.ui.main.home.intelligence.backfillTransition
@@ -52,6 +54,7 @@ import com.hexis.bi.utils.constants.RecompositionConstants
 import com.hexis.bi.utils.constants.SleepConstants
 import com.hexis.bi.utils.inchesToFeetAndInches
 import com.hexis.bi.utils.isMetricUnitSystem
+import com.hexis.bi.utils.kgToLb
 import com.hexis.bi.utils.millisToOrderTimelineTimestamp
 import com.hexis.bi.utils.millisToShortMonthDay
 import kotlinx.coroutines.CancellationException
@@ -400,7 +403,7 @@ class HomeViewModel internal constructor(
                 terraTileContext = TerraTileContext(today, window, scans?.firstOrNull(), heightCm)
                 val recompositionScans = recompositionScansDeferred.await()
                 publishScanOverview(scans, isMetric)
-                publishRecompositionOverview(recompositionScans, today)
+                publishRecompositionOverview(recompositionScans, today, isMetric)
                 publishLongevityDirection(recompositionScans, heightCm, today)
                 val terra = terraDeferred.await()
                 val latestScan = scans?.firstOrNull()
@@ -461,7 +464,7 @@ class HomeViewModel internal constructor(
             it.copy(
                 paceOfAgingValue = pace?.let { p ->
                     String.format(
-                        Locale.US,
+                        Locale.getDefault(),
                         PACE_FORMAT,
                         p
                     )
@@ -559,11 +562,13 @@ class HomeViewModel internal constructor(
             )
         val magnitude = abs(if (isMetric) topChange.deltaCm else topChange.deltaCm.cmToInches())
         val unit = appContext.getString(if (isMetric) R.string.unit_cm else R.string.unit_in)
-        val arrow = appContext.getString(
-            if (topChange.deltaCm < 0f) R.string.home_scan_arrow_down else R.string.home_scan_arrow_up
-        )
+        val arrow = when (topChange.direction) {
+            ChangeDirection.Down -> appContext.getString(R.string.home_scan_arrow_down)
+            ChangeDirection.Up -> appContext.getString(R.string.home_scan_arrow_up)
+            ChangeDirection.None -> ""
+        }
         return ScanOverview(
-            value = String.format(Locale.US, "%.1f", magnitude),
+            value = String.format(Locale.getDefault(), "%.1f", magnitude),
             unit = unit,
             valueLabel = appContext.getString(
                 R.string.home_scan_change_label, arrow, appContext.getString(topChange.bodyPartRes),
@@ -578,31 +583,54 @@ class HomeViewModel internal constructor(
     private fun scanTrend(scans: List<ScanRecord>, region: BodyMeasurementRegion): List<Float> =
         scans.reversed().mapNotNull { BodyMeasurementKeys.valueFor(it.measurements, region) }
 
-    private fun publishRecompositionOverview(scans: List<ScanRecord>?, today: LocalDate) {
+    private fun publishRecompositionOverview(
+        scans: List<ScanRecord>?,
+        today: LocalDate,
+        isMetric: Boolean,
+    ) {
         val result = RecompositionCalculator.buildWindow(
             scans = scans.orEmpty(),
             windowStart = today.minusYears(RecompositionConstants.WINDOW_YEARS_LONG),
             windowEnd = today,
         )
         val recomposedKg = result.recomposedKg?.takeIf { it > 0f } ?: 0f
+        val recomposed = if (isMetric) recomposedKg else recomposedKg.kgToLb()
         _state.update {
             it.copy(
-                recompositionValue = String.format(Locale.US, RECOMPOSITION_FORMAT, recomposedKg),
+                recompositionValue = String.format(Locale.getDefault(), RECOMPOSITION_FORMAT, recomposed),
+                isMetricUnits = isMetric,
             )
         }
     }
 
-    private fun publishLongevityDirection(
+    /**
+     * Mirrors the Longevity screen at its default window: the same four weeks, and the same fourth
+     * foundation. Without [withFunctional] the tile weighs three foundations where the screen
+     * weighs four, and the two disagree on the same day.
+     */
+    private suspend fun publishLongevityDirection(
         scans: List<ScanRecord>?,
         heightCm: Float?,
         today: LocalDate,
-    ) {
-        val direction = LongevityCalculator.evaluateBody(
+    ) = coroutineScope {
+        val start = today.minusWeeks(LongevityFoundationConstants.WINDOW_WEEKS_SHORT)
+        val body = LongevityCalculator.evaluateBody(
             scans = scans.orEmpty(),
             heightCm = heightCm,
-            windowStart = today.minusWeeks(LongevityFoundationConstants.WINDOW_WEEKS_SHORT),
+            windowStart = start,
             windowEnd = today,
-        ).direction
+        )
+        val activityDef = async { activityRepository.getSummariesForRange(start, today).getOrNull().orEmpty() }
+        val recoveryDef = async { recoveryRepository.getSnapshotsForRange(start, today).getOrNull().orEmpty() }
+        val sleepDef = async { sleepRepository.getSessionsForRange(start, today).getOrNull().orEmpty() }
+        val functional = LongevityCalculator.evaluateFunctional(
+            allActivity = activityDef.await(),
+            allRecovery = recoveryDef.await(),
+            allSleep = sleepDef.await(),
+            windowStart = start,
+            windowEnd = today,
+        )
+        val direction = body.withFunctional(functional).direction
         _state.update { it.copy(longevityDirection = direction) }
     }
 

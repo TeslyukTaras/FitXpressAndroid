@@ -36,6 +36,7 @@ import com.hexis.bi.ui.main.home.physiquedrift.components.PhysiqueScoreCard
 import com.hexis.bi.ui.theme.screenBackground
 import org.koin.androidx.compose.koinViewModel
 import com.hexis.bi.ui.main.home.intelligence.EngineFindingsSection
+import com.hexis.bi.ui.main.home.intelligence.InsightLayout
 import com.hexis.bi.ui.main.home.intelligence.EngineDebugSection
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -110,6 +111,7 @@ fun PhysiqueDriftScreen(
                 EngineFindingsSection(
                     state = state.findings.primary,
                     updating = state.insightsUpdating,
+                    layout = InsightLayout.PerFinding,
                 )
                 EngineDebugSection(info = state.findings.primaryDebug)
 

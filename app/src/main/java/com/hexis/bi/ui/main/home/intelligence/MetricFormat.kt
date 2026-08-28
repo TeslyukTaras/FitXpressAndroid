@@ -1,8 +1,11 @@
 package com.hexis.bi.ui.main.home.intelligence
 
+import com.hexis.bi.intelligence.engine.Metrics
 import com.hexis.bi.utils.constants.EngineUnits
 import com.hexis.bi.utils.constants.FindingValues
 import com.hexis.bi.utils.constants.MeasurementConstants
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -21,21 +24,24 @@ internal class MetricFormat private constructor(
     fun render(raw: Double): List<ValuePart> {
         val value = raw / divisor
         return when (style) {
-            Style.WHOLE -> listOf(ValuePart(integerFormat().format(value.roundToInt()), muted = false))
+            Style.WHOLE -> listOf(ValuePart(integerFormat().format(halfEven(value, 0)), muted = false))
 
             Style.DECIMAL -> listOf(
-                ValuePart(String.format(Locale.getDefault(), FindingValues.ONE_DECIMAL, value), muted = false),
+                ValuePart(
+                    String.format(Locale.getDefault(), FindingValues.ONE_DECIMAL, halfEven(value, 1)),
+                    muted = false,
+                ),
             )
 
             Style.PERCENT_OF_RATIO -> listOf(
                 ValuePart(
-                    integerFormat().format((value * FindingValues.RATIO_TO_PERCENT).roundToInt()),
+                    integerFormat().format(halfEven(value * FindingValues.RATIO_TO_PERCENT, 0)),
                     muted = false,
                 ),
             )
 
             Style.DURATION -> {
-                val total = (value * FindingValues.MINUTES_PER_HOUR).roundToInt().coerceAtLeast(0)
+                val total = halfEven(value * FindingValues.MINUTES_PER_HOUR, 0).toInt().coerceAtLeast(0)
                 val hours = total / FindingValues.MINUTES_PER_HOUR
                 val minutes = total % FindingValues.MINUTES_PER_HOUR
                 buildList {
@@ -54,6 +60,11 @@ internal class MetricFormat private constructor(
 
     fun unit(metricLabel: String): String = unit ?: metricLabel
 
+    private fun halfEven(value: Double, digits: Int): Double {
+        if (!value.isFinite()) return value
+        return BigDecimal(value).setScale(digits, RoundingMode.HALF_EVEN).toDouble()
+    }
+
     fun distinguishing(from: Double, to: Double): MetricFormat {
         val finer = refine ?: return this
         if (from == to || render(from) != render(to)) return this
@@ -65,16 +76,27 @@ internal class MetricFormat private constructor(
         private fun integerFormat(): NumberFormat =
             NumberFormat.getIntegerInstance(Locale.getDefault())
 
-        fun of(engineUnit: String, isMetric: Boolean): MetricFormat? = when (engineUnit) {
+        fun of(
+            engineUnit: String,
+            isMetric: Boolean,
+            metric: String? = null,
+        ): MetricFormat? = when (engineUnit) {
             EngineUnits.COUNT -> MetricFormat(Style.WHOLE, unit = null)
             EngineUnits.KCAL -> MetricFormat(Style.WHOLE, engineUnit)
-            EngineUnits.MINUTES, EngineUnits.BPM, EngineUnits.MILLISECONDS, EngineUnits.VO2MAX ->
+            EngineUnits.BPM, EngineUnits.MILLISECONDS ->
                 MetricFormat(Style.WHOLE, engineUnit, refine = Style.DECIMAL)
 
-            EngineUnits.PERCENT -> MetricFormat(Style.DECIMAL, engineUnit)
+            EngineUnits.MINUTES, EngineUnits.VO2MAX, EngineUnits.PERCENT ->
+                MetricFormat(Style.DECIMAL, engineUnit)
             EngineUnits.RATIO -> MetricFormat(Style.PERCENT_OF_RATIO, EngineUnits.PERCENT)
             EngineUnits.HOURS -> MetricFormat(Style.DURATION, unit = "")
-            EngineUnits.SCORE_100, EngineUnits.SCORE_10 -> MetricFormat(Style.DECIMAL, unit = "")
+            EngineUnits.SCORE_100 -> if (metric == Metrics.STRESS_SCORE) {
+                MetricFormat(Style.WHOLE, unit = "", refine = Style.DECIMAL)
+            } else {
+                MetricFormat(Style.DECIMAL, unit = "")
+            }
+
+            EngineUnits.SCORE_10 -> MetricFormat(Style.DECIMAL, unit = "")
 
             EngineUnits.METRES -> if (isMetric) {
                 MetricFormat(Style.DECIMAL, EngineUnits.KILOMETRES, FindingValues.METRES_PER_KM)
@@ -89,14 +111,9 @@ internal class MetricFormat private constructor(
             }
 
             EngineUnits.CENTIMETRES -> if (isMetric) {
-                MetricFormat(Style.WHOLE, EngineUnits.CENTIMETRES, refine = Style.DECIMAL)
+                MetricFormat(Style.DECIMAL, EngineUnits.CENTIMETRES)
             } else {
-                MetricFormat(
-                    Style.WHOLE,
-                    EngineUnits.INCHES,
-                    MeasurementConstants.CM_TO_IN.toDouble(),
-                    refine = Style.DECIMAL,
-                )
+                MetricFormat(Style.DECIMAL, EngineUnits.INCHES, MeasurementConstants.CM_TO_IN.toDouble())
             }
 
             else -> null

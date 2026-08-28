@@ -39,7 +39,7 @@ fun ActivitySettingsDialogContent(
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val fmt = NumberFormat.getNumberInstance(Locale.US)
+    val fmt = NumberFormat.getNumberInstance(Locale.getDefault())
 
     Column(
         modifier = modifier

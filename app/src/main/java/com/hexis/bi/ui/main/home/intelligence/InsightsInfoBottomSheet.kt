@@ -14,7 +14,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -91,11 +90,10 @@ private fun InfoSection(@StringRes heading: Int, @StringRes body: Int) {
 private fun ConfidenceLegend(@StringRes text: Int, confidence: FindingConfidence) {
     val label = stringResource(text)
     val name = stringResource(confidence.labelRes)
-    val tint: Color = confidence.chipColor
     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xxs)))
     Text(
         text = buildAnnotatedString {
-            withStyle(SpanStyle(color = tint)) { append(name) }
+            withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurface)) { append(name) }
             append(label.removePrefix(name))
         },
         style = MaterialTheme.typography.bodyMedium,

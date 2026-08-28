@@ -10,6 +10,9 @@ import com.hexis.bi.data.terra.TerraRestSourceResolver
 import com.hexis.bi.data.user.FirestoreSchema
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.enums.GenderOption
+import com.hexis.bi.domain.trend.ChangeDirection
+import com.hexis.bi.domain.trend.changeDirection
+import com.hexis.bi.utils.constants.ChangeTolerances
 import com.hexis.bi.domain.activity.strideDistanceKm
 import com.hexis.bi.domain.intelligence.IntelligenceCoordinator
 import com.hexis.bi.intelligence.engine.Domains
@@ -569,9 +572,11 @@ class ActivityViewModel internal constructor(
         else (((avgPerDayForTrend - previousAvgPerDayForTrend) / previousAvgPerDayForTrend) * 100f).toInt()
         val trendComparison = when {
             !includeTrend || trendPct == null -> TrendComparison.NONE
-            abs(trendPct) <= ActivityConstants.TREND_FLAT_THRESHOLD -> TrendComparison.FLAT
-            trendPct > 0 -> TrendComparison.UP
-            else -> TrendComparison.DOWN
+            else -> when (changeDirection(trendPct.toFloat(), ChangeTolerances.TREND_PERCENT, null)) {
+                ChangeDirection.None -> TrendComparison.FLAT
+                ChangeDirection.Up -> TrendComparison.UP
+                ChangeDirection.Down -> TrendComparison.DOWN
+            }
         }
         val distanceKm = rows.sumOf { it.distanceKm.toDouble() }.toFloat()
         val calories = rows.sumOf { it.activeCaloriesOrEstimate() }

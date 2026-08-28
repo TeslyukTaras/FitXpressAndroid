@@ -144,7 +144,7 @@ class PhysiqueDriftViewModel internal constructor(
         _state.update {
             it.copy(
                 hasData = true,
-                score = String.format(Locale.US, SCORE_FORMAT, breakdown.score),
+                score = String.format(Locale.getDefault(), SCORE_FORMAT, breakdown.score),
                 level = level,
                 description = string(descriptionFor(level)),
                 scanDate = formatScanDate(latest),
@@ -154,7 +154,7 @@ class PhysiqueDriftViewModel internal constructor(
                 proportions = proportions(breakdown.proportionScore),
                 symmetry = symmetry(breakdown.proportionScore),
                 shoulderToWaistRatio = breakdown.shoulderToWaistRatio
-                    ?.let { ratio -> String.format(Locale.US, RATIO_FORMAT, ratio) }
+                    ?.let { ratio -> String.format(Locale.getDefault(), RATIO_FORMAT, ratio) }
                     ?: string(R.string.stat_unknown),
                 insight = insightFor(level),
             )
@@ -165,7 +165,7 @@ class PhysiqueDriftViewModel internal constructor(
         latest: PhysiqueScoreBreakdown,
         previous: PhysiqueScoreBreakdown?,
     ): PhysiqueMetric {
-        val value = latest.bodyFatPercent?.let { String.format(Locale.US, PERCENT_FORMAT, it) }
+        val value = latest.bodyFatPercent?.let { String.format(Locale.getDefault(), PERCENT_FORMAT, it) }
             ?: string(R.string.stat_unknown)
         val delta = deltaPercent(latest.bodyFatPercent, previous?.bodyFatPercent)
         return PhysiqueMetric(
@@ -176,7 +176,7 @@ class PhysiqueDriftViewModel internal constructor(
 
     private fun leanBodyMetric(latest: ScanRecord, previous: ScanRecord?): PhysiqueMetric {
         val lean = latest.muscleMassPercentage()
-        val value = lean?.let { String.format(Locale.US, PERCENT_FORMAT, it) }
+        val value = lean?.let { String.format(Locale.getDefault(), PERCENT_FORMAT, it) }
             ?: string(R.string.stat_unknown)
         val delta = deltaPercent(lean, previous?.muscleMassPercentage())
         return PhysiqueMetric(

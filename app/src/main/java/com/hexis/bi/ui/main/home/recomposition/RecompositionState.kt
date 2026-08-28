@@ -12,6 +12,7 @@ enum class RecompositionWindow(@StringRes val labelRes: Int) {
 data class RecompositionMetricUi(
     val valueText: String,
     val favorable: Boolean? = null,
+    val rising: Boolean? = null,
     val markerFraction: Float? = null,
 )
 
@@ -27,5 +28,6 @@ data class RecompositionCardUi(
 
 data class RecompositionState(
     val cards: List<RecompositionCardUi> = emptyList(),
+    val isMetric: Boolean = true,
     val showInfoSheet: Boolean = false,
 )

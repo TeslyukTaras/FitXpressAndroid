@@ -1,6 +1,5 @@
 package com.hexis.bi.ui.main.home.paceofaging.components
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,7 +17,6 @@ import com.hexis.bi.R
 import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.main.home.paceofaging.PaceOfAgingState
 import com.hexis.bi.ui.theme.MeasurementTitleValueStyle
-import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.ui.theme.TitleHighlightTextStyle
 
 @Composable
@@ -51,19 +49,11 @@ internal fun PaceOfAgingTrendCard(
                     color = MaterialTheme.colorScheme.primary,
                 )
                 Spacer(Modifier.width(dimensionResource(R.dimen.spacer_xl)))
-                Column {
-                    Text(
-                        text = state.percentText,
-                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Normal),
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(Modifier.width(dimensionResource(R.dimen.spacer_xxs)))
-                    Text(
-                        text = stringResource(R.string.pace_of_aging_than_average),
-                        style = TitleDimTextStyle,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                Text(
+                    text = state.percentText,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Normal),
+                    color = MaterialTheme.colorScheme.primary,
+                )
             }
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))

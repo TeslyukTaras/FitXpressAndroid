@@ -39,7 +39,7 @@ fun ActivityAvgTrendRow(
     loading: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
-    val fmt = NumberFormat.getNumberInstance(Locale.US)
+    val fmt = NumberFormat.getNumberInstance(Locale.getDefault())
     val trendText = trendPercent?.let {
         stringResource(R.string.activity_trend_percent_signed, it)
     } ?: stringResource(R.string.activity_trend_none_symbol)

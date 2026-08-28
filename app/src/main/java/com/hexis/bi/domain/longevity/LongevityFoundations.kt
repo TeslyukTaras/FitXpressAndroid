@@ -9,9 +9,13 @@ import com.hexis.bi.domain.recomposition.CompositionState
 import com.hexis.bi.domain.recomposition.RecompositionCalculator
 import com.hexis.bi.domain.recomposition.RecompositionResult
 import com.hexis.bi.domain.trend.TrendPoint
+import com.hexis.bi.domain.trend.ChangeBand
+import com.hexis.bi.domain.trend.changeBand
 import com.hexis.bi.domain.trend.linearTrendChange
 import com.hexis.bi.domain.trend.trendPersistence
 import com.hexis.bi.domain.trend.winsorized
+import com.hexis.bi.utils.constants.ChangeTolerance
+import com.hexis.bi.utils.constants.ChangeTolerances
 import com.hexis.bi.utils.constants.LongevityFoundationConstants
 import java.time.Instant
 import java.time.LocalDate
@@ -23,6 +27,7 @@ import kotlin.math.sqrt
 enum class FoundationStatus {
     Strengthening,
     Holding,
+    Monitoring,
     Mixed,
     Weakening,
     InsufficientData,
@@ -113,19 +118,19 @@ object LongevityCalculator {
         val height = heightCm?.takeIf { it > 0f }
         val ratioMove = height
             ?.let { scans.trendPoints { scan -> waistOf(scan)?.div(it) } }
-            ?.movement(LongevityFoundationConstants.WAIST_TO_HEIGHT_MEANINGFUL_DELTA)
+            ?.movement(ChangeTolerances.WAIST_TO_HEIGHT_RATIO)
             ?: return MetabolicFoundation(FoundationStatus.InsufficientData)
 
         val fatMove = scans.trendPoints { it.fatPercentage }
-            .movement(LongevityFoundationConstants.BODY_FAT_MEANINGFUL_DELTA_PERCENT)
+            .movement(ChangeTolerances.BODY_FAT_PERCENT)
 
         val signals = buildList {
-            add(-ratioMove.direction)
-            fatMove?.let { add(-it.direction) }
+            add(ratioMove.signal.inverted())
+            fatMove?.let { add(it.signal.inverted()) }
         }
 
         return MetabolicFoundation(
-            status = combineSignals(*signals.toIntArray()),
+            status = combineSignals(signals),
             waistToHeightStart = ratioMove.start,
             waistToHeightEnd = ratioMove.end,
         )
@@ -138,12 +143,15 @@ object LongevityCalculator {
         val lean = result.leanChangeKg
         if (fat == null || lean == null) return RecompositionFoundation(FoundationStatus.InsufficientData)
 
-        val threshold = LongevityFoundationConstants.MASS_MEANINGFUL_DELTA_KG
+        val threshold = ChangeTolerances.MASS_KG.forBaseline(null)
         val fatDown = fat <= -threshold
         val fatUp = fat >= threshold
         val leanDown = lean <= -threshold
         val leanUp = lean >= threshold
         val majorLeanLoss = lean <= -LongevityFoundationConstants.MAJOR_LEAN_LOSS_KG
+        val watching = listOf(fat, lean).any {
+            changeBand(it, ChangeTolerances.MASS_KG, null) == ChangeBand.Monitoring
+        }
 
         val status = when {
             result.state == CompositionState.Recomposition -> FoundationStatus.Strengthening
@@ -154,6 +162,7 @@ object LongevityCalculator {
             fatDown || leanUp -> FoundationStatus.Strengthening
             fatUp || majorLeanLoss -> FoundationStatus.Weakening
             leanDown -> FoundationStatus.Mixed
+            watching -> FoundationStatus.Monitoring
             else -> FoundationStatus.Holding
         }
 
@@ -167,19 +176,22 @@ object LongevityCalculator {
     // ---- Foundation 3: Physical Foundation -----------------------------------------------------
 
     private fun evaluatePhysical(scans: List<ScanRecord>): PhysicalFoundation {
-        val threshold = LongevityFoundationConstants.LOWER_BODY_MEANINGFUL_DELTA_CM
+        val threshold = ChangeTolerances.BODY_LENGTH_CM
+        val window = LongevityFoundationConstants.PHYSICAL_SCAN_WINDOW
         val thighMove = scans.trendPoints { measurementOf(it, BodyMeasurementKeys.Thigh) }
+            .takeLast(window)
             .movement(threshold)
         val calfMove = scans.trendPoints { measurementOf(it, BodyMeasurementKeys.Calf) }
+            .takeLast(window)
             .movement(threshold)
         if (thighMove == null && calfMove == null) {
             return PhysicalFoundation(FoundationStatus.InsufficientData)
         }
 
-        val signals = listOfNotNull(thighMove?.direction, calfMove?.direction)
+        val signals = listOfNotNull(thighMove?.signal, calfMove?.signal)
 
         return PhysicalFoundation(
-            status = combineSignals(*signals.toIntArray()),
+            status = combineSignals(signals),
             thighChangeCm = thighMove?.change,
             calfChangeCm = calfMove?.change,
         )
@@ -215,18 +227,18 @@ object LongevityCalculator {
                     ?.let { TrendPoint(snapshot.date.toEpochDay().toDouble(), it.toFloat()) }
             }
 
-        val vo2Move = vo2Points.movement(LongevityFoundationConstants.VO2_MEANINGFUL_DELTA)
-        val rhrMove = rhrPoints.movement(LongevityFoundationConstants.RHR_MEANINGFUL_DELTA_BPM)
+        val vo2Move = vo2Points.movement(ChangeTolerances.VO2MAX)
+        val rhrMove = rhrPoints.movement(ChangeTolerances.RESTING_HR_BPM)
 
         val signals = buildList {
-            vo2Move?.let { add(it.direction) }
-            rhrMove?.let { add(-it.direction) }
-            add(activityConsistency(activeDays, observedDays))
-            sleepConsistency(sleep)?.let { add(it) }
+            vo2Move?.let { add(it.signal) }
+            rhrMove?.let { add(it.signal.inverted()) }
+            add(Signal(activityConsistency(activeDays, observedDays), monitoring = false))
+            sleepConsistency(sleep)?.let { add(Signal(it, monitoring = false)) }
         }
 
         return FunctionalFoundation(
-            status = combineSignals(*signals.toIntArray()),
+            status = combineSignals(signals),
             vo2Start = vo2Move?.start,
             vo2End = vo2Move?.end,
             restingHeartRateStart = rhrMove?.start?.roundToInt(),
@@ -297,17 +309,25 @@ object LongevityCalculator {
     private data class Movement(
         val change: Float,
         val direction: Int,
+        val monitoring: Boolean,
         val start: Float,
         val end: Float,
-    )
+    ) {
+        val signal: Signal get() = Signal(direction, monitoring)
+    }
 
-    private fun List<TrendPoint>.movement(meaningfulDelta: Float): Movement? {
+    private data class Signal(val direction: Int, val monitoring: Boolean)
+
+    private fun Signal.inverted(): Signal = copy(direction = -direction)
+
+    private fun List<TrendPoint>.movement(tolerance: ChangeTolerance): Movement? {
         if (size < LongevityFoundationConstants.MIN_SCANS_FOR_DIRECTION) return null
         val robust = winsorized(this)
         val change = linearTrendChange(robust)
         val start = robust.first().value
         val end = robust.last().value
 
+        val meaningfulDelta = tolerance.forBaseline(robust.map { it.value }.sorted().median())
         val magnitude = abs(change)
         val direction = when {
             magnitude < meaningfulDelta -> 0
@@ -315,22 +335,29 @@ object LongevityCalculator {
             trendPersistence(robust, change) < LongevityFoundationConstants.MIN_PERSISTENCE -> 0
             else -> 1
         }
+        val resolved = if (direction == 0) 0 else if (change > 0f) 1 else -1
         return Movement(
             change = change,
-            direction = if (direction == 0) 0 else if (change > 0f) 1 else -1,
+            direction = resolved,
+            monitoring = resolved == 0 &&
+                magnitude >= meaningfulDelta * ChangeTolerances.MONITORING_BAND_FRACTION,
             start = start,
             end = end,
         )
     }
 
-    private fun combineSignals(vararg directions: Int): FoundationStatus {
-        if (directions.isEmpty()) return FoundationStatus.InsufficientData
-        val positive = directions.any { it > 0 }
-        val negative = directions.any { it < 0 }
+    private fun List<Float>.median(): Float =
+        if (isEmpty()) 0f else this[size / 2]
+
+    private fun combineSignals(signals: List<Signal>): FoundationStatus {
+        if (signals.isEmpty()) return FoundationStatus.InsufficientData
+        val positive = signals.any { it.direction > 0 }
+        val negative = signals.any { it.direction < 0 }
         return when {
             positive && negative -> FoundationStatus.Mixed
             positive -> FoundationStatus.Strengthening
             negative -> FoundationStatus.Weakening
+            signals.any { it.monitoring } -> FoundationStatus.Monitoring
             else -> FoundationStatus.Holding
         }
     }

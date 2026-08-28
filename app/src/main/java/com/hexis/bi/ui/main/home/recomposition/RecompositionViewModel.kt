@@ -9,7 +9,14 @@ import com.hexis.bi.data.scan.ScanRecord
 import com.hexis.bi.domain.recomposition.CompositionState
 import com.hexis.bi.domain.recomposition.RecompositionCalculator
 import com.hexis.bi.domain.recomposition.RecompositionResult
+import com.hexis.bi.domain.trend.ChangeDirection
+import com.hexis.bi.domain.trend.changeDirection
 import com.hexis.bi.ui.base.BaseViewModel
+import com.hexis.bi.data.user.UserRepository
+import com.hexis.bi.utils.isMetricUnitSystem
+import com.hexis.bi.utils.kgToLb
+import com.hexis.bi.utils.constants.ChangeTolerance
+import com.hexis.bi.utils.constants.ChangeTolerances
 import com.hexis.bi.utils.constants.RecompositionConstants
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,6 +30,7 @@ import kotlin.math.abs
 class RecompositionViewModel(
     application: Application,
     private val scanHistoryRepository: ScanHistoryRepository,
+    private val userRepository: UserRepository,
 ) : BaseViewModel(application, initialLoading = true) {
 
     private val _state = MutableStateFlow(RecompositionState())
@@ -39,6 +47,8 @@ class RecompositionViewModel(
     private fun load() {
         viewModelScope.launch {
             setLoading(true)
+            val isMetric = userRepository.getUser().getOrNull()?.unitSystem.isMetricUnitSystem()
+            _state.update { it.copy(isMetric = isMetric) }
             val today = LocalDate.now()
             val oldestWindowStart = windowStart(RecompositionWindow.OneYear, today)
             val oldestWindowStartMillis = oldestWindowStart
@@ -100,9 +110,9 @@ class RecompositionViewModel(
         return RecompositionCardUi(
             window = window,
             isRecomposition = isRecomposition,
-            recomposedValue = result.recomposedKg?.takeIf { it > 0f }?.let { formatMagnitude(it) }
+            recomposedValue = result.recomposedKg?.takeIf { it > 0f }?.let { formatMagnitude(it.inDisplayMass()) }
                 ?: string(R.string.stat_unknown),
-            weightChangeText = signedValue(result.weightChangeKg),
+            weightChangeText = signedValue(result.weightChangeKg?.inDisplayMass()),
             weightSubtitle = string(weightSubtitleRes(result.state)),
             fat = metric(result.fatChangeKg, favorableWhenNegative = true),
             lean = metric(result.leanChangeKg, favorableWhenNegative = false),
@@ -120,20 +130,31 @@ class RecompositionViewModel(
 
     private fun metric(changeKg: Float?, favorableWhenNegative: Boolean): RecompositionMetricUi {
         changeKg ?: return RecompositionMetricUi(string(R.string.stat_unknown))
-        val favorable = when {
-            changeKg == 0f -> null
-            changeKg < 0f -> favorableWhenNegative
-            else -> !favorableWhenNegative
+        val favorable = when (changeDirection(changeKg, massTolerance(), null)) {
+            ChangeDirection.None -> null
+            ChangeDirection.Down -> favorableWhenNegative
+            ChangeDirection.Up -> !favorableWhenNegative
         }
         val favorableAmount = if (favorableWhenNegative) -changeKg else changeKg
         val fraction = RecompositionConstants.TREND_BAR_CENTER_FRACTION +
             favorableAmount / (2f * RecompositionConstants.TREND_BAR_NORMALIZATION_KG)
         return RecompositionMetricUi(
-            valueText = signedValue(changeKg),
+            valueText = signedValue(changeKg.inDisplayMass()),
             favorable = favorable,
+            rising = favorable?.let { changeKg > 0f },
             markerFraction = fraction.coerceIn(0f, 1f),
         )
     }
+
+    private fun Float.inDisplayMass(): Float =
+        if (_state.value.isMetric) this else kgToLb()
+
+    private fun massTolerance(): ChangeTolerance =
+        if (_state.value.isMetric) {
+            ChangeTolerances.MASS_KG
+        } else {
+            ChangeTolerances.MASS_KG.copy(floor = ChangeTolerances.MASS_KG.floor.kgToLb())
+        }
 
     private fun signedValue(value: Float?): String {
         value ?: return string(R.string.stat_unknown)
@@ -142,7 +163,7 @@ class RecompositionViewModel(
     }
 
     private fun formatMagnitude(value: Float): String =
-        String.format(Locale.US, MAGNITUDE_FORMAT, abs(value))
+        String.format(Locale.getDefault(), MAGNITUDE_FORMAT, abs(value))
 
     private companion object {
         const val MAGNITUDE_FORMAT = "%.1f"

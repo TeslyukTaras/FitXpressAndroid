@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
+import com.hexis.bi.utils.constants.ChangeTolerance
+import com.hexis.bi.utils.constants.ChangeTolerances
 import com.hexis.bi.ui.components.AppHorizontalGradientDivider
 import com.hexis.bi.ui.components.AppVerticalGradientDivider
 import com.hexis.bi.ui.components.BodyGlassCard
@@ -69,6 +71,7 @@ internal fun BodyCompositionCard(
                     composition.deltaFatMassKg,
                     isMetric
                 ),
+                tolerance = pickTolerance(massUnit, ChangeTolerances.BODY_FAT_PERCENT, isMetric),
                 decreaseIsPositive = true,
                 modifier = Modifier.weight(1f),
             )
@@ -87,6 +90,7 @@ internal fun BodyCompositionCard(
                     composition.deltaMuscleMassKg,
                     isMetric
                 ),
+                tolerance = pickTolerance(massUnit, ChangeTolerances.LEAN_MASS_PERCENT, isMetric),
                 modifier = Modifier.weight(1f),
             )
         }
@@ -104,6 +108,7 @@ internal fun BodyCompositionCard(
                 label = stringResource(R.string.body_metric_weight),
                 value = formatWeight(composition.weightKg, isMetric),
                 delta = composition.deltaWeightKg?.let { if (isMetric) it else it.kgToLb() },
+                tolerance = massTolerance(isMetric),
                 decreaseIsPositive = true,
                 modifier = Modifier.weight(1f),
             )
@@ -112,6 +117,7 @@ internal fun BodyCompositionCard(
                 label = stringResource(R.string.body_metric_bis),
                 value = formatBis(composition.bisScore),
                 delta = composition.deltaBisScore,
+                tolerance = ChangeTolerances.PHYSIQUE_POINTS,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -149,14 +155,14 @@ private fun formatMassMetric(
 ): String {
     val unknown = stringResource(R.string.stat_unknown)
     return when (massUnit) {
-        BodyMassUnit.Percent -> percentage?.let { String.format(java.util.Locale.US, "%.1f%%", it) }
+        BodyMassUnit.Percent -> percentage?.let { String.format(java.util.Locale.getDefault(), "%.1f%%", it) }
             ?: unknown
 
         BodyMassUnit.Mass -> {
             val v = massKg ?: return unknown
             val converted = if (isMetric) v else v.kgToLb()
             val unit = stringResource(if (isMetric) R.string.unit_kg else R.string.unit_lb)
-            String.format(java.util.Locale.US, "%.1f %s", converted, unit)
+            String.format(java.util.Locale.getDefault(), "%.1f %s", converted, unit)
         }
     }
 }
@@ -167,14 +173,30 @@ private fun formatWeight(weightKg: Float?, isMetric: Boolean): String {
     val w = weightKg ?: return unknown
     val converted = if (isMetric) w else w.kgToLb()
     val unit = stringResource(if (isMetric) R.string.unit_kg else R.string.unit_lb)
-    return String.format(java.util.Locale.US, "%.1f %s", converted, unit)
+    return String.format(java.util.Locale.getDefault(), "%.1f %s", converted, unit)
 }
 
 @Composable
 private fun formatBis(bis: Float?): String {
     val unknown = stringResource(R.string.stat_unknown)
     val v = bis ?: return unknown
-    return String.format(java.util.Locale.US, "%.1f", v)
+    return String.format(java.util.Locale.getDefault(), "%.1f", v)
+}
+
+private fun massTolerance(isMetric: Boolean): ChangeTolerance =
+    if (isMetric) {
+        ChangeTolerances.MASS_KG
+    } else {
+        ChangeTolerances.MASS_KG.copy(floor = ChangeTolerances.MASS_KG.floor.kgToLb())
+    }
+
+private fun pickTolerance(
+    massUnit: BodyMassUnit,
+    percentTolerance: ChangeTolerance,
+    isMetric: Boolean,
+): ChangeTolerance = when (massUnit) {
+    BodyMassUnit.Percent -> percentTolerance
+    BodyMassUnit.Mass -> massTolerance(isMetric)
 }
 
 private fun pickDelta(

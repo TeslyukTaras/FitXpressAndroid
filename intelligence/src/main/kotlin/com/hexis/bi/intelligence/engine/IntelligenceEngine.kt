@@ -125,7 +125,7 @@ object IntelligenceEngine {
             FoundationsResult(FoundationDirection.DISABLED, emptyMap())
         }
         val drift = if (config.features.physiqueDrift) {
-            evaluatePhysiqueDrift(series, config)
+            evaluatePhysiqueDrift(series.withinAnalysisWindow(input.runDate, config), config)
         } else {
             PhysiqueDrift(DriftStatus.INSUFFICIENT_SCANS, scans = 0)
         }

@@ -11,6 +11,8 @@ import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanRecord
 import com.hexis.bi.data.sleep.SleepRepository
 import com.hexis.bi.data.user.UserRepository
+import com.hexis.bi.utils.isMetricUnitSystem
+import com.hexis.bi.utils.kgToLb
 import com.hexis.bi.domain.longevity.FoundationStatus
 import com.hexis.bi.domain.longevity.FunctionalFoundation
 import com.hexis.bi.domain.longevity.LongevityCalculator
@@ -61,6 +63,8 @@ class LongevityViewModel(
     private val sleepRepository: SleepRepository,
     private val healthSyncScheduler: HealthSyncScheduler,
 ) : BaseViewModel(application, initialLoading = true) {
+
+    @Volatile private var isMetric: Boolean = true
 
     private val _state = MutableStateFlow(LongevityState())
     val state: StateFlow<LongevityState> = _state.asStateFlow()
@@ -121,14 +125,16 @@ class LongevityViewModel(
             .toInstant()
             .toEpochMilli()
 
-        val heightDef = async { userRepository.getUser().getOrNull()?.heightCm?.toFloat() }
+        val profileDef = async { userRepository.getUser().getOrNull() }
         val scans: List<ScanRecord> = scanHistoryRepository
             .getScansSavedSince(earliestStartMillis, ScanFetchProjection.LIST_SUMMARY)
             .getOrElse { error ->
                 setError(error.message ?: string(R.string.longevity_error_load))
                 return@coroutineScope
             }
-        val heightCm = heightDef.await()
+        val profile = profileDef.await()
+        val heightCm = profile?.heightCm?.toFloat()
+        isMetric = profile?.unitSystem.isMetricUnitSystem()
 
         bodyResults = LongevityWindow.entries.associateWith { window ->
             LongevityCalculator.evaluateBody(
@@ -240,13 +246,13 @@ class LongevityViewModel(
         evidence = listOf(
             signedEvidence(
                 label = string(R.string.longevity_evidence_fat),
-                change = foundation.fatChangeKg,
-                unit = string(R.string.unit_kg),
+                change = foundation.fatChangeKg?.inDisplayMass(),
+                unit = massUnit(),
             ),
             signedEvidence(
                 label = string(R.string.longevity_evidence_lean),
-                change = foundation.leanChangeKg,
-                unit = string(R.string.unit_kg),
+                change = foundation.leanChangeKg?.inDisplayMass(),
+                unit = massUnit(),
             ),
         ),
     )
@@ -301,6 +307,11 @@ class LongevityViewModel(
         )
     }
 
+    private fun Float.inDisplayMass(): Float = if (isMetric) this else kgToLb()
+
+    private fun massUnit(): String =
+        string(if (isMetric) R.string.unit_kg else R.string.unit_lb)
+
     private fun signedEvidence(label: String, change: Float?, unit: String): LongevityEvidenceUi {
         change ?: return missing(label)
         val sign = if (change < 0f) MINUS_SIGN else PLUS_SIGN
@@ -315,7 +326,7 @@ class LongevityViewModel(
         LongevityEvidenceUi(label = label, value = string(R.string.stat_unknown))
 
     private fun format(value: Float, decimals: Int): String =
-        String.format(Locale.US, "%.${decimals}f", value)
+        String.format(Locale.getDefault(), "%.${decimals}f", value)
 
     private companion object {
         const val RATIO_DECIMALS = 2

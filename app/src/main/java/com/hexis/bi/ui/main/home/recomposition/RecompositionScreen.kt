@@ -86,7 +86,7 @@ fun RecompositionScreen(
 
                 state.cards.forEachIndexed { index, card ->
                     if (index > 0) Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-                    RecompositionCard(card = card)
+                    RecompositionCard(card = card, isMetric = state.isMetric)
                 }
 
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))

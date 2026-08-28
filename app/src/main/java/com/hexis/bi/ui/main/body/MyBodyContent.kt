@@ -315,7 +315,7 @@ private fun BodyProportionMarkerBlock(
     modifier: Modifier = Modifier,
 ) {
     val accent = NocturnePulseTheme.extendedColors.positive
-    val valueText = marker.value?.let { String.format(Locale.US, "%.2f", it) }
+    val valueText = marker.value?.let { String.format(Locale.getDefault(), "%.2f", it) }
         ?: stringResource(R.string.body_proportion_value_empty)
     val value: @Composable (Modifier) -> Unit = { textModifier ->
         Text(

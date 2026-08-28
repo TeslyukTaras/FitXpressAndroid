@@ -2,6 +2,7 @@ package com.hexis.bi.intelligence.engine
 
 import com.hexis.bi.intelligence.config.EngineConfig
 import com.hexis.bi.intelligence.model.MetricSeries
+import java.time.LocalDate
 import kotlin.math.abs
 
 object DriftStatus {
@@ -113,4 +114,14 @@ private fun scanDays(series: List<MetricSeries>): Map<String, Map<String, Double
         }
     }
     return rows
+}
+
+internal fun List<MetricSeries>.withinAnalysisWindow(
+    runDate: String,
+    config: EngineConfig,
+): List<MetricSeries> {
+    val cutoff = LocalDate.parse(runDate)
+        .minusDays(config.windows.analysisDays.toLong() - 1)
+        .toString()
+    return map { series -> series.copy(points = series.points.filter { it.date >= cutoff }) }
 }

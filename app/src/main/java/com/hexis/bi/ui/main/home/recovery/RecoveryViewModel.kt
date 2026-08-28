@@ -7,7 +7,10 @@ import com.hexis.bi.data.recovery.ActivityLoadLevel
 import com.hexis.bi.data.recovery.RecoveryRepository
 import com.hexis.bi.data.recovery.RecoverySnapshot
 import com.hexis.bi.data.recovery.StressLevel
+import com.hexis.bi.domain.trend.ChangeDirection
+import com.hexis.bi.domain.trend.changeDirection
 import com.hexis.bi.ui.base.BaseViewModel
+import com.hexis.bi.utils.constants.ChangeTolerances
 import com.hexis.bi.utils.constants.SleepConstants
 import com.hexis.bi.utils.formatFullMonthDay
 import com.hexis.bi.utils.formatShortDateRange
@@ -297,16 +300,15 @@ class RecoveryViewModel(
     private fun trendFor(currentAvg: Int, previousAvg: Int): RecoveryTrend {
         if (previousAvg <= 0 || currentAvg <= 0) return RecoveryTrend.Stable
         val delta = currentAvg - previousAvg
-        return when {
-            abs(delta) <= TREND_FLAT_THRESHOLD -> RecoveryTrend.Stable
-            delta > 0 -> RecoveryTrend.Improving
-            else -> RecoveryTrend.Decreasing
+        return when (changeDirection(delta.toFloat(), ChangeTolerances.SCORE_POINTS, null)) {
+            ChangeDirection.None -> RecoveryTrend.Stable
+            ChangeDirection.Up -> RecoveryTrend.Improving
+            ChangeDirection.Down -> RecoveryTrend.Decreasing
         }
     }
 
     private companion object {
         private const val SUMMARY_WINDOW_DAYS = 7L
-        private const val TREND_FLAT_THRESHOLD = 3
     }
 
     private data class SummaryWindow(

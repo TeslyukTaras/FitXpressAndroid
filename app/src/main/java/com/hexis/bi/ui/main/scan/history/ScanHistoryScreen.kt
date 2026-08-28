@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
+import com.hexis.bi.domain.trend.ChangeDirection
 import com.hexis.bi.data.scan.TopChangeVsPrevious
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
@@ -234,10 +235,10 @@ private fun topChangeAnnotated(
             MeasurementChange.Negative -> MaterialTheme.colorScheme.error
             null -> MaterialTheme.colorScheme.onSurface
         }
-        val deltaStringRes = when {
-            topChange.deltaCm > 0f -> R.string.format_delta_up
-            topChange.deltaCm < 0f -> R.string.format_delta_down
-            else -> R.string.format_delta_neutral
+        val deltaStringRes = when (topChange.direction) {
+            ChangeDirection.Up -> R.string.format_delta_up
+            ChangeDirection.Down -> R.string.format_delta_down
+            ChangeDirection.None -> R.string.format_delta_neutral
         }
         val deltaValue = if (isMetric) topChange.deltaCm else topChange.deltaCm.cmToInches()
         val unit = stringResource(if (isMetric) R.string.unit_cm else R.string.unit_in)

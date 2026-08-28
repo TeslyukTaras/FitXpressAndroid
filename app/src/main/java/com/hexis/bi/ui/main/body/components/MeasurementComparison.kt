@@ -18,6 +18,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import com.hexis.bi.R
+import com.hexis.bi.domain.trend.ChangeDirection
+import com.hexis.bi.domain.trend.changeDirection
+import com.hexis.bi.utils.constants.ChangeTolerances
 import com.hexis.bi.domain.body.BodyMeasurementKeys
 import com.hexis.bi.domain.body.BodyMeasurementRegion
 import com.hexis.bi.ui.components.AppVerticalGradientDivider
@@ -126,7 +129,16 @@ internal fun MeasurementValueBlock(
             val displayDelta = if (isMetric) deltaCm else deltaCm.cmToInches()
             val deltaRes = if (displayDelta >= 0f) R.string.body_visual_delta_increase
             else R.string.body_visual_delta_decrease
-            val isPositiveChange = if (decreaseIsPositive) deltaCm < 0f else deltaCm > 0f
+            val direction = changeDirection(
+                deltaCm,
+                ChangeTolerances.BODY_LENGTH_CM,
+                valueCm?.minus(deltaCm),
+            )
+            val isPositiveChange = if (decreaseIsPositive) {
+                direction == ChangeDirection.Down
+            } else {
+                direction == ChangeDirection.Up
+            }
             val deltaText = stringResource(
                 deltaRes,
                 MEASUREMENT_VALUE_FORMAT.format(abs(displayDelta)),
@@ -138,7 +150,7 @@ internal fun MeasurementValueBlock(
                 style = if (hideValue) MaterialTheme.typography.labelLarge
                 else MaterialTheme.typography.bodyMedium,
                 color = when {
-                    deltaCm == 0f -> MaterialTheme.colorScheme.onSurfaceVariant
+                    direction == ChangeDirection.None -> MaterialTheme.colorScheme.onSurfaceVariant
                     isPositiveChange -> NocturnePulseTheme.extendedColors.positive
                     else -> NocturnePulseTheme.extendedColors.negative
                 },
