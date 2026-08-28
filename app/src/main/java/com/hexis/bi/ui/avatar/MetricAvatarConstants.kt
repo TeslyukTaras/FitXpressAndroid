@@ -21,5 +21,11 @@ internal const val RENDER_SUPERSAMPLE = 1.5f
 /** Apparent wire half-width in *view* pixels. The shader scales it by [RENDER_SUPERSAMPLE]. */
 internal const val WIRE_WIDTH_VIEW_PX = 0.7f
 
+internal const val WIRE_WIDTH_SPARSE_SCALE = 1.5f
+internal const val WIRE_WIDTH_DENSE_SCALE = 0.8f
+
+internal const val WIRE_DENSITY_OPEN_PER_PX = 0.25f
+internal const val WIRE_DENSITY_CROWDED_PER_PX = 0.60f
+
 /** Duration of the eased camera transition when the framed region or orientation changes. */
 internal const val FRAME_ANIMATION_DURATION_MS = 620L

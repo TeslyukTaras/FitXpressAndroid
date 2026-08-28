@@ -93,6 +93,10 @@ internal val FRAGMENT_SHADER = """
     uniform float uMeshGlow;
 
     const float WIRE_WIDTH = ${WIRE_WIDTH_VIEW_PX * RENDER_SUPERSAMPLE};
+    const float WIRE_WIDTH_SPARSE_SCALE = ${WIRE_WIDTH_SPARSE_SCALE};
+    const float WIRE_WIDTH_DENSE_SCALE = ${WIRE_WIDTH_DENSE_SCALE};
+    const float WIRE_DENSITY_RAMP_START = ${WIRE_DENSITY_OPEN_PER_PX / RENDER_SUPERSAMPLE};
+    const float WIRE_DENSITY_RAMP_END = ${WIRE_DENSITY_CROWDED_PER_PX / RENDER_SUPERSAMPLE};
     const float WIRE_GLOW_RIM_POWER = 3.5;
     const float WIRE_INTENSITY = 0.46;
     // Wire takes the same key light as the fill; the ambient floor keeps back-facing contours visible.
@@ -104,7 +108,15 @@ internal val FRAGMENT_SHADER = """
     const float STITCH_START = 0.91;
     const float STITCH_END = 0.985;
     const float STITCH_INTENSITY = 0.28;
-    const float ANALYSIS_ACCENT_STRENGTH = 0.92;
+    const float ANALYSIS_ACCENT_STRENGTH = 0.70;
+    // A vertex only earns the heatmap as it gains chroma, so the no-change body stays teal.
+    const float ANALYSIS_HEATMAP_STRENGTH = 0.95;
+    const float ANALYSIS_CHROMA_RAMP_START = 0.09;
+    const float ANALYSIS_CHROMA_RAMP_END = 0.22;
+    // Blue keeps its saturation instead of washing to white: cut the luma recovery as it dominates.
+    const float ANALYSIS_BLUE_LUMA_CUT = 0.7;
+    const float ANALYSIS_BLUE_RECOVERY_START = 0.10;
+    const float ANALYSIS_BLUE_RECOVERY_END = 0.50;
     const float ANALYSIS_LUMA_RECOVERY = 0.65;
     const float ANALYSIS_TEAL_HIGHLIGHT = 0.06;
     const float ANALYSIS_COLOR_CONTRAST = 1.16;
@@ -132,7 +144,16 @@ internal val FRAGMENT_SHADER = """
 
     float meshEdgeCoverage(vec3 bary, vec3 edgeMask) {
         vec3 baryWidth = fwidth(bary);
-        vec3 baryAA = smoothstep(vec3(0.0), baryWidth * WIRE_WIDTH, bary);
+        // fwidth is barycentric change per pixel: small across a wide triangle, large across a
+        // crowded one. That makes it a free local-density probe, so the line can thicken where
+        // the mesh opens up and thin where it packs, with no precomputed regions.
+        float density = max(max(baryWidth.x, baryWidth.y), baryWidth.z);
+        float widthScale = mix(
+            WIRE_WIDTH_SPARSE_SCALE,
+            WIRE_WIDTH_DENSE_SCALE,
+            smoothstep(WIRE_DENSITY_RAMP_START, WIRE_DENSITY_RAMP_END, density)
+        );
+        vec3 baryAA = smoothstep(vec3(0.0), baryWidth * (WIRE_WIDTH * widthScale), bary);
         vec3 edgeVec = mix(vec3(1.0), baryAA, edgeMask);
         return 1.0 - min(min(edgeVec.x, edgeVec.y), edgeVec.z);
     }
@@ -153,12 +174,26 @@ internal val FRAGMENT_SHADER = """
         vec3 accentedWire = mix(tealWire, contrastedColor, ANALYSIS_ACCENT_STRENGTH);
         float tealLuma = dot(tealWire, vec3(0.2126, 0.7152, 0.0722));
         float accentLuma = dot(accentedWire, vec3(0.2126, 0.7152, 0.0722));
-        float lift = max(tealLuma - accentLuma, 0.0) * ANALYSIS_LUMA_RECOVERY;
+        float blueDominance = smoothstep(
+            ANALYSIS_BLUE_RECOVERY_START,
+            ANALYSIS_BLUE_RECOVERY_END,
+            max(analysisColor.b - analysisColor.r, 0.0)
+        );
+        float recovery = ANALYSIS_LUMA_RECOVERY * (1.0 - blueDominance * ANALYSIS_BLUE_LUMA_CUT);
+        float lift = max(tealLuma - accentLuma, 0.0) * recovery;
         vec3 brightenedAccent = min(
             vec3(1.0),
             accentedWire + vec3(lift) + tealWire * ANALYSIS_TEAL_HIGHLIGHT
         );
-        return mix(tealWire, brightenedAccent, uUseVertexColor);
+        float chroma =
+            max(max(analysisColor.r, analysisColor.g), analysisColor.b)
+            - min(min(analysisColor.r, analysisColor.g), analysisColor.b);
+        float heatmapGate = smoothstep(
+            ANALYSIS_CHROMA_RAMP_START,
+            ANALYSIS_CHROMA_RAMP_END,
+            chroma
+        ) * ANALYSIS_HEATMAP_STRENGTH;
+        return mix(tealWire, brightenedAccent, heatmapGate * uUseVertexColor);
     }
 
     vec3 applyMeshWire(vec3 baseColor, vec3 wireColor, float edgeCoverage, float analysisEnabled) {
