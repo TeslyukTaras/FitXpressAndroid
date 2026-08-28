@@ -12,7 +12,6 @@ import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.ImageCompressor
-import com.hexis.bi.utils.constants.MeasurementConstants
 import com.hexis.bi.utils.constants.ProfileConstants
 import com.hexis.bi.utils.formatDob
 import com.hexis.bi.utils.inchesToCm
@@ -69,8 +68,6 @@ class EditProfileViewModel(
     fun selectGender(gender: GenderOption) =
         _state.update { it.copy(gender = gender, isGenderDropdownOpen = false) }
 
-    fun selectMetric() = _state.update { it.copy(isMetric = true) }
-    fun selectImperial() = _state.update { it.copy(isMetric = false) }
     fun updateHeight(sliderValue: Float) = _state.update {
         it.copy(heightCm = if (it.isMetric) sliderValue else sliderValue.inchesToCm())
     }
@@ -235,7 +232,6 @@ private fun EditProfileState.toUserProfile(uid: String): UserProfile {
         weightKg = measurements.weightKg,
         heightIn = measurements.heightIn,
         weightLb = measurements.weightLb,
-        unitSystem = if (isMetric) MeasurementConstants.UNIT_SYSTEM_METRIC else MeasurementConstants.UNIT_SYSTEM_IMPERIAL,
         dateOfBirth = dob,
     )
 }

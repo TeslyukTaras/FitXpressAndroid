@@ -72,8 +72,6 @@ import com.hexis.bi.ui.components.AppPrimaryButton
 import com.hexis.bi.ui.components.AppSlider
 import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.components.LightStatusBarIcons
-import com.hexis.bi.ui.main.body.components.BodySegmentedToggleChip
-import com.hexis.bi.ui.main.body.components.BodySegmentedToggleTrack
 import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.utils.constants.AuthFlowConstants
@@ -659,13 +657,6 @@ private fun PersonalInfoSection(
             bottom = dimensionResource(R.dimen.spacer_2xs)
         ),
     ) {
-        UnitsToggle(
-            modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacer_xs)),
-            isMetric = state.isMetric,
-            onSelectMetric = viewModel::selectMetric,
-            onSelectImperial = viewModel::selectImperial,
-        )
-        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacer_l)))
         MeasurementSlider(
             label = stringResource(R.string.edit_profile_height),
             valueText = if (state.isMetric) stringResource(
@@ -693,41 +684,6 @@ private fun PersonalInfoSection(
             valueRange = state.weightSliderRange,
             onValueChange = viewModel::updateWeight,
         )
-    }
-}
-
-@Composable
-private fun UnitsToggle(
-    modifier: Modifier,
-    isMetric: Boolean,
-    onSelectMetric: () -> Unit,
-    onSelectImperial: () -> Unit,
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = stringResource(R.string.edit_profile_units),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.weight(1f),
-        )
-        BodySegmentedToggleTrack {
-            BodySegmentedToggleChip(
-                label = stringResource(R.string.edit_profile_metric),
-                isSelected = isMetric,
-                onClick = onSelectMetric,
-                width = dimensionResource(R.dimen.edit_profile_units_toggle_chip_width),
-            )
-            Spacer(Modifier.size(dimensionResource(R.dimen.spacer_s)))
-            BodySegmentedToggleChip(
-                label = stringResource(R.string.edit_profile_imperial),
-                isSelected = !isMetric,
-                onClick = onSelectImperial,
-                width = dimensionResource(R.dimen.edit_profile_units_toggle_chip_width),
-            )
-        }
     }
 }
 
