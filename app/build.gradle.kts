@@ -38,7 +38,7 @@ android {
         // Terra Android SDK requires minSdk 28 (Samsung Health / Health Connect).
         minSdk = 28
         targetSdk = 37
-        versionCode = 17
+        versionCode = 21
         versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -78,7 +78,7 @@ android {
             dimension = "env"
             resValue("string", "app_name", "Hexis-BI")
             buildConfigField("String", "ENVIRONMENT", "\"prod\"")
-            buildConfigField("boolean", "INTELLIGENCE_ENGINE_ENABLED", "false")
+            buildConfigField("boolean", "INTELLIGENCE_ENGINE_ENABLED", "true")
             buildConfigField("String", "API_BASE_URL", "\"https://api.hexis.bi/\"")
             buildConfigField("String", "TERRA_FUNCTION_PREFIX", "\"terraProd\"")
             buildConfigField("String", "TERRA_DEV_ID", "\"${prodTerraDevId}\"")
