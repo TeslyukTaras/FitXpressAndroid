@@ -11,6 +11,8 @@ import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.body.BodyMeasurementRegion
 import com.hexis.bi.domain.body.comparablePhysiqueScoreDelta
 import com.hexis.bi.domain.body.muscleMassPercentage
+import com.hexis.bi.data.intelligence.IntelligenceConfigRepository
+import com.hexis.bi.intelligence.config.EngineConfig
 import com.hexis.bi.domain.body.physiqueScore
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.main.body.BodyTrendPhase.ConfirmedScan
@@ -35,12 +37,13 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.roundToInt
 
-class BodyViewModel(
+class BodyViewModel internal constructor(
     application: Application,
     private val scanHistoryRepository: ScanHistoryRepository,
     private val userRepository: UserRepository,
     private val threeDLookRepository: ThreeDLookRepository,
     private val preferencesRepository: UserPreferencesRepository,
+    private val intelligenceConfigRepository: IntelligenceConfigRepository,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(BodyState())
@@ -48,6 +51,7 @@ class BodyViewModel(
 
     private var allScans: List<ScanRecord> = emptyList()
     private var heightCm: Float? = null
+    private var engineConfig: EngineConfig? = null
     private var gender: String? = null
     private var visibleRegions: Set<BodyMeasurementRegion> =
         BodyMeasurementRegion.measurableRegions.toSet()
@@ -184,6 +188,7 @@ class BodyViewModel(
 
             allScans = scans.sortedBy { it.timestamp }
             heightCm = profile?.heightCm?.toFloat()
+            engineConfig = intelligenceConfigRepository.config().getOrNull()
             gender = profile?.gender
 
             val latest = allScans.lastOrNull()
@@ -193,6 +198,7 @@ class BodyViewModel(
             else buildComposition(
                 latest = latest,
                 previous = previous,
+                config = engineConfig,
                 heightCm = heightCm,
             )
 
@@ -732,11 +738,12 @@ class BodyViewModel(
     private fun buildComposition(
         latest: ScanRecord,
         previous: ScanRecord?,
+        config: EngineConfig?,
         heightCm: Float?
     ): BodyComposition {
         val fatPct = latest.fatPercentage
         val musclePct = latest.muscleMassPercentage()
-        val bis = latest.physiqueScore(heightCm)
+        val bis = config?.let { latest.physiqueScore(it, heightCm) }
 
         val prevFatPct = previous?.fatPercentage
         val prevMusclePct = previous?.muscleMassPercentage()
@@ -756,7 +763,9 @@ class BodyViewModel(
             deltaMuscleMassPercentage = delta(musclePct, prevMusclePct),
             deltaFatMassKg = delta(latest.fatBodyMassKg, previous?.fatBodyMassKg),
             deltaMuscleMassKg = delta(latest.leanBodyMassKg, previous?.leanBodyMassKg),
-            deltaBisScore = comparablePhysiqueScoreDelta(latest, previous, heightCm),
+            deltaBisScore = config?.let {
+                comparablePhysiqueScoreDelta(latest, previous, it, heightCm)
+            },
         )
     }
 
@@ -767,8 +776,9 @@ class BodyViewModel(
 
     private fun computePeriodDrift(range: BodyTimeRange): Float? {
         val latest = allScans.lastOrNull() ?: return null
+        val config = engineConfig ?: return null
         val baseline = periodDriftBaseline(latest, range) ?: return null
-        return comparablePhysiqueScoreDelta(latest, baseline, heightCm)
+        return comparablePhysiqueScoreDelta(latest, baseline, config, heightCm)
     }
 
     private fun periodDriftBaseline(latest: ScanRecord, range: BodyTimeRange): ScanRecord? {

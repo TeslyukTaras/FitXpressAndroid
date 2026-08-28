@@ -4,7 +4,9 @@ import com.hexis.bi.BuildConfig
 import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
 import com.hexis.bi.intelligence.config.CopyConfig
 import com.hexis.bi.intelligence.engine.ConfidenceBuckets
+import com.hexis.bi.intelligence.engine.Domains
 import com.hexis.bi.intelligence.engine.EngineReport
+import com.hexis.bi.intelligence.engine.PhysiqueDrift
 import com.hexis.bi.intelligence.engine.SuppressedFinding
 import com.hexis.bi.intelligence.model.Finding
 import com.hexis.bi.intelligence.narrate.InsightNarrator
@@ -25,6 +27,7 @@ data class FindingValue(
 data class EngineFindingRow(
     val heading: String?,
     val explanation: String,
+    val values: List<FindingValue> = emptyList(),
 )
 
 data class InsightCard(
@@ -48,6 +51,7 @@ data class DebugFinding(
     val priorityRank: Int,
     val confidence: String,
     val confidenceScore: Double,
+    val factors: Map<String, Double> = emptyMap(),
 )
 
 data class EngineDebugInfo(
@@ -57,17 +61,17 @@ data class EngineDebugInfo(
     val trendCount: Int,
     val suppressed: List<SuppressedFinding>,
     val qualityFailureCount: Int,
+    val drift: PhysiqueDrift? = null,
 )
 
 sealed interface EngineFindingsState {
-    data object Hidden : EngineFindingsState
+    data object Loading : EngineFindingsState
 
     data object Empty : EngineFindingsState
 
     data class Ready(
         val rows: List<EngineFindingRow>,
         val confidence: FindingConfidence,
-        val values: List<FindingValue>,
     ) : EngineFindingsState
 }
 
@@ -77,8 +81,12 @@ data class AreaFindings(
     val primaryWindowDays: Int = 0,
     private val engineRan: Boolean = false,
 ) {
+    companion object {
+        fun completed(): AreaFindings = AreaFindings(engineRan = true)
+    }
+
     fun forWindow(windowDays: Int): EngineFindingsState = byWindow[windowDays]
-        ?: if (engineRan) EngineFindingsState.Empty else EngineFindingsState.Hidden
+        ?: if (engineRan) EngineFindingsState.Empty else EngineFindingsState.Loading
 
     val primary: EngineFindingsState get() = forWindow(primaryWindowDays)
 
@@ -101,10 +109,9 @@ object EngineFindingsMapper {
         areas: Set<String>,
         isMetric: Boolean,
         analysisWindowDays: Int = report.primaryWindowDays,
-        valueOverrides: Map<String, Double> = emptyMap(),
     ): AreaFindings = AreaFindings(
         byWindow = report.availableWindows.associateWith { window ->
-            rowsFor(report, copy, areas, window, isMetric, valueOverrides)
+            rowsFor(report, copy, areas, window, isMetric)
         },
         debugByWindow = if (BuildConfig.DEBUG) {
             report.availableWindows.associateWith { window -> debugFor(report, areas, window) }
@@ -122,11 +129,17 @@ object EngineFindingsMapper {
             areas = areas,
             findings = window?.findings.orEmpty()
                 .filter { it.area in areas }
-                .map { DebugFinding(it.insightId, it.priorityRank, it.confidence, it.confidenceScore) },
+                .map {
+                    DebugFinding(
+                        it.insightId, it.priorityRank, it.confidence, it.confidenceScore,
+                        it.confidenceFactors,
+                    )
+                },
             trendCount = report.metricTrends.count { it.domain in areas && windowDays in it.trendsByWindow },
             suppressed = window?.suppressed.orEmpty().filter { it.area in areas },
             qualityFailureCount = window?.verdicts.orEmpty()
                 .count { !it.ok && report.metricTrends.any { row -> row.metric == it.metric && row.domain in areas } },
+            drift = report.physiqueDrift.takeIf { Domains.BODY in areas },
         )
     }
 
@@ -136,7 +149,6 @@ object EngineFindingsMapper {
         areas: Set<String>,
         windowDays: Int,
         isMetric: Boolean,
-        valueOverrides: Map<String, Double>,
     ): EngineFindingsState {
         val findings = report.forWindow(windowDays)?.findings.orEmpty().filter { it.area in areas }
 
@@ -155,8 +167,14 @@ object EngineFindingsMapper {
         val supporting = ranked.sortedBy { it.priorityRank }
 
         val rows = buildList {
-            patterns.forEach { (_, narrated) ->
-                add(EngineFindingRow(narrated.heading, narrated.explanation))
+            patterns.forEach { (finding, narrated) ->
+                add(
+                    EngineFindingRow(
+                        heading = narrated.heading,
+                        explanation = narrated.explanation,
+                        values = valuesFor(listOf(finding), report, copy, windowDays, isMetric),
+                    ),
+                )
             }
             if (supporting.isNotEmpty()) {
                 val sentence = InsightNarrator.sentence(
@@ -165,7 +183,15 @@ object EngineFindingsMapper {
                     copy = copy,
                     bare = patterns.isNotEmpty(),
                 )
-                if (sentence.isNotBlank()) add(EngineFindingRow(null, sentence))
+                if (sentence.isNotBlank()) {
+                    add(
+                        EngineFindingRow(
+                            heading = null,
+                            explanation = sentence,
+                            values = valuesFor(supporting, report, copy, windowDays, isMetric),
+                        ),
+                    )
+                }
             }
         }.distinctBy { it.explanation }
 
@@ -175,7 +201,6 @@ object EngineFindingsMapper {
         return EngineFindingsState.Ready(
             rows = rows,
             confidence = mostConfidentChange(section).confidenceLevel,
-            values = valuesFor(section, report, copy, windowDays, isMetric, valueOverrides),
         )
     }
 
@@ -184,7 +209,6 @@ object EngineFindingsMapper {
         copy: CopyConfig,
         windowDays: Int,
         isMetric: Boolean,
-        valueOverrides: Map<String, Double> = emptyMap(),
     ): List<InsightCard> =
         report.forWindow(windowDays)?.findings.orEmpty()
             .filter { InsightNarrator.narrate(it, copy) != null }
@@ -202,9 +226,7 @@ object EngineFindingsMapper {
                     area = finding.subject,
                     explanation = sentence,
                     confidence = finding.confidenceLevel,
-                    values = valuesFor(
-                        listOf(finding), report, copy, windowDays, isMetric, valueOverrides,
-                    ),
+                    values = valuesFor(listOf(finding), report, copy, windowDays, isMetric),
                 )
             }
             .sortedWith(compareBy({ it.confidence.ordinal }, { it.area }))
@@ -228,13 +250,14 @@ object EngineFindingsMapper {
                     ?: return@mapNotNull null
                 val format = MetricFormat.of(row.unit, isMetric) ?: return@mapNotNull null
                 val label = copy.labels[metric] ?: return@mapNotNull null
+                val display = format.distinguishing(value, baseline.median)
                 abs(z) to NightComparison(
                     title = title,
                     template = template,
                     label = label,
-                    value = format.render(value),
-                    usual = format.render(baseline.median),
-                    unit = format.unit(label),
+                    value = display.render(value),
+                    usual = display.render(baseline.median),
+                    unit = display.unit(label),
                 )
             }
             .sortedByDescending { it.first }
@@ -260,7 +283,6 @@ object EngineFindingsMapper {
         copy: CopyConfig,
         windowDays: Int,
         isMetric: Boolean,
-        valueOverrides: Map<String, Double> = emptyMap(),
     ): List<FindingValue> {
         return findings.filterNot { it.informational }
             .sortedBy { it.priorityRank }
@@ -273,18 +295,17 @@ object EngineFindingsMapper {
                 val baseline = report.baselineFor(windowDays, metric) ?: return@mapNotNull null
                 val change = row.trendsByWindow[windowDays]?.absChange ?: return@mapNotNull null
                 val format = MetricFormat.of(row.unit, isMetric) ?: return@mapNotNull null
+                val latest = if (metric == FindingMetricAliases.PHYSIQUE_SCORE_METRIC) {
+                    report.latestValues[metric] ?: baseline.median + change
+                } else {
+                    baseline.median + change
+                }
+                val display = format.distinguishing(baseline.median, latest)
                 FindingValue(
                     label = copy.labels[metric].orEmpty(),
-                    from = format.render(baseline.median),
-                    to = format.render(
-                        if (metric == FindingMetricAliases.PHYSIQUE_SCORE_METRIC) {
-                            valueOverrides[metric] ?: report.latestValues[metric]
-                            ?: baseline.median + change
-                        } else {
-                            baseline.median + change
-                        },
-                    ),
-                    unit = format.unit(copy.labels[metric].orEmpty()),
+                    from = display.render(baseline.median),
+                    to = display.render(latest),
+                    unit = display.unit(copy.labels[metric].orEmpty()),
                 )
             }
             .take(FindingValues.MAX_VALUES)
@@ -304,7 +325,7 @@ private val Finding.subject: String
     get() = InsightSubjects.BY_INTERPRETATION[interpretation] ?: area
 
 internal suspend fun RunIntelligenceUseCase.findingsFor(vararg areas: String): AreaFindings {
-    if (!BuildConfig.INTELLIGENCE_ENGINE_ENABLED) return AreaFindings()
+    if (!BuildConfig.INTELLIGENCE_ENGINE_ENABLED) return AreaFindings.completed()
     val scope = areas.toSet()
     return invoke().fold(
         onSuccess = {
@@ -316,6 +337,6 @@ internal suspend fun RunIntelligenceUseCase.findingsFor(vararg areas: String): A
                 analysisWindowDays = it.config.windows.analysisDays,
             )
         },
-        onFailure = { AreaFindings() },
+        onFailure = { AreaFindings.completed() },
     )
 }

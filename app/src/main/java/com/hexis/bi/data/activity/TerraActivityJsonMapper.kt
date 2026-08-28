@@ -5,6 +5,7 @@ import com.hexis.bi.data.terra.objectOrNull
 import com.hexis.bi.data.terra.TerraNode
 import com.hexis.bi.data.terra.terraArray
 import com.hexis.bi.data.terra.terraNumberAsFloat
+import com.hexis.bi.data.terra.numberAsInt
 import com.hexis.bi.data.terra.terraNumberAsInt
 import com.hexis.bi.data.terra.terraScalar
 import java.time.LocalDate
@@ -161,28 +162,20 @@ private fun TerraNode.extractSteps(): Int {
     val distanceData = objectOrNull(TerraActivityJsonKeys.Nodes.DISTANCE_DATA)
     val activityData = objectOrNull(TerraActivityJsonKeys.Nodes.ACTIVITY_DATA)
     val metadata = objectOrNull(TerraActivityJsonKeys.Common.METADATA)
-    return stepsValue(TerraActivityJsonKeys.Steps.STEPS)
-        ?: distanceData?.stepsValue(TerraActivityJsonKeys.Steps.STEPS)
-        ?: distanceData?.objectOrNull(TerraActivityJsonKeys.Common.SUMMARY)?.stepsValue(
+    return numberAsInt(TerraActivityJsonKeys.Steps.STEPS)
+        ?: distanceData?.numberAsInt(TerraActivityJsonKeys.Steps.STEPS)
+        ?: distanceData?.objectOrNull(TerraActivityJsonKeys.Common.SUMMARY)?.numberAsInt(
             TerraActivityJsonKeys.Steps.STEPS
         )
-        ?: activityData?.stepsValue(TerraActivityJsonKeys.Steps.STEPS)
-        ?: activityData?.objectOrNull(TerraActivityJsonKeys.Common.SUMMARY)?.stepsValue(
+        ?: activityData?.numberAsInt(TerraActivityJsonKeys.Steps.STEPS)
+        ?: activityData?.objectOrNull(TerraActivityJsonKeys.Common.SUMMARY)?.numberAsInt(
             TerraActivityJsonKeys.Steps.STEPS
         )
-        ?: stepsValue(TerraActivityJsonKeys.Steps.STEP_COUNT)
-        ?: metadata?.stepsValue(TerraActivityJsonKeys.Steps.STEP_COUNT)
-        ?: metadata?.stepsValue(TerraActivityJsonKeys.Steps.STEPS)
+        ?: numberAsInt(TerraActivityJsonKeys.Steps.STEP_COUNT)
+        ?: metadata?.numberAsInt(TerraActivityJsonKeys.Steps.STEP_COUNT)
+        ?: metadata?.numberAsInt(TerraActivityJsonKeys.Steps.STEPS)
         ?: 0
 }
-
-/**
- * Lenient step reader: Oura reports `steps` as a JSON integer, but Health Connect / Google
- * normalize their aggregate as a float (e.g. `8421.0`). The strict [int] helper returns null for
- * a float token, which would silently zero out the day, so parse through [numberAsIntOrNull].
- */
-private fun TerraNode.stepsValue(key: String): Int? =
-    terraNumberAsInt(this[key])
 
 private fun TerraNode.extractDistanceKm(): Float {
     val distanceData = objectOrNull(TerraActivityJsonKeys.Nodes.DISTANCE_DATA)

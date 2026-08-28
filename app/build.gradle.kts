@@ -24,7 +24,7 @@ val validateProductionConfig = tasks.register("validateProductionConfig") {
     doLast {
         check(prodTerraDevId.isNotBlank()) {
             "terra.prod.dev.id is not set. Add it to local.properties (or TERRA_PROD_DEV_ID in the " +
-                "environment). It must equal the PROD_TERRA_DEV_ID Firebase secret."
+                    "environment). It must equal the PROD_TERRA_DEV_ID Firebase secret."
         }
     }
 }
@@ -38,7 +38,7 @@ android {
         // Terra Android SDK requires minSdk 28 (Samsung Health / Health Connect).
         minSdk = 28
         targetSdk = 37
-        versionCode = 16
+        versionCode = 17
         versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

@@ -1,7 +1,11 @@
 package com.hexis.bi.domain.body
 
 import com.hexis.bi.data.scan.ScanRecord
-import com.hexis.bi.utils.constants.BodyConstants
+import com.hexis.bi.intelligence.config.EngineConfig
+import com.hexis.bi.intelligence.engine.Metrics
+import com.hexis.bi.intelligence.engine.PhysiqueComponents
+import com.hexis.bi.intelligence.engine.physiqueParts
+import com.hexis.bi.intelligence.engine.scoreFromParts
 
 internal fun ScanRecord.muscleMassPercentage(): Float? {
     val lean = leanBodyMassKg ?: return null
@@ -10,8 +14,8 @@ internal fun ScanRecord.muscleMassPercentage(): Float? {
     return (lean / weight) * 100f
 }
 
-internal fun ScanRecord.physiqueScore(heightCm: Float?): Float? =
-    physiqueScoreBreakdown(heightCm)?.score
+internal fun ScanRecord.physiqueScore(config: EngineConfig, heightCm: Float?): Float? =
+    physiqueScoreBreakdown(config, heightCm)?.score
 
 internal data class PhysiqueScoreBreakdown(
     val score: Float,
@@ -25,28 +29,24 @@ internal data class PhysiqueScoreBreakdown(
     val proportionScore: Float?,
 )
 
-internal fun ScanRecord.physiqueScoreBreakdown(heightCm: Float?): PhysiqueScoreBreakdown? {
-    val bodyFat = fatPercentage
-    val lean = muscleMassPercentage()
-    val waistRatio = waistToHeightRatio(heightCm)
-    val shoulderRatio = shoulderToWaistRatio()
-    val parts = physiqueScoreParts(
-        bodyFatPercent = bodyFat,
-        leanMassPercent = lean,
-        waistToHeightRatio = waistRatio,
-        shoulderToWaistRatio = shoulderRatio,
-    )
-    val score = scoreFor(parts) ?: return null
+internal fun ScanRecord.physiqueScoreBreakdown(
+    config: EngineConfig,
+    heightCm: Float?,
+): PhysiqueScoreBreakdown? {
+    val scoped = config.withHeight(heightCm)
+    val parts = physiqueParts(dayMetrics(), scoped)
+    val score = scoreFromParts(parts, scoped.composites.physique) ?: return null
+    val descriptive = physiqueParts(dayMetrics(), scoped.withProportion())
     return PhysiqueScoreBreakdown(
-        score = score,
-        bodyFatPercent = bodyFat,
-        leanBodyPercent = lean,
-        waistToHeightRatio = waistRatio,
-        shoulderToWaistRatio = shoulderRatio,
-        bodyFatScore = parts[PhysiqueScoreMetric.BodyFat]?.score,
-        leanMassScore = parts[PhysiqueScoreMetric.LeanMass]?.score,
-        waistShapeScore = parts[PhysiqueScoreMetric.WaistShape]?.score,
-        proportionScore = parts[PhysiqueScoreMetric.Proportion]?.score,
+        score = score.toFloat(),
+        bodyFatPercent = fatPercentage,
+        leanBodyPercent = muscleMassPercentage(),
+        waistToHeightRatio = waistToHeightRatio(heightCm),
+        shoulderToWaistRatio = shoulderToWaistRatio(),
+        bodyFatScore = parts[PhysiqueComponents.BODY_FAT]?.score?.toFloat(),
+        leanMassScore = parts[PhysiqueComponents.LEAN_MASS]?.score?.toFloat(),
+        waistShapeScore = parts[PhysiqueComponents.WAIST_SHAPE]?.score?.toFloat(),
+        proportionScore = descriptive[PhysiqueComponents.PROPORTION]?.score?.toFloat(),
     )
 }
 
@@ -57,75 +57,37 @@ internal fun ScanRecord.physiqueScoreBreakdown(heightCm: Float?): PhysiqueScoreB
 internal fun comparablePhysiqueScoreDelta(
     latest: ScanRecord,
     previous: ScanRecord?,
+    config: EngineConfig,
     heightCm: Float?,
 ): Float? {
     previous ?: return null
-    val latestParts = latest.physiqueScoreParts(heightCm)
-    val previousParts = previous.physiqueScoreParts(heightCm)
-    val sharedParts = latestParts.keys intersect previousParts.keys
-    if (sharedParts.isEmpty()) return null
-    val latestScore = scoreFor(latestParts.filterKeys { it in sharedParts }) ?: return null
-    val previousScore = scoreFor(previousParts.filterKeys { it in sharedParts }) ?: return null
-    return latestScore - previousScore
+    val scoped = config.withHeight(heightCm)
+    val physique = scoped.composites.physique
+    val latestParts = physiqueParts(latest.dayMetrics(), scoped)
+    val previousParts = physiqueParts(previous.dayMetrics(), scoped)
+    val shared = latestParts.keys intersect previousParts.keys
+    if (shared.isEmpty()) return null
+    val latestScore = scoreFromParts(latestParts.filterKeys { it in shared }, physique) ?: return null
+    val previousScore = scoreFromParts(previousParts.filterKeys { it in shared }, physique) ?: return null
+    return (latestScore - previousScore).toFloat()
 }
 
-private enum class PhysiqueScoreMetric {
-    BodyFat,
-    LeanMass,
-    WaistShape,
-    Proportion,
+private fun ScanRecord.dayMetrics(): Map<String, Double> = buildMap {
+    weightKg?.let { put(Metrics.WEIGHT, it.toDouble()) }
+    fatPercentage?.let { put(Metrics.BODY_FAT_PCT, it.toDouble()) }
+    leanBodyMassKg?.let { put(Metrics.LEAN_MASS, it.toDouble()) }
+    BodyMeasurementKeys.valueFor(measurements, BodyMeasurementRegion.Waist)
+        ?.let { put(Metrics.WAIST, it.toDouble()) }
+    shoulderToWaistRatio()?.let { put(Metrics.SHOULDER_TO_WAIST, it.toDouble()) }
 }
 
-private data class ScorePart(val weight: Float, val score: Float)
-
-private fun ScanRecord.physiqueScoreParts(heightCm: Float?): Map<PhysiqueScoreMetric, ScorePart> =
-    physiqueScoreParts(
-        bodyFatPercent = fatPercentage,
-        leanMassPercent = muscleMassPercentage(),
-        waistToHeightRatio = waistToHeightRatio(heightCm),
-        shoulderToWaistRatio = shoulderToWaistRatio(),
-    )
-
-private fun physiqueScoreParts(
-    bodyFatPercent: Float?,
-    leanMassPercent: Float?,
-    waistToHeightRatio: Float?,
-    shoulderToWaistRatio: Float?,
-): Map<PhysiqueScoreMetric, ScorePart> =
-    buildMap {
-        bodyFatPercent?.let {
-            put(
-                PhysiqueScoreMetric.BodyFat,
-                ScorePart(BodyConstants.PHYSIQUE_WEIGHT_BODY_FAT, bodyFatScore(it)),
-            )
-        }
-        leanMassPercent?.let {
-            put(
-                PhysiqueScoreMetric.LeanMass,
-                ScorePart(BodyConstants.PHYSIQUE_WEIGHT_LEAN_MASS, leanMassScore(it)),
-            )
-        }
-        waistToHeightRatio?.let {
-            put(
-                PhysiqueScoreMetric.WaistShape,
-                ScorePart(BodyConstants.PHYSIQUE_WEIGHT_WAIST_SHAPE, waistShapeScore(it)),
-            )
-        }
-        shoulderToWaistRatio?.let {
-            put(
-                PhysiqueScoreMetric.Proportion,
-                ScorePart(BodyConstants.PHYSIQUE_WEIGHT_PROPORTION, proportionScore(it)),
-            )
-        }
-    }
-
-private fun scoreFor(parts: Map<PhysiqueScoreMetric, ScorePart>): Float? {
-    val totalWeight = parts.values.sumOf { it.weight.toDouble() }.toFloat()
-    if (totalWeight <= 0f) return null
-    return parts.values.sumOf { (it.score * it.weight).toDouble() }.toFloat()
-        .div(totalWeight)
-        .coerceIn(BodyConstants.PHYSIQUE_SCORE_MIN, BodyConstants.PHYSIQUE_SCORE_MAX)
+private fun EngineConfig.withHeight(heightCm: Float?): EngineConfig {
+    val height = heightCm?.takeIf { it > 0f }?.toDouble() ?: return this
+    return copy(composites = composites.copy(heightCm = height))
 }
+
+private fun EngineConfig.withProportion(): EngineConfig =
+    copy(composites = composites.copy(physique = composites.physique.copy(enableProportion = true)))
 
 private fun ScanRecord.waistToHeightRatio(heightCm: Float?): Float? {
     val height = heightCm?.takeIf { it > 0f } ?: return null
@@ -138,77 +100,4 @@ private fun ScanRecord.shoulderToWaistRatio(): Float? {
     val waist = frontLinearParams[BodyMeasurementKeys.Waist] ?: return null
     if (waist <= 0f) return null
     return shoulders / waist
-}
-
-/**
- * Body-fat % → score, as a continuous monotonically-decreasing piecewise-linear
- * curve. Anchors share endpoints, so the score never jumps at a band edge; it is
- * flat at 10 below the first anchor and at 1 above the last.
- */
-private val BODY_FAT_SCORE_ANCHORS = listOf(
-    9f to 10f,
-    11f to 9f,
-    15f to 8f,
-    19f to 6f,
-    24f to 4f,
-    35f to 2f,
-    45f to 1f,
-)
-
-private fun bodyFatScore(bodyFatPercent: Float): Float =
-    interpolateAnchors(bodyFatPercent, BODY_FAT_SCORE_ANCHORS)
-
-private fun leanMassScore(leanMassPercent: Float): Float =
-    interpolateScore(
-        value = leanMassPercent,
-        lowInput = 60f,
-        highInput = 90f,
-        lowScore = 3f,
-        highScore = 10f,
-    )
-
-private fun waistShapeScore(waistToHeightRatio: Float): Float =
-    interpolateScore(
-        value = waistToHeightRatio,
-        lowInput = 0.62f,
-        highInput = 0.43f,
-        lowScore = 2f,
-        highScore = 10f,
-    )
-
-private fun proportionScore(shoulderToWaistRatio: Float): Float =
-    interpolateScore(
-        value = shoulderToWaistRatio,
-        lowInput = 1.15f,
-        highInput = 1.65f,
-        lowScore = 4f,
-        highScore = 10f,
-    )
-
-/** Linear interpolation through ascending (input, score) anchors; flat beyond either end. */
-private fun interpolateAnchors(value: Float, anchors: List<Pair<Float, Float>>): Float {
-    val (firstInput, firstScore) = anchors.first()
-    if (value <= firstInput) return firstScore
-    val (lastInput, lastScore) = anchors.last()
-    if (value >= lastInput) return lastScore
-    for (i in 0 until anchors.lastIndex) {
-        val (lowInput, lowScore) = anchors[i]
-        val (highInput, highScore) = anchors[i + 1]
-        if (value <= highInput) {
-            return interpolateScore(value, lowInput, highInput, lowScore, highScore)
-        }
-    }
-    return lastScore
-}
-
-private fun interpolateScore(
-    value: Float,
-    lowInput: Float,
-    highInput: Float,
-    lowScore: Float,
-    highScore: Float,
-): Float {
-    val t = ((value - lowInput) / (highInput - lowInput)).coerceIn(0f, 1f)
-    return (lowScore + (highScore - lowScore) * t)
-        .coerceIn(BodyConstants.PHYSIQUE_SCORE_MIN, BodyConstants.PHYSIQUE_SCORE_MAX)
 }

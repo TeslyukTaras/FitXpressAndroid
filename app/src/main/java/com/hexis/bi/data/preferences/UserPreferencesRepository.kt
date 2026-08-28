@@ -47,22 +47,6 @@ class UserPreferencesRepository(
         store.edit { it[k.voiceMigratedToFirestore] = true }
     }
 
-    val connectedSuitId: Flow<String> = store.data.map { prefs ->
-        prefs[k.connectedSuitId] ?: ""
-    }
-
-    suspend fun setConnectedSuitId(id: String) {
-        store.edit { prefs ->
-            prefs[k.connectedSuitId] = id
-        }
-    }
-
-    suspend fun clearConnectedSuitId() {
-        store.edit { prefs ->
-            prefs.remove(k.connectedSuitId)
-        }
-    }
-
     suspend fun getLastScanTodayIsoWeek(): String? =
         store.data.map { it[k.lastScanTodayIsoWeek] }.first()
 

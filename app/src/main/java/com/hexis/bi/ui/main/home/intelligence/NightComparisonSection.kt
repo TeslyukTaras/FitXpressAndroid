@@ -13,6 +13,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -28,12 +32,17 @@ fun NightComparisonSection(
     comparisons: List<NightComparison>,
     modifier: Modifier = Modifier,
 ) {
+    var lastShown by remember { mutableStateOf(comparisons) }
+    if (comparisons.isNotEmpty()) lastShown = comparisons
+
     AnimatedVisibility(
         visible = comparisons.isNotEmpty(),
-        enter = fadeIn(),
-        exit = fadeOut(),
+        enter = insightEnter(),
+        exit = insightExit(),
         modifier = modifier,
     ) {
+        val shown = lastShown
+        val title = shown.firstOrNull()?.title ?: return@AnimatedVisibility
         Column {
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
             BodyGlassCard(
@@ -41,7 +50,7 @@ fun NightComparisonSection(
                 shape = RoundedCornerShape(dimensionResource(R.dimen.insight_card_corner)),
             ) {
                 Text(
-                    text = comparisons.first().title,
+                    text = title,
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
@@ -52,7 +61,7 @@ fun NightComparisonSection(
                         dimensionResource(R.dimen.spacer_xxs),
                     ),
                 ) {
-                    comparisons.forEach { comparison -> NightComparisonRow(comparison) }
+                    shown.forEach { comparison -> NightComparisonRow(comparison) }
                 }
             }
         }

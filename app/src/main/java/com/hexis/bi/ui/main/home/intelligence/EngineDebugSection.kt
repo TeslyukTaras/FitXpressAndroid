@@ -19,6 +19,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.font.FontWeight
 import com.hexis.bi.BuildConfig
 import com.hexis.bi.R
+import com.hexis.bi.intelligence.engine.PhysiqueDrift
 import com.hexis.bi.ui.components.BodyGlassCard
 
 @Composable
@@ -77,6 +78,8 @@ fun EngineDebugSection(
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
         }
 
+        info.drift?.let { DriftDebugBlock(it) }
+
         if (info.findings.isEmpty() || info.suppressed.isNotEmpty()) {
             Text(
                 text = "findings ${info.findings.size} · trends ${info.trendCount} · " +
@@ -116,7 +119,51 @@ enum class EngineDebugPresentation {
 }
 
 @Composable
+private fun DriftDebugBlock(drift: PhysiqueDrift) {
+    Text(
+        text = "drift ${drift.status} · scans ${drift.scans} · " +
+            "${drift.firstScan.orEmpty()} -> ${drift.lastScan.orEmpty()}",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    drift.drift?.let { value ->
+        Text(
+            text = "delta ${value.iosDebugScore()} · ${drift.direction.orEmpty()} · " +
+                "driver ${drift.driver.orEmpty()}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+    if (drift.componentDeltas.isNotEmpty()) {
+        Text(
+            text = drift.componentDeltas.entries.joinToString(FACTOR_SEPARATOR) { (key, value) ->
+                "$key ${value.iosDebugScore()}"
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
+}
+
+@Composable
 private fun DebugFindingRow(finding: DebugFinding) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        DebugFindingHeadline(finding)
+        if (finding.factors.isNotEmpty()) {
+            Text(
+                text = finding.factors.entries.joinToString(FACTOR_SEPARATOR) { (key, value) ->
+                    "${key.take(FACTOR_LABEL_CHARS)} ${value.iosDebugScore()}"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun DebugFindingHeadline(finding: DebugFinding) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
         Text(
             text = finding.insightId,
@@ -140,3 +187,6 @@ private fun DebugFindingRow(finding: DebugFinding) {
 }
 
 private fun Double.iosDebugScore(): String = "%.3f".format(this).replace('.', ',')
+
+private const val FACTOR_SEPARATOR = " · "
+private const val FACTOR_LABEL_CHARS = 3

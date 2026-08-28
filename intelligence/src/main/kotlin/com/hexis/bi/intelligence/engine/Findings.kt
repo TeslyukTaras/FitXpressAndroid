@@ -145,6 +145,7 @@ internal fun buildFindings(
             rulesetVersion = config.rulesetVersion,
             source = candidate.source,
             informational = candidate.informational,
+            confidenceFactors = confidence.factors,
         )
     }
 

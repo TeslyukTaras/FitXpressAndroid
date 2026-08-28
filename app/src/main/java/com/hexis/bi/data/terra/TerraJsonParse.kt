@@ -19,7 +19,7 @@ internal fun terraScalar(value: Any?): String? = when (value) {
 
 internal fun TerraNode.float(key: String): Float? = terraScalar(this[key])?.toFloatOrNull()
 
-internal fun TerraNode.int(key: String): Int? = terraScalar(this[key])?.toIntOrNull()
+internal fun TerraNode.numberAsInt(key: String): Int? = terraNumberAsInt(this[key])
 
 internal fun TerraNode.boolean(key: String): Boolean? =
     terraScalar(this[key])?.toBooleanStrictOrNull()

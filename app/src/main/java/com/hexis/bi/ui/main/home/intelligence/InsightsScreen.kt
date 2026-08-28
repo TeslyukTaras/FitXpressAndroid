@@ -1,9 +1,10 @@
 package com.hexis.bi.ui.main.home.intelligence
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +20,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,11 +31,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
+import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.intelligence.engine.Domains
 import com.hexis.bi.utils.constants.InsightSubjects
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
-import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.components.LightStatusBarIcons
 import com.hexis.bi.ui.components.MedicalDisclaimerFooter
 import com.hexis.bi.ui.theme.screenBackground
@@ -74,15 +78,27 @@ fun InsightsScreen(
             val contentModifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = dimensionResource(R.dimen.padding_medium))
-            if (showFullInsightsEmpty(state.loaded, state.updating, state.cards.isNotEmpty())) {
-                Box(modifier = contentModifier, contentAlignment = Alignment.Center) {
-                    InsightsEmpty()
+            var lastCards by remember { mutableStateOf(state.cards) }
+            if (state.cards.isNotEmpty()) lastCards = state.cards
+
+            AnimatedContent(
+                targetState = state.cards.isEmpty(),
+                transitionSpec = { insightCrossfade() },
+                label = "insights-content",
+            ) { isEmpty ->
+            if (isEmpty) {
+                Column(modifier = contentModifier) {
+                    InsightsHeader(state)
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) { InsightsEmpty() }
                 }
             } else {
                 Column(modifier = contentModifier.verticalScroll(rememberScrollState())) {
                     InsightsHeader(state)
 
-                    val ranked = state.cards.groupBy { it.confidence == FindingConfidence.LOW }
+                    val ranked = lastCards.groupBy { it.confidence == FindingConfidence.LOW }
                     ranked[false].orEmpty().forEach { card ->
                         Spacer(Modifier.height(dimensionResource(R.dimen.insight_card_spacing)))
                         InsightCardView(card)
@@ -113,6 +129,7 @@ fun InsightsScreen(
 
                     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
                 }
+            }
             }
         }
 

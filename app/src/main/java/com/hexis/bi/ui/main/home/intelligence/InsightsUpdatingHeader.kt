@@ -1,6 +1,8 @@
 package com.hexis.bi.ui.main.home.intelligence
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -32,6 +34,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.hexis.bi.R
+import com.hexis.bi.utils.constants.AnimationConstants
 
 @Composable
 fun InsightsUpdatingHeader(
@@ -41,8 +44,10 @@ fun InsightsUpdatingHeader(
 ) {
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(),
-        exit = fadeOut(),
+        enter = fadeIn(tween(AnimationConstants.UPDATING_BANNER_MS)) +
+            expandVertically(tween(AnimationConstants.UPDATING_BANNER_MS)),
+        exit = fadeOut(tween(AnimationConstants.UPDATING_BANNER_MS)) +
+            shrinkVertically(tween(AnimationConstants.UPDATING_BANNER_MS)),
         modifier = modifier,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {

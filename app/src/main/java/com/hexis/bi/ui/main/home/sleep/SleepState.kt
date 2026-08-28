@@ -84,6 +84,7 @@ data class SleepState(
 
     // Day tab — sleep status
     val totalSleepMinutes: Int = 0,
+    val timeInBedMinutes: Int = 0,
     val sleepGoalHours: Int = SleepConstants.DEFAULT_SLEEP_GOAL_HOURS,
     val stages: List<SleepStageData> = emptyList(),
 

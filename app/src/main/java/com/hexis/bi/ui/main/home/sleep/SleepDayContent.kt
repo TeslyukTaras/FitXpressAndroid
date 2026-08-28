@@ -82,7 +82,7 @@ private fun SleepDayReady(state: SleepState, onInfoClick: () -> Unit) {
 
     SleepStatusCard(
         loading = state.dayLoadState == SleepLoadState.Loading,
-        totalSleepMinutes = state.totalSleepMinutes,
+        timeInBedMinutes = state.timeInBedMinutes,
         sleepGoalHours = state.sleepGoalHours,
         stages = state.stages,
     )
@@ -91,7 +91,7 @@ private fun SleepDayReady(state: SleepState, onInfoClick: () -> Unit) {
 
     SleepTimelineCard(
         loading = state.dayLoadState == SleepLoadState.Loading,
-        totalSleepMinutes = state.totalSleepMinutes,
+        timeInBedMinutes = state.timeInBedMinutes,
         timeStartHour = state.timelineStartHour,
         timeEndHour = state.timelineEndHour,
         segments = state.timelineSegments,

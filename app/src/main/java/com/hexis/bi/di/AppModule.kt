@@ -37,6 +37,7 @@ import com.hexis.bi.data.intelligence.AssetIntelligenceConfigSource
 import com.hexis.bi.data.intelligence.RemoteIntelligenceConfigSource
 import com.hexis.bi.utils.constants.IntelligenceRemoteConfig
 import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
+import com.hexis.bi.domain.intelligence.IntelligenceCoordinator
 import com.hexis.bi.data.intelligence.BUNDLED_WORDING_ASSET
 import com.hexis.bi.data.intelligence.IntelligenceConfigRepository
 import com.hexis.bi.data.intelligence.IntelligenceWordingRepository
@@ -49,7 +50,7 @@ import com.hexis.bi.data.scan.api.ThreeDLookApi
 import com.hexis.bi.data.sleep.SleepRepository
 import com.hexis.bi.data.sleep.DefaultSleepRepository
 import com.hexis.bi.data.store.AppPreferencesDataStore
-import com.hexis.bi.data.suit.MockSuitRepository
+import com.hexis.bi.data.suit.UserProfileSuitRepository
 import com.hexis.bi.data.terra.TerraApi
 import com.hexis.bi.data.terra.TerraAuthApi
 import com.hexis.bi.data.terra.TerraCallbackHandler
@@ -161,8 +162,9 @@ val appModule = module {
     single { RunIntelligenceUseCase(get(), get(), get(), get()) }
     single { WorkManager.getInstance(androidContext()) }
     single<HealthSyncScheduler> { WorkManagerHealthSyncScheduler(get()) }
-    single { SessionCleaner(get(), get(), get(), get(), get(), get(), get()) }
-    single<SuitRepository> { MockSuitRepository(get()) }
+    single { IntelligenceCoordinator(get(), get(), get(), get(), get()) }
+    single { SessionCleaner(get(), get(), get(), get(), get(), get(), get(), androidContext()) }
+    single<SuitRepository> { UserProfileSuitRepository(get()) }
     single<UserRepository> { FirestoreUserRepository(get(), get(), androidContext()) }
     single {
         OkHttpClient.Builder()
@@ -242,17 +244,17 @@ val appModule = module {
             get()
         )
     }
-    viewModel { MySuitViewModel(androidApplication(), get(), get()) }
+    viewModel { MySuitViewModel(androidApplication(), get()) }
     viewModel { NotificationsSettingsViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { NotificationsViewModel(androidApplication(), get()) }
-    viewModel { BodyViewModel(androidApplication(), get(), get(), get(), get()) }
+    viewModel { BodyViewModel(androidApplication(), get(), get(), get(), get(), get()) }
     viewModel { SleepViewModel(androidApplication(), get(), get(), get(), get(), get()) }
     viewModel { ActivityViewModel(androidApplication(), get(), get(), get(), get(), get()) }
     viewModel { RecoveryViewModel(androidApplication(), get()) }
     viewModel { LongevityViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { PaceOfAgingViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get(), get()) }
-    viewModel { PhysiqueDriftViewModel(androidApplication(), get(), get(), get(), get()) }
-    viewModel { InsightsViewModel(androidApplication(), get(), get(), get()) }
+    viewModel { PhysiqueDriftViewModel(androidApplication(), get(), get(), get(), get(), get()) }
+    viewModel { InsightsViewModel(androidApplication(), get(), get()) }
     viewModel { RecompositionViewModel(androidApplication(), get()) }
     viewModel { ScanViewModel(androidApplication(), get()) }
     viewModel { StartScanViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get()) }

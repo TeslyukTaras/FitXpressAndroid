@@ -8,6 +8,9 @@ import com.hexis.bi.intelligence.config.WordingDocument
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import com.hexis.bi.utils.constants.IntelligenceCacheConstants
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 
@@ -36,11 +39,29 @@ internal class VersionedConfigRepository<T : Any>(
     private val parse: (String) -> Result<T>,
     private val versionOf: (T) -> String,
     private val io: CoroutineDispatcher = Dispatchers.IO,
+    private val nowMillis: () -> Long = System::currentTimeMillis,
 ) {
 
+    private data class Resolved<V : Any>(val value: V, val atMillis: Long)
+
     private val lastKnownGood = AtomicReference<T>()
+    private val resolved = AtomicReference<Resolved<T>>()
+    private val lastOutcome = AtomicReference<String>()
+    private val resolveLock = Mutex()
 
     suspend fun config(): Result<T> = withContext(io) {
+        fresh()?.let { return@withContext Result.success(it) }
+        resolveLock.withLock {
+            fresh()?.let { return@withLock Result.success(it) }
+            resolve().onSuccess { resolved.set(Resolved(it, nowMillis())) }
+        }
+    }
+
+    private fun fresh(): T? = resolved.get()
+        ?.takeIf { nowMillis() - it.atMillis < IntelligenceCacheConstants.CONFIG_TTL.toMillis() }
+        ?.value
+
+    private suspend fun resolve(): Result<T> {
         val failures = mutableListOf<String>()
         val bundled = parsed(baseline, failures)
 
@@ -51,17 +72,17 @@ internal class VersionedConfigRepository<T : Any>(
                     "predates bundled ${versionOf(bundled)})"
                 continue
             }
-            return@withContext accept(candidate, source.name, failures)
+            return accept(candidate, source.name, failures)
         }
 
-        bundled?.let { return@withContext accept(it, baseline.name, failures) }
+        bundled?.let { return accept(it, baseline.name, failures) }
 
         lastKnownGood.get()?.let { cached ->
             Timber.w("%s unusable from every source %s; serving last known good", label, failures)
-            return@withContext Result.success(cached)
+            return Result.success(cached)
         }
         Timber.e("%s unusable and nothing cached: %s", label, failures)
-        Result.failure(IllegalStateException("no usable $label: ${failures.joinToString("; ")}"))
+        return Result.failure(IllegalStateException("no usable $label: ${failures.joinToString("; ")}"))
     }
 
     private suspend fun parsed(
@@ -83,10 +104,13 @@ internal class VersionedConfigRepository<T : Any>(
         sourceName: String,
         failures: List<String>,
     ): Result<T> {
-        if (failures.isNotEmpty()) {
-            Timber.w("%s fell back to %s after %s", label, sourceName, failures)
-        } else {
-            Timber.i("%s accepted %s from %s", label, versionOf(config), sourceName)
+        val outcome = "$sourceName|${versionOf(config)}|$failures"
+        if (lastOutcome.getAndSet(outcome) != outcome) {
+            if (failures.isNotEmpty()) {
+                Timber.w("%s fell back to %s after %s", label, sourceName, failures)
+            } else {
+                Timber.i("%s accepted %s from %s", label, versionOf(config), sourceName)
+            }
         }
         lastKnownGood.set(config)
         return Result.success(config)

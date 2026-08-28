@@ -168,6 +168,10 @@ internal object TerraProviders {
     }
 }
 
+internal object TerraSdkStorage {
+    const val PREFS_NAME = "co.tryterra.terra.prefs"
+}
+
 internal object TerraCacheConstants {
     const val RANGE_CACHE_TTL_MS = 60_000L
     const val IDENTITY_CACHE_TTL_MS = 5L * 60L * 1000L
@@ -179,6 +183,9 @@ internal object TerraSyncConstants {
 
     /** How long a connection must stay absent from Terra's list before it is retired. */
     val MIN_ABSENCE_BEFORE_RETIRE: Duration = Duration.ofMinutes(5)
+
+    const val PENDING_RANGE_RETRIES = 3
+    val PENDING_RANGE_BACKOFF: Duration = Duration.ofSeconds(2)
 }
 
 internal object CanonicalCacheConstants {
@@ -205,6 +212,8 @@ internal object CanonicalCacheConstants {
     val FORCED_REFRESH_INTERVAL: Duration = Duration.ofMinutes(15)
 
     const val UPDATE_DEBOUNCE_MS = 750L
+
+    const val FORCED_REFRESH_CURSOR_PREFIX = "forced:"
 }
 
 internal object HealthAnalysisConstants {
@@ -224,6 +233,22 @@ internal object HealthSyncWorkConstants {
     val RETRY_BACKOFF: Duration = Duration.ofMinutes(1)
 
     const val MAX_RUN_ATTEMPTS = 6
+}
+
+internal object IntelligenceCacheConstants {
+    /**
+     * How long a resolved engine/wording document is reused before the sources are consulted
+     * again. Without it every screen and every cache write re-reads the asset and Remote Config.
+     */
+    val CONFIG_TTL: Duration = Duration.ofMinutes(15)
+
+    val BACKFILL_RERUN_INTERVAL: Duration = Duration.ofSeconds(20)
+}
+
+internal object StrideConstants {
+    const val MALE_STRIDE_FACTOR = 0.415
+    const val FEMALE_STRIDE_FACTOR = 0.413
+    const val CM_PER_KILOMETER = 100_000.0
 }
 
 internal object HealthConnectConstants {

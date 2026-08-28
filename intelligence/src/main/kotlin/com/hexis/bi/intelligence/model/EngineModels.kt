@@ -81,6 +81,7 @@ data class Finding(
     val source: String = "pattern",
     val featured: Boolean = false,
     val informational: Boolean = false,
+    val confidenceFactors: Map<String, Double> = emptyMap(),
 )
 
 data class EngineInput(

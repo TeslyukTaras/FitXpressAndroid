@@ -64,12 +64,6 @@ internal object BodyConstants {
     const val CHART_FILL_START_ALPHA = 0.83f
     const val CHART_FILL_END_ALPHA = 0.0001f
 
-    const val PHYSIQUE_SCORE_MIN = 1f
-    const val PHYSIQUE_SCORE_MAX = 10f
-    const val PHYSIQUE_WEIGHT_BODY_FAT = 0.5f
-    const val PHYSIQUE_WEIGHT_LEAN_MASS = 0.25f
-    const val PHYSIQUE_WEIGHT_WAIST_SHAPE = 0.15f
-    const val PHYSIQUE_WEIGHT_PROPORTION = 0.1f
 
     /** Month X-axis label count. */
     const val MONTH_LABEL_COUNT = 5

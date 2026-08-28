@@ -379,8 +379,8 @@ class ScanHistoryRepository internal constructor(
                         weightKg = doc.numericField(FIELD_WEIGHT, FIELD_ESTIMATED_WEIGHT),
                         estimatedWeightKg = doc.numericField(FIELD_ESTIMATED_WEIGHT),
                         fatPercentage = doc.numericField(FIELD_FAT_PERCENTAGE),
-                        leanBodyMassKg = doc.numericField(FIELD_LEAN_BODY_MASS),
-                        fatBodyMassKg = doc.numericField(FIELD_FAT_BODY_MASS),
+                        leanBodyMassKg = doc.numericField(FIELD_LEAN_BODY_MASS, FIELD_ESTIMATED_LEAN_BODY_MASS),
+                        fatBodyMassKg = doc.numericField(FIELD_FAT_BODY_MASS, FIELD_ESTIMATED_FAT_BODY_MASS),
                     )
 
                     ScanFetchProjection.FULL -> buildFullScanRecord(doc)
@@ -427,8 +427,8 @@ class ScanHistoryRepository internal constructor(
             estimatedWeightKg = doc.numericField(FIELD_ESTIMATED_WEIGHT),
             bmi = doc.numericField(FIELD_BMI, FIELD_ESTIMATED_BMI),
             fatPercentage = doc.numericField(FIELD_FAT_PERCENTAGE),
-            leanBodyMassKg = doc.numericField(FIELD_LEAN_BODY_MASS),
-            fatBodyMassKg = doc.numericField(FIELD_FAT_BODY_MASS),
+            leanBodyMassKg = doc.numericField(FIELD_LEAN_BODY_MASS, FIELD_ESTIMATED_LEAN_BODY_MASS),
+            fatBodyMassKg = doc.numericField(FIELD_FAT_BODY_MASS, FIELD_ESTIMATED_FAT_BODY_MASS),
         )
     }
 

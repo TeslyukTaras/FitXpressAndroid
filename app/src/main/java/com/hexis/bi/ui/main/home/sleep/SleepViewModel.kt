@@ -8,14 +8,13 @@ import com.hexis.bi.data.sleep.SleepRepository
 import com.hexis.bi.data.sleep.toSampleMillis
 import com.hexis.bi.data.sleep.SleepSample
 import com.hexis.bi.data.sleep.SleepSession
-import com.hexis.bi.data.sleep.wholeMinutes
 import com.hexis.bi.data.sleep.SleepStage
 import com.hexis.bi.data.sleep.SleepStageInterval
 import com.hexis.bi.data.terra.TerraDetail
 import com.hexis.bi.data.terra.TerraRestSourceResolver
 import com.hexis.bi.data.user.FirestoreSchema
 import com.hexis.bi.data.user.UserRepository
-import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
+import com.hexis.bi.domain.intelligence.IntelligenceCoordinator
 import com.hexis.bi.domain.intelligence.IntelligenceRun
 import com.hexis.bi.ui.main.home.intelligence.EngineFindingsMapper
 import com.hexis.bi.ui.main.home.intelligence.BackfillTransition
@@ -41,7 +40,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
@@ -58,22 +56,18 @@ class SleepViewModel internal constructor(
     private val userRepository: UserRepository,
     private val sourceResolver: TerraRestSourceResolver,
     private val healthSyncScheduler: HealthSyncScheduler,
-    private val runIntelligence: RunIntelligenceUseCase,
+    private val intelligenceCoordinator: IntelligenceCoordinator,
 ) : BaseViewModel(application) {
 
-    private var findingsJob: Job? = null
     private var lastRun: IntelligenceRun? = null
 
     private fun loadFindings(clearUpdatingOnComplete: Boolean = false) {
-        findingsJob?.cancel()
-        findingsJob = viewModelScope.launch {
-            val run = runIntelligence().getOrNull()
-            if (run == null) {
-                if (clearUpdatingOnComplete) {
-                    _state.update { it.copy(insightsUpdating = false) }
-                }
-                return@launch
-            }
+        intelligenceCoordinator.refreshNow()
+    }
+
+    private fun observeFindings() {
+        intelligenceCoordinator.state.onEach { reportState ->
+            val run = reportState.run ?: return@onEach
             lastRun = run
             val resolved = EngineFindingsMapper.forAreas(
                 report = run.report,
@@ -86,10 +80,10 @@ class SleepViewModel internal constructor(
                 it.copy(
                     findings = resolved,
                     dayComparisons = dayComparisons(),
-                    insightsUpdating = if (clearUpdatingOnComplete) false else it.insightsUpdating,
+                    insightsUpdating = reportState.updating,
                 )
             }
-        }
+        }.launchIn(viewModelScope)
     }
 
     private fun dayComparisons(): List<NightComparison> {
@@ -128,6 +122,7 @@ class SleepViewModel internal constructor(
 
     init {
         loadFindings()
+        observeFindings()
         observeDataSource()
         sleepRepository.updates
             .debounce(CanonicalCacheConstants.UPDATE_DEBOUNCE_MS)
@@ -139,7 +134,6 @@ class SleepViewModel internal constructor(
                 backfillInFlight = inFlight
                 when (transition) {
                     BackfillTransition.ACTIVE -> {
-                        findingsJob?.cancel()
                         _state.update { it.copy(insightsUpdating = true) }
                     }
                     BackfillTransition.SETTLED -> loadFindings(clearUpdatingOnComplete = true)
@@ -313,6 +307,7 @@ class SleepViewModel internal constructor(
                 dayLoadState = loadState,
                 errorMessage = null,
                 totalSleepMinutes = 0,
+                timeInBedMinutes = 0,
                 stages = emptyStageData(),
                 hrv = 0,
                 restingHeartRate = 0,
@@ -339,6 +334,7 @@ class SleepViewModel internal constructor(
                 dayLoadState = loadState,
                 errorMessage = null,
                 totalSleepMinutes = session.durationMinutes,
+                timeInBedMinutes = session.timeInBedMinutes,
                 stages = buildStageData(session),
                 hrv = session.hrvMs,
                 restingHeartRate = session.restingHeartRateBpm,
@@ -350,6 +346,7 @@ class SleepViewModel internal constructor(
                 insightRes = insightFor(quality),
             )
         }
+        _state.update { it.copy(dayComparisons = dayComparisons()) }
         prefetchSummaryIfNeeded()
     }
 
@@ -396,11 +393,12 @@ class SleepViewModel internal constructor(
 
     private fun buildStageData(session: SleepSession): List<SleepStageData> {
         val byStage = session.stages.groupBy { it.stage }
+        val totals = session.stageTotals
         return STAGE_DISPLAY_ORDER.map { stage ->
             val intervals = byStage[stage].orEmpty()
             SleepStageData(
                 stage = stage,
-                durationMinutes = intervals.sumOf { it.durationSeconds }.wholeMinutes(),
+                durationMinutes = totals.minutesFor(stage),
                 hrv = averageInIntervals(session.hrvSamples, intervals) ?: session.hrvMs,
                 rhr = averageInIntervals(session.heartRateSamples, intervals)
                     ?: session.restingHeartRateBpm,

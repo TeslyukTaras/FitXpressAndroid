@@ -167,12 +167,23 @@ internal class HealthLocalDataSource(
         }
         val covered = daysCoveredByAllIdentities(userId, identities, source, fetchable, todayTtl)
         val now = clock.instant()
-        val key = "$userId|$source"
-        val forced = forcedRefreshDays(fetchable, today, lastForcedRefresh[key], now)
-        if (forced.isNotEmpty()) lastForcedRefresh[key] = now
+        val forced = forcedRefreshDays(fetchable, today, lastForcedRefreshAt(userId, source), now)
+        if (forced.isNotEmpty()) recordForcedRefresh(userId, source, now)
         val present = covered - forced
         diagnostics.recordLookup(userId, source, present.size, fetchable.size - present.size)
         fetchable.filterNot(present::contains)
+    }
+
+    private fun forcedRefreshKey(source: String): String =
+        "${CanonicalCacheConstants.FORCED_REFRESH_CURSOR_PREFIX}$source"
+
+    private fun lastForcedRefreshAt(userId: String, source: String): Instant? =
+        cache.getSyncCursor(environment, userId, forcedRefreshKey(source))
+            ?.toLongOrNull()
+            ?.let(Instant::ofEpochMilli)
+
+    private fun recordForcedRefresh(userId: String, source: String, now: Instant) {
+        cache.setSyncCursor(environment, userId, forcedRefreshKey(source), now.toEpochMilli().toString())
     }
 
     suspend fun storeDays(
@@ -285,7 +296,6 @@ internal class HealthLocalDataSource(
     override suspend fun clearUser(userId: String) = withContext(io) {
         cache.clearUser(environment, userId)
         diagnostics.clearUser(userId)
-        lastForcedRefresh.keys.removeAll { it.startsWith("$userId|") }
         lastCoverageSignature.clear()
         lastStatsSignature.set(null)
         _changes.tryEmit(SOURCE_DAILY)
@@ -311,8 +321,6 @@ internal class HealthLocalDataSource(
     }
 
     private val lastCoverageSignature = ConcurrentHashMap<String, String>()
-
-    private val lastForcedRefresh = ConcurrentHashMap<String, Instant>()
 
     private val lastStatsSignature = AtomicReference<String>()
 
@@ -340,7 +348,9 @@ internal fun forcedRefreshDays(
     windowDays: Long = CanonicalCacheConstants.FORCED_REFRESH_DAYS,
     interval: Duration = CanonicalCacheConstants.FORCED_REFRESH_INTERVAL,
 ): Set<LocalDate> {
-    if (lastForcedAt != null && Duration.between(lastForcedAt, now) < interval) return emptySet()
+    if (lastForcedAt != null && !lastForcedAt.isAfter(now) &&
+        Duration.between(lastForcedAt, now) < interval
+    ) return emptySet()
     val oldest = today.minusDays(windowDays - 1)
     return days.filterTo(mutableSetOf()) { !it.isBefore(oldest) && !it.isAfter(today) }
 }

@@ -1,13 +1,22 @@
 package com.hexis.bi.data.terra
 
+import com.hexis.bi.utils.constants.TerraSyncConstants
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import timber.log.Timber
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
 /**
- * Paginates a Terra REST range fetch into 31-day chunks and bisects any chunk Terra
- * answers with an async "large request pending" response (empty data + "chunks" message).
+ * A range Terra was still preparing when the fetch gave up. Raised rather than returned so the
+ * caller fails the window instead of recording the day as confirmed-empty.
+ */
+class TerraRangePendingException(val day: LocalDate) :
+    Exception("Terra was still preparing $day after ${TerraSyncConstants.PENDING_RANGE_RETRIES} attempts")
+
+/**
+ * Paginates a Terra REST range fetch into 31-day chunks, re-asks for any range Terra answers
+ * asynchronously, and bisects one that stays pending.
  */
 object TerraRangeJsonFetcher {
 
@@ -46,12 +55,16 @@ object TerraRangeJsonFetcher {
         into: MutableList<Any?>,
         fetch: suspend (LocalDate, LocalDate) -> Result<TerraDataListResponse>,
     ) {
-        val response = fetch(rangeStart, rangeEnd).getOrElse { throw it }
+        val response = awaitReady(rangeStart, rangeEnd, fetch)
         if (response.data.isNotEmpty()) {
             into.addAll(response.data)
             return
         }
-        if (!isLargeRequestPending(response.message) || !rangeStart.isBefore(rangeEnd)) return
+        if (!response.isPending) return
+        if (!rangeStart.isBefore(rangeEnd)) {
+            Timber.w("Terra still preparing %s; failing the window rather than recording it empty", rangeStart)
+            throw TerraRangePendingException(rangeStart)
+        }
 
         val spanDays = ChronoUnit.DAYS.between(rangeStart, rangeEnd) + 1
         val leftLen = (spanDays / 2).coerceAtLeast(1)
@@ -60,9 +73,32 @@ object TerraRangeJsonFetcher {
         collectChunk(midEnd.plusDays(1), rangeEnd, into, fetch)
     }
 
-    private fun isLargeRequestPending(message: String?): Boolean {
-        if (message.isNullOrBlank()) return false
-        val m = message.lowercase()
-        return m.contains("large request") || m.contains("chunks") || m.contains("being processed")
+    private suspend fun awaitReady(
+        rangeStart: LocalDate,
+        rangeEnd: LocalDate,
+        fetch: suspend (LocalDate, LocalDate) -> Result<TerraDataListResponse>,
+    ): TerraDataListResponse {
+        var response = fetch(rangeStart, rangeEnd).getOrElse { throw it }
+        var attempt = 0
+        while (response.data.isEmpty() && response.isPending &&
+            attempt < TerraSyncConstants.PENDING_RANGE_RETRIES
+        ) {
+            delay(TerraSyncConstants.PENDING_RANGE_BACKOFF.toMillis() * (attempt + 1))
+            attempt++
+            Timber.d("Terra re-asking [%s..%s], attempt %d", rangeStart, rangeEnd, attempt)
+            response = fetch(rangeStart, rangeEnd).getOrElse { throw it }
+        }
+        return response
     }
 }
+
+private val PENDING_STATUSES = setOf("not_ready", "processing", "pending")
+
+private val PENDING_MESSAGE_MARKERS = listOf("large request", "chunks", "being processed", "not ready")
+
+internal val TerraDataListResponse.isPending: Boolean
+    get() {
+        if (status?.lowercase()?.trim() in PENDING_STATUSES) return true
+        val text = message?.lowercase() ?: return false
+        return PENDING_MESSAGE_MARKERS.any { it in text }
+    }

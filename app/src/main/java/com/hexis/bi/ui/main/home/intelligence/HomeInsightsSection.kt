@@ -1,7 +1,9 @@
 package com.hexis.bi.ui.main.home.intelligence
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,7 +28,6 @@ import com.hexis.bi.utils.constants.FindingValues
 @Composable
 fun HomeInsightsSection(
     cards: List<InsightCard>,
-    loaded: Boolean,
     updating: Boolean = false,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -35,7 +36,7 @@ fun HomeInsightsSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(enabled = loaded, onClick = onClick),
+                .clickable(onClick = onClick),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -44,42 +45,26 @@ fun HomeInsightsSection(
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
-            if (loaded) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_arrow),
-                    contentDescription = stringResource(R.string.insights_screen_title),
-                    tint = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
-                )
-            }
+            Icon(
+                painter = painterResource(R.drawable.ic_arrow),
+                contentDescription = stringResource(R.string.insights_screen_title),
+                tint = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+            )
         }
 
         InsightsUpdatingHeader(visible = updating)
 
-        AnimatedVisibility(
-            visible = showHomeInsightContent(loaded, updating, cards.isNotEmpty()),
-            enter = fadeIn(),
-        ) {
+        AnimatedContent(
+            targetState = cards.take(FindingValues.HOME_PREVIEW_CARDS),
+            transitionSpec = { insightCrossfade() },
+            label = "home-insights",
+        ) { preview ->
             Column(modifier = Modifier.fillMaxWidth()) {
-                if (cards.isEmpty()) {
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
-                    Text(
-                        text = stringResource(R.string.engine_findings_empty_title),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
-                    Text(
-                        text = stringResource(R.string.engine_findings_empty_body),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                if (preview.isEmpty()) {
+                    HomeInsightsEmpty()
                 } else {
-                    cards.take(FindingValues.HOME_PREVIEW_CARDS).forEach { card ->
+                    preview.forEach { card ->
                         Spacer(Modifier.height(dimensionResource(R.dimen.insight_card_spacing)))
                         InsightCardView(card)
                     }
@@ -87,4 +72,24 @@ fun HomeInsightsSection(
             }
         }
     }
+}
+
+@Composable
+private fun HomeInsightsEmpty() {
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+    Text(
+        text = stringResource(R.string.engine_findings_empty_title),
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurface,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
+    Text(
+        text = stringResource(R.string.engine_findings_empty_body),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth(),
+    )
 }

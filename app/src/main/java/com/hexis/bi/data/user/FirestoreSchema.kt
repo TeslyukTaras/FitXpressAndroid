@@ -9,6 +9,7 @@ internal object FirestoreSchema {
     object UserFields {
         const val IMAGE_URL = "imageUrl"
         const val UNIT_SYSTEM = "unitSystem"
+        const val SUIT_ID = "suitId"
     }
 
     object UserSettingsFields {

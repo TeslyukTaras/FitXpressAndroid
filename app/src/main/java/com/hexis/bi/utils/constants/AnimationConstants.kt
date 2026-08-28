@@ -34,4 +34,7 @@ internal object AnimationConstants {
 
     /** Line charts wiping in left-to-right: scan sparkline, sleep HRV/RHR chart, hypnogram. */
     const val LINE_WIPE_MS = 600
+
+    /** "Updating…" banner expanding above insight content while the engine re-runs. */
+    const val UPDATING_BANNER_MS = 250
 }

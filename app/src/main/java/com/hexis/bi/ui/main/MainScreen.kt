@@ -161,7 +161,6 @@ fun MainScreen(
                     onPaceOfAgingClick = { navController.navigate(Route.Main.PACE_OF_AGING) },
                     onActivityClick = { navController.navigate(Route.Main.ACTIVITY) },
                     onInsightsClick = { navController.navigate(Route.Main.INSIGHTS) },
-                    onScanClick = launchScan,
                     onBuySuitClick = { showBuySuitDialog = true },
                     onEditOrderAddress = { orderId ->
                         navController.navigate(Route.Main.editOrderAddress(orderId))

@@ -23,10 +23,9 @@ import com.hexis.bi.ui.theme.NocturnePulseTheme
 @Composable
 internal fun ScanOverviewCard(
     data: ScanOverview,
-    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    BodyGlassCard(modifier = modifier, onClick = onClick) {
+    BodyGlassCard(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,

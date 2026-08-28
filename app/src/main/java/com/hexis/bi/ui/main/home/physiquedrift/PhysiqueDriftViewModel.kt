@@ -10,9 +10,10 @@ import com.hexis.bi.data.scan.ScanRecord
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.body.PhysiqueScoreBreakdown
 import com.hexis.bi.domain.body.muscleMassPercentage
+import com.hexis.bi.data.intelligence.IntelligenceConfigRepository
 import com.hexis.bi.domain.body.physiqueScoreBreakdown
 import com.hexis.bi.ui.base.BaseViewModel
-import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
+import com.hexis.bi.domain.intelligence.IntelligenceCoordinator
 import com.hexis.bi.intelligence.engine.Domains
 import com.hexis.bi.ui.main.home.intelligence.EngineFindingsMapper
 import com.hexis.bi.ui.main.home.intelligence.BackfillTransition
@@ -20,7 +21,6 @@ import com.hexis.bi.ui.main.home.intelligence.backfillTransition
 import com.hexis.bi.utils.millisToShortMonthDayYear
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
@@ -34,45 +34,41 @@ class PhysiqueDriftViewModel internal constructor(
     application: Application,
     private val scanHistoryRepository: ScanHistoryRepository,
     private val userRepository: UserRepository,
-    private val runIntelligence: RunIntelligenceUseCase,
+    private val intelligenceCoordinator: IntelligenceCoordinator,
+    private val intelligenceConfigRepository: IntelligenceConfigRepository,
     private val healthSyncScheduler: HealthSyncScheduler,
 ) : BaseViewModel(application, initialLoading = true) {
 
-    private var findingsJob: Job? = null
-
     private fun loadFindings(clearUpdatingOnComplete: Boolean = false) {
         if (!BuildConfig.INTELLIGENCE_ENGINE_ENABLED) {
-            if (clearUpdatingOnComplete) {
-                _state.update { it.copy(insightsUpdating = false) }
+            _state.update {
+                it.copy(
+                    findings = com.hexis.bi.ui.main.home.intelligence.AreaFindings.completed(),
+                    insightsUpdating = if (clearUpdatingOnComplete) false else it.insightsUpdating,
+                )
             }
             return
         }
-        findingsJob?.cancel()
-        findingsJob = viewModelScope.launch {
-            val run = runIntelligence().getOrNull()
-            if (run == null) {
-                if (clearUpdatingOnComplete) {
-                    _state.update { it.copy(insightsUpdating = false) }
-                }
-                return@launch
-            }
+        intelligenceCoordinator.refreshNow()
+    }
+
+    private fun observeFindings() {
+        intelligenceCoordinator.state.onEach { reportState ->
+            val run = reportState.run ?: return@onEach
             val resolved = EngineFindingsMapper.forAreas(
                 report = run.report,
                 copy = run.copy,
                 areas = setOf(Domains.BODY),
                 isMetric = run.isMetric,
                 analysisWindowDays = run.config.windows.analysisDays,
-                valueOverrides = _state.value.score.toDoubleOrNull()
-                    ?.let { mapOf("physique_score" to it) }
-                    .orEmpty(),
             )
             _state.update {
                 it.copy(
                     findings = resolved,
-                    insightsUpdating = if (clearUpdatingOnComplete) false else it.insightsUpdating,
+                    insightsUpdating = reportState.updating,
                 )
             }
-        }
+        }.launchIn(viewModelScope)
     }
 
     private val _state = MutableStateFlow(PhysiqueDriftState())
@@ -81,20 +77,19 @@ class PhysiqueDriftViewModel internal constructor(
 
     init {
         loadFindings()
+        observeFindings()
         healthSyncScheduler.backfillInFlight()
             .onEach { inFlight ->
                 val transition = backfillTransition(backfillInFlight, inFlight)
                 backfillInFlight = inFlight
                 when (transition) {
-                    BackfillTransition.ACTIVE -> {
-                        findingsJob?.cancel()
-                        _state.update { it.copy(insightsUpdating = true) }
-                    }
+                    BackfillTransition.ACTIVE -> _state.update { it.copy(insightsUpdating = true) }
                     BackfillTransition.SETTLED -> loadFindings(clearUpdatingOnComplete = true)
                     BackfillTransition.IDLE -> _state.update { it.copy(insightsUpdating = false) }
                 }
             }
             .launchIn(viewModelScope)
+
         load()
     }
 
@@ -115,12 +110,14 @@ class PhysiqueDriftViewModel internal constructor(
         val scansDef =
             async { scanHistoryRepository.getRecentScans(limit = 2).getOrNull().orEmpty() }
         val heightDef = async { userRepository.getUser().getOrNull()?.heightCm?.toFloat() }
+        val configDef = async { intelligenceConfigRepository.config().getOrNull() }
 
         val scans = scansDef.await()
         val heightCm = heightDef.await()
+        val config = configDef.await()
         val latest = scans.getOrNull(0)
         val previous = scans.getOrNull(1)
-        val breakdown = latest?.physiqueScoreBreakdown(heightCm)
+        val breakdown = config?.let { latest?.physiqueScoreBreakdown(it, heightCm) }
 
         if (latest == null || breakdown == null) {
             _state.update {
@@ -142,7 +139,7 @@ class PhysiqueDriftViewModel internal constructor(
             return@coroutineScope
         }
 
-        val previousBreakdown = previous?.physiqueScoreBreakdown(heightCm)
+        val previousBreakdown = previous?.physiqueScoreBreakdown(config, heightCm)
         val level = levelFor(breakdown.score)
         _state.update {
             it.copy(

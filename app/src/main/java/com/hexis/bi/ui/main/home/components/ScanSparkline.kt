@@ -55,8 +55,10 @@ internal fun ScanSparkline(
         val minValue = points.min()
         val range = (points.max() - minValue).takeIf { it > 0f } ?: 1f
         val usableHeight = size.height - 2f * pad
+        val inset = maxOf(markerRadiusPx, strokePx / 2f)
+        val usableWidth = (size.width - 2f * inset).coerceAtLeast(0f)
         val coords = points.mapIndexed { index, value ->
-            val x = index.toFloat() / (points.size - 1) * size.width
+            val x = inset + index.toFloat() / (points.size - 1) * usableWidth
             val y = pad + (1f - (value - minValue) / range) * usableHeight
             Offset(x, y)
         }

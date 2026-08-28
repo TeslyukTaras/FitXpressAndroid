@@ -43,7 +43,7 @@ fun EngineFindingsSection(
         InsightsUpdatingHeader(visible = updating, animateDots = animateUpdatingDots)
         AnimatedContent(
             targetState = state,
-            transitionSpec = { fadeIn() togetherWith fadeOut() },
+            transitionSpec = { insightCrossfade() },
             label = "engine-findings",
         ) { current ->
             when (current) {
@@ -54,10 +54,6 @@ fun EngineFindingsSection(
                     shape = RoundedCornerShape(dimensionResource(R.dimen.insight_card_corner)),
                 ) {
                     InsightHeader(stringResource(R.string.engine_findings_title), current.confidence)
-                    if (current.values.isNotEmpty()) {
-                        Spacer(Modifier.height(dimensionResource(R.dimen.insight_card_value_gap)))
-                        InsightValues(current.values, showLabels = true)
-                    }
                     current.rows.forEach { row ->
                         Spacer(Modifier.height(dimensionResource(R.dimen.insight_card_text_gap)))
                         FindingRow(row)
@@ -65,19 +61,22 @@ fun EngineFindingsSection(
                 }
             }
 
-                EngineFindingsState.Empty -> if (showEngineFindingsEmpty(updating)) {
-                    Column {
-                        Spacer(Modifier.height(topSpacing))
-                        BodyGlassCard(
-                            contentPadding = PaddingValues(dimensionResource(R.dimen.insight_card_padding)),
-                            shape = RoundedCornerShape(dimensionResource(R.dimen.insight_card_corner)),
-                        ) { EmptyFindings() }
-                    }
-                } else {
-                    Spacer(Modifier)
+                EngineFindingsState.Loading -> Column {
+                    Spacer(Modifier.height(topSpacing))
+                    BodyGlassCard(
+                        contentPadding = PaddingValues(dimensionResource(R.dimen.insight_card_padding)),
+                        shape = RoundedCornerShape(dimensionResource(R.dimen.insight_card_corner)),
+                        loading = true,
+                    ) { EmptyFindings() }
                 }
 
-                EngineFindingsState.Hidden -> Spacer(Modifier)
+                EngineFindingsState.Empty -> Column {
+                    Spacer(Modifier.height(topSpacing))
+                    BodyGlassCard(
+                        contentPadding = PaddingValues(dimensionResource(R.dimen.insight_card_padding)),
+                        shape = RoundedCornerShape(dimensionResource(R.dimen.insight_card_corner)),
+                    ) { EmptyFindings() }
+                }
             }
         }
     }
@@ -212,12 +211,18 @@ private fun FindingRow(row: EngineFindingRow) {
         row.heading?.let { heading ->
             Text(
                 text = heading,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }
-        if (row.explanation.isNotBlank()) {
+        if (row.values.isNotEmpty()) {
             if (row.heading != null) {
+                Spacer(Modifier.height(dimensionResource(R.dimen.insight_card_value_gap)))
+            }
+            InsightValues(row.values, showLabels = true)
+        }
+        if (row.explanation.isNotBlank()) {
+            if (row.heading != null || row.values.isNotEmpty()) {
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
             }
             Text(

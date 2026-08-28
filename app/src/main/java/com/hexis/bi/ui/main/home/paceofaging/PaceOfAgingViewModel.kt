@@ -20,9 +20,9 @@ import com.hexis.bi.domain.longevity.PaceOfAgingResult
 import com.hexis.bi.domain.longevity.agingLevel
 import com.hexis.bi.domain.longevity.computePaceOfAging
 import com.hexis.bi.ui.base.BaseViewModel
-import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
+import com.hexis.bi.domain.intelligence.IntelligenceCoordinator
 import com.hexis.bi.intelligence.engine.Domains
-import com.hexis.bi.ui.main.home.intelligence.findingsFor
+import com.hexis.bi.ui.main.home.intelligence.EngineFindingsMapper
 import com.hexis.bi.ui.main.home.intelligence.BackfillTransition
 import com.hexis.bi.ui.main.home.intelligence.backfillTransition
 import com.hexis.bi.ui.main.home.longevity.LongevityTrend
@@ -53,23 +53,33 @@ class PaceOfAgingViewModel internal constructor(
     private val userRepository: UserRepository,
     private val terraManagerHolder: TerraManagerHolder,
     private val terraSdkConnectionOwnership: TerraSdkConnectionOwnership,
-    private val runIntelligence: RunIntelligenceUseCase,
+    private val intelligenceCoordinator: IntelligenceCoordinator,
     private val healthSyncScheduler: HealthSyncScheduler,
 ) : BaseViewModel(application, initialLoading = true) {
 
     private var findingsJob: Job? = null
 
     private fun loadFindings(clearUpdatingOnComplete: Boolean = false) {
-        findingsJob?.cancel()
-        findingsJob = viewModelScope.launch {
-            val resolved = runIntelligence.findingsFor(Domains.AGING)
+        intelligenceCoordinator.refreshNow()
+    }
+
+    private fun observeFindings() {
+        intelligenceCoordinator.state.onEach { reportState ->
+            val run = reportState.run ?: return@onEach
+            val resolved = EngineFindingsMapper.forAreas(
+                report = run.report,
+                copy = run.copy,
+                areas = setOf(Domains.AGING),
+                isMetric = run.isMetric,
+                analysisWindowDays = run.config.windows.analysisDays,
+            )
             _state.update {
                 it.copy(
                     findings = resolved,
-                    insightsUpdating = if (clearUpdatingOnComplete) false else it.insightsUpdating,
+                    insightsUpdating = reportState.updating,
                 )
             }
-        }
+        }.launchIn(viewModelScope)
     }
 
     private fun refreshAfterBackfill() {
@@ -77,8 +87,8 @@ class PaceOfAgingViewModel internal constructor(
         findingsJob = viewModelScope.launch {
             try {
                 renderFromRepositories()
-                val resolved = runIntelligence.findingsFor(Domains.AGING)
-                _state.update { it.copy(findings = resolved, insightsUpdating = false) }
+                intelligenceCoordinator.refreshNow()
+                _state.update { it.copy(insightsUpdating = false) }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Throwable) {
@@ -93,20 +103,19 @@ class PaceOfAgingViewModel internal constructor(
 
     init {
         loadFindings()
+        observeFindings()
         healthSyncScheduler.backfillInFlight()
             .onEach { inFlight ->
                 val transition = backfillTransition(backfillInFlight, inFlight)
                 backfillInFlight = inFlight
                 when (transition) {
-                    BackfillTransition.ACTIVE -> {
-                        findingsJob?.cancel()
-                        _state.update { it.copy(insightsUpdating = true) }
-                    }
+                    BackfillTransition.ACTIVE -> _state.update { it.copy(insightsUpdating = true) }
                     BackfillTransition.SETTLED -> refreshAfterBackfill()
                     BackfillTransition.IDLE -> _state.update { it.copy(insightsUpdating = false) }
                 }
             }
             .launchIn(viewModelScope)
+
         load()
     }
 

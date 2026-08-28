@@ -20,7 +20,6 @@ import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.body.BodyMeasurementKeys
 import com.hexis.bi.domain.body.BodyMeasurementRegion
-import com.hexis.bi.domain.body.physiqueScore
 import com.hexis.bi.domain.longevity.LongevityCalculator
 import com.hexis.bi.domain.longevity.PaceOfAgingInputs
 import com.hexis.bi.domain.longevity.agingScore
@@ -31,10 +30,10 @@ import com.hexis.bi.domain.order.OrderShippingAddress
 import com.hexis.bi.domain.order.OrderStatus
 import com.hexis.bi.domain.recomposition.RecompositionCalculator
 import com.hexis.bi.domain.suit.SuitRepository
-import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
 import com.hexis.bi.ui.main.home.intelligence.EngineFindingsMapper
 import com.hexis.bi.ui.main.home.intelligence.BackfillTransition
 import com.hexis.bi.ui.main.home.intelligence.backfillTransition
+import com.hexis.bi.domain.intelligence.IntelligenceCoordinator
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.constants.CanonicalCacheConstants
 import com.hexis.bi.ui.base.UiEvent
@@ -46,6 +45,7 @@ import com.hexis.bi.ui.main.scan.results.MeasurementChange
 import com.hexis.bi.utils.calculateAge
 import com.hexis.bi.utils.cmToInches
 import com.hexis.bi.utils.constants.ActivityConstants
+import com.hexis.bi.utils.constants.FindingMetricAliases
 import com.hexis.bi.utils.constants.LongevityFoundationConstants
 import com.hexis.bi.utils.constants.OrderConstants
 import com.hexis.bi.utils.constants.RecompositionConstants
@@ -55,7 +55,6 @@ import com.hexis.bi.utils.isMetricUnitSystem
 import com.hexis.bi.utils.millisToOrderTimelineTimestamp
 import com.hexis.bi.utils.millisToShortMonthDay
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.coroutineScope
@@ -97,44 +96,22 @@ class HomeViewModel internal constructor(
     private val orderRepository: OrderRepository,
     private val firebaseAuth: FirebaseAuth,
     private val healthSyncScheduler: HealthSyncScheduler,
-    private val runIntelligence: RunIntelligenceUseCase,
+    private val intelligenceCoordinator: IntelligenceCoordinator,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(HomeState())
     val state = _state.asStateFlow()
-    private var insightsJob: Job? = null
 
     private fun loadInsights(clearUpdatingOnComplete: Boolean = false) {
         if (!BuildConfig.INTELLIGENCE_ENGINE_ENABLED) {
             _state.update {
                 it.copy(
-                    insightsLoaded = true,
                     insightsUpdating = if (clearUpdatingOnComplete) false else it.insightsUpdating,
                 )
             }
             return
         }
-        insightsJob?.cancel()
-        insightsJob = viewModelScope.launch {
-            val result = runIntelligence().map { run ->
-                EngineFindingsMapper.simpleFindings(
-                        report = run.report,
-                        copy = run.copy,
-                        windowDays = run.config.windows.analysisDays,
-                        isMetric = run.isMetric,
-                        valueOverrides = _state.value.physiqueScore?.toDouble()
-                            ?.let { mapOf("physique_score" to it) }
-                            .orEmpty(),
-                )
-            }
-            _state.update {
-                it.copy(
-                    insights = result.getOrNull() ?: it.insights,
-                    insightsLoaded = true,
-                    insightsUpdating = if (clearUpdatingOnComplete) false else it.insightsUpdating,
-                )
-            }
-        }
+        intelligenceCoordinator.refreshNow()
     }
 
     /** Pokes the overview pipeline; replay-less since every Home RESUME re-pokes. */
@@ -146,7 +123,6 @@ class HomeViewModel internal constructor(
         val newUserId = auth.currentUser?.uid
         if (newUserId == activeUserId) return@AuthStateListener
         activeUserId = newUserId
-        insightsJob?.cancel()
         terraTileContext = null
         _state.value = HomeState()
         if (newUserId != null) {
@@ -247,15 +223,34 @@ class HomeViewModel internal constructor(
                 val settled = transition == BackfillTransition.SETTLED
                 backfillInFlight = inFlight
                 when (transition) {
-                    BackfillTransition.ACTIVE -> {
-                        insightsJob?.cancel()
-                        _state.update { it.copy(insightsUpdating = true) }
-                    }
+                    BackfillTransition.ACTIVE -> _state.update { it.copy(insightsUpdating = true) }
                     BackfillTransition.SETTLED -> loadInsights(clearUpdatingOnComplete = true)
                     BackfillTransition.IDLE -> _state.update { it.copy(insightsUpdating = false) }
                 }
                 terraTileContext?.let { refreshSyncingState(it.today, it.window.first()) }
                 if (settled) refreshTerraTiles()
+            }
+            .launchIn(viewModelScope)
+
+        intelligenceCoordinator.state
+            .onEach { reportState ->
+                val run = reportState.run
+                _state.update {
+                    it.copy(
+                        insights = run?.let { current ->
+                            EngineFindingsMapper.simpleFindings(
+                                report = current.report,
+                                copy = current.copy,
+                                windowDays = current.config.windows.analysisDays,
+                                isMetric = current.isMetric,
+                            )
+                        } ?: it.insights,
+                        insightsUpdating = reportState.updating,
+                        physiqueScore = run?.report?.latestValues
+                            ?.get(FindingMetricAliases.PHYSIQUE_SCORE_METRIC)
+                            ?.toFloat() ?: it.physiqueScore,
+                    )
+                }
             }
             .launchIn(viewModelScope)
 
@@ -358,6 +353,7 @@ class HomeViewModel internal constructor(
     /** Re-derives every overview card. Called on each Home RESUME; Terra syncs also trigger it. */
     fun refreshOverview() {
         refreshTrigger.tryEmit(Unit)
+        if (!backfillInFlight) loadInsights()
     }
 
     /**
@@ -406,10 +402,6 @@ class HomeViewModel internal constructor(
                 publishScanOverview(scans, isMetric)
                 publishRecompositionOverview(recompositionScans, today)
                 publishLongevityDirection(recompositionScans, heightCm, today)
-                val latestFullScan = scans?.firstOrNull()?.id
-                    ?.let { scanHistoryRepository.getScanRecordById(it).getOrNull() }
-                _state.update { it.copy(physiqueScore = latestFullScan?.physiqueScore(heightCm)) }
-
                 val terra = terraDeferred.await()
                 val latestScan = scans?.firstOrNull()
                 applyTerraTiles(today, terra, latestScan, heightCm)
@@ -528,7 +520,7 @@ class HomeViewModel internal constructor(
             _state.update {
                 it.copy(
                     sleep = it.sleep.copy(
-                        durationMinutes = (sleepSession?.durationMinutes ?: 0).coerceAtLeast(0),
+                        durationMinutes = (sleepSession?.timeInBedMinutes ?: 0).coerceAtLeast(0),
                         goalHours = it.sleepGoalHours,
                     ),
                     activity = ActivityOverview(
