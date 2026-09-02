@@ -7,6 +7,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.data.health.local.HealthLocalDataSource
 import com.hexis.bi.utils.constants.HealthSyncWorkConstants
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import timber.log.Timber
@@ -26,7 +27,18 @@ internal class HealthSyncWorker(
             Timber.d("Health sync worker: signed out, nothing to do")
             return Result.success()
         }
+        if (!syncGate.tryLock()) {
+            Timber.d("Health sync worker: a sync is already running, deferring this run")
+            return giveUpOrRetry()
+        }
+        return try {
+            sync()
+        } finally {
+            syncGate.unlock()
+        }
+    }
 
+    private suspend fun sync(): Result {
         val startedAt = System.nanoTime()
         val elapsed = { Duration.ofNanos(System.nanoTime() - startedAt) }
 
@@ -69,5 +81,9 @@ internal class HealthSyncWorker(
             return Result.success()
         }
         return Result.retry()
+    }
+
+    private companion object {
+        val syncGate = Mutex()
     }
 }

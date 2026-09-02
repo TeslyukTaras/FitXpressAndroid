@@ -113,17 +113,25 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             if (firebaseAuth.currentUser == null) return@launch
             healthSyncScheduler.enqueueHistoryBackfill(trigger)
+            healthSyncScheduler.schedulePeriodicSync()
             healthSyncCoordinator.syncRecentWindow()
         }
     }
 
     private suspend fun pullOwnedSdkConnections(reason: String) {
         if (firebaseAuth.currentUser == null) return
+        val owned = terraSdkConnectionOwnership.syncableSdkUserIds().getOrElse { error ->
+            Timber.w(
+                error,
+                "IDENTITY-OWNERSHIP sdk: ownership unknown for %s (%s); skipping the pull",
+                firebaseAuth.currentUser?.uid ?: "signed-out",
+                reason,
+            )
+            return
+        }
         TerraSdkSync.syncLinkedConnections(
             manager = terraManagerHolder.current,
-            ownedUserIds = terraSdkConnectionOwnership.syncableSdkUserIds()
-                .onFailure { Timber.w(it, "Terra connection ownership unknown; pulling unfiltered") }
-                .getOrNull(),
+            ownedUserIds = owned,
             reason = reason,
             force = false,
         )

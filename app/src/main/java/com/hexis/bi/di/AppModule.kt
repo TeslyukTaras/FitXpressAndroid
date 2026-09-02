@@ -14,6 +14,7 @@ import com.hexis.bi.data.health.local.HealthLocalDataSource
 import com.hexis.bi.data.health.local.CanonicalUserCacheCleaner
 import com.hexis.bi.BuildConfig
 import com.hexis.bi.data.auth.AuthRepository
+import com.hexis.bi.data.auth.AccountDeletionApi
 import com.hexis.bi.data.auth.EmailVerificationApi
 import com.hexis.bi.data.auth.FirebaseAuthRepository
 import com.hexis.bi.data.auth.SessionCleaner
@@ -129,6 +130,7 @@ val appModule = module {
     single<ScanReminderScheduler> { ScanReminderSchedulerImpl(androidContext(), get(), get()) }
     single { NotificationPermissionCoordinator(androidContext(), get(), get(), get(), get()) }
     single { EmailVerificationApi(get()) }
+    single { AccountDeletionApi(get()) }
     single<AuthRepository> { FirebaseAuthRepository(get(), get(), get(), androidContext()) }
     single { HealthConnectPermissionChecker(androidContext()) }
     single { HealthRemoteDataSource(get(), get()) }
@@ -163,7 +165,7 @@ val appModule = module {
     single { WorkManager.getInstance(androidContext()) }
     single<HealthSyncScheduler> { WorkManagerHealthSyncScheduler(get()) }
     single { IntelligenceCoordinator(get(), get(), get(), get(), get()) }
-    single { SessionCleaner(get(), get(), get(), get(), get(), get(), get(), androidContext()) }
+    single { SessionCleaner(get(), get(), get(), get(), get(), get(), get(), get(), androidContext()) }
     single<SuitRepository> { UserProfileSuitRepository(get()) }
     single<UserRepository> { FirestoreUserRepository(get(), get(), androidContext()) }
     single {

@@ -26,10 +26,13 @@ const emailVerificationCollection = "emailVerificationCodes";
 // Must match the "Trigger Email from Firestore" extension's configured collection.
 const emailMailCollection = "mail";
 const usersCollection = "users";
+const tempScanStoragePrefix = "tmpScans";
+const avatarStoragePrefix = "avatars";
 const emailCodeLength = 5;
 const emailCodeTtlMs = 10 * 60 * 1000;
 const emailResendCooldownMs = 30 * 1000;
 const emailMaxVerifyAttempts = 5;
+const reauthMaxAgeMs = 5 * 60 * 1000;
 
 // App Check rollout plan:
 // Add `enforceAppCheck: true` to these callable options only after both Android and iOS
@@ -48,6 +51,12 @@ const devTerraSecretOptions = {
 const prodTerraSecretOptions = {
   ...callableOptions,
   secrets: [prodTerraDevId, prodTerraApiKey],
+};
+
+const deleteAccountOptions = {
+  ...callableOptions,
+  secrets: [devTerraDevId, devTerraApiKey, prodTerraDevId, prodTerraApiKey],
+  timeoutSeconds: 300,
 };
 
 const threeDLookSecretOptions = {
@@ -436,6 +445,163 @@ export const verifyEmailCode = onCall(callableOptions, async (request) => {
   return { verified: true };
 });
 
+export const deleteAccount = onCall(deleteAccountOptions, async (request) => {
+  const uid = requireAuth(request.auth?.uid);
+  const environment = requireTerraEnvironment(request.data?.environment);
+  const token = request.auth?.token as { email?: unknown; auth_time?: unknown } | undefined;
+  requireRecentAuth(token?.auth_time);
+  const email = typeof token?.email === "string" ? token.email : undefined;
+
+  logger.info("Account deletion started", { uid, environment });
+
+  let stage = "terra";
+  try {
+    const terra = await deauthenticateEveryTerraUser(uid, environment);
+    logger.info("Account deletion: Terra done", {
+      uid,
+      deauthenticated: terra.deauthenticated,
+      failed: terra.failed,
+    });
+
+    stage = "storage";
+    const storageObjects = await deleteUserStorage(uid);
+    logger.info("Account deletion: storage done", { uid, storageObjects });
+
+    stage = "firestore";
+    const documents = await deleteUserDocuments(uid, email);
+    logger.info("Account deletion: firestore done", { uid, ...documents });
+
+    stage = "auth";
+    await getAuth().deleteUser(uid);
+
+    logger.info("Account deleted", {
+      uid,
+      terraDeauthenticated: terra.deauthenticated,
+      terraFailed: terra.failed,
+      storageObjects,
+      ...documents,
+    });
+
+    return {
+      deleted: true,
+      terraDeauthenticated: terra.deauthenticated,
+      terraFailed: terra.failed,
+      storageObjects,
+      ...documents,
+    };
+  } catch (error) {
+    logger.error("Account deletion failed", { uid, stage, error });
+    throw error;
+  }
+});
+
+function requireRecentAuth(authTimeSeconds: unknown): void {
+  if (typeof authTimeSeconds !== "number" || !Number.isFinite(authTimeSeconds)) {
+    throw new HttpsError("failed-precondition", "Sign in again before deleting your account");
+  }
+  if (Date.now() - authTimeSeconds * 1000 > reauthMaxAgeMs) {
+    throw new HttpsError("failed-precondition", "Sign in again before deleting your account");
+  }
+}
+
+function requireTerraEnvironment(value: unknown): TerraEnvironment {
+  const environment = requireString(value, "environment");
+  if (environment !== "dev" && environment !== "prod") {
+    throw new HttpsError("invalid-argument", "environment must be \"dev\" or \"prod\"");
+  }
+  return environment;
+}
+
+function terraSecretsFor(environment: TerraEnvironment): TerraSecrets {
+  return environment === "dev"
+    ? { environment, devId: devTerraDevId, apiKey: devTerraApiKey }
+    : { environment, devId: prodTerraDevId, apiKey: prodTerraApiKey };
+}
+
+async function deauthenticateEveryTerraUser(
+  uid: string,
+  environment: TerraEnvironment,
+): Promise<{ deauthenticated: number; failed: number }> {
+  const secrets = terraSecretsFor(environment);
+  const snapshot = await getFirestore()
+    .collection(usersCollection)
+    .doc(uid)
+    .collection("settings")
+    .doc("userSettings")
+    .collection("healthConnections")
+    .get();
+
+  let deauthenticated = 0;
+  let failed = 0;
+
+  for (const doc of snapshot.docs) {
+    const terraUserId = doc.id;
+    const url = new URL(`${terraBaseUrl}/auth/deauthenticateUser`);
+    url.searchParams.set("user_id", terraUserId);
+    try {
+      const response = await terraFetch(secrets, url, { method: "DELETE" });
+      if (response.ok || response.status === 404) {
+        deauthenticated += 1;
+      } else {
+        failed += 1;
+        logger.warn("Account deletion could not deauthenticate a Terra user", {
+          uid,
+          environment,
+          status: response.status,
+        });
+      }
+    } catch (error) {
+      failed += 1;
+      logger.warn("Account deletion failed to reach Terra", { uid, environment, error });
+    }
+  }
+
+  return { deauthenticated, failed };
+}
+
+async function deleteUserStorage(uid: string): Promise<number> {
+  const bucket = getStorage().bucket();
+  const prefixes = [`${tempScanStoragePrefix}/${uid}/`, `${avatarStoragePrefix}/${uid}/`];
+  let deleted = 0;
+
+  for (const prefix of prefixes) {
+    const [files] = await bucket.getFiles({ prefix });
+    const results = await Promise.allSettled(files.map((file) => file.delete()));
+    deleted += results.filter((result) => result.status === "fulfilled").length;
+    for (const result of results) {
+      if (result.status === "rejected") {
+        logger.warn("Account deletion could not delete a storage object", { uid, prefix });
+      }
+    }
+  }
+
+  return deleted;
+}
+
+async function deleteUserDocuments(
+  uid: string,
+  email?: string,
+): Promise<{ userDocs: number; mailDocs: number }> {
+  const firestore = getFirestore();
+
+  let userDocs = 0;
+  const writer = firestore.bulkWriter();
+  writer.onWriteResult(() => {
+    userDocs += 1;
+  });
+  await firestore.recursiveDelete(firestore.collection(usersCollection).doc(uid), writer);
+  await firestore.collection(emailVerificationCollection).doc(uid).delete();
+
+  if (!email) return { userDocs, mailDocs: 0 };
+  const queued = await firestore
+    .collection(emailMailCollection)
+    .where("to", "array-contains", email)
+    .get();
+  const results = await Promise.allSettled(queued.docs.map((doc) => doc.ref.delete()));
+  const mailDocs = results.filter((result) => result.status === "fulfilled").length;
+  return { userDocs, mailDocs };
+}
+
 function generateVerificationCode(): string {
   return randomInt(0, 10 ** emailCodeLength).toString().padStart(emailCodeLength, "0");
 }
@@ -643,7 +809,7 @@ function requireOwnedByCaller(userInfo: unknown, uid: string): void {
 
 function requireTempScanPath(uid: string, value: unknown, field: string): string {
   const path = requireString(value, field);
-  const prefix = `tmpScans/${uid}/`;
+  const prefix = `${tempScanStoragePrefix}/${uid}/`;
   if (!path.startsWith(prefix) || path.includes("..")) {
     throw new HttpsError("invalid-argument", `${field} must be under ${prefix}`);
   }

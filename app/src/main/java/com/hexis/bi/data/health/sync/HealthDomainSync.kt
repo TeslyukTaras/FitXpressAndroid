@@ -14,6 +14,7 @@ import com.hexis.bi.data.terra.MergedSourceResult
 import com.hexis.bi.data.terra.TerraRestIdentity
 import com.hexis.bi.data.terra.decodeTerraRestIdentity
 import com.hexis.bi.data.terra.encodeForCursor
+import com.hexis.bi.utils.redactSensitiveId
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -114,6 +115,16 @@ internal class HealthDomainSync<T>(
                 val identities = remote.identities().getOrElse { error ->
                     Timber.w(error, "Provider lookup failed")
                     return@singleFlight Result.failure(error)
+                }
+                val liveUid = auth.currentUser?.uid
+                if (liveUid != uid) {
+                    Timber.w(
+                        "IDENTITY-OWNERSHIP %s: refresh started for %s but identities resolved for %s; writing %s under the started uid",
+                        spec.label,
+                        uid,
+                        liveUid ?: "signed-out",
+                        identities.all.map { redactSensitiveId(it.terraUserId) },
+                    )
                 }
                 local.rememberIdentityOrder(uid, identities.all.map { it.encodeForCursor() })
 

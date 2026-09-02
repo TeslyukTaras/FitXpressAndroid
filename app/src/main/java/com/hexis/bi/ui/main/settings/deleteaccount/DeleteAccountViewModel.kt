@@ -5,10 +5,10 @@ import android.app.Application
 import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.R
+import com.hexis.bi.data.auth.AccountDeletionApi
 import com.hexis.bi.data.auth.AuthRepository
 import com.hexis.bi.data.auth.FirebaseAuthProviders
 import com.hexis.bi.data.auth.SessionCleaner
-import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,7 +18,7 @@ class DeleteAccountViewModel(
     application: Application,
     private val firebaseAuth: FirebaseAuth,
     private val authRepository: AuthRepository,
-    private val userRepository: UserRepository,
+    private val accountDeletionApi: AccountDeletionApi,
     private val sessionCleaner: SessionCleaner,
 ) : BaseViewModel(application) {
 
@@ -62,26 +62,26 @@ class DeleteAccountViewModel(
             return
         }
         launch {
-            userRepository.deleteUser()
+            authRepository.reauthenticateWithPassword(password)
                 .onFailure { setError(it.message); return@launch }
-            sessionCleaner.deleteAccount { authRepository.deleteAccountWithPassword(password) }
-                .onSuccess { emitEvent(DeleteAccountEvent.DeleteSuccess) }
-                .onFailure { setError(it.message) }
+            deleteAccount()
         }
     }
 
     fun deleteAccountWithGoogle(context: Context) = launch {
-        userRepository.deleteUser()
+        authRepository.reauthenticateWithGoogle(context)
             .onFailure { setError(it.message); return@launch }
-        sessionCleaner.deleteAccount { authRepository.deleteAccountWithGoogle(context) }
-            .onSuccess { emitEvent(DeleteAccountEvent.DeleteSuccess) }
-            .onFailure { setError(it.message) }
+        deleteAccount()
     }
 
     fun deleteAccountWithApple(activity: Activity) = launch {
-        userRepository.deleteUser()
+        authRepository.reauthenticateWithApple(activity)
             .onFailure { setError(it.message); return@launch }
-        sessionCleaner.deleteAccount { authRepository.deleteAccountWithApple(activity) }
+        deleteAccount()
+    }
+
+    private suspend fun deleteAccount() {
+        sessionCleaner.deleteAccount { accountDeletionApi.deleteAccount() }
             .onSuccess { emitEvent(DeleteAccountEvent.DeleteSuccess) }
             .onFailure { setError(it.message) }
     }

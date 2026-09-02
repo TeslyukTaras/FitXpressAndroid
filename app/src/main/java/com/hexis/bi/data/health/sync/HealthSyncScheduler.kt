@@ -2,9 +2,11 @@ package com.hexis.bi.data.health.sync
 
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import java.util.concurrent.TimeUnit
@@ -23,6 +25,12 @@ enum class HealthSyncTrigger(internal val reason: String, internal val policy: E
 
 interface HealthSyncScheduler {
     fun enqueueHistoryBackfill(trigger: HealthSyncTrigger)
+
+    fun cancelBackfill()
+
+    fun schedulePeriodicSync()
+
+    fun cancelPeriodicSync()
 
     fun backfillInFlight(): Flow<Boolean>
 }
@@ -53,6 +61,50 @@ internal class WorkManagerHealthSyncScheduler(
             request,
         )
         Timber.d("Health history backfill enqueued (%s)", trigger.reason)
+    }
+
+    override fun schedulePeriodicSync() {
+        val request = PeriodicWorkRequestBuilder<HealthSyncWorker>(
+            HealthSyncWorkConstants.PERIODIC_INTERVAL.toMinutes(),
+            TimeUnit.MINUTES,
+        )
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .setRequiresBatteryNotLow(true)
+                    .build(),
+            )
+            .setBackoffCriteria(
+                BackoffPolicy.EXPONENTIAL,
+                HealthSyncWorkConstants.RETRY_BACKOFF.toMillis(),
+                TimeUnit.MILLISECONDS,
+            )
+            .setInitialDelay(
+                HealthSyncWorkConstants.PERIODIC_INTERVAL.toMinutes(),
+                TimeUnit.MINUTES,
+            )
+            .addTag(HealthSyncWorkConstants.PERIODIC_WORK_NAME)
+            .build()
+
+        workManager.enqueueUniquePeriodicWork(
+            HealthSyncWorkConstants.PERIODIC_WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            request,
+        )
+        Timber.d(
+            "Health periodic sync scheduled every %d minute(s)",
+            HealthSyncWorkConstants.PERIODIC_INTERVAL.toMinutes(),
+        )
+    }
+
+    override fun cancelPeriodicSync() {
+        workManager.cancelUniqueWork(HealthSyncWorkConstants.PERIODIC_WORK_NAME)
+        Timber.d("Health periodic sync cancelled")
+    }
+
+    override fun cancelBackfill() {
+        workManager.cancelUniqueWork(HealthSyncWorkConstants.UNIQUE_WORK_NAME)
+        Timber.d("Health history backfill cancelled")
     }
 
     private fun isBackfillActive(info: WorkInfo): Boolean = when (info.state) {
