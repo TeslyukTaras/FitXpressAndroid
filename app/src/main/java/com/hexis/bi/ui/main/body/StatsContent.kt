@@ -23,7 +23,6 @@ import com.hexis.bi.ui.main.body.components.BodyTrendChart
 internal fun StatsContent(
     state: BodyState,
     onMassUnitChange: (BodyMassUnit) -> Unit,
-    onTimeRangeChange: (BodyTimeRange) -> Unit,
     onPhysiqueBalanceClick: () -> Unit,
     onRetry: () -> Unit,
 ) {
@@ -62,7 +61,6 @@ internal fun StatsContent(
                     loading = loading,
                     chart = state.chart,
                     timeRange = state.timeRange,
-                    onTimeRangeChange = onTimeRangeChange,
                     onOpenClick = onPhysiqueBalanceClick,
                 )
             }

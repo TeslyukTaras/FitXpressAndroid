@@ -1,5 +1,10 @@
 package com.hexis.bi.ui.main.body
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -21,32 +26,36 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
+import com.hexis.bi.ui.components.AppTabSelector
+import com.hexis.bi.ui.components.AppVerticalGradientDivider
 import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.components.LightStatusBarIcons
 import com.hexis.bi.ui.components.MedicalDisclaimerFooter
 import com.hexis.bi.ui.main.body.components.BisInfoBottomSheet
+import com.hexis.bi.ui.main.body.components.BodyMetricTile
 import com.hexis.bi.ui.main.body.components.BodyTrendChart
+import com.hexis.bi.ui.main.body.components.PhysiqueMetricCard
 import com.hexis.bi.ui.theme.NocturnePulseTheme
+import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.ui.theme.screenBackground
-import com.hexis.bi.utils.constants.BodyConstants
+import com.hexis.bi.utils.constants.AnimationConstants
+import com.hexis.bi.utils.constants.ChangeTolerances
 import org.koin.androidx.compose.koinViewModel
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.temporal.ChronoUnit
-import java.util.Date
-import java.util.Locale
 
 @Composable
 fun PhysiqueBalanceScreen(
@@ -108,18 +117,40 @@ fun PhysiqueBalanceScreen(
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
                 ) {
+                    val loading = state.loadState == BodyLoadState.Loading
+
+                    AppTabSelector(
+                        tabs = BodyTimeRange.entries,
+                        selectedTab = state.timeRange,
+                        onTabSelected = viewModel::selectTimeRange,
+                        tabLabel = { stringResource(it.labelRes) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
+
                     BodyTrendChart(
-                        loading = state.loadState == BodyLoadState.Loading,
+                        loading = loading,
                         chart = state.chart,
                         timeRange = state.timeRange,
-                        onTimeRangeChange = viewModel::selectTimeRange,
                         showSegmentLegend = true,
+                        predictionActive = state.prediction is PhysiquePredictionState.Active,
+                        status = { PhysiqueTrendStatus(state.prediction) },
+                        footer = if (state.timeRange.predicts) null else {
+                            { PhysiqueDriftContent(state) }
+                        },
                     )
 
                     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
 
-                    PhysiqueBalanceSummary(state = state)
-                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+                    if (state.timeRange.predicts) {
+                        PhysiqueBalanceSummary(state = state, loading = loading)
+                        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
+                        PhysiqueEstimateCard(prediction = state.prediction, loading = loading)
+                        PhysiqueScanReminder(prediction = state.prediction)
+                    }
+
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
 
                     MedicalDisclaimerFooter()
 
@@ -144,7 +175,61 @@ private fun PhysiqueBalancePlaceholder(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun PhysiqueBalanceSummary(state: BodyState) {
+private fun PhysiqueTrendStatus(prediction: PhysiquePredictionState) {
+    AnimatedContent(
+        targetState = prediction,
+        transitionSpec = {
+            fadeIn(tween(AnimationConstants.TAB_CONTENT_FADE_IN_MS)) togetherWith
+                    fadeOut(tween(AnimationConstants.TAB_CONTENT_FADE_OUT_MS))
+        },
+        label = "physiqueTrendStatus",
+    ) { target ->
+        when (target) {
+            is PhysiquePredictionState.None -> PhysiqueStatusLine(
+                iconRes = R.drawable.ic_info,
+                text = stringResource(R.string.body_prediction_unavailable),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            is PhysiquePredictionState.AwaitingSecondScan -> PhysiqueStatusLine(
+                iconRes = R.drawable.ic_info,
+                text = stringResource(R.string.body_prediction_awaiting_second_scan),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            is PhysiquePredictionState.Overdue -> PhysiqueStatusLine(
+                iconRes = R.drawable.ic_info,
+                text = stringResource(R.string.body_prediction_overdue),
+                tint = NocturnePulseTheme.extendedColors.chartOverdueTick,
+            )
+
+            else -> Spacer(Modifier)
+        }
+    }
+}
+
+@Composable
+private fun PhysiqueStatusLine(iconRes: Int, text: String, tint: Color) {
+    var wraps by remember(text) { mutableStateOf(false) }
+    Row(verticalAlignment = if (wraps) Alignment.Top else Alignment.CenterVertically) {
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(dimensionResource(R.dimen.icon_medium_small)),
+        )
+        Spacer(Modifier.width(dimensionResource(R.dimen.spacer_2xs)))
+        Text(
+            text = text,
+            style = TitleDimTextStyle,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            onTextLayout = { wraps = it.lineCount > 1 },
+        )
+    }
+}
+
+@Composable
+private fun PhysiqueBalanceSummary(state: BodyState, loading: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -153,149 +238,181 @@ private fun PhysiqueBalanceSummary(state: BodyState) {
     ) {
         PhysiqueMetricCard(
             title = stringResource(R.string.body_physique_drift),
-            value = formatSignedValue(physiqueDrift(state)),
-            caption = stringResource(state.timeRange.periodLabelRes),
+            value = formatSignedValue(state.periodPhysiqueDrift),
+            caption = state.periodPhysiqueDrift?.let { stringResource(state.timeRange.periodLabelRes) },
             highlighted = true,
+            loading = loading,
             modifier = Modifier
-                .weight(0.45f)
+                .weight(1f)
                 .fillMaxHeight(),
         )
-        Column(
-            modifier = Modifier.weight(0.55f),
-            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_s)),
-        ) {
-            PhysiqueMetricCard(
-                title = stringResource(R.string.body_next_scan),
-                value = formatNextScanDays(state.composition.timestamp),
-                valueSuffix = if (state.composition.timestamp > 0L) stringResource(R.string.body_next_scan_days_suffix) else null,
-                compact = true,
-            )
-            PhysiqueMetricCard(
-                title = stringResource(R.string.body_next_scan_estimate),
-                value = formatEstimate(state.composition),
-                caption = stringResource(R.string.body_physique_fit),
-                compact = true,
+        PhysiqueMetricCard(
+            title = stringResource(R.string.body_next_scan),
+            value = nextScanValue(state.prediction),
+            caption = nextScanSuffix(state.prediction),
+            loading = loading,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(),
+        )
+    }
+}
+
+@Composable
+private fun PhysiqueDriftContent(state: BodyState) {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(R.string.body_physique_drift),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier
+                .weight(1f)
+                .alignByBaseline(),
+        )
+        Text(
+            text = formatSignedValue(state.periodPhysiqueDrift)
+                ?: stringResource(R.string.stat_unknown),
+            style = MaterialTheme.typography.headlineMedium,
+            color = if (state.periodPhysiqueDrift == null) {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.primary
+            },
+            modifier = Modifier.alignByBaseline(),
+        )
+        if (state.periodPhysiqueDrift != null) {
+            Spacer(Modifier.width(dimensionResource(R.dimen.spacer_xxs)))
+            Text(
+                text = stringResource(state.timeRange.periodLabelRes),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.alignByBaseline(),
             )
         }
     }
 }
 
 @Composable
-private fun PhysiqueMetricCard(
-    title: String,
-    value: String,
-    modifier: Modifier = Modifier,
-    caption: String? = null,
-    valueSuffix: String? = null,
-    highlighted: Boolean = false,
-    compact: Boolean = false,
-) {
-    BodyGlassCard(
-        modifier = modifier,
-        highlighted = highlighted
-    ) {
-        if (compact) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f),
-                )
-                Spacer(Modifier.width(dimensionResource(R.dimen.spacer_s)))
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = value,
-                            style = MaterialTheme.typography.titleLarge,
-                            color = NocturnePulseTheme.extendedColors.positive,
-                        )
-                        if (valueSuffix != null) {
-                            Spacer(Modifier.width(dimensionResource(R.dimen.spacer_xxs)))
-                            Text(
-                                text = valueSuffix,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.secondary,
-                            )
-                        }
-                    }
-                    if (caption != null) {
-                        Spacer(Modifier.width(dimensionResource(R.dimen.spacer_2xs)))
-                        Text(
-                            text = caption,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.secondary,
-                        )
-                    }
-                }
-            }
-        } else {
+private fun PhysiqueEstimateCard(prediction: PhysiquePredictionState, loading: Boolean) {
+    val active = prediction as? PhysiquePredictionState.Active
+    BodyGlassCard(loading = loading) {
+        Row(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = title,
-                style = MaterialTheme.typography.bodyMedium,
+                text = stringResource(R.string.body_physique_estimate),
+                style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface,
-                textAlign = if (highlighted) TextAlign.Center else TextAlign.Start,
-                modifier = if (highlighted) Modifier.fillMaxWidth() else Modifier,
+                modifier = Modifier
+                    .weight(1f)
+                    .alignByBaseline(),
             )
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
-            Spacer(Modifier.weight(1f))
-            Row(
-                verticalAlignment = Alignment.Bottom,
-                modifier = if (highlighted) Modifier.align(Alignment.CenterHorizontally) else Modifier,
-            ) {
+            Text(
+                text = formatScore(active?.fit) ?: stringResource(R.string.stat_unknown),
+                style = MaterialTheme.typography.headlineMedium,
+                color = if (active?.fit == null) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.primary
+                },
+                modifier = Modifier.alignByBaseline(),
+            )
+            if (active?.fit != null) {
+                Spacer(Modifier.width(dimensionResource(R.dimen.spacer_xxs)))
                 Text(
-                    text = value,
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = if (highlighted) NocturnePulseTheme.extendedColors.positive
-                    else MaterialTheme.colorScheme.primary
+                    text = stringResource(R.string.body_physique_fit),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.alignByBaseline(),
                 )
-                if (valueSuffix != null) {
-                    Spacer(Modifier.size(dimensionResource(R.dimen.spacer_xxs)))
+            }
+        }
+
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            BodyMetricTile(
+                label = stringResource(R.string.body_chart_legend_muscle),
+                value = formatSignedValue(active?.leanAdvantage) ?: stringResource(R.string.stat_unknown),
+                delta = null,
+                tolerance = ChangeTolerances.PHYSIQUE_POINTS,
+                modifier = Modifier.weight(1f),
+            )
+            AppVerticalGradientDivider()
+            BodyMetricTile(
+                label = stringResource(R.string.body_chart_legend_fat),
+                value = formatSignedValue(active?.fatAdvantage) ?: stringResource(R.string.stat_unknown),
+                delta = null,
+                tolerance = ChangeTolerances.PHYSIQUE_POINTS,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun PhysiqueScanReminder(prediction: PhysiquePredictionState) {
+    AnimatedContent(
+        targetState = prediction is PhysiquePredictionState.Active,
+        transitionSpec = {
+            fadeIn(tween(AnimationConstants.TAB_CONTENT_FADE_IN_MS)) togetherWith
+                    fadeOut(tween(AnimationConstants.TAB_CONTENT_FADE_OUT_MS))
+        },
+        label = "physiqueScanReminder",
+    ) { active ->
+        if (!active) return@AnimatedContent
+        Column {
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
+            BodyGlassCard {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_calendar),
+                        contentDescription = null,
+                        tint = NocturnePulseTheme.extendedColors.accentBlue,
+                        modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+                    )
+                    Spacer(Modifier.width(dimensionResource(R.dimen.spacer_l)))
                     Text(
-                        text = valueSuffix,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.secondary,
+                        text = stringResource(R.string.body_prediction_scan_again),
+                        style = TitleDimTextStyle,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
-            if (caption != null) Text(
-                text = caption,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = if (highlighted) TextAlign.Center else TextAlign.Start,
-                modifier = if (highlighted) Modifier.fillMaxWidth() else Modifier,
-            )
         }
     }
 }
 
-private fun physiqueDrift(state: BodyState): Float? = state.periodPhysiqueDrift
-
 @Composable
-private fun formatSignedValue(value: Float?): String {
-    if (value == null) return stringResource(R.string.stat_unknown)
-    return String.format(Locale.getDefault(), "%+.1f", value)
+private fun nextScanValue(prediction: PhysiquePredictionState): String? {
+    val days = prediction.daysToNextScan
+    return when {
+        prediction is PhysiquePredictionState.Overdue || days == 0 ->
+            stringResource(R.string.body_next_scan_due_now)
+
+        days != null -> days.toString()
+        else -> null
+    }
 }
 
 @Composable
-private fun formatNextScanDays(timestamp: Long): String {
-    if (timestamp <= 0L) return stringResource(R.string.stat_unknown)
-    val zone = ZoneId.systemDefault()
-    val scanDate = LocalDate.ofInstant(Date(timestamp).toInstant(), zone)
-    val nextScanDate = scanDate.plusDays(BodyConstants.SCAN_CADENCE_DAYS)
-    val days = ChronoUnit.DAYS.between(LocalDate.now(zone), nextScanDate)
-        .coerceAtLeast(0)
-        .toInt()
-    return days.toString()
+private fun nextScanSuffix(prediction: PhysiquePredictionState): String? {
+    val days = prediction.daysToNextScan
+    return if (days != null && days > 0) stringResource(R.string.body_next_scan_days_suffix)
+    else null
 }
 
 @Composable
-private fun formatEstimate(composition: BodyComposition): String {
-    val estimate = composition.bisScore?.let { score ->
-        (score + (composition.deltaBisScore ?: 0f)).coerceIn(1f, 10f)
-    } ?: return stringResource(R.string.stat_unknown)
-    return String.format(Locale.getDefault(), "%.1f", estimate)
+private fun formatSignedValue(value: Float?): String? {
+    if (value == null) return null
+    return String.format(LocalLocale.current.platformLocale, "%+.1f", value)
+}
+
+@Composable
+private fun formatScore(value: Float?): String? {
+    if (value == null) return null
+    return String.format(LocalLocale.current.platformLocale, "%.1f", value)
 }

@@ -12,7 +12,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.text.font.FontWeight
 import com.hexis.bi.R
+import com.hexis.bi.ui.theme.TitleDimTextStyle
 import com.hexis.bi.utils.constants.ChangeTolerance
 
 @Composable
@@ -30,8 +32,8 @@ internal fun BodyMetricTile(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+            style = TitleDimTextStyle,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
         Row(
@@ -40,16 +42,14 @@ internal fun BodyMetricTile(
         ) {
             Text(
                 text = value,
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Medium),
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            if (delta != null) {
-                BodyDelta(
-                    delta = delta,
-                    tolerance = tolerance,
-                    decreaseIsPositive = decreaseIsPositive,
-                )
-            }
+            if (delta != null) BodyDelta(
+                delta = delta,
+                tolerance = tolerance,
+                decreaseIsPositive = decreaseIsPositive,
+            )
         }
     }
 }

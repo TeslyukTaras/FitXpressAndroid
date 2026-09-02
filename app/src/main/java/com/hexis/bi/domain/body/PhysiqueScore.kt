@@ -61,7 +61,7 @@ internal fun comparablePhysiqueScoreDelta(
     heightCm: Float?,
 ): Float? {
     previous ?: return null
-    val scoped = config.withHeight(heightCm)
+    val scoped = config.withHeight(heightCm).withProportion()
     val physique = scoped.composites.physique
     val latestParts = physiqueParts(latest.dayMetrics(), scoped)
     val previousParts = physiqueParts(previous.dayMetrics(), scoped)

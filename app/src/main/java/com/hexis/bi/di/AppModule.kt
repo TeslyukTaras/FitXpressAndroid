@@ -30,6 +30,7 @@ import com.hexis.bi.data.recovery.DefaultRecoveryRepository
 import com.hexis.bi.data.reminder.ScanReminderScheduler
 import com.hexis.bi.data.reminder.ScanReminderSchedulerImpl
 import com.hexis.bi.data.reminder.ScanReminderWorkRunner
+import com.hexis.bi.data.body.PhysiquePredictionRepository
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.health.remote.HealthRemoteDataSource
@@ -178,6 +179,7 @@ val appModule = module {
     single { ThreeDLookRepository(get(), get()) }
     single { ScanResultRepository() }
     single { ScanHistoryRepository(get(), get(), get()) }
+    single { PhysiquePredictionRepository(get(), get()) }
     single { OrderDraftHolder() }
     single<OrderRepository> { FirestoreOrderRepository(get(), get()) }
     single { TerraAuthApi(get()) }
@@ -247,7 +249,7 @@ val appModule = module {
     viewModel { MySuitViewModel(androidApplication(), get()) }
     viewModel { NotificationsSettingsViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { NotificationsViewModel(androidApplication(), get()) }
-    viewModel { BodyViewModel(androidApplication(), get(), get(), get(), get(), get()) }
+    viewModel { BodyViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { SleepViewModel(androidApplication(), get(), get(), get(), get(), get()) }
     viewModel { ActivityViewModel(androidApplication(), get(), get(), get(), get(), get()) }
     viewModel { RecoveryViewModel(androidApplication(), get()) }
