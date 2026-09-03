@@ -5,6 +5,9 @@ import android.app.Application
 import android.os.Bundle
 import android.os.Process
 import android.view.WindowManager
+import com.google.firebase.appcheck.FirebaseAppCheck
+import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
+import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.firestore.FirebaseFirestore
 import com.hexis.bi.data.notification.NotificationInboxRepository
@@ -38,6 +41,7 @@ class App : Application(), KoinComponent {
         if (BuildConfig.DEBUG) Timber.plant(Timber.DebugTree())
         else Timber.plant(CrashlyticsTree())
         
+        installAppCheck()
         wipeFirestoreCacheIfPending()
 
         startKoin {
@@ -48,6 +52,16 @@ class App : Application(), KoinComponent {
         SystemNotificationHelper.createChannels(this)
         scanReminderScheduler().onNotificationSettingsOrScanChanged()
         registerActivityLifecycleCallbacks(KeepScreenOn)
+    }
+
+    private fun installAppCheck() {
+        FirebaseAppCheck.getInstance().installAppCheckProviderFactory(
+            if (BuildConfig.DEBUG) {
+                DebugAppCheckProviderFactory.getInstance()
+            } else {
+                PlayIntegrityAppCheckProviderFactory.getInstance()
+            },
+        )
     }
 
     private fun wipeFirestoreCacheIfPending() {
