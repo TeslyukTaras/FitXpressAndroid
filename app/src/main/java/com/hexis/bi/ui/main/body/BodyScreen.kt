@@ -138,7 +138,6 @@ fun BodyScreen(
                             StatsContent(
                                 state = state,
                                 onMassUnitChange = viewModel::selectMassUnit,
-                                onTimeRangeChange = viewModel::selectTimeRange,
                                 onPhysiqueBalanceClick = onPhysiqueBalanceClick,
                                 onRetry = viewModel::retry,
                             )

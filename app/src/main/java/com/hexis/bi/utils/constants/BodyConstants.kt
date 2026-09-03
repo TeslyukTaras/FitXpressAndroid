@@ -37,25 +37,19 @@ internal object BodyConstants {
     val DEFAULT_Y_HALF_RANGE = niceYHalfRange(0f)
     val DEFAULT_GRID_LINES = gridLinesFor(DEFAULT_Y_HALF_RANGE)
 
-    /** Three days on either side of today for the Week viewport. */
-    const val WEEK_HALF_DAYS = 3L
+    const val FOUR_WEEK_SPAN_DAYS = 28L
 
-    /** Fifteen days on either side of today for the Month viewport. */
-    const val MONTH_HALF_DAYS = 15L
+    const val SIX_MONTH_SPAN = 6L
 
-    /** Six calendar months on either side of today for the Year viewport. */
-    const val YEAR_HALF_MONTHS = 6L
+    const val ONE_YEAR_SPAN_MONTHS = 12L
 
-    /** Recommended days between scans; drives the "Next Scan" countdown. */
+    const val SIX_MONTH_LABEL_STEP = 1L
+
+    const val ONE_YEAR_LABEL_STEP = 2L
+
     const val SCAN_CADENCE_DAYS = 7L
 
-    /**
-     * Leading portion of the forecast styled as short-term predicted drift (dashed); the remainder
-     * is the future estimate (dotted). The forecast tail is drawn with a handful of nodes (not one
-     * per day), split evenly between the two phases, with drift realized on an easeIn curve so the
-     * fan starts gently near the origin and accelerates outward to its max at the final point.
-     */
-    const val PREDICTED_DRIFT_FRACTION = 0.4f
+    const val LEGEND_INACTIVE_ALPHA = 0.4f
 
     const val CHART_MONOTONE_TANGENT_LIMIT = 3f
     const val CHART_FILL_OPACITY = 0.26f
@@ -65,12 +59,4 @@ internal object BodyConstants {
     const val CHART_FILL_END_ALPHA = 0.0001f
 
 
-    /** Month X-axis label count. */
-    const val MONTH_LABEL_COUNT = 5
-
-    /** Year X-axis label cadence. */
-    const val YEAR_LABEL_STEP = 2
-
-    /** Label every month at or below this year-span threshold. */
-    const val YEAR_LABEL_ALL_BELOW_MONTHS = 6
 }

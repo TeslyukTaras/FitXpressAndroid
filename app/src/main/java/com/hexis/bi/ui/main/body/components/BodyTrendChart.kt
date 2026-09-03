@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -35,6 +36,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -63,6 +65,7 @@ import androidx.core.os.ConfigurationCompat
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.AppHorizontalGradientDivider
 import com.hexis.bi.ui.components.BodyGlassCard
+import com.hexis.bi.ui.main.body.BodyAxisLabelEmphasis
 import com.hexis.bi.ui.main.body.BodyChartData
 import com.hexis.bi.ui.main.body.BodyTimeRange
 import com.hexis.bi.ui.main.body.BodyTrendPhase
@@ -83,18 +86,21 @@ internal fun BodyTrendChart(
     loading: Boolean = false,
     chart: BodyChartData,
     timeRange: BodyTimeRange,
-    onTimeRangeChange: (BodyTimeRange) -> Unit,
     modifier: Modifier = Modifier,
     onOpenClick: (() -> Unit)? = null,
     showSegmentLegend: Boolean = false,
+    predictionActive: Boolean = false,
+    status: (@Composable () -> Unit)? = null,
+    footer: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val chartGap = dimensionResource(R.dimen.spacer_xs)
     val chartHeight = dimensionResource(R.dimen.body_chart_height)
     val dashWidth = dimensionResource(R.dimen.body_chart_dash_width)
     val stripeWidth = dimensionResource(R.dimen.sleep_bar_stripe_width)
     val pointRadius = dimensionResource(R.dimen.body_chart_point_radius)
-    val pointStrokeWidth = dimensionResource(R.dimen.body_chart_line_stroke)
+    val strokeWidth = dimensionResource(R.dimen.border_legend_line)
     val gridStrokeWidth = dimensionResource(R.dimen.border_line)
+    val axisStrokeWidth = dimensionResource(R.dimen.border_hairline)
     val gridDashWidth = dimensionResource(R.dimen.body_chart_grid_dash)
 
     val snapPoints =
@@ -114,22 +120,8 @@ internal fun BodyTrendChart(
 
     val pointLabelMeasurer = rememberTextMeasurer()
     val pointLabelStyle = MaterialTheme.typography.bodySmall
-    val labeledIndices = remember(chart) {
-        if (chart.points.isEmpty()) {
-            emptyList()
-        } else {
-            val atTicks = chart.axisLabels
-                .filter { it.text.isNotEmpty() }
-                .mapNotNull { label ->
-                    chart.points.indices.minByOrNull {
-                        abs(chart.points[it].timestamp - label.timestamp)
-                    }
-                }
-            atTicks
-                .filter { it > 0 }
-                .distinct()
-                .sorted()
-        }
+    val labeledIndices = remember(chart, timeRange) {
+        if (timeRange.predicts) chart.points.indices.drop(1).toList() else emptyList()
     }
 
     val selectedEntry = snapPoints.getOrNull(selectedSnap)?.value
@@ -168,7 +160,7 @@ internal fun BodyTrendChart(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = stringResource(R.string.body_physique_balance_title),
+                    text = stringResource(R.string.body_physique_trend),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier
@@ -191,15 +183,14 @@ internal fun BodyTrendChart(
                         tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(dimensionResource(R.dimen.icon_medium_small)),
                     )
-                } else BodyRangeSelector(
-                    modifier = Modifier.padding(
-                        top = dimensionResource(R.dimen.spacer_m),
-                        end = dimensionResource(R.dimen.spacer_m)
-                    ),
-                    selected = timeRange,
-                    onSelected = onTimeRangeChange,
-                    enabled = !showTooltip,
-                )
+                }
+            }
+
+            if (status != null) {
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
+                Box(modifier = Modifier.padding(end = dimensionResource(R.dimen.spacer_m))) {
+                    status()
+                }
             }
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
@@ -263,6 +254,7 @@ internal fun BodyTrendChart(
                                         floatArrayOf(dashWidth.toPx(), dashWidth.toPx()), 0f,
                                     )
                                     val gridStrokePx = gridStrokeWidth.toPx()
+                                    val axisStrokePx = axisStrokeWidth.toPx()
                                     val centerStrokePx = stripeWidth.toPx()
                                     val verticalDashEffect = PathEffect.dashPathEffect(
                                         floatArrayOf(gridDashWidth.toPx(), gridDashWidth.toPx()),
@@ -302,7 +294,7 @@ internal fun BodyTrendChart(
                                         color = chartColors.chartAxisLine,
                                         start = Offset(0f, 0f),
                                         end = Offset(0f, size.height),
-                                        strokeWidth = gridStrokePx,
+                                        strokeWidth = axisStrokePx,
                                     )
                                     drawLine(
                                         color = chartColors.chartBoundaryLine,
@@ -319,7 +311,7 @@ internal fun BodyTrendChart(
                                         rangeSpan = rangeSpan,
                                         yAxisBound = chart.yAxisBound,
                                         color = fatColor,
-                                        strokeWidthPx = pointStrokeWidth.toPx(),
+                                        strokeWidthPx = strokeWidth.toPx(),
                                         dashWidthPx = dashWidth.toPx(),
                                         extractValue = { it.deltaFat },
                                     )
@@ -329,7 +321,7 @@ internal fun BodyTrendChart(
                                         rangeSpan = rangeSpan,
                                         yAxisBound = chart.yAxisBound,
                                         color = muscleColor,
-                                        strokeWidthPx = pointStrokeWidth.toPx(),
+                                        strokeWidthPx = strokeWidth.toPx(),
                                         dashWidthPx = dashWidth.toPx(),
                                         extractValue = { it.deltaMuscle },
                                     )
@@ -351,23 +343,36 @@ internal fun BodyTrendChart(
                                             originRingColor,
                                             pointRadius.toPx() * 0.7f,
                                             Offset(originX, originY),
-                                            style = Stroke(width = pointStrokeWidth.toPx()),
+                                            style = Stroke(width = strokeWidth.toPx()),
                                         )
                                     }
 
                                     if (showSegmentLegend && chart.points.isNotEmpty()) {
                                         val dotRadiusPx = pointRadius.toPx() * 0.6f
                                         val labelGapPx = pointRadius.toPx() * 0.5f
+                                        fun xOf(point: BodyTrendPoint) =
+                                            ((point.timestamp - chart.rangeStartMillis).toFloat() /
+                                                    rangeSpan) * size.width
+                                        val occupied = mutableListOf<Rect>()
+                                        chart.points.first()
+                                            .takeIf { it.phase == BodyTrendPhase.ConfirmedScan }
+                                            ?.let { origin ->
+                                                val ox = xOf(origin)
+                                                val oy = size.height *
+                                                        mapValueToFraction(0f, chart.yAxisBound)
+                                                val r = pointRadius.toPx()
+                                                occupied += Rect(ox - r, oy - r, ox + r, oy + r)
+                                            }
                                         labeledIndices.forEach { index ->
                                             val point = chart.points[index]
-                                            val centerX =
-                                                ((point.timestamp - chart.rangeStartMillis).toFloat() /
-                                                        rangeSpan) * size.width
+                                            val centerX = xOf(point)
+                                            val muscleAbove = point.deltaMuscle >= point.deltaFat
                                             drawSeriesLabel(
                                                 centerX = centerX,
                                                 value = point.deltaMuscle,
                                                 color = muscleColor,
-                                                above = true,
+                                                above = muscleAbove,
+                                                occupied = occupied,
                                                 dotRadiusPx = dotRadiusPx,
                                                 gapPx = labelGapPx,
                                                 yAxisBound = chart.yAxisBound,
@@ -378,7 +383,8 @@ internal fun BodyTrendChart(
                                                 centerX = centerX,
                                                 value = point.deltaFat,
                                                 color = fatColor,
-                                                above = false,
+                                                above = !muscleAbove,
+                                                occupied = occupied,
                                                 dotRadiusPx = dotRadiusPx,
                                                 gapPx = labelGapPx,
                                                 yAxisBound = chart.yAxisBound,
@@ -416,7 +422,7 @@ internal fun BodyTrendChart(
                                         muscleColor,
                                         pointRadius.toPx(),
                                         Offset(centerX, muscleY),
-                                        style = Stroke(width = pointStrokeWidth.toPx()),
+                                        style = Stroke(width = strokeWidth.toPx()),
                                     )
                                     drawCircle(
                                         pointBackgroundColor,
@@ -427,7 +433,7 @@ internal fun BodyTrendChart(
                                         fatColor,
                                         pointRadius.toPx(),
                                         Offset(centerX, fatY),
-                                        style = Stroke(width = pointStrokeWidth.toPx()),
+                                        style = Stroke(width = strokeWidth.toPx()),
                                     )
                                 }
                         ) {
@@ -565,19 +571,35 @@ internal fun BodyTrendChart(
                     color = fatColor,
                     label = stringResource(R.string.body_chart_legend_fat)
                 )
+                if (!timeRange.predicts) SegmentLegendItem(
+                    label = stringResource(R.string.body_chart_legend_confirmed),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    phase = BodyTrendPhase.ConfirmedScan,
+                    dashWidth = dashWidth,
+                )
             }
         }
-        if (showSegmentLegend) {
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+        if (showSegmentLegend && timeRange.predicts) {
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
             AppHorizontalGradientDivider(modifier = Modifier.padding(end = dimensionResource(R.dimen.spacer_m)))
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
             SegmentLegendRow(
                 modifier = Modifier.padding(end = dimensionResource(R.dimen.spacer_m)),
                 confirmedColor = MaterialTheme.colorScheme.onSurface,
-                predictedColor = MaterialTheme.colorScheme.onSurface,
-                futureColor = MaterialTheme.colorScheme.onSurface,
+                predictedColor = MaterialTheme.colorScheme.onSurface
+                    .copy(alpha = if (predictionActive) 1f else BodyConstants.LEGEND_INACTIVE_ALPHA),
                 dashWidth = dashWidth,
             )
+        }
+        if (footer != null) {
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+            AppHorizontalGradientDivider(
+                modifier = Modifier.padding(end = dimensionResource(R.dimen.spacer_m)),
+            )
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+            Column(modifier = Modifier.padding(end = dimensionResource(R.dimen.spacer_m))) {
+                footer()
+            }
         }
     }
 }
@@ -611,7 +633,14 @@ private fun XAxisLabels(
                 Text(
                     text = label.text,
                     style = labelStyle,
-                    color = MaterialTheme.colorScheme.secondary,
+                    color = when (label.emphasis) {
+                        BodyAxisLabelEmphasis.Confirmed -> MaterialTheme.colorScheme.secondary
+                        BodyAxisLabelEmphasis.Upcoming -> MaterialTheme.colorScheme.secondary
+                            .copy(alpha = BodyConstants.LEGEND_INACTIVE_ALPHA)
+
+                        BodyAxisLabelEmphasis.Overdue ->
+                            NocturnePulseTheme.extendedColors.chartOverdueTick
+                    },
                     modifier = Modifier.offset { IntOffset(xLeft, 0) },
                 )
             }
@@ -662,12 +691,11 @@ private fun SegmentLegendRow(
     modifier: Modifier,
     confirmedColor: Color,
     predictedColor: Color,
-    futureColor: Color,
     dashWidth: Dp,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_2xl)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         SegmentLegendItem(
@@ -677,15 +705,9 @@ private fun SegmentLegendRow(
             dashWidth = dashWidth,
         )
         SegmentLegendItem(
-            label = stringResource(R.string.body_chart_legend_predicted_drift),
+            label = stringResource(R.string.body_chart_legend_weekly_prediction),
             color = predictedColor,
-            phase = BodyTrendPhase.PredictedDrift,
-            dashWidth = dashWidth,
-        )
-        SegmentLegendItem(
-            label = stringResource(R.string.body_chart_legend_future_estimate),
-            color = futureColor,
-            phase = BodyTrendPhase.FutureEstimate,
+            phase = BodyTrendPhase.WeeklyPrediction,
             dashWidth = dashWidth,
         )
     }
@@ -705,7 +727,7 @@ private fun SegmentLegendItem(
         Box(
             modifier = Modifier
                 .width(dimensionResource(R.dimen.body_chart_legend_line_width))
-                .height(dimensionResource(R.dimen.border_line))
+                .height(dimensionResource(R.dimen.border_legend_line))
                 .drawBehind {
                     val effect = pathEffectFor(phase, dashWidth.toPx())
                     drawLine(
@@ -730,6 +752,7 @@ private fun DrawScope.drawSeriesLabel(
     value: Float,
     color: Color,
     above: Boolean,
+    occupied: MutableList<Rect>,
     dotRadiusPx: Float,
     gapPx: Float,
     yAxisBound: Float,
@@ -746,10 +769,23 @@ private fun DrawScope.drawSeriesLabel(
     val width = layout.size.width.toFloat()
     val height = layout.size.height.toFloat()
     val x = (centerX - width / 2f).coerceIn(0f, (size.width - width).coerceAtLeast(0f))
-    val rawY = if (above) y - dotRadiusPx - gapPx - height else y + dotRadiusPx + gapPx
-    val labelY = rawY.coerceIn(0f, (size.height - height).coerceAtLeast(0f))
+    val direction = if (above) -1f else 1f
+    val step = height + gapPx
+    var labelY = if (above) y - dotRadiusPx - gapPx - height else y + dotRadiusPx + gapPx
+    var attempts = 0
+    while (attempts < LABEL_PLACEMENT_ATTEMPTS && occupied.any { it.overlaps(claim(x, labelY, width, height, gapPx)) }) {
+        labelY += direction * step
+        attempts++
+    }
+    labelY = labelY.coerceIn(0f, (size.height - height).coerceAtLeast(0f))
+    occupied += claim(x, labelY, width, height, gapPx)
     drawText(layout, topLeft = Offset(x, labelY))
 }
+
+private fun claim(x: Float, y: Float, width: Float, height: Float, padPx: Float): Rect =
+    Rect(x - padPx, y, x + width + padPx, y + height)
+
+private const val LABEL_PLACEMENT_ATTEMPTS = 4
 
 private fun mapValueToFraction(value: Float, bound: Float): Float {
     val b = bound.coerceAtLeast(BodyConstants.CHART_MIN_HALF_RANGE)
@@ -766,7 +802,8 @@ private fun formatGridValue(value: Float): String =
 
 private const val GRID_ZERO_LABEL = "0"
 
-private fun formatOneDecimal(value: Float): String = String.format(Locale.getDefault(), "%.1f", value)
+private fun formatOneDecimal(value: Float): String =
+    String.format(Locale.getDefault(), "%.1f", value)
 
 private fun DrawScope.drawTimeSeries(
     points: List<BodyTrendPoint>,
@@ -779,14 +816,7 @@ private fun DrawScope.drawTimeSeries(
     extractValue: (BodyTrendPoint) -> Float,
 ) {
     if (points.isEmpty()) return
-    val renderedPoints = if (points.last().timestamp < rangeStart + rangeSpan) {
-        points + points.last().copy(
-            timestamp = rangeStart + rangeSpan,
-            isInterpolated = true,
-        )
-    } else {
-        points
-    }
+    val renderedPoints = points
     if (renderedPoints.size == 1) {
         val p = renderedPoints[0]
         val x = ((p.timestamp - rangeStart).toFloat() / rangeSpan) * size.width
@@ -815,8 +845,10 @@ private fun DrawScope.drawTimeSeries(
     // transparent at the zero axis. Anchoring the gradient around zeroY (not a single farY) means
     // the fill always falls toward the middle regardless of whether the series rises or drops.
     val maxDist = (coords.maxOfOrNull { abs(it.y - zeroY) } ?: 0f).coerceAtLeast(1f)
-    val edgeColor = color.copy(alpha = BodyConstants.CHART_FILL_START_ALPHA * BodyConstants.CHART_FILL_OPACITY)
-    val zeroColor = color.copy(alpha = BodyConstants.CHART_FILL_END_ALPHA * BodyConstants.CHART_FILL_OPACITY)
+    val edgeColor =
+        color.copy(alpha = BodyConstants.CHART_FILL_START_ALPHA * BodyConstants.CHART_FILL_OPACITY)
+    val zeroColor =
+        color.copy(alpha = BodyConstants.CHART_FILL_END_ALPHA * BodyConstants.CHART_FILL_OPACITY)
     drawPath(
         path = fillPath,
         brush = Brush.verticalGradient(
@@ -855,25 +887,17 @@ private fun DrawScope.drawTimeSeries(
     drawStroke(strokePath, strokePhase)
 }
 
-private fun segmentPhase(start: BodyTrendPoint, end: BodyTrendPoint): BodyTrendPhase = when {
-    start.phase == BodyTrendPhase.FutureEstimate || end.phase == BodyTrendPhase.FutureEstimate ->
-        BodyTrendPhase.FutureEstimate
-
-    start.phase == BodyTrendPhase.PredictedDrift || end.phase == BodyTrendPhase.PredictedDrift ->
-        BodyTrendPhase.PredictedDrift
-
-    else -> BodyTrendPhase.ConfirmedScan
-}
+private fun segmentPhase(start: BodyTrendPoint, end: BodyTrendPoint): BodyTrendPhase =
+    if (start.phase == BodyTrendPhase.WeeklyPrediction || end.phase == BodyTrendPhase.WeeklyPrediction) {
+        BodyTrendPhase.WeeklyPrediction
+    } else {
+        BodyTrendPhase.ConfirmedScan
+    }
 
 private fun pathEffectFor(phase: BodyTrendPhase, dashWidthPx: Float): PathEffect? = when (phase) {
     BodyTrendPhase.ConfirmedScan -> null
-    BodyTrendPhase.PredictedDrift -> PathEffect.dashPathEffect(
+    BodyTrendPhase.WeeklyPrediction -> PathEffect.dashPathEffect(
         floatArrayOf(dashWidthPx, dashWidthPx),
-        0f,
-    )
-
-    BodyTrendPhase.FutureEstimate -> PathEffect.dashPathEffect(
-        floatArrayOf(dashWidthPx * 0.5f, dashWidthPx * 0.5f),
         0f,
     )
 }

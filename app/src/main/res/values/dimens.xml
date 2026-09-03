@@ -163,6 +163,7 @@
     <!-- Borders -->
     <dimen name="border_thin">1dp</dimen>
     <dimen name="border_line">0.2dp</dimen>
+    <dimen name="border_legend_line">1.5dp</dimen>
     <dimen name="border_hairline">0.5dp</dimen>
 
     <!-- Elevation -->
@@ -185,7 +186,6 @@
     <dimen name="body_toggle_height">22dp</dimen>
     <dimen name="edit_profile_units_toggle_chip_width">68dp</dimen>
     <dimen name="body_chart_point_radius">5dp</dimen>
-    <dimen name="body_chart_line_stroke">1dp</dimen>
     <dimen name="body_chart_grid_dash">1.5dp</dimen>
     <dimen name="body_switch_button_width">40dp</dimen>
 

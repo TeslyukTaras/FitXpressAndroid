@@ -2,6 +2,7 @@ package com.hexis.bi.ui.main.body
 
 import android.app.Application
 import androidx.lifecycle.viewModelScope
+import com.hexis.bi.data.body.PhysiquePredictionRepository
 import com.hexis.bi.data.preferences.UserPreferencesRepository
 import com.hexis.bi.data.scan.ScanFetchProjection
 import com.hexis.bi.data.scan.ScanHistoryRepository
@@ -11,31 +12,28 @@ import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.body.BodyMeasurementRegion
 import com.hexis.bi.domain.body.comparablePhysiqueScoreDelta
 import com.hexis.bi.domain.body.muscleMassPercentage
+import com.hexis.bi.domain.body.predictionDays
 import com.hexis.bi.data.intelligence.IntelligenceConfigRepository
 import com.hexis.bi.intelligence.config.EngineConfig
+import com.hexis.bi.intelligence.prediction.PredictionConstants
+import com.hexis.bi.intelligence.prediction.PredictionSeries
+import com.hexis.bi.intelligence.prediction.ScanDay
+import com.hexis.bi.intelligence.prediction.predictWeekly
 import com.hexis.bi.domain.body.physiqueScore
 import com.hexis.bi.ui.base.BaseViewModel
-import com.hexis.bi.ui.main.body.BodyTrendPhase.ConfirmedScan
-import com.hexis.bi.ui.main.body.BodyTrendPhase.FutureEstimate
-import com.hexis.bi.ui.main.body.BodyTrendPhase.PredictedDrift
 import com.hexis.bi.utils.constants.BodyConstants
-import com.hexis.bi.utils.constants.DateFormatConstants
 import com.hexis.bi.utils.isMetricUnitSystem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.time.LocalDate
-import java.time.YearMonth
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.roundToInt
 
 class BodyViewModel internal constructor(
     application: Application,
@@ -44,6 +42,7 @@ class BodyViewModel internal constructor(
     private val threeDLookRepository: ThreeDLookRepository,
     private val preferencesRepository: UserPreferencesRepository,
     private val intelligenceConfigRepository: IntelligenceConfigRepository,
+    private val physiquePredictionRepository: PhysiquePredictionRepository,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(BodyState())
@@ -53,6 +52,7 @@ class BodyViewModel internal constructor(
     private var heightCm: Float? = null
     private var engineConfig: EngineConfig? = null
     private var gender: String? = null
+    private var predictionGains: Map<PredictionSeries, Double> = emptyMap()
     private var visibleRegions: Set<BodyMeasurementRegion> =
         BodyMeasurementRegion.measurableRegions.toSet()
     private val loadingVisualColorPairs = mutableSetOf<Pair<String, String>>()
@@ -217,6 +217,19 @@ class BodyViewModel internal constructor(
                 rightTimestamp = _state.value.compare.rightScanTimestamp ?: previous?.timestamp,
             )
             rebuildChart()
+            calibratePrediction()
+        }
+    }
+
+    private fun calibratePrediction() {
+        val days = predictionDays()
+        if (days.isEmpty()) return
+        viewModelScope.launch {
+            val gains = physiquePredictionRepository.calibrateAndStore(days).getOrNull().orEmpty()
+            if (gains != predictionGains) {
+                predictionGains = gains
+                rebuildChart()
+            }
         }
     }
 
@@ -432,307 +445,50 @@ class BodyViewModel internal constructor(
     }
 
     private fun rebuildChart() {
-        val s = _state.value
+        val range = _state.value.timeRange
+        val days = predictionDays()
         val now = System.currentTimeMillis()
-        val chart = when (s.timeRange) {
-            BodyTimeRange.Week -> buildWeekChart(allScans, now)
-            BodyTimeRange.Month -> buildMonthChart(allScans, now)
-            BodyTimeRange.Year -> buildYearChart(allScans, now)
-        }
-        _state.update { it.copy(chart = chart) }
-    }
-
-    private fun buildWeekChart(
-        scans: List<ScanRecord>,
-        nowMillis: Long,
-    ): BodyChartData {
-        val zone = ZoneId.systemDefault()
-        val today = LocalDate.ofInstant(Date(nowMillis).toInstant(), zone)
-        val startDay = today.minusDays(BodyConstants.WEEK_HALF_DAYS)
-        val endDay = today.plusDays(BodyConstants.WEEK_HALF_DAYS)
-        val rangeStart = startDay.atStartOfDay(zone).toInstant().toEpochMilli()
-        val rangeEnd = endDay.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
-
-        val series = buildSeries(
-            scans = scans,
-            zone = zone,
-            rangeStartMillis = rangeStart,
-            rangeEndMillis = rangeEnd,
-            anchorPreviousAtStart = true,
-        )
-
-        val dayFormatter = SimpleDateFormat(DateFormatConstants.DAY_NAME_SHORT, Locale.getDefault())
-        val totalDays = ChronoUnit.DAYS.between(startDay, endDay).toInt()
-        val labels = centeredTickTimestamps(rangeStart, rangeEnd, totalDays + 1).map { ts ->
-            BodyChartAxisLabel(
-                timestamp = ts,
-                text = dayFormatter.format(Date(ts)).take(2)
-                    .lowercase(Locale.getDefault())
-                    .replaceFirstChar { it.titlecase(Locale.getDefault()) },
-            )
-        }
-
-        return BodyChartData(
-            rangeStartMillis = rangeStart,
-            rangeEndMillis = rangeEnd,
-            points = series.points,
-            axisLabels = labels,
-            rangeLabel = formatRangeLabel(rangeStart, rangeEnd),
-            yAxisBound = series.yAxisBound,
-            gridLines = series.gridLines,
-        )
-    }
-
-    private fun buildMonthChart(
-        scans: List<ScanRecord>,
-        nowMillis: Long,
-    ): BodyChartData {
-        val zone = ZoneId.systemDefault()
-        val today = LocalDate.ofInstant(Date(nowMillis).toInstant(), zone)
-        val startDay = today.minusDays(BodyConstants.MONTH_HALF_DAYS)
-        val endDay = today.plusDays(BodyConstants.MONTH_HALF_DAYS)
-        val rangeStart = startDay.atStartOfDay(zone).toInstant().toEpochMilli()
-        val rangeEnd = endDay.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
-
-        val series = buildSeries(scans, zone, rangeStart, rangeEnd, anchorPreviousAtStart = true)
-
-        val labelFormatter =
-            SimpleDateFormat(DateFormatConstants.DAY_MONTH_NUMERIC, Locale.getDefault())
-        val labels = centeredTickTimestamps(
-            rangeStart,
-            rangeEnd,
-            BodyConstants.MONTH_LABEL_COUNT,
-        ).map { ts ->
-            BodyChartAxisLabel(timestamp = ts, text = labelFormatter.format(Date(ts)))
-        }.distinctBy { it.text }
-
-        return BodyChartData(
-            rangeStartMillis = rangeStart,
-            rangeEndMillis = rangeEnd,
-            points = series.points,
-            axisLabels = labels,
-            rangeLabel = formatRangeLabel(rangeStart, rangeEnd),
-            yAxisBound = series.yAxisBound,
-            gridLines = series.gridLines,
-        )
-    }
-
-    private fun buildYearChart(
-        scans: List<ScanRecord>,
-        nowMillis: Long,
-    ): BodyChartData {
-        val zone = ZoneId.systemDefault()
-        val today = LocalDate.ofInstant(Date(nowMillis).toInstant(), zone)
-        val startDay = today.minusMonths(BodyConstants.YEAR_HALF_MONTHS)
-        val endDay = today.plusMonths(BodyConstants.YEAR_HALF_MONTHS)
-        val rangeStart = startDay.atStartOfDay(zone).toInstant().toEpochMilli()
-        val rangeEnd = endDay.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
-
-        val series = buildSeries(scans, zone, rangeStart, rangeEnd, anchorPreviousAtStart = true)
-
-        val totalMonths = ChronoUnit.MONTHS.between(
-            YearMonth.from(startDay),
-            YearMonth.from(endDay),
-        ).toInt().coerceAtLeast(1)
-        val monthFormatter = SimpleDateFormat(DateFormatConstants.MONTH_SHORT, Locale.getDefault())
-        val labels = centeredTickTimestamps(rangeStart, rangeEnd, totalMonths).mapIndexed { i, ts ->
-            val showLabel = totalMonths <= BodyConstants.YEAR_LABEL_ALL_BELOW_MONTHS ||
-                    i % BodyConstants.YEAR_LABEL_STEP == 0
-            BodyChartAxisLabel(
-                timestamp = ts,
-                text = if (showLabel) monthFormatter.format(Date(ts)) else "",
-            )
-        }
-
-        return BodyChartData(
-            rangeStartMillis = rangeStart,
-            rangeEndMillis = rangeEnd,
-            points = series.points,
-            axisLabels = labels,
-            rangeLabel = formatRangeLabel(rangeStart, rangeEnd),
-            yAxisBound = series.yAxisBound,
-            gridLines = series.gridLines,
-        )
-    }
-
-    private data class ChartSeries(
-        val points: List<BodyTrendPoint>,
-        val yAxisBound: Float,
-        val gridLines: List<Float>,
-    )
-
-    private fun centeredTickTimestamps(
-        rangeStartMillis: Long,
-        rangeEndMillis: Long,
-        count: Int,
-    ): List<Long> {
-        val safeCount = count.coerceAtLeast(1)
-        val span = (rangeEndMillis - rangeStartMillis + 1L).coerceAtLeast(1L)
-        return List(safeCount) { index ->
-            rangeStartMillis + span * (2L * index + 1L) / (2L * safeCount)
-        }
-    }
-
-    private fun buildSeries(
-        scans: List<ScanRecord>,
-        zone: ZoneId,
-        rangeStartMillis: Long,
-        rangeEndMillis: Long,
-        anchorPreviousAtStart: Boolean = false,
-    ): ChartSeries {
-        val confirmed = bucketByDay(scans, zone)
-        val rangeStartDay = LocalDate.ofInstant(Date(rangeStartMillis).toInstant(), zone)
-        val anchorTimestamp = rangeStartDay.atTime(12, 0).atZone(zone).toInstant().toEpochMilli()
-        val priorToRange = if (anchorPreviousAtStart) {
-            confirmed.lastOrNull { it.timestamp <= anchorTimestamp }
+        val chart = PhysiqueTrendChart.build(days, range, now, predictionGains)
+        val estimateChart = if (range == BodyTimeRange.FourWeeks) {
+            chart
         } else {
-            null
+            PhysiqueTrendChart.build(days, BodyTimeRange.FourWeeks, now, predictionGains)
         }
-        val anchor = priorToRange?.copy(timestamp = anchorTimestamp, isInterpolated = true)
-        val hasConfirmedInRange = confirmed.any { it.timestamp in rangeStartMillis..rangeEndMillis }
-        val anchoredProjection = anchor != null && !hasConfirmedInRange
-        val projectionPoints = if (anchoredProjection) listOfNotNull(anchor) else confirmed
-        val sourceSlope = if (anchoredProjection) {
-            val priorIndex = confirmed.indexOf(priorToRange)
-            confirmed.getOrNull(priorIndex - 1)?.let { it to priorToRange }
-        } else {
-            null
+        val prediction = predictionState(days, estimateChart, now)
+        _state.update { it.copy(chart = chart, prediction = prediction) }
+    }
+
+    private fun predictionDays(): List<ScanDay> {
+        val config = engineConfig ?: return emptyList()
+        return allScans.predictionDays(config, heightCm)
+    }
+
+    private fun predictionState(
+        days: List<ScanDay>,
+        chart: BodyChartData,
+        nowMillis: Long,
+    ): PhysiquePredictionState {
+        val zone = ZoneId.systemDefault()
+        val lastDay = days.lastOrNull()?.date?.let(LocalDate::parse)
+            ?: return PhysiquePredictionState.None
+        val today = LocalDate.ofInstant(Date(nowMillis).toInstant(), zone)
+        val dueDay = lastDay.plusDays(BodyConstants.SCAN_CADENCE_DAYS)
+        val daysToNextScan = ChronoUnit.DAYS.between(today, dueDay).coerceAtLeast(0L).toInt()
+
+        if (days.size < PredictionConstants.MIN_BUCKETS) {
+            return PhysiquePredictionState.AwaitingSecondScan(daysToNextScan)
         }
-        val withTail = fillPredictedTail(projectionPoints, zone, rangeEndMillis, sourceSlope)
-        val visible = withTail.filter { it.timestamp in rangeStartMillis..rangeEndMillis }
-        val displayed = if (anchorPreviousAtStart) {
-            anchorPreviousScanAtStart(confirmed, visible, rangeStartMillis, zone)
-        } else {
-            visible
-        }
-        val points = applyBaselineDeltas(displayed)
-        val (yAxisBound, gridLines) = dynamicBounds(points)
-        return ChartSeries(points, yAxisBound, gridLines)
-    }
-
-    private fun anchorPreviousScanAtStart(
-        confirmed: List<BodyTrendPoint>,
-        visible: List<BodyTrendPoint>,
-        rangeStartMillis: Long,
-        zone: ZoneId,
-    ): List<BodyTrendPoint> {
-        val startDay = LocalDate.ofInstant(Date(rangeStartMillis).toInstant(), zone)
-        val anchorTimestamp = startDay.atTime(12, 0).atZone(zone).toInstant().toEpochMilli()
-        if (visible.any { it.timestamp == anchorTimestamp && it.phase == ConfirmedScan }) return visible
-        val previous = confirmed.lastOrNull { it.timestamp <= anchorTimestamp } ?: return visible
-        val anchor = previous.copy(timestamp = anchorTimestamp, isInterpolated = true)
-        return (listOf(anchor) + visible.filter { it.timestamp > anchorTimestamp }).sortedBy { it.timestamp }
-    }
-
-    private fun dynamicBounds(points: List<BodyTrendPoint>): Pair<Float, List<Float>> {
-        val maxAbs = points.maxOfOrNull { max(abs(it.deltaFat), abs(it.deltaMuscle)) } ?: 0f
-        val halfRange = BodyConstants.niceYHalfRange(maxAbs)
-        return halfRange to BodyConstants.gridLinesFor(halfRange)
-    }
-
-    private fun bucketByDay(scans: List<ScanRecord>, zone: ZoneId): List<BodyTrendPoint> {
-        val byDay = scans.groupBy { LocalDate.ofInstant(Date(it.timestamp).toInstant(), zone) }
-        return byDay.entries.sortedBy { it.key }.mapNotNull { (day, dayScans) ->
-            val tsMidday = day.atTime(12, 0).atZone(zone).toInstant().toEpochMilli()
-            averagePoint(tsMidday, dayScans)
-        }
-    }
-
-    private fun averagePoint(timestamp: Long, scans: List<ScanRecord>): BodyTrendPoint? {
-        val muscle = scans.mapNotNull { it.muscleMassPercentage() }.averageOrNull()
-        val fat = scans.mapNotNull { it.fatPercentage }.averageOrNull()
-        if (muscle == null || fat == null) return null
-        return BodyTrendPoint(timestamp, 0f, 0f, fat, muscle, phase = ConfirmedScan)
-    }
-
-    private fun List<Float>.averageOrNull(): Float? = if (isEmpty()) null else sum() / size
-
-    private fun fillPredictedTail(
-        points: List<BodyTrendPoint>,
-        zone: ZoneId,
-        rangeEndMillis: Long,
-        sourceSlope: Pair<BodyTrendPoint, BodyTrendPoint>? = null,
-    ): List<BodyTrendPoint> {
-        val last = points.lastOrNull() ?: return points
-        val lastDay = LocalDate.ofInstant(Date(last.timestamp).toInstant(), zone)
-        val endDay = LocalDate.ofInstant(Date(rangeEndMillis).toInstant(), zone)
-        val daysAhead = ChronoUnit.DAYS.between(lastDay, endDay).toInt()
-        if (daysAhead <= 0) return points
-        val driftFraction = BodyConstants.PREDICTED_DRIFT_FRACTION
-
-        val recent = sourceSlope ?: points.getOrNull(points.lastIndex - 1)?.let { it to last }
-        val (muscleStep, fatStep) = recent?.let { (previous, latest) ->
-            val previousDay = LocalDate.ofInstant(Date(previous.timestamp).toInstant(), zone)
-            val latestDay = LocalDate.ofInstant(Date(latest.timestamp).toInstant(), zone)
-            val span = ChronoUnit.DAYS.between(previousDay, latestDay).coerceAtLeast(1).toFloat()
-            ((latest.absoluteMuscle - previous.absoluteMuscle) / span) to
-                    ((latest.absoluteFat - previous.absoluteFat) / span)
-        } ?: (0f to 0f)
-
-        val muscleDrift = muscleStep * daysAhead
-        val fatDrift = fatStep * daysAhead
-
-        // Sparse forecast: a few nodes split evenly across the predicted-drift and future-estimate
-        // phases (not one per day). Drift is realized on an easeIn curve (see predictedNodes), so the
-        // fan starts gently near the origin and accelerates outward to its max at the final point.
-        val out = points.toMutableList()
-        val seenOffsets = LinkedHashSet<Int>()
-        for (node in predictedNodes(driftFraction)) {
-            val dayOffset = (daysAhead * node.timeFraction).roundToInt().coerceIn(1, daysAhead)
-            if (!seenOffsets.add(dayOffset)) continue
-            val timeFraction = dayOffset.toFloat() / daysAhead
-            val day = lastDay.plusDays(dayOffset.toLong())
-            val ts = day.atTime(12, 0).atZone(zone).toInstant().toEpochMilli()
-            out += BodyTrendPoint(
-                timestamp = ts,
-                deltaFat = 0f,
-                deltaMuscle = 0f,
-                absoluteFat = (last.absoluteFat + fatDrift * node.driftRealized).coerceIn(0f, 100f),
-                absoluteMuscle = (last.absoluteMuscle + muscleDrift * node.driftRealized)
-                    .coerceIn(0f, 100f),
-                isInterpolated = true,
-                phase = if (timeFraction <= driftFraction) PredictedDrift else FutureEstimate,
-            )
-        }
-        return out
-    }
-
-    /** A forecast tail node: where it sits in the window and how much of the drift it has realized. */
-    private data class PredictedNode(val timeFraction: Float, val driftRealized: Float)
-
-    /**
-     * Forecast tail nodes, split evenly between the predicted-drift and future-estimate phases (2
-     * each). Drift is realized on an easeIn (quadratic) curve, so the fan starts gently near the
-     * origin — a flat-looking plateau — and accelerates outward, reaching the full projected drift
-     * at the final point (widest at the right edge), matching the design rather than a linear ramp.
-     */
-    private fun predictedNodes(driftFraction: Float): List<PredictedNode> {
-        val futureSpan = 1f - driftFraction
-        val timeFractions = listOf(
-            driftFraction * 0.5f,               // predicted drift
-            driftFraction,                      // predicted drift
-            driftFraction + futureSpan * 0.5f,  // future estimate
-            driftFraction + futureSpan,         // future estimate
+        if (today.isAfter(dueDay)) return PhysiquePredictionState.Overdue
+        val prediction = predictWeekly(days, predictionGains)
+            ?: return PhysiquePredictionState.AwaitingSecondScan(daysToNextScan)
+        val predictedPoint = chart.points.lastOrNull()
+            ?.takeIf { it.phase == BodyTrendPhase.WeeklyPrediction }
+        return PhysiquePredictionState.Active(
+            daysToNextScan = daysToNextScan,
+            leanAdvantage = predictedPoint?.deltaMuscle,
+            fatAdvantage = predictedPoint?.deltaFat,
+            fit = prediction.predicted[PredictionSeries.COMPARABLE_SCORE]?.toFloat(),
         )
-        return timeFractions.map { t -> PredictedNode(t, t * t) }
-    }
-
-    private fun applyBaselineDeltas(points: List<BodyTrendPoint>): List<BodyTrendPoint> {
-        val baseline = points.firstOrNull() ?: return points
-        return points.map {
-            it.copy(
-                deltaFat = it.absoluteFat - baseline.absoluteFat,
-                deltaMuscle = it.absoluteMuscle - baseline.absoluteMuscle,
-            )
-        }
-    }
-
-    private fun formatRangeLabel(startMillis: Long, endMillis: Long): String {
-        val startFormatter =
-            SimpleDateFormat(DateFormatConstants.DATE_RANGE_DAY_MONTH, Locale.getDefault())
-        val endFormatter =
-            SimpleDateFormat(DateFormatConstants.DATE_RANGE_DAY_MONTH_YEAR, Locale.getDefault())
-        return "${startFormatter.format(Date(startMillis))} – ${endFormatter.format(Date(endMillis))}"
     }
 
     private fun buildComposition(
@@ -781,15 +537,17 @@ class BodyViewModel internal constructor(
         return comparablePhysiqueScoreDelta(latest, baseline, config, heightCm)
     }
 
+    // Closest scan to the period start in either direction; ties resolve to the older scan.
     private fun periodDriftBaseline(latest: ScanRecord, range: BodyTimeRange): ScanRecord? {
         val zone = ZoneId.systemDefault()
         val latestDay = LocalDate.ofInstant(Date(latest.timestamp).toInstant(), zone)
-        val periodStartMillis = when (range) {
-            BodyTimeRange.Week -> latestDay.minusWeeks(1)
-            BodyTimeRange.Month -> latestDay.minusMonths(1)
-            BodyTimeRange.Year -> latestDay.minusYears(1)
+        val periodStart = when (range) {
+            BodyTimeRange.FourWeeks -> latestDay.minusWeeks(1)
+            BodyTimeRange.SixMonths -> latestDay.minusMonths(BodyConstants.SIX_MONTH_SPAN)
+            BodyTimeRange.OneYear -> latestDay.minusMonths(BodyConstants.ONE_YEAR_SPAN_MONTHS)
         }.atStartOfDay(zone).toInstant().toEpochMilli()
-        return allScans.lastOrNull { it.timestamp <= periodStartMillis }
-            ?: allScans.firstOrNull { it.timestamp < latest.timestamp }
+        return allScans
+            .filter { it.timestamp < latest.timestamp }
+            .minWithOrNull(compareBy({ abs(it.timestamp - periodStart) }, { it.timestamp }))
     }
 }

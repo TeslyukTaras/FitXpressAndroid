@@ -27,24 +27,26 @@ enum class BodyMassUnit {
 }
 
 enum class BodyTimeRange {
-    Week,
-    Month,
-    Year;
+    FourWeeks,
+    SixMonths,
+    OneYear;
+
+    val predicts: Boolean get() = this == FourWeeks
 
     @get:StringRes
     val labelRes: Int
         get() = when (this) {
-            Week -> R.string.body_range_week
-            Month -> R.string.body_range_month
-            Year -> R.string.body_range_year
+            FourWeeks -> R.string.body_range_four_weeks
+            SixMonths -> R.string.body_range_six_months
+            OneYear -> R.string.body_range_one_year
         }
 
     @get:StringRes
     val periodLabelRes: Int
         get() = when (this) {
-            Week -> R.string.body_physique_drift_period_week
-            Month -> R.string.body_physique_drift_period_month
-            Year -> R.string.body_physique_drift_period_year
+            FourWeeks -> R.string.body_physique_drift_period_week
+            SixMonths -> R.string.body_physique_drift_period_six_months
+            OneYear -> R.string.body_physique_drift_period_year
         }
 }
 
@@ -165,14 +167,43 @@ data class BodyTrendPoint(
 
 enum class BodyTrendPhase {
     ConfirmedScan,
-    PredictedDrift,
-    FutureEstimate,
+    WeeklyPrediction,
+}
+
+sealed interface PhysiquePredictionState {
+    val daysToNextScan: Int?
+
+    data object None : PhysiquePredictionState {
+        override val daysToNextScan: Int? = null
+    }
+
+    data object Overdue : PhysiquePredictionState {
+        override val daysToNextScan: Int? = null
+    }
+
+    data class AwaitingSecondScan(
+        override val daysToNextScan: Int?,
+    ) : PhysiquePredictionState
+
+    data class Active(
+        override val daysToNextScan: Int?,
+        val leanAdvantage: Float?,
+        val fatAdvantage: Float?,
+        val fit: Float?,
+    ) : PhysiquePredictionState
 }
 
 data class BodyChartAxisLabel(
     val timestamp: Long,
     val text: String,
+    val emphasis: BodyAxisLabelEmphasis = BodyAxisLabelEmphasis.Confirmed,
 )
+
+enum class BodyAxisLabelEmphasis {
+    Confirmed,
+    Upcoming,
+    Overdue,
+}
 
 data class BodyChartData(
     val rangeStartMillis: Long,
@@ -189,9 +220,10 @@ data class BodyState(
     val loadState: BodyLoadState = BodyLoadState.Loading,
     val isMetric: Boolean = true,
     val massUnit: BodyMassUnit = BodyMassUnit.Percent,
-    val timeRange: BodyTimeRange = BodyTimeRange.Week,
+    val timeRange: BodyTimeRange = BodyTimeRange.FourWeeks,
     val composition: BodyComposition = BodyComposition.empty(),
     val periodPhysiqueDrift: Float? = null,
+    val prediction: PhysiquePredictionState = PhysiquePredictionState.None,
     val chart: BodyChartData = BodyChartData(0L, 0L),
     val showBisInfo: Boolean = false,
     val showBodyProportionInfo: Boolean = false,
