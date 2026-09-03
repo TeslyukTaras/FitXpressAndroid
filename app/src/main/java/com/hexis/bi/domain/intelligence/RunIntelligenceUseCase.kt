@@ -53,7 +53,7 @@ internal class RunIntelligenceUseCase(
 
     suspend operator fun invoke(): Result<IntelligenceRun> {
         val loadedConfig = configRepository.config().getOrElse { return Result.failure(it) }
-        val config = loadedConfig.withLocalActivityPersistenceOverride()
+        val config = loadedConfig
         val historyDays = config.windows.trendDays.maxOrNull() ?: config.windows.analysisDays
         val input = inputProvider.load(
             analysisDays = config.windows.analysisDays,
@@ -147,29 +147,3 @@ internal class RunIntelligenceUseCase(
     }
 }
 
-/**
- * Temporary Android-side parity override. Remove this when the shared engine config changes
- * activity's min_persist_days from 14 to 7.
- *
- * Keep this after config parsing/validation so the bundled and Remote Config documents remain
- * untouched, and pass the resulting config through the entire run so execution, memoization, and
- * debug UI all describe the same effective rules.
- */
-internal fun EngineConfig.withLocalActivityPersistenceOverride(): EngineConfig {
-    val configuredDays = trend.minPersistDaysFor(Domains.ACTIVITY)
-    if (configuredDays == LOCAL_ACTIVITY_MIN_PERSIST_DAYS) return this
-
-    Timber.i(
-        "Applying local activity min_persist_days override: %d -> %d",
-        configuredDays,
-        LOCAL_ACTIVITY_MIN_PERSIST_DAYS,
-    )
-    return copy(
-        trend = trend.copy(
-            minPersistDays = trend.minPersistDays +
-                (Domains.ACTIVITY to LOCAL_ACTIVITY_MIN_PERSIST_DAYS),
-        ),
-    )
-}
-
-private const val LOCAL_ACTIVITY_MIN_PERSIST_DAYS = 7
