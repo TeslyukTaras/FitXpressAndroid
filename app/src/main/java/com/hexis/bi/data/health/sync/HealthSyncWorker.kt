@@ -37,8 +37,8 @@ internal class HealthSyncWorker(
             return Result.success()
         }
         if (!syncGate.tryLock()) {
-            Timber.d("Health sync worker: a sync is already running, deferring this run")
-            return giveUpOrRetry()
+            Timber.d("Health sync worker: a sync is already running, leaving the work to it")
+            return Result.success()
         }
         return try {
             sync()

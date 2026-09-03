@@ -124,11 +124,8 @@ internal class WorkManagerHealthSyncScheduler(
     private fun triggerData(trigger: SyncTrigger) =
         workDataOf(TelemetryWorkData.KEY_TRIGGER to trigger.wire)
 
-    private fun isBackfillActive(info: WorkInfo): Boolean = when (info.state) {
-        WorkInfo.State.RUNNING -> true
-        WorkInfo.State.ENQUEUED -> info.runAttemptCount > 0
-        else -> false
-    }
+    private fun isBackfillActive(info: WorkInfo): Boolean =
+        info.state == WorkInfo.State.RUNNING
 
     override fun backfillInFlight(): Flow<Boolean> =
         workManager.getWorkInfosForUniqueWorkFlow(HealthSyncWorkConstants.UNIQUE_WORK_NAME)
