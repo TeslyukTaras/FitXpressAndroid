@@ -3,6 +3,7 @@ package com.hexis.bi.domain.intelligence
 import com.hexis.bi.BuildConfig
 import com.hexis.bi.data.intelligence.IntelligenceConfigRepository
 import com.hexis.bi.data.intelligence.IntelligenceWordingRepository
+import com.hexis.bi.data.telemetry.Telemetry
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.utils.isMetricUnitSystem
 import com.hexis.bi.intelligence.config.CopyConfig
@@ -40,6 +41,7 @@ internal class RunIntelligenceUseCase(
     private val userRepository: UserRepository,
     private val configRepository: IntelligenceConfigRepository,
     private val wordingRepository: IntelligenceWordingRepository,
+    private val telemetry: Telemetry,
     private val computation: CoroutineDispatcher = Dispatchers.Default,
 ) {
 
@@ -97,8 +99,17 @@ internal class RunIntelligenceUseCase(
         val startedAt = System.currentTimeMillis()
         runCatching {
             withContext(computation) {
-                IntelligenceEngine.run(input, config)
-                    .also { log(it, input, System.currentTimeMillis() - startedAt) }
+                IntelligenceEngine.run(input, config).also { report ->
+                    val elapsedMs = System.currentTimeMillis() - startedAt
+                    log(report, input, elapsedMs)
+                    telemetry.intelligenceRunCompleted(
+                        durationMs = elapsedMs,
+                        stillLearning = report.stillLearning,
+                        findingCount = report.findings.size,
+                        metricsOk = report.metricsOk,
+                        metricsTotal = report.metricsTotal,
+                    )
+                }
             }
         }.onSuccess { report -> memo.set(Memo(input, config, report)) }
             .onFailure { Timber.w(it, "Intelligence run failed") }

@@ -2,7 +2,9 @@ package com.hexis.bi.di
 
 import androidx.credentials.CredentialManager
 import androidx.work.WorkManager
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
@@ -37,6 +39,8 @@ import com.hexis.bi.data.health.remote.HealthRemoteDataSource
 import com.hexis.bi.data.intelligence.AssetIntelligenceConfigSource
 import com.hexis.bi.data.intelligence.RemoteIntelligenceConfigSource
 import com.hexis.bi.utils.constants.IntelligenceRemoteConfig
+import com.hexis.bi.data.telemetry.FirebaseTelemetry
+import com.hexis.bi.data.telemetry.Telemetry
 import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
 import com.hexis.bi.domain.intelligence.IntelligenceCoordinator
 import com.hexis.bi.data.intelligence.BUNDLED_WORDING_ASSET
@@ -106,6 +110,9 @@ import java.util.concurrent.TimeUnit
 
 val appModule = module {
     single { FirebaseAuth.getInstance() }
+    single { FirebaseAnalytics.getInstance(androidContext()) }
+    single { FirebaseCrashlytics.getInstance() }
+    single<Telemetry> { FirebaseTelemetry(get(), get()) }
     single { FirebaseFirestore.getInstance() }
     single { FirebaseFunctions.getInstance(FIREBASE_FUNCTIONS_REGION) }
     single { FirebaseStorage.getInstance() }
@@ -161,7 +168,7 @@ val appModule = module {
         )
     }
     single { IntelligenceInputProvider(get(), get(), get()) }
-    single { RunIntelligenceUseCase(get(), get(), get(), get()) }
+    single { RunIntelligenceUseCase(get(), get(), get(), get(), get()) }
     single { WorkManager.getInstance(androidContext()) }
     single<HealthSyncScheduler> { WorkManagerHealthSyncScheduler(get()) }
     single { IntelligenceCoordinator(get(), get(), get(), get(), get()) }

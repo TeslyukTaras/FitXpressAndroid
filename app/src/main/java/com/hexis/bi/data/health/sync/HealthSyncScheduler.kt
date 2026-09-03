@@ -9,18 +9,30 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import androidx.work.workDataOf
 import java.util.concurrent.TimeUnit
+import com.hexis.bi.data.telemetry.SyncTrigger
 import com.hexis.bi.utils.constants.HealthSyncWorkConstants
+import com.hexis.bi.utils.constants.TelemetryWorkData
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
 
-enum class HealthSyncTrigger(internal val reason: String, internal val policy: ExistingWorkPolicy) {
-    AppOpen("app_open", ExistingWorkPolicy.KEEP),
-    SignIn("sign_in", ExistingWorkPolicy.KEEP),
-    SourceConnected("source_connected", ExistingWorkPolicy.APPEND_OR_REPLACE),
-    HealthConnectReadable("health_connect_readable", ExistingWorkPolicy.APPEND_OR_REPLACE),
+enum class HealthSyncTrigger(
+    internal val reason: String,
+    internal val policy: ExistingWorkPolicy,
+    internal val telemetry: SyncTrigger,
+) {
+    Launch("launch", ExistingWorkPolicy.KEEP, SyncTrigger.Launch),
+    Foreground("foreground", ExistingWorkPolicy.KEEP, SyncTrigger.Foreground),
+    SignIn("sign_in", ExistingWorkPolicy.KEEP, SyncTrigger.Launch),
+    SourceConnected("source_connected", ExistingWorkPolicy.APPEND_OR_REPLACE, SyncTrigger.NewConnection),
+    HealthConnectReadable(
+        "health_connect_readable",
+        ExistingWorkPolicy.APPEND_OR_REPLACE,
+        SyncTrigger.NewConnection,
+    ),
 }
 
 interface HealthSyncScheduler {
@@ -41,6 +53,7 @@ internal class WorkManagerHealthSyncScheduler(
 
     override fun enqueueHistoryBackfill(trigger: HealthSyncTrigger) {
         val request = OneTimeWorkRequestBuilder<HealthSyncWorker>()
+            .setInputData(triggerData(trigger.telemetry))
             .setConstraints(
                 Constraints.Builder()
                     .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -68,6 +81,7 @@ internal class WorkManagerHealthSyncScheduler(
             HealthSyncWorkConstants.PERIODIC_INTERVAL.toMinutes(),
             TimeUnit.MINUTES,
         )
+            .setInputData(triggerData(SyncTrigger.Background))
             .setConstraints(
                 Constraints.Builder()
                     .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -106,6 +120,9 @@ internal class WorkManagerHealthSyncScheduler(
         workManager.cancelUniqueWork(HealthSyncWorkConstants.UNIQUE_WORK_NAME)
         Timber.d("Health history backfill cancelled")
     }
+
+    private fun triggerData(trigger: SyncTrigger) =
+        workDataOf(TelemetryWorkData.KEY_TRIGGER to trigger.wire)
 
     private fun isBackfillActive(info: WorkInfo): Boolean = when (info.state) {
         WorkInfo.State.RUNNING -> true

@@ -106,7 +106,14 @@ class MainActivity : ComponentActivity() {
                 .onFailure { Timber.e(it, "Terra foreground init failed") }
                 .onSuccess { pullOwnedSdkConnections(reason = "foreground") }
         }
-        startHealthSync(HealthSyncTrigger.AppOpen)
+        startHealthSync(
+            if (firstForegroundHandled) {
+                HealthSyncTrigger.Foreground
+            } else {
+                firstForegroundHandled = true
+                HealthSyncTrigger.Launch
+            },
+        )
     }
 
     private fun startHealthSync(trigger: HealthSyncTrigger) {
@@ -152,5 +159,9 @@ class MainActivity : ComponentActivity() {
     private fun handleTerraDeepLink(intent: Intent?) {
         val data = intent?.data ?: return
         lifecycleScope.launch { terraCallbackHandler.handle(data) }
+    }
+
+    private companion object {
+        var firstForegroundHandled = false
     }
 }
