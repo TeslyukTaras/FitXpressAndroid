@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.os.Process
 import android.view.WindowManager
 import com.google.firebase.appcheck.FirebaseAppCheck
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
 import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import com.google.firebase.crashlytics.FirebaseCrashlytics
@@ -14,6 +15,7 @@ import com.hexis.bi.data.notification.NotificationInboxRepository
 import com.hexis.bi.data.reminder.ScanReminderScheduler
 import com.hexis.bi.data.reminder.ScanReminderWorkRunner
 import com.hexis.bi.data.store.PendingFirestoreCacheWipe
+import com.hexis.bi.data.telemetry.Telemetry
 import com.hexis.bi.di.appModule
 import com.hexis.bi.utils.CrashlyticsTree
 import com.hexis.bi.utils.SystemNotificationHelper
@@ -49,9 +51,17 @@ class App : Application(), KoinComponent {
             androidContext(this@App)
             modules(appModule)
         }
+        trackSignedInUser()
         SystemNotificationHelper.createChannels(this)
         scanReminderScheduler().onNotificationSettingsOrScanChanged()
         registerActivityLifecycleCallbacks(KeepScreenOn)
+    }
+
+    private fun trackSignedInUser() {
+        val telemetry = get<Telemetry>()
+        get<FirebaseAuth>().addAuthStateListener { auth ->
+            telemetry.identify(auth.currentUser?.uid)
+        }
     }
 
     private fun installAppCheck() {

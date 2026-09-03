@@ -38,3 +38,5 @@
 -dontwarn androidx.room.paging.**
 
 -keepclassmembers enum * { *; }
+
+-keepnames class * extends java.lang.Throwable
