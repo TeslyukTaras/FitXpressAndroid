@@ -19,3 +19,22 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+-keepattributes Signature,InnerClasses,EnclosingMethod
+-keepattributes RuntimeVisibleAnnotations,RuntimeVisibleParameterAnnotations
+-keepattributes SourceFile,LineNumberTable
+
+-keep class com.hexis.bi.data.user.UserProfile { *; }
+-keep class com.hexis.bi.data.user.UserSettings { *; }
+-keep class com.hexis.bi.data.healthconnections.HealthConnection { *; }
+
+-keep class co.tryterra.** { *; }
+-dontwarn co.tryterra.**
+
+-keep class com.look.** { *; }
+-dontwarn com.look.**
+
+-keep class * extends androidx.room.RoomDatabase { <init>(); }
+-dontwarn androidx.room.paging.**
+
+-keepclassmembers enum * { *; }
