@@ -114,7 +114,7 @@ class HomeViewModel internal constructor(
             }
             return
         }
-        intelligenceCoordinator.refreshNow()
+        intelligenceCoordinator.refreshIfStale()
     }
 
     /** Pokes the overview pipeline; replay-less since every Home RESUME re-pokes. */

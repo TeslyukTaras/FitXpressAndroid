@@ -76,6 +76,10 @@ internal class IntelligenceCoordinator(
         scope.launch { refresh(force = true) }
     }
 
+    fun refreshIfStale() {
+        scope.launch { refresh(force = false) }
+    }
+
     private suspend fun refresh(force: Boolean) {
         refreshLock.withLock {
             if (!BuildConfig.INTELLIGENCE_ENGINE_ENABLED) {

@@ -18,6 +18,10 @@ internal object ObjDiskCache {
     private const val OBJ_DISK_CACHE_MAX_FILES = 16
     private const val OBJ_DISK_CACHE_MAX_BYTES = 64L * 1024L * 1024L
 
+    fun clear(cacheDir: File) {
+        File(cacheDir, OBJ_DISK_CACHE_DIR).listFiles()?.forEach { it.delete() }
+    }
+
     fun objFileReader(url: String, cacheDir: File): BufferedReader {
         val dir = File(cacheDir, OBJ_DISK_CACHE_DIR).apply { mkdirs() }
         val cacheFile = File(dir, cacheFileName(url))

@@ -106,6 +106,7 @@ class FirebaseAuthRepository(
         val email = user.email
             ?: throw FirebaseAuthCodeException(FirebaseAuthErrorCodes.NO_EMAIL_ON_ACCOUNT)
         user.reauthenticate(EmailAuthProvider.getCredential(email, password)).await()
+        user.getIdToken(true).await()
         Unit
     }.mapAuthError(context)
 
@@ -129,18 +130,7 @@ class FirebaseAuthRepository(
         user.isEmailVerified
     }.mapAuthError(context)
 
-    override suspend fun deleteAccountWithPassword(password: String): Result<Unit> = runCatching {
-        val user = auth.currentUser
-            ?: throw FirebaseAuthCodeException(FirebaseAuthErrorCodes.NO_CURRENT_USER)
-        val email = user.email
-            ?: throw FirebaseAuthCodeException(FirebaseAuthErrorCodes.NO_EMAIL_ON_ACCOUNT)
-        val credential = EmailAuthProvider.getCredential(email, password)
-        user.reauthenticate(credential).await()
-        user.delete().await()
-        Unit
-    }.mapAuthError(context)
-
-    override suspend fun deleteAccountWithGoogle(context: Context): Result<Unit> = runCatching {
+    override suspend fun reauthenticateWithGoogle(context: Context): Result<Unit> = runCatching {
         val user = auth.currentUser
             ?: throw FirebaseAuthCodeException(FirebaseAuthErrorCodes.NO_CURRENT_USER)
         val googleIdOption = GetGoogleIdOption.Builder()
@@ -154,16 +144,16 @@ class FirebaseAuthRepository(
         val idToken = GoogleIdTokenCredential.createFrom(result.credential.data).idToken
         val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
         user.reauthenticate(firebaseCredential).await()
-        user.delete().await()
+        user.getIdToken(true).await()
         Unit
     }.mapAuthError(context)
 
-    override suspend fun deleteAccountWithApple(activity: Activity): Result<Unit> = runCatching {
+    override suspend fun reauthenticateWithApple(activity: Activity): Result<Unit> = runCatching {
         val user = auth.currentUser
             ?: throw FirebaseAuthCodeException(FirebaseAuthErrorCodes.NO_CURRENT_USER)
         val provider = OAuthProvider.newBuilder(FirebaseAuthProviders.APPLE).build()
         user.startActivityForReauthenticateWithProvider(activity, provider).await()
-        user.delete().await()
+        user.getIdToken(true).await()
         Unit
     }.mapAuthError(context)
 

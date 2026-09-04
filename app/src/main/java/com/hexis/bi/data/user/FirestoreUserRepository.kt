@@ -21,11 +21,16 @@ class FirestoreUserRepository(
 
     private val collection get() = firestore.collection(FirestoreSchema.USERS_COLLECTION)
 
+    private fun sessionEnded(uid: String): Boolean = firebaseAuth.currentUser?.uid != uid
+
     override fun observeUser(): Flow<UserProfile> = callbackFlow {
         val uid = firebaseAuth.currentUser?.uid
             ?: error(context.getString(R.string.error_session_expired))
         val listener = collection.document(uid).addSnapshotListener { snap, err ->
-            if (err != null) { close(err); return@addSnapshotListener }
+            if (err != null) {
+                if (sessionEnded(uid)) close() else close(err)
+                return@addSnapshotListener
+            }
             snap?.toObject<UserProfile>()?.let { trySend(it) }
         }
         awaitClose { listener.remove() }
@@ -65,12 +70,6 @@ class FirestoreUserRepository(
         collection.document(uid).update(UserFields.IMAGE_URL, url).await()
     }
 
-    override suspend fun deleteUser(): Result<Unit> = runCatching {
-        val uid = firebaseAuth.currentUser?.uid
-            ?: error(context.getString(R.string.error_session_expired))
-        collection.document(uid).delete().await()
-    }
-
     private fun userSettingsDoc() = run {
         val uid = firebaseAuth.currentUser?.uid
             ?: error(context.getString(R.string.error_session_expired))
@@ -87,7 +86,7 @@ class FirestoreUserRepository(
             .document(FirestoreSchema.USER_SETTINGS_DOC)
         val listener = ref.addSnapshotListener { snap, err ->
             if (err != null) {
-                close(err)
+                if (sessionEnded(uid)) close() else close(err)
                 return@addSnapshotListener
             }
             trySend(snap?.toObject<UserSettings>() ?: UserSettings())

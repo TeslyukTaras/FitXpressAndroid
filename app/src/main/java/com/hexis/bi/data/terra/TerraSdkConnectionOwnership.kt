@@ -4,6 +4,8 @@ import co.tryterra.terra.enums.Connections
 import com.hexis.bi.data.healthconnect.HealthConnectPermissionChecker
 import com.hexis.bi.data.healthconnections.HealthConnection
 import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
+import com.hexis.bi.utils.redactSensitiveId
+import timber.log.Timber
 
 internal fun ownedSdkUserIds(
     sdkReportedIds: Set<String>,
@@ -37,6 +39,15 @@ class TerraSdkConnectionOwnership internal constructor(
         val sdkIds = enumValues<Connections>().mapNotNullTo(mutableSetOf(), manager::getUserId)
         if (sdkIds.isEmpty()) return Result.success(emptySet())
         return healthConnections.getConnections().map { connections ->
+            val owned = ownedSdkUserIds(sdkIds, connections)
+            val disowned = sdkIds - owned
+            if (disowned.isNotEmpty()) {
+                Timber.w(
+                    "IDENTITY-OWNERSHIP sdk: dropping %s reported by the SDK but absent from this account's connections (owned=%s)",
+                    disowned.map(::redactSensitiveId),
+                    owned.map(::redactSensitiveId),
+                )
+            }
             syncableSdkUserIds(
                 sdkReportedIds = sdkIds,
                 healthConnectUserId = manager.getUserId(Connections.HEALTH_CONNECT),

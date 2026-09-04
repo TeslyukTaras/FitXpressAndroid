@@ -63,7 +63,7 @@ class PaceOfAgingViewModel internal constructor(
     private var findingsJob: Job? = null
 
     private fun loadFindings(clearUpdatingOnComplete: Boolean = false) {
-        intelligenceCoordinator.refreshNow()
+        intelligenceCoordinator.refreshIfStale()
     }
 
     private fun observeFindings() {
