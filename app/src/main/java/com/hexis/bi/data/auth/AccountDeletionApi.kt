@@ -1,7 +1,6 @@
 package com.hexis.bi.data.auth
 
 import com.google.firebase.functions.FirebaseFunctions
-import com.hexis.bi.data.terra.TerraConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
@@ -15,7 +14,7 @@ class AccountDeletionApi(private val functions: FirebaseFunctions) {
         try {
             val result = functions.getHttpsCallable(FUNCTION_DELETE_ACCOUNT)
                 .apply { setTimeout(CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS) }
-                .call(mapOf(FIELD_ENVIRONMENT to TerraConfig.terraEnvironment))
+                .call()
                 .await()
             Timber.i("Account deletion succeeded: %s", result.data)
             Result.success(Unit)
@@ -29,6 +28,5 @@ class AccountDeletionApi(private val functions: FirebaseFunctions) {
     companion object {
         private const val CALL_TIMEOUT_SECONDS = 360L
         private const val FUNCTION_DELETE_ACCOUNT = "deleteAccount"
-        private const val FIELD_ENVIRONMENT = "environment"
     }
 }

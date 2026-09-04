@@ -447,20 +447,18 @@ export const verifyEmailCode = onCall(callableOptions, async (request) => {
 
 export const deleteAccount = onCall(deleteAccountOptions, async (request) => {
   const uid = requireAuth(request.auth?.uid);
-  const environment = requireTerraEnvironment(request.data?.environment);
   const token = request.auth?.token as { email?: unknown; auth_time?: unknown } | undefined;
   requireRecentAuth(token?.auth_time);
   const email = typeof token?.email === "string" ? token.email : undefined;
 
-  logger.info("Account deletion started", { uid, environment });
+  logger.info("Account deletion started", { uid });
 
   let stage = "terra";
   try {
-    const terra = await deauthenticateEveryTerraUser(uid, environment);
+    const terra = await deauthenticateEveryTerraUser(uid);
     logger.info("Account deletion: Terra done", {
       uid,
       deauthenticated: terra.deauthenticated,
-      failed: terra.failed,
     });
 
     stage = "storage";
@@ -477,7 +475,6 @@ export const deleteAccount = onCall(deleteAccountOptions, async (request) => {
     logger.info("Account deleted", {
       uid,
       terraDeauthenticated: terra.deauthenticated,
-      terraFailed: terra.failed,
       storageObjects,
       ...documents,
     });
@@ -485,7 +482,6 @@ export const deleteAccount = onCall(deleteAccountOptions, async (request) => {
     return {
       deleted: true,
       terraDeauthenticated: terra.deauthenticated,
-      terraFailed: terra.failed,
       storageObjects,
       ...documents,
     };
@@ -504,25 +500,9 @@ function requireRecentAuth(authTimeSeconds: unknown): void {
   }
 }
 
-function requireTerraEnvironment(value: unknown): TerraEnvironment {
-  const environment = requireString(value, "environment");
-  if (environment !== "dev" && environment !== "prod") {
-    throw new HttpsError("invalid-argument", "environment must be \"dev\" or \"prod\"");
-  }
-  return environment;
-}
-
-function terraSecretsFor(environment: TerraEnvironment): TerraSecrets {
-  return environment === "dev"
-    ? { environment, devId: devTerraDevId, apiKey: devTerraApiKey }
-    : { environment, devId: prodTerraDevId, apiKey: prodTerraApiKey };
-}
-
 async function deauthenticateEveryTerraUser(
   uid: string,
-  environment: TerraEnvironment,
-): Promise<{ deauthenticated: number; failed: number }> {
-  const secrets = terraSecretsFor(environment);
+): Promise<{ deauthenticated: number }> {
   const snapshot = await getFirestore()
     .collection(usersCollection)
     .doc(uid)
@@ -532,31 +512,43 @@ async function deauthenticateEveryTerraUser(
     .get();
 
   let deauthenticated = 0;
-  let failed = 0;
+  const environments: TerraSecrets[] = [
+    { environment: "dev", devId: devTerraDevId, apiKey: devTerraApiKey },
+    { environment: "prod", devId: prodTerraDevId, apiKey: prodTerraApiKey },
+  ];
+  const failures: unknown[] = [];
 
   for (const doc of snapshot.docs) {
     const terraUserId = doc.id;
-    const url = new URL(`${terraBaseUrl}/auth/deauthenticateUser`);
-    url.searchParams.set("user_id", terraUserId);
-    try {
-      const response = await terraFetch(secrets, url, { method: "DELETE" });
-      if (response.ok || response.status === 404) {
-        deauthenticated += 1;
-      } else {
-        failed += 1;
-        logger.warn("Account deletion could not deauthenticate a Terra user", {
+    for (const secrets of environments) {
+      const url = new URL(`${terraBaseUrl}/auth/deauthenticateUser`);
+      url.searchParams.set("user_id", terraUserId);
+      try {
+        const response = await terraFetch(secrets, url, { method: "DELETE" });
+        if (!response.ok && response.status !== 404) {
+          failures.push(new Error(`Terra ${secrets.environment} returned ${response.status}`));
+          logger.warn("Account deletion could not deauthenticate a Terra user", {
+            uid,
+            environment: secrets.environment,
+            status: response.status,
+          });
+        }
+      } catch (error) {
+        failures.push(error);
+        logger.warn("Account deletion failed to reach Terra", {
           uid,
-          environment,
-          status: response.status,
+          environment: secrets.environment,
+          error,
         });
       }
-    } catch (error) {
-      failed += 1;
-      logger.warn("Account deletion failed to reach Terra", { uid, environment, error });
     }
+    deauthenticated += 1;
   }
 
-  return { deauthenticated, failed };
+  if (failures.length > 0) {
+    throw new AggregateError(failures, "Could not remove all Terra connections");
+  }
+  return { deauthenticated };
 }
 
 async function deleteUserStorage(uid: string): Promise<number> {
@@ -568,10 +560,14 @@ async function deleteUserStorage(uid: string): Promise<number> {
     const [files] = await bucket.getFiles({ prefix });
     const results = await Promise.allSettled(files.map((file) => file.delete()));
     deleted += results.filter((result) => result.status === "fulfilled").length;
-    for (const result of results) {
-      if (result.status === "rejected") {
-        logger.warn("Account deletion could not delete a storage object", { uid, prefix });
-      }
+    const failures = results.filter((result): result is PromiseRejectedResult => result.status === "rejected");
+    if (failures.length > 0) {
+      logger.warn("Account deletion could not delete storage objects", {
+        uid,
+        prefix,
+        failed: failures.length,
+      });
+      throw new AggregateError(failures.map((result) => result.reason), "Could not delete all storage objects");
     }
   }
 
@@ -598,6 +594,10 @@ async function deleteUserDocuments(
     .where("to", "array-contains", email)
     .get();
   const results = await Promise.allSettled(queued.docs.map((doc) => doc.ref.delete()));
+  const failures = results.filter((result): result is PromiseRejectedResult => result.status === "rejected");
+  if (failures.length > 0) {
+    throw new AggregateError(failures.map((result) => result.reason), "Could not delete all queued emails");
+  }
   const mailDocs = results.filter((result) => result.status === "fulfilled").length;
   return { userDocs, mailDocs };
 }
