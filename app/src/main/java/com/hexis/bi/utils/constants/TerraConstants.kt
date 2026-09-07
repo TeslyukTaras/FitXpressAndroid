@@ -226,6 +226,10 @@ internal object HealthAnalysisConstants {
 internal object HealthSyncWorkConstants {
     const val UNIQUE_WORK_NAME = "health-history-backfill"
 
+    const val PERIODIC_WORK_NAME = "health-periodic-sync"
+
+    val PERIODIC_INTERVAL: Duration = Duration.ofHours(6)
+
     const val BACKFILL_CHUNK_DAYS = 56L
 
     val BACKFILL_BUDGET: Duration = Duration.ofMinutes(4)
@@ -255,4 +259,10 @@ internal object HealthConnectConstants {
     const val PACKAGE_NAME = "com.google.android.apps.healthdata"
     const val MARKET_URI = "market://details?id=$PACKAGE_NAME"
     const val PLAY_STORE_URI = "https://play.google.com/store/apps/details?id=$PACKAGE_NAME"
+}
+
+internal object TerraEnvironments {
+    const val PROD_FUNCTION_PREFIX = "terraProd"
+    const val DEV = "dev"
+    const val PROD = "prod"
 }

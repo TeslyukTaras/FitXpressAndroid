@@ -72,7 +72,7 @@ class ActivityViewModel internal constructor(
             }
             return
         }
-        intelligenceCoordinator.refreshNow()
+        intelligenceCoordinator.refreshIfStale()
     }
 
     private fun observeFindings() {

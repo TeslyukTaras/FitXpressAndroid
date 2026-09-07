@@ -106,24 +106,39 @@ class MainActivity : ComponentActivity() {
                 .onFailure { Timber.e(it, "Terra foreground init failed") }
                 .onSuccess { pullOwnedSdkConnections(reason = "foreground") }
         }
-        startHealthSync(HealthSyncTrigger.AppOpen)
+        startHealthSync(
+            if (firstForegroundHandled) {
+                HealthSyncTrigger.Foreground
+            } else {
+                firstForegroundHandled = true
+                HealthSyncTrigger.Launch
+            },
+        )
     }
 
     private fun startHealthSync(trigger: HealthSyncTrigger) {
         lifecycleScope.launch {
             if (firebaseAuth.currentUser == null) return@launch
             healthSyncScheduler.enqueueHistoryBackfill(trigger)
+            healthSyncScheduler.schedulePeriodicSync()
             healthSyncCoordinator.syncRecentWindow()
         }
     }
 
     private suspend fun pullOwnedSdkConnections(reason: String) {
         if (firebaseAuth.currentUser == null) return
+        val owned = terraSdkConnectionOwnership.syncableSdkUserIds().getOrElse { error ->
+            Timber.w(
+                error,
+                "IDENTITY-OWNERSHIP sdk: ownership unknown for %s (%s); skipping the pull",
+                firebaseAuth.currentUser?.uid ?: "signed-out",
+                reason,
+            )
+            return
+        }
         TerraSdkSync.syncLinkedConnections(
             manager = terraManagerHolder.current,
-            ownedUserIds = terraSdkConnectionOwnership.syncableSdkUserIds()
-                .onFailure { Timber.w(it, "Terra connection ownership unknown; pulling unfiltered") }
-                .getOrNull(),
+            ownedUserIds = owned,
             reason = reason,
             force = false,
         )
@@ -144,5 +159,9 @@ class MainActivity : ComponentActivity() {
     private fun handleTerraDeepLink(intent: Intent?) {
         val data = intent?.data ?: return
         lifecycleScope.launch { terraCallbackHandler.handle(data) }
+    }
+
+    private companion object {
+        var firstForegroundHandled = false
     }
 }

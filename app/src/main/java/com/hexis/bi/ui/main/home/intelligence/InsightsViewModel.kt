@@ -30,7 +30,7 @@ class InsightsViewModel internal constructor(
     private val scanDateJob = LatestJobController()
 
     init {
-        intelligenceCoordinator.refreshNow()
+        intelligenceCoordinator.refreshIfStale()
         loadScanDate()
         intelligenceCoordinator.state
             .onEach { reportState ->

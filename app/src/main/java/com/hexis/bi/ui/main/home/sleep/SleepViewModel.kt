@@ -62,7 +62,7 @@ class SleepViewModel internal constructor(
     private var lastRun: IntelligenceRun? = null
 
     private fun loadFindings(clearUpdatingOnComplete: Boolean = false) {
-        intelligenceCoordinator.refreshNow()
+        intelligenceCoordinator.refreshIfStale()
     }
 
     private fun observeFindings() {

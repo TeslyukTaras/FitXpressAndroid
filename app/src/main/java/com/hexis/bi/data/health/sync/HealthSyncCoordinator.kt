@@ -13,8 +13,8 @@ import com.hexis.bi.utils.constants.HealthSyncWorkConstants
 import com.hexis.bi.utils.constants.TerraCacheConstants
 import java.time.Duration
 import java.time.LocalDate
+import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import timber.log.Timber
 
 internal class HealthSyncCoordinator(
@@ -36,13 +36,14 @@ internal class HealthSyncCoordinator(
         return windows.observationDays
     }
 
-    suspend fun syncRecentWindow(today: LocalDate = LocalDate.now()) {
-        val uid = auth.currentUser?.uid ?: return
+    suspend fun syncRecentWindow(today: LocalDate = LocalDate.now()): List<Throwable> {
+        val uid = auth.currentUser?.uid ?: return emptyList()
         local.pruneExpiredDaysOnStartup(uid)
         val start = today.minusDays(CanonicalCacheConstants.FORCED_REFRESH_DAYS - 1)
-        coroutineScope {
-            launch { activityRepository.sync(start, today).logFailure("activity") }
-            launch { sleepRepository.sync(start, today).logFailure("sleep") }
+        return coroutineScope {
+            val activity = async { activityRepository.sync(start, today).logFailure("activity") }
+            val sleep = async { sleepRepository.sync(start, today).logFailure("sleep") }
+            listOfNotNull(activity.await(), sleep.await())
         }
     }
 
@@ -161,9 +162,10 @@ internal class HealthSyncCoordinator(
         return outcome
     }
 
-    private fun Result<Unit>.logFailure(source: String) {
-        exceptionOrNull()?.let { Timber.w(it, "Foreground %s sync failed; cached data still served", source) }
-    }
+    private fun Result<Unit>.logFailure(source: String): Throwable? =
+        exceptionOrNull()?.also {
+            Timber.w(it, "Foreground %s sync failed; cached data still served", source)
+        }
 
     private companion object {
         val RANGE_TTL: Duration = Duration.ofMillis(TerraCacheConstants.RANGE_CACHE_TTL_MS)

@@ -29,20 +29,38 @@ class TerraConnectionReconciler(
 
         retireConnectionsTerraNoLongerLists(stored, remote)
 
+        val newestActiveSdk = stored
+            .filter { it.active && it.source == HealthConnection.SOURCE_SDK }
+            .groupBy { it.provider.uppercase() }
+            .mapValuesTo(mutableMapOf()) { (_, rows) ->
+                rows.maxOf { it.connectedAt?.seconds ?: Long.MAX_VALUE }
+            }
+
         val recovered = mutableSetOf<String>()
-        for (user in remote.users) {
+        for (user in remote.users.sortedByDescending { it.createdAtTimestamp()?.seconds ?: Long.MIN_VALUE }) {
             val terraUserId = user.user_id?.takeIf { it.isNotBlank() } ?: continue
             val provider = user.provider?.trim()?.uppercase()?.takeIf { it.isNotBlank() } ?: continue
             if (!user.active) continue
             if (provider !in RECONCILABLE_PROVIDERS) continue
             if (terraUserId in storedActiveIds) continue
 
+            val singleConnectionProvider = sourceFor(provider) == HealthConnection.SOURCE_SDK
+            val connectedAt = user.createdAtTimestamp()
+            if (singleConnectionProvider && supersededByActive(newestActiveSdk[provider], connectedAt?.seconds)) {
+                Timber.i(
+                    "Terra reconcile: leaving %s (user=%s) retired; a newer connection is already active",
+                    provider,
+                    redactSensitiveId(terraUserId),
+                )
+                continue
+            }
+
             healthConnections.upsertConnection(
                 HealthConnection(
                     terraUserId = terraUserId,
                     provider = provider,
                     source = sourceFor(provider),
-                    connectedAt = user.createdAtTimestamp() ?: Timestamp.now(),
+                    connectedAt = connectedAt ?: Timestamp.now(),
                     active = true,
                 ),
             ).onSuccess {
@@ -52,6 +70,7 @@ class TerraConnectionReconciler(
                     redactSensitiveId(terraUserId),
                 )
                 recovered += provider
+                if (singleConnectionProvider) newestActiveSdk[provider] = Long.MAX_VALUE
             }.onFailure {
                 Timber.w(it, "Terra reconcile: could not persist %s", provider)
             }
@@ -61,6 +80,12 @@ class TerraConnectionReconciler(
             TerraSdkSync.invalidateCachesAndNotify()
         }
         return Result.success(recovered)
+    }
+
+    private fun supersededByActive(activeSeconds: Long?, candidateSeconds: Long?): Boolean {
+        if (activeSeconds == null) return false
+        if (candidateSeconds == null) return true
+        return activeSeconds >= candidateSeconds
     }
 
     private suspend fun retireConnectionsTerraNoLongerLists(

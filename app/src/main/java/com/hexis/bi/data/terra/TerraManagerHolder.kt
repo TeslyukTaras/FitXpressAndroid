@@ -64,12 +64,13 @@ class TerraManagerHolder {
         manager = null
     }
 
-    fun clearSdkIdentity(context: Context) {
+    suspend fun clearSdkIdentity(context: Context) = initMutex.withLock {
         manager = null
         context.getSharedPreferences(TerraSdkStorage.PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .clear()
-            .apply()
+            .commit()
+        Unit
     }
 
     /**

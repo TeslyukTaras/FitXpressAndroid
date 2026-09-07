@@ -5,10 +5,17 @@ import android.app.Application
 import android.os.Bundle
 import android.os.Process
 import android.view.WindowManager
+import com.google.firebase.appcheck.FirebaseAppCheck
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
+import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.google.firebase.firestore.FirebaseFirestore
 import com.hexis.bi.data.notification.NotificationInboxRepository
 import com.hexis.bi.data.reminder.ScanReminderScheduler
 import com.hexis.bi.data.reminder.ScanReminderWorkRunner
+import com.hexis.bi.data.store.PendingFirestoreCacheWipe
+import com.hexis.bi.data.telemetry.Telemetry
 import com.hexis.bi.di.appModule
 import com.hexis.bi.utils.CrashlyticsTree
 import com.hexis.bi.utils.SystemNotificationHelper
@@ -36,14 +43,47 @@ class App : Application(), KoinComponent {
         if (BuildConfig.DEBUG) Timber.plant(Timber.DebugTree())
         else Timber.plant(CrashlyticsTree())
         
+        installAppCheck()
+        wipeFirestoreCacheIfPending()
+
         startKoin {
             androidLogger()
             androidContext(this@App)
             modules(appModule)
         }
+        trackSignedInUser()
         SystemNotificationHelper.createChannels(this)
         scanReminderScheduler().onNotificationSettingsOrScanChanged()
         registerActivityLifecycleCallbacks(KeepScreenOn)
+    }
+
+    private fun trackSignedInUser() {
+        val telemetry = get<Telemetry>()
+        get<FirebaseAuth>().addAuthStateListener { auth ->
+            telemetry.identify(auth.currentUser?.uid)
+        }
+    }
+
+    private fun installAppCheck() {
+        FirebaseAppCheck.getInstance().installAppCheckProviderFactory(
+            if (BuildConfig.DEBUG) {
+                DebugAppCheckProviderFactory.getInstance()
+            } else {
+                PlayIntegrityAppCheckProviderFactory.getInstance()
+            },
+        )
+    }
+
+    private fun wipeFirestoreCacheIfPending() {
+        if (!PendingFirestoreCacheWipe.isArmed(this)) return
+        FirebaseFirestore.getInstance().clearPersistence().addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                PendingFirestoreCacheWipe.disarm(this)
+                Timber.i("Cleared the Firestore cache left by the previous account")
+            } else {
+                Timber.w(task.exception, "Could not clear the Firestore cache; retrying next launch")
+            }
+        }
     }
 
     private fun installTerraSdkCrashShield() {

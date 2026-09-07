@@ -36,7 +36,12 @@ class TerraApi(private val functions: FirebaseFunctions) {
             val data = functions.getHttpsCallable(terraFunction(FUNCTION_GET_DAILY)).call(payload)
                 .await().data
             logTerraRawJson("DAILY", terraUserId, startDate, endDate, data)
-            Result.success(data.asTerraDataList())
+            val rows = data.asTerraDataList()
+            if (rows == null) {
+                Result.failure(TerraMissingDataException("daily", data.terraFailureDetail()))
+            } else {
+                Result.success(rows)
+            }
         } catch (e: Exception) {
             if (e is CancellationException) throw e
             Result.failure(e)
@@ -54,7 +59,12 @@ class TerraApi(private val functions: FirebaseFunctions) {
             val data = functions.getHttpsCallable(terraFunction(FUNCTION_GET_SLEEP)).call(payload)
                 .await().data
             logTerraRawJson("SLEEP", terraUserId, startDate, endDate, data)
-            Result.success(data.asTerraDataList())
+            val rows = data.asTerraDataList()
+            if (rows == null) {
+                Result.failure(TerraMissingDataException("sleep", data.terraFailureDetail()))
+            } else {
+                Result.success(rows)
+            }
         } catch (e: Exception) {
             if (e is CancellationException) throw e
             Result.failure(e)
@@ -177,15 +187,30 @@ data class TerraDataListResponse(
  * Reads the range envelope off the tree the Firebase callable already built. The row payloads are
  * handed on untouched, so the samples are never copied into a parallel representation.
  */
-private fun Any?.asTerraDataList(): TerraDataListResponse {
-    val root = this as? Map<*, *> ?: return TerraDataListResponse()
-    return TerraDataListResponse(
+private fun Any?.asTerraDataList(): TerraDataListResponse? {
+    val root = this as? Map<*, *> ?: return null
+    val response = TerraDataListResponse(
         status = root["status"] as? String,
         type = root["type"] as? String,
         data = (root["data"] as? List<*>).orEmpty(),
         message = root["message"] as? String,
     )
+    if (root["data"] is List<*>) return response
+    return response.takeIf { it.isPending }
 }
+
+private fun Any?.terraFailureDetail(): String {
+    val root = this as? Map<*, *> ?: return "response was not an object"
+    val parts = listOfNotNull(
+        (root["status"] as? String)?.let { "status=$it" },
+        (root["message"] as? String)?.let { "message=$it" },
+    )
+    return parts.ifEmpty { listOf("no data array in response") }.joinToString(", ")
+}
+
+class TerraMissingDataException(endpoint: String, detail: String) : IllegalStateException(
+    "Terra $endpoint returned no rows to store ($detail)",
+)
 
 @Serializable
 data class TerraUserInfoResponse(
