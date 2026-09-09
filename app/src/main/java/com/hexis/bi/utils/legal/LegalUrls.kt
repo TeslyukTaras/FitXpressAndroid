@@ -1,6 +1,8 @@
 package com.hexis.bi.utils.legal
 
 object LegalUrls {
-    const val PRIVACY_POLICY = "https://visual-body-intelligence.web.app/privacy_policy"
-    const val TERMS_AND_CONDITIONS = "https://visual-body-intelligence.web.app/terms_and_conditions"
+    private const val BASE = "https://hexis-bi-production.web.app"
+
+    const val PRIVACY_POLICY = "$BASE/privacy_policy"
+    const val TERMS_AND_CONDITIONS = "$BASE/terms_and_conditions"
 }

@@ -52,7 +52,7 @@ android {
     productFlavors {
         create("dev") {
             dimension = "env"
-            //applicationIdSuffix = ".dev"
+            applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
             resValue("string", "app_name", "Hexis-BI Dev")
             buildConfigField("String", "ENVIRONMENT", "\"dev\"")
@@ -61,18 +61,6 @@ android {
             buildConfigField("String", "TERRA_FUNCTION_PREFIX", "\"terraDev\"")
             buildConfigField("String", "TERRA_DEV_ID", "\"${terraDevId("terra.dev.id")}\"")
             buildConfigField("boolean", "TERRA_INCLUDE_DUMMY_PROVIDER", "true")
-        }
-        create("stage") {
-            dimension = "env"
-            //applicationIdSuffix = ".stage"
-            versionNameSuffix = "-stage"
-            resValue("string", "app_name", "Hexis-BI Stage")
-            buildConfigField("String", "ENVIRONMENT", "\"stage\"")
-            buildConfigField("boolean", "INTELLIGENCE_ENGINE_ENABLED", "true")
-            buildConfigField("String", "API_BASE_URL", "\"https://api.stage.hexis.bi/\"")
-            buildConfigField("String", "TERRA_FUNCTION_PREFIX", "\"terraDev\"")
-            buildConfigField("String", "TERRA_DEV_ID", "\"${terraDevId("terra.dev.id")}\"")
-            buildConfigField("boolean", "TERRA_INCLUDE_DUMMY_PROVIDER", "false")
         }
         create("production") {
             dimension = "env"

@@ -16,6 +16,9 @@ const devTerraApiKey = defineSecret("DEV_TERRA_API_KEY");
 const prodTerraDevId = defineSecret("PROD_TERRA_DEV_ID");
 const prodTerraApiKey = defineSecret("PROD_TERRA_API_KEY");
 
+const productionProjectId = "hexis-bi-production";
+const isProductionProject = process.env.GCLOUD_PROJECT === productionProjectId;
+
 const region = "us-central1";
 const terraBaseUrl = "https://api.tryterra.co/v2";
 const threeDLookBaseUrl = "https://backend.fitxpress.3dlook.me/api/1.0";
@@ -55,7 +58,9 @@ const prodTerraSecretOptions = {
 
 const deleteAccountOptions = {
   ...callableOptions,
-  secrets: [devTerraDevId, devTerraApiKey, prodTerraDevId, prodTerraApiKey],
+  secrets: isProductionProject
+    ? [prodTerraDevId, prodTerraApiKey]
+    : [devTerraDevId, devTerraApiKey, prodTerraDevId, prodTerraApiKey],
   timeoutSeconds: 300,
 };
 
@@ -234,14 +239,30 @@ const prodTerra = terraHandlers({
   apiKey: prodTerraApiKey,
 });
 
-export const terraDevGenerateAuthToken = onCall(devTerraSecretOptions, devTerra.generateAuthToken);
-export const terraDevAuthenticateUser = onCall(devTerraSecretOptions, devTerra.authenticateUser);
-export const terraDevGenerateWidgetSession = onCall(devTerraSecretOptions, devTerra.generateWidgetSession);
-export const terraDevGetDaily = onCall(devTerraSecretOptions, devTerra.getDaily);
-export const terraDevGetSleep = onCall(devTerraSecretOptions, devTerra.getSleep);
-export const terraDevGetUserInfo = onCall(devTerraSecretOptions, devTerra.getUserInfo);
-export const terraDevListConnections = onCall(devTerraSecretOptions, devTerra.listConnections);
-export const terraDevDeauthenticateUser = onCall(devTerraSecretOptions, devTerra.deauthenticateUser);
+export const terraDevGenerateAuthToken = isProductionProject
+  ? undefined
+  : onCall(devTerraSecretOptions, devTerra.generateAuthToken);
+export const terraDevAuthenticateUser = isProductionProject
+  ? undefined
+  : onCall(devTerraSecretOptions, devTerra.authenticateUser);
+export const terraDevGenerateWidgetSession = isProductionProject
+  ? undefined
+  : onCall(devTerraSecretOptions, devTerra.generateWidgetSession);
+export const terraDevGetDaily = isProductionProject
+  ? undefined
+  : onCall(devTerraSecretOptions, devTerra.getDaily);
+export const terraDevGetSleep = isProductionProject
+  ? undefined
+  : onCall(devTerraSecretOptions, devTerra.getSleep);
+export const terraDevGetUserInfo = isProductionProject
+  ? undefined
+  : onCall(devTerraSecretOptions, devTerra.getUserInfo);
+export const terraDevListConnections = isProductionProject
+  ? undefined
+  : onCall(devTerraSecretOptions, devTerra.listConnections);
+export const terraDevDeauthenticateUser = isProductionProject
+  ? undefined
+  : onCall(devTerraSecretOptions, devTerra.deauthenticateUser);
 
 export const terraProdGenerateAuthToken = onCall(prodTerraSecretOptions, prodTerra.generateAuthToken);
 export const terraProdAuthenticateUser = onCall(prodTerraSecretOptions, prodTerra.authenticateUser);
@@ -512,10 +533,12 @@ async function deauthenticateEveryTerraUser(
     .get();
 
   let deauthenticated = 0;
-  const environments: TerraSecrets[] = [
-    { environment: "dev", devId: devTerraDevId, apiKey: devTerraApiKey },
-    { environment: "prod", devId: prodTerraDevId, apiKey: prodTerraApiKey },
-  ];
+  const environments: TerraSecrets[] = isProductionProject
+    ? [{ environment: "prod", devId: prodTerraDevId, apiKey: prodTerraApiKey }]
+    : [
+        { environment: "dev", devId: devTerraDevId, apiKey: devTerraApiKey },
+        { environment: "prod", devId: prodTerraDevId, apiKey: prodTerraApiKey },
+      ];
   const failures: unknown[] = [];
 
   for (const doc of snapshot.docs) {
