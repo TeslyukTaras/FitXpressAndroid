@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -173,7 +174,7 @@ private fun HowToScanContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .aspectRatio(1029f / 1275f)
-                            .clip(MaterialTheme.shapes.large)
+                            .clip(RoundedCornerShape(dimensionResource(R.dimen.how_to_scan_image_corner)))
                     )
 
                     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
