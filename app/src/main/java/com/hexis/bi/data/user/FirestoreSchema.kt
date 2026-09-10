@@ -12,6 +12,10 @@ internal object FirestoreSchema {
         const val IMAGE_URL = "imageUrl"
         const val UNIT_SYSTEM = "unitSystem"
         const val SUIT_ID = "suitId"
+        const val HEIGHT_CM = "heightCm"
+        const val WEIGHT_KG = "weightKg"
+        const val HEIGHT_IN = "heightIn"
+        const val WEIGHT_LB = "weightLb"
     }
 
     object UserSettingsFields {

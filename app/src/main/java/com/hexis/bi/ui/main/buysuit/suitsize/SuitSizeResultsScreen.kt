@@ -24,6 +24,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,11 +66,21 @@ fun SuitSizeResultsScreen(
     viewModel: SuitSizeResultsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is SuitSizeResultsEvent.ProceedToOrder -> onProceedToOrder()
+            }
+        }
+    }
 
     BaseScreen(
         modifier = modifier.screenBackground(),
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        isLoading = isLoading,
         error = error,
         onDismissError = viewModel::clearError,
         topBar = {
@@ -101,10 +112,7 @@ fun SuitSizeResultsScreen(
                 onSelectImperial = viewModel::selectImperial,
                 onHeightChange = viewModel::updateHeight,
                 onWeightChange = viewModel::updateWeight,
-                onProceedToOrder = {
-                    viewModel.confirmSelection()
-                    onProceedToOrder()
-                },
+                onProceedToOrder = viewModel::proceedToOrder,
             )
         }
     }
