@@ -244,13 +244,29 @@ fun StartScanScreen(
                 }
             }
 
-            ScanMode.SuitAnalysis -> SuitSizeScanAnalysisScreen(
-                isProcessing = state.isProcessing,
-                isComplete = state.isComplete,
-                errorMessage = state.scanErrorMessage,
-                onResults = onScanComplete,
-                onRescan = viewModel::startCamera,
-            )
+            ScanMode.SuitAnalysis -> {
+                var suitProgressComplete by remember { mutableStateOf(false) }
+                val showAnalyzing = state.scanErrorMessage == null &&
+                        !(state.isComplete && suitProgressComplete)
+                Box(modifier = Modifier.fillMaxSize()) {
+                    AnimatedVisibility(visible = showAnalyzing, enter = fadeIn(), exit = fadeOut()) {
+                        ScanAnalyzingContent(
+                            modifier = Modifier.fillMaxSize(),
+                            isComplete = state.isComplete,
+                            onProgressFinished = { suitProgressComplete = true },
+                        )
+                    }
+                    AnimatedVisibility(visible = !showAnalyzing, enter = fadeIn(), exit = fadeOut()) {
+                        SuitSizeScanAnalysisScreen(
+                            isProcessing = state.isProcessing,
+                            isComplete = state.isComplete,
+                            errorMessage = state.scanErrorMessage,
+                            onResults = onScanComplete,
+                            onRescan = viewModel::startCamera,
+                        )
+                    }
+                }
+            }
 
             ScanMode.SuitIntro -> SuitSizeScanHeaderSubtitle()
 
