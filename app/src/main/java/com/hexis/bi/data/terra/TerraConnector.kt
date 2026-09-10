@@ -58,7 +58,25 @@ class TerraConnector internal constructor(
         } ?: Result.failure(IllegalStateException("Terra initConnection timed out"))
     }
 
+    suspend fun enableBackgroundDelivery(): Result<Boolean> {
+        val manager = terraManagerHolder.current
+            ?: return Result.failure(IllegalStateException("TerraManager not initialised"))
+
+        return withTimeoutOrNull(BACKGROUND_DELIVERY_TIMEOUT_MS) {
+            suspendCancellableCoroutine { cont ->
+                manager.enableBackgroundDelivery { granted, error ->
+                    if (error != null) {
+                        if (cont.isActive) cont.resume(Result.failure(error))
+                    } else {
+                        if (cont.isActive) cont.resume(Result.success(granted))
+                    }
+                }
+            }
+        } ?: Result.failure(IllegalStateException("Terra enableBackgroundDelivery timed out"))
+    }
+
     companion object {
         private const val INIT_CONNECTION_TIMEOUT_MS = 30_000L
+        private const val BACKGROUND_DELIVERY_TIMEOUT_MS = 30_000L
     }
 }

@@ -92,6 +92,10 @@ internal class HealthSyncWorker(
                 Timber.i("Health sync: source unreachable; resumes on next app open")
                 Result.success()
             }
+            BackfillOutcome.Empty -> {
+                Timber.w("Health sync: every source answered but returned no rows at all")
+                Result.success()
+            }
             BackfillOutcome.Failed, BackfillOutcome.Incomplete -> giveUpOrRetry(outcome)
             BackfillOutcome.Complete, BackfillOutcome.Skipped -> Result.success()
         }
@@ -108,6 +112,7 @@ internal class HealthSyncWorker(
         failedOperations >= TOTAL_OPERATIONS -> SyncOutcome.Failed
         failedOperations > 0 -> SyncOutcome.Partial
         backfill == BackfillOutcome.Incomplete -> SyncOutcome.Partial
+        backfill == BackfillOutcome.Empty -> SyncOutcome.Empty
         else -> SyncOutcome.Complete
     }
 

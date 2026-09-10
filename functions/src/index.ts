@@ -10,14 +10,14 @@ import { isDemoUid, syntheticDailyResponse, syntheticSleepResponse } from "./dem
 
 initializeApp();
 
-const threedlookApiToken = defineSecret("THREEDLOOK_API_TOKEN");
-const devTerraDevId = defineSecret("DEV_TERRA_DEV_ID");
-const devTerraApiKey = defineSecret("DEV_TERRA_API_KEY");
-const prodTerraDevId = defineSecret("PROD_TERRA_DEV_ID");
-const prodTerraApiKey = defineSecret("PROD_TERRA_API_KEY");
-
 const productionProjectId = "hexis-bi-production";
 const isProductionProject = process.env.GCLOUD_PROJECT === productionProjectId;
+
+const threedlookApiToken = defineSecret("THREEDLOOK_API_TOKEN");
+const prodTerraDevId = defineSecret("PROD_TERRA_DEV_ID");
+const prodTerraApiKey = defineSecret("PROD_TERRA_API_KEY");
+const devTerraDevId = isProductionProject ? prodTerraDevId : defineSecret("DEV_TERRA_DEV_ID");
+const devTerraApiKey = isProductionProject ? prodTerraApiKey : defineSecret("DEV_TERRA_API_KEY");
 
 const region = "us-central1";
 const terraBaseUrl = "https://api.tryterra.co/v2";
@@ -214,7 +214,7 @@ function terraHandlers(secrets: TerraSecrets) {
     deauthenticateUser: async (request: CallableRequest) => {
       const uid = requireAuth(request.auth?.uid);
       const terraUserId = requireString(request.data?.terraUserId, "terraUserId");
-      await requireTerraConnection(uid, terraUserId);
+      await requireDeauthorizableByCaller(secrets, uid, terraUserId);
 
       const url = new URL(`${terraBaseUrl}/auth/deauthenticateUser`);
       url.searchParams.set("user_id", terraUserId);
@@ -745,7 +745,11 @@ function throwProviderError(status: number, label: string, body: string): never 
     status,
     body: body.slice(0, 1000),
   });
-  const code = status === 401 || status === 403 ? "permission-denied" : "internal";
+  const code = status === 401 || status === 403
+    ? "permission-denied"
+    : status === 404
+      ? "not-found"
+      : "internal";
   const detail = providerErrorDetail(body);
   throw new HttpsError(
     code,
@@ -808,7 +812,7 @@ function requireAuth(uid: string | undefined): string {
   return uid;
 }
 
-async function requireTerraConnection(uid: string, terraUserId: string): Promise<void> {
+async function hasActiveConnection(uid: string, terraUserId: string): Promise<boolean> {
   const snapshot = await getFirestore()
     .collection("users")
     .doc(uid)
@@ -818,9 +822,28 @@ async function requireTerraConnection(uid: string, terraUserId: string): Promise
     .doc(terraUserId)
     .get();
 
-  if (!snapshot.exists || snapshot.get("active") !== true) {
+  return snapshot.exists && snapshot.get("active") === true;
+}
+
+async function requireTerraConnection(uid: string, terraUserId: string): Promise<void> {
+  if (!(await hasActiveConnection(uid, terraUserId))) {
     throw new HttpsError("permission-denied", "Terra connection is not active for this user");
   }
+}
+
+async function requireDeauthorizableByCaller(
+  secrets: TerraSecrets,
+  uid: string,
+  terraUserId: string,
+): Promise<void> {
+  if (await hasActiveConnection(uid, terraUserId)) return;
+
+  const url = new URL(`${terraBaseUrl}/userInfo`);
+  url.searchParams.set("user_id", terraUserId);
+  const response = await terraFetch(secrets, url, { method: "GET" });
+  if (response.status === 404) return;
+  const json = await parseJsonResponse(response, `Terra ${secrets.environment} userInfo`);
+  requireOwnedByCaller(json, uid);
 }
 
 function requireOwnedByCaller(userInfo: unknown, uid: string): void {

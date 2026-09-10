@@ -26,6 +26,7 @@ internal enum class SyncStage(val wire: String) {
 
 internal enum class SyncOutcome(val wire: String) {
     Complete(TelemetryOutcomes.COMPLETE),
+    Empty(TelemetryOutcomes.EMPTY),
     Partial(TelemetryOutcomes.PARTIAL),
     Failed(TelemetryOutcomes.FAILED),
 }

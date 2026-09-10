@@ -1,6 +1,7 @@
 package com.hexis.bi.data.activity
 
 import com.hexis.bi.data.health.sync.HealthRangeCoverage
+import com.hexis.bi.data.health.sync.HealthSyncTally
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 
@@ -11,7 +12,7 @@ interface ActivityRepository {
 
     suspend fun coverage(start: LocalDate, end: LocalDate): HealthRangeCoverage
 
-    suspend fun sync(start: LocalDate, end: LocalDate): Result<Unit>
+    suspend fun sync(start: LocalDate, end: LocalDate): Result<HealthSyncTally>
 
     val updates: Flow<Unit>
 }

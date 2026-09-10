@@ -2,6 +2,7 @@ package com.hexis.bi.data.sleep
 
 import com.hexis.bi.data.terra.TerraDetail
 import com.hexis.bi.data.health.sync.HealthRangeCoverage
+import com.hexis.bi.data.health.sync.HealthSyncTally
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 
@@ -16,7 +17,7 @@ interface SleepRepository {
 
     suspend fun coverage(start: LocalDate, end: LocalDate): HealthRangeCoverage
 
-    suspend fun sync(start: LocalDate, end: LocalDate): Result<Unit>
+    suspend fun sync(start: LocalDate, end: LocalDate): Result<HealthSyncTally>
 
     val updates: Flow<Unit>
 }
