@@ -93,7 +93,9 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
             OnboardingScreen(
                 onBuySuitScanRequested = {
                     mainStartDestination = Route.Main.SUIT_SIZE_SCAN
-                    navController.navigate(Route.MAIN) { launchSingleTop = true }
+                    navController.navigate(Route.MAIN) {
+                        popUpTo(Route.PROFILE_ONBOARDING) { inclusive = true }
+                    }
                 },
                 onFinish = {
                     mainStartDestination = Route.Main.HOME
@@ -162,7 +164,6 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
         composable(Route.MAIN) {
             MainScreen(
                 startDestination = mainStartDestination,
-                onExit = { navController.popBackStackOnce() },
                 onLogout = {
                     scope.launch { sessionCleaner.signOut() }
                     mainStartDestination = Route.Main.HOME
