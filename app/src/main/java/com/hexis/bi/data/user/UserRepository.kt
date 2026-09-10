@@ -10,7 +10,6 @@ interface UserRepository {
     suspend fun getUser(): Result<UserProfile>
     suspend fun createUser(profile: UserProfile): Result<Unit>
     suspend fun createUserIfAbsent(profile: UserProfile): Result<Unit>
-    suspend fun updateUser(profile: UserProfile): Result<Unit>
     suspend fun updateFields(fields: Map<String, Any?>): Result<Unit>
     suspend fun updateImageUrl(url: String): Result<Unit>
     suspend fun getUserSettings(): Result<UserSettings>

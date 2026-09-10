@@ -54,10 +54,6 @@ class FirestoreUserRepository(
         }
     }
 
-    override suspend fun updateUser(profile: UserProfile): Result<Unit> = runCatching {
-        collection.document(profile.uid).set(profile, SetOptions.merge()).await()
-    }
-
     override suspend fun updateFields(fields: Map<String, Any?>): Result<Unit> = runCatching {
         val uid = firebaseAuth.currentUser?.uid
             ?: error(context.getString(R.string.error_session_expired))
