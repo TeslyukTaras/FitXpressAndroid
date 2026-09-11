@@ -126,6 +126,7 @@ class StartScanViewModel(
 
     fun onPhotosReceived(frontUri: Uri, sideUri: Uri) {
         Timber.d("onPhotosReceived front=%s side=%s", frontUri, sideUri)
+        _state.update { it.copy(scanProgress = ScanProgress.Submitting) }
         submitPhotos(frontUri, sideUri)
     }
 

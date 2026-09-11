@@ -1,6 +1,11 @@
 package com.hexis.bi.ui.main.buysuit.suitsize
 
 import com.hexis.bi.domain.order.SuitSize
+import com.hexis.bi.ui.base.UiEvent
+
+sealed interface SuitSizeResultsEvent : UiEvent {
+    data object ProceedToOrder : SuitSizeResultsEvent
+}
 
 data class SuitSizeResultsState(
     val isLoading: Boolean = true,

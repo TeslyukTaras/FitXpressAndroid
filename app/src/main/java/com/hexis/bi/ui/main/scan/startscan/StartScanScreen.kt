@@ -1,7 +1,10 @@
 package com.hexis.bi.ui.main.scan.startscan
 
+import android.Manifest
 import android.app.Activity
+import android.content.pm.PackageManager
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -57,6 +60,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.withResumed
@@ -146,11 +150,30 @@ fun StartScanScreen(
         } else viewModel.onCameraCancelled()
     }
 
+    val launchCamera = {
+        cameraLauncher.launch(SdkActivity.start(context, LaunchOption.POSE_RECOGNITION_BY_MYSELF))
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) {
+            launchCamera()
+        } else {
+            Toast.makeText(context, R.string.error_camera_permission_denied, Toast.LENGTH_LONG).show()
+            viewModel.onCameraCancelled()
+        }
+    }
+
     LaunchedEffect(state.shouldLaunchCamera) {
         if (state.shouldLaunchCamera) {
             viewModel.onCameraLaunched()
-            val intent = SdkActivity.start(context, LaunchOption.POSE_RECOGNITION_BY_MYSELF)
-            cameraLauncher.launch(intent)
+            val hasCameraPermission = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.CAMERA,
+            ) == PackageManager.PERMISSION_GRANTED
+            if (hasCameraPermission) launchCamera()
+            else cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 
@@ -244,13 +267,29 @@ fun StartScanScreen(
                 }
             }
 
-            ScanMode.SuitAnalysis -> SuitSizeScanAnalysisScreen(
-                isProcessing = state.isProcessing,
-                isComplete = state.isComplete,
-                errorMessage = state.scanErrorMessage,
-                onResults = onScanComplete,
-                onRescan = viewModel::startCamera,
-            )
+            ScanMode.SuitAnalysis -> {
+                var suitProgressComplete by remember { mutableStateOf(false) }
+                val showAnalyzing = state.scanErrorMessage == null &&
+                        !(state.isComplete && suitProgressComplete)
+                Box(modifier = Modifier.fillMaxSize()) {
+                    AnimatedVisibility(visible = showAnalyzing, enter = fadeIn(), exit = fadeOut()) {
+                        ScanAnalyzingContent(
+                            modifier = Modifier.fillMaxSize(),
+                            isComplete = state.isComplete,
+                            onProgressFinished = { suitProgressComplete = true },
+                        )
+                    }
+                    AnimatedVisibility(visible = !showAnalyzing, enter = fadeIn(), exit = fadeOut()) {
+                        SuitSizeScanAnalysisScreen(
+                            isProcessing = state.isProcessing,
+                            isComplete = state.isComplete,
+                            errorMessage = state.scanErrorMessage,
+                            onResults = onScanComplete,
+                            onRescan = viewModel::startCamera,
+                        )
+                    }
+                }
+            }
 
             ScanMode.SuitIntro -> SuitSizeScanHeaderSubtitle()
 

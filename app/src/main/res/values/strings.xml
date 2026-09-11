@@ -69,6 +69,7 @@
     <string name="notifications_time">Time:</string>
     <string name="notifications_select_time">Select time</string>
     <string name="error_notifications_permission_denied">Enable notifications in system settings to receive scan reminders.</string>
+    <string name="error_camera_permission_denied">Enable camera access in system settings to take a scan.</string>
 
     <!-- Days of the week -->
     <string name="day_monday">Monday</string>

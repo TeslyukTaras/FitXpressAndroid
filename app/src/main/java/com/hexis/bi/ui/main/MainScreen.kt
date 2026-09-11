@@ -1,5 +1,6 @@
 package com.hexis.bi.ui.main
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -78,12 +79,27 @@ fun MainScreen(
     onDeleteAccount: () -> Unit,
     modifier: Modifier = Modifier,
     startDestination: String = Route.Main.HOME,
-    onExit: () -> Unit = {},
 ) {
     val navController = rememberNavController()
     val currentBackStack by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStack?.destination?.route
     val showBottomBar = currentRoute in Route.Main.tabRoutes
+
+    val goHome: () -> Unit = {
+        navController.navigate(Route.Main.HOME) {
+            popUpTo(navController.graph.id) { inclusive = true }
+            launchSingleTop = true
+        }
+    }
+    val popOrGoHome: () -> Unit = {
+        if (navController.previousBackStackEntry == null) goHome() else navController.popBackStackOnce()
+    }
+    BackHandler(
+        enabled = currentRoute != null &&
+                currentRoute != Route.Main.HOME &&
+                navController.previousBackStackEntry == null,
+        onBack = goHome,
+    )
 
     val userRepository: UserRepository = koinInject()
     val scanResultRepository: ScanResultRepository = koinInject()
@@ -207,7 +223,7 @@ fun MainScreen(
             }
             composable(Route.Main.SUIT_SIZE_SCAN) {
                 ScanScreen(
-                    onBack = { if (!navController.popBackStackOnce()) onExit() },
+                    onBack = popOrGoHome,
                     onScanComplete = {
                         navController.navigate(Route.Main.SUIT_SIZE_RESULTS) {
                             popUpTo(Route.Main.SUIT_SIZE_SCAN) { inclusive = true }
@@ -232,14 +248,16 @@ fun MainScreen(
             }
             composable(Route.Main.SUIT_SIZE_RESULTS) {
                 SuitSizeResultsScreen(
-                    onBack = { navController.popBackStackOnce() },
+                    onBack = popOrGoHome,
                     onProceedToOrder = { navController.navigate(Route.Main.SHIPPING_DETAILS) },
                 )
             }
             composable(Route.Main.SHIPPING_DETAILS) {
                 ShippingDetailsScreen(
                     onBack = { navController.popBackStackOnce() },
-                    onClose = { navController.popBackStack(Route.Main.HOME, inclusive = false) },
+                    onClose = {
+                        if (!navController.popBackStack(Route.Main.HOME, inclusive = false)) goHome()
+                    },
                 )
             }
             composable(

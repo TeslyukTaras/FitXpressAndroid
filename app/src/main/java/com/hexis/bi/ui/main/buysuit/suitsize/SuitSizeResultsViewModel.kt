@@ -6,12 +6,14 @@ import com.hexis.bi.data.order.OrderDraftHolder
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanRecord
 import com.hexis.bi.data.scan.ScanResultRepository
+import com.hexis.bi.data.user.FirestoreSchema.UserFields
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.body.BodyMeasurementKeys
 import com.hexis.bi.domain.order.OrderSizing
 import com.hexis.bi.domain.order.SuitSize
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.isMetricUnitSystem
+import com.hexis.bi.utils.persistedUserMeasurements
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,15 +30,22 @@ class SuitSizeResultsViewModel(
     private val _state = MutableStateFlow(SuitSizeResultsState())
     val state: StateFlow<SuitSizeResultsState> = _state.asStateFlow()
 
+    private var savedHeightCm: Int? = null
+    private var savedWeightKg: Int? = null
+    private var scan: ScanRecord? = null
+
     init {
         load()
     }
 
     private fun load() = launch(showLoading = false) {
         val profile = userRepository.getUser().getOrNull()
+        savedHeightCm = profile?.heightCm
+        savedWeightKg = profile?.weightKg
         val selectedScan = scanResultRepository.selectedScanId
             ?.let { scanHistoryRepository.getScanRecordById(it).getOrNull() }
         val latestScan = selectedScan ?: scanHistoryRepository.getLatestScan().getOrNull()
+        scan = latestScan
 
         val heightCm = profile?.heightCm?.toFloat()
             ?: latestScan?.measurements?.get("height")
@@ -59,22 +68,46 @@ class SuitSizeResultsViewModel(
         }
     }
 
-    /** Snapshots the confirmed selection for the shipping screen; call before navigating to order. */
-    fun confirmSelection() {
+    fun proceedToOrder() {
         val s = _state.value
+        val measurements = persistedUserMeasurements(s.heightCm, s.weightKg)
+        if (measurements.heightCm == savedHeightCm && measurements.weightKg == savedWeightKg) {
+            confirmSelection(s)
+            return
+        }
+        launch {
+            userRepository.updateFields(
+                mapOf(
+                    UserFields.HEIGHT_CM to measurements.heightCm,
+                    UserFields.WEIGHT_KG to measurements.weightKg,
+                    UserFields.HEIGHT_IN to measurements.heightIn,
+                    UserFields.WEIGHT_LB to measurements.weightLb,
+                ),
+            )
+                .onSuccess {
+                    savedHeightCm = measurements.heightCm
+                    savedWeightKg = measurements.weightKg
+                    confirmSelection(s)
+                }
+                .onFailure { setError(it.message) }
+        }
+    }
+
+    private fun confirmSelection(s: SuitSizeResultsState) {
         orderDraftHolder.sizing = OrderSizing(
             scanId = s.scanId,
             suitSize = s.suitSize.name,
             heightCm = s.heightCm,
             weightKg = s.weightKg,
         )
+        emitEvent(SuitSizeResultsEvent.ProceedToOrder)
     }
 
     fun updateHeight(heightCm: Float) {
         _state.update {
             it.copy(
                 heightCm = heightCm,
-                suitSize = recommendSuitSize(heightCm, it.weightKg, null),
+                suitSize = recommendSuitSize(heightCm, it.weightKg, scan),
             )
         }
     }
@@ -83,7 +116,7 @@ class SuitSizeResultsViewModel(
         _state.update {
             it.copy(
                 weightKg = weightKg,
-                suitSize = recommendSuitSize(it.heightCm, weightKg, null),
+                suitSize = recommendSuitSize(it.heightCm, weightKg, scan),
             )
         }
     }

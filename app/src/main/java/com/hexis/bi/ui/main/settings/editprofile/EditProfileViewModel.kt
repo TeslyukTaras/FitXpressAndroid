@@ -7,7 +7,7 @@ import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageMetadata
 import com.hexis.bi.R
 import com.hexis.bi.data.auth.AuthRepository
-import com.hexis.bi.data.user.UserProfile
+import com.hexis.bi.data.user.FirestoreSchema.UserFields
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.ui.base.BaseViewModel
@@ -103,8 +103,7 @@ class EditProfileViewModel(
             return@launch
         }
         if (!current.canSave) return@launch
-        val uid = firebaseAuth.currentUser?.uid ?: return@launch
-        userRepository.updateUser(current.toUserProfile(uid))
+        userRepository.updateFields(current.toUserFields())
             .onSuccess { emitEvent(EditProfileEvent.SaveSuccess) }
             .onFailure { setError(it.message) }
     }
@@ -218,20 +217,17 @@ class EditProfileViewModel(
         )
 }
 
-private fun EditProfileState.toUserProfile(uid: String): UserProfile {
-    val dob = dateOfBirth.parseDob()
+private fun EditProfileState.toUserFields(): Map<String, Any?> {
     val measurements = persistedUserMeasurements(heightCm, weightKg)
-    return UserProfile(
-        uid = uid,
-        firstName = firstName,
-        lastName = lastName,
-        email = email,
-        imageUrl = imageUrl,
-        gender = gender.name,
-        heightCm = measurements.heightCm,
-        weightKg = measurements.weightKg,
-        heightIn = measurements.heightIn,
-        weightLb = measurements.weightLb,
-        dateOfBirth = dob,
+    return mapOf(
+        UserFields.FIRST_NAME to firstName,
+        UserFields.LAST_NAME to lastName,
+        UserFields.EMAIL to email,
+        UserFields.GENDER to gender.name,
+        UserFields.DATE_OF_BIRTH to dateOfBirth.parseDob(),
+        UserFields.HEIGHT_CM to measurements.heightCm,
+        UserFields.WEIGHT_KG to measurements.weightKg,
+        UserFields.HEIGHT_IN to measurements.heightIn,
+        UserFields.WEIGHT_LB to measurements.weightLb,
     )
 }
