@@ -105,6 +105,7 @@ internal suspend fun <T> fetchMergedFromAllSources(
     end: LocalDate,
     fetchJson: suspend (terraUserId: String, LocalDate, LocalDate) -> Result<List<Any?>>,
     parse: (List<Any?>) -> List<T>,
+    onIdentityRejected: suspend (TerraRestIdentity) -> Unit = {},
 ): Result<MergedSourceResult<T>> {
     if (identities.isEmpty()) {
         return Result.success(
@@ -126,6 +127,11 @@ internal suspend fun <T> fetchMergedFromAllSources(
                 }
             }
         }.awaitAll()
+    }
+
+    for ((identity, result) in identities.zip(results)) {
+        val error = result.exceptionOrNull() ?: continue
+        if (error.isTerraUnknownUserId()) onIdentityRejected(identity)
     }
 
     val perSource = results.mapNotNull { it.getOrNull() }

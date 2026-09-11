@@ -36,6 +36,13 @@ internal class HealthConnectPermissionChecker(private val context: Context) {
         }
     }
 
+    fun backgroundReadGranted(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return true
+        return ContextCompat.checkSelfPermission(
+            context, HealthConnectPermissions.BACKGROUND_READ_PERMISSION,
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
     private fun logIfChanged(missing: Set<String>) {
         if (lastLoggedMissing.getAndSet(missing) == missing) return
         val missingCore = missing intersect HealthConnectPermissions.CORE_MANIFEST_PERMISSIONS

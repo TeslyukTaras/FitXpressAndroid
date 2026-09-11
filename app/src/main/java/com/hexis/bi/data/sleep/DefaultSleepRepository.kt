@@ -7,6 +7,7 @@ import com.hexis.bi.data.health.remote.HealthRemoteDataSource
 import com.hexis.bi.data.health.sync.HealthDomainSpec
 import com.hexis.bi.data.health.sync.HealthDomainSync
 import com.hexis.bi.data.health.sync.HealthRangeCoverage
+import com.hexis.bi.data.health.sync.HealthSyncTally
 import com.hexis.bi.data.terra.TerraApi
 import com.hexis.bi.data.terra.TerraDetail
 import com.hexis.bi.data.terra.TerraRangeJsonFetcher
@@ -35,7 +36,7 @@ internal class DefaultSleepRepository(
     override suspend fun coverage(start: LocalDate, end: LocalDate): HealthRangeCoverage =
         sync.coverage(start, end)
 
-    override suspend fun sync(start: LocalDate, end: LocalDate): Result<Unit> = sync.sync(start, end)
+    override suspend fun sync(start: LocalDate, end: LocalDate): Result<HealthSyncTally> = sync.sync(start, end)
 
     override suspend fun getSessionsForRange(
         start: LocalDate,

@@ -12,7 +12,7 @@ data class TerraProviderUi(
     @DrawableRes val iconRes: Int = R.drawable.ic_connect,
 )
 
-enum class HealthConnectRowState { NotConnected, NeedsRelink, NeedsPermission, Connected }
+enum class HealthConnectRowState { NotConnected, NeedsPermission, Connected }
 
 data class HealthConnectionsState(
     val connectedProviders: Set<HealthProvider> = emptySet(),

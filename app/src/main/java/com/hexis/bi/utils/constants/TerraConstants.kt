@@ -186,6 +186,11 @@ internal object TerraSyncConstants {
 
     const val PENDING_RANGE_RETRIES = 3
     val PENDING_RANGE_BACKOFF: Duration = Duration.ofSeconds(2)
+
+    const val SDK_IDENTITY_LOOKUP_ATTEMPTS = 4
+    val SDK_IDENTITY_LOOKUP_BACKOFF: Duration = Duration.ofSeconds(2)
+
+    const val UNKNOWN_USER_ID_MARKER = "HTTP 404"
 }
 
 internal object CanonicalCacheConstants {

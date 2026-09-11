@@ -139,7 +139,7 @@ internal class HealthSyncCoordinator(
         args: GapFillArgs,
         source: String,
         budget: Duration,
-        sync: suspend (LocalDate, LocalDate) -> Result<Unit>,
+        sync: suspend (LocalDate, LocalDate) -> Result<HealthSyncTally>,
     ): BackfillOutcome {
         val total = args.window.size
         val missing = local.staleDays(args.uid, args.identityIds, source, args.window, RANGE_TTL)
@@ -162,7 +162,7 @@ internal class HealthSyncCoordinator(
         return outcome
     }
 
-    private fun Result<Unit>.logFailure(source: String): Throwable? =
+    private fun Result<HealthSyncTally>.logFailure(source: String): Throwable? =
         exceptionOrNull()?.also {
             Timber.w(it, "Foreground %s sync failed; cached data still served", source)
         }
@@ -200,6 +200,7 @@ internal fun worstOf(outcomes: List<BackfillOutcome>): BackfillOutcome = when {
     BackfillOutcome.Unreachable in outcomes -> BackfillOutcome.Unreachable
     BackfillOutcome.Incomplete in outcomes -> BackfillOutcome.Incomplete
     BackfillOutcome.Complete in outcomes -> BackfillOutcome.Complete
+    BackfillOutcome.Empty in outcomes -> BackfillOutcome.Empty
     else -> BackfillOutcome.Skipped
 }
 
@@ -210,20 +211,22 @@ internal suspend fun fillMissingDays(
     isActive: () -> Boolean,
     batchDays: Int = HealthSyncWorkConstants.BACKFILL_CHUNK_DAYS.toInt(),
     onBatchFilled: suspend (filled: Int) -> Unit,
-    sync: suspend (LocalDate, LocalDate) -> Result<Unit>,
+    sync: suspend (LocalDate, LocalDate) -> Result<HealthSyncTally>,
 ): BackfillOutcome {
     var filled = 0
     var failedBatches = 0
     var consecutiveFailures = 0
     var stoppedEarly = false
     var unreachable = false
+    var tally = HealthSyncTally.NOTHING_FETCHED
 
     for (batch in missing.sortedDescending().chunked(batchDays)) {
         if (!isActive() || elapsed() >= budget) {
             stoppedEarly = true
             break
         }
-        val error = sync(batch.min(), batch.max()).exceptionOrNull()
+        val result = sync(batch.min(), batch.max())
+        val error = result.exceptionOrNull()
         if (error != null) {
             failedBatches++
             if (error is HealthSourceUnavailable) {
@@ -235,6 +238,7 @@ internal suspend fun fillMissingDays(
             continue
         }
         consecutiveFailures = 0
+        tally += result.getOrDefault(HealthSyncTally.NOTHING_FETCHED)
         filled += batch.size
         onBatchFilled(filled)
     }
@@ -243,12 +247,15 @@ internal suspend fun fillMissingDays(
         unreachable && filled == 0 -> BackfillOutcome.Unreachable
         failedBatches > 0 && filled == 0 -> BackfillOutcome.Failed
         failedBatches > 0 || stoppedEarly -> BackfillOutcome.Incomplete
+        tally.fetchedNothing -> BackfillOutcome.Empty
         else -> BackfillOutcome.Complete
     }
 }
 
 internal enum class BackfillOutcome {
     Complete,
+
+    Empty,
 
     Incomplete,
 

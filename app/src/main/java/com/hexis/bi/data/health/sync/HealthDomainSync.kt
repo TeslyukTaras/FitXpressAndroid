@@ -72,7 +72,7 @@ internal class HealthDomainSync<T>(
         local.coverage(uid, identities, spec.source, dateRange(start, end))
     }
 
-    suspend fun sync(start: LocalDate, end: LocalDate): Result<Unit> {
+    suspend fun sync(start: LocalDate, end: LocalDate): Result<HealthSyncTally> {
         val uid = auth.currentUser?.uid ?: return Result.failure(notAuthenticated())
         return refresh(uid, start, end)
     }
@@ -108,7 +108,7 @@ internal class HealthDomainSync<T>(
         }
     }
 
-    private suspend fun refresh(uid: String, start: LocalDate, end: LocalDate): Result<Unit> =
+    private suspend fun refresh(uid: String, start: LocalDate, end: LocalDate): Result<HealthSyncTally> =
         withContext(io) {
             local.singleFlight(uid, spec.source) {
                 val days = dateRange(start, end)
@@ -131,18 +131,19 @@ internal class HealthDomainSync<T>(
                 val fetchable = identities.fetchable
                 if (fetchable.isEmpty()) {
                     Timber.w("%s has no queryable source; serving cache only", spec.label)
-                    return@singleFlight Result.success(Unit)
+                    return@singleFlight Result.success(HealthSyncTally.NOTHING_FETCHED)
                 }
 
                 val missing = local.missingDays(uid, fetchable.ids(), spec.source, days, TTL)
                 if (missing.isEmpty()) {
                     recordSynced(uid, fetchable, days.first()..days.last())
-                    return@singleFlight Result.success(Unit)
+                    return@singleFlight Result.success(HealthSyncTally.NOTHING_FETCHED)
                 }
 
                 val windows = contiguousDateRanges(missing).flatMap { it.windowed() }
                 var failure: Throwable? = null
                 var stored = 0
+                var tally = HealthSyncTally.NOTHING_FETCHED
                 var consecutiveFailures = 0
                 var unreachable = false
 
@@ -161,7 +162,7 @@ internal class HealthDomainSync<T>(
                     }
                     consecutiveFailures = 0
                     local.recordProviderCalls(uid, spec.source, merged.totalSources)
-                    store(uid, window, merged)
+                    tally += store(uid, window, merged)
                     stored++
                 }
 
@@ -178,14 +179,24 @@ internal class HealthDomainSync<T>(
                     )
                 }
 
-                Result.success(Unit)
+                if (tally.fetchedNothing) {
+                    Timber.w(
+                        "%s refresh stored no rows at all from %d source(s) across %d window(s)",
+                        spec.label, fetchable.size, tally.windows,
+                    )
+                }
+                Result.success(tally)
             }
         }
 
-    private suspend fun store(uid: String, window: ClosedRange<LocalDate>, merged: MergedSourceResult<T>) {
+    private suspend fun store(
+        uid: String,
+        window: ClosedRange<LocalDate>,
+        merged: MergedSourceResult<T>,
+    ): HealthSyncTally {
         if (auth.currentUser?.uid != uid) {
             Timber.w("%s refresh finished for a signed-out user; discarding %s", spec.label, window)
-            return
+            return HealthSyncTally.NOTHING_FETCHED
         }
         if (!merged.complete) {
             Timber.w(
@@ -193,15 +204,18 @@ internal class HealthDomainSync<T>(
                 spec.label, merged.successfulSources, merged.totalSources,
             )
         }
-        for ((terraUserId, rows) in merged.perIdentity) {
-            val windowRows = spec.merge(listOf(rows)).filter { spec.dayOf(it) in window }
+        var rows = 0
+        for ((terraUserId, identityRows) in merged.perIdentity) {
+            val windowRows = spec.merge(listOf(identityRows)).filter { spec.dayOf(it) in window }
             local.storeDays(uid, terraUserId, windowRows.map(spec::toAggregate))
             local.storeEmptyDays(
                 uid, terraUserId, spec.source,
                 window.toDateList() - windowRows.map(spec::dayOf).toSet(),
             )
             local.recordSyncedRange(uid, terraUserId, spec.source, window)
+            rows += windowRows.size
         }
+        return HealthSyncTally(rows = rows, windows = 1)
     }
 
     private suspend fun recordSynced(

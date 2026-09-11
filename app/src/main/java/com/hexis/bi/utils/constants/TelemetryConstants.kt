@@ -49,6 +49,8 @@ internal object TelemetryTriggers {
 internal object TelemetryOutcomes {
     const val COMPLETE = "complete"
 
+    const val EMPTY = "empty"
+
     const val PARTIAL = "partial"
 
     const val FAILED = "failed"

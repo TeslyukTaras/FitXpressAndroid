@@ -588,7 +588,6 @@
     <!-- Health connection errors & messages -->
     <string name="error_sign_in_required">Sign in to connect a wearable</string>
     <string name="error_health_connect_failed">Couldn\'t connect Health Connect. Make sure it\'s installed and try again.</string>
-    <string name="health_connect_needs_relink">Tap to reconnect</string>
     <string name="health_data_syncing">Syncing…</string>
     <string name="health_connect_needs_permission">Permission needed — tap to allow</string>
     <string name="error_terra_invalid_dev_id">Terra rejected the developer credentials. Check terra.dev.id / terra.api.key.</string>
@@ -597,6 +596,7 @@
     <string name="error_terra_no_internet">No internet connection. Check your network and try again.</string>
     <string name="error_terra_provider_not_enabled">Health Connect isn\'t enabled for this app yet. Enable it in the Terra dashboard.</string>
     <string name="error_wearable_start_failed">Couldn\'t start wearable connection. Please try again.</string>
+    <string name="error_health_connect_unconfirmed">Health Connect didn\'t finish linking. Your existing sources are untouched — please try again.</string>
     <string name="error_connection_save_failed">Couldn\'t save your connection. Please try again.</string>
     <string name="error_connection_callback_invalid">Received an invalid response from the connection service.</string>
     <string name="error_wearable_connect_failed">Wearable connection failed: %1$s</string>

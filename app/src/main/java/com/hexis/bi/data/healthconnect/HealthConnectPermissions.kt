@@ -40,6 +40,8 @@ internal object HealthConnectPermissions {
         "android.permission.health.READ_VO2_MAX",
     )
 
+    const val BACKGROUND_READ_PERMISSION = "android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND"
+
     val REQUIRED_MANIFEST_PERMISSIONS: Set<String> =
         CORE_MANIFEST_PERMISSIONS + OPTIONAL_MANIFEST_PERMISSIONS
 }

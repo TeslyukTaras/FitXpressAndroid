@@ -141,7 +141,7 @@ val appModule = module {
     single { AccountDeletionApi(get()) }
     single<AuthRepository> { FirebaseAuthRepository(get(), get(), get(), androidContext()) }
     single { HealthConnectPermissionChecker(androidContext()) }
-    single { HealthRemoteDataSource(get(), get()) }
+    single { HealthRemoteDataSource(get(), get(), get()) }
     single { HealthSyncCoordinator(get(), get(), get(), get(), get(), get(), get()) }
     single { FirebaseRemoteConfig.getInstance() }
     single {

@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "visual-body-intelligence"
+    "default": "visual-body-intelligence",
+    "dev": "visual-body-intelligence",
+    "prod": "hexis-bi-production"
   }
 }

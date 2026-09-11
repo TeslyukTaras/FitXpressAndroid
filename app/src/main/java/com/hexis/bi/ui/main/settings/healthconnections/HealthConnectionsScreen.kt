@@ -199,9 +199,6 @@ fun HealthConnectionsScreen(
                                 val attention = if (!isHealthConnect) null else when (
                                     state.healthConnectRowState
                                 ) {
-                                    HealthConnectRowState.NeedsRelink ->
-                                        R.string.health_connect_needs_relink
-
                                     HealthConnectRowState.NeedsPermission ->
                                         R.string.health_connect_needs_permission
 
