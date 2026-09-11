@@ -34,6 +34,12 @@
 -keep class com.look.** { *; }
 -dontwarn com.look.**
 
+-keep class com.google.mediapipe.** { *; }
+-dontwarn com.google.mediapipe.**
+
+-keep class com.google.common.flogger.** { *; }
+-dontwarn com.google.common.flogger.**
+
 -keep class * extends androidx.room.RoomDatabase { <init>(); }
 -dontwarn androidx.room.paging.**
 
