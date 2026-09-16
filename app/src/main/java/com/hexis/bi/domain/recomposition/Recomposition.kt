@@ -24,7 +24,6 @@ data class RecompositionResult(
     val recomposedKg: Float? = null,
     val fatChangeKg: Float? = null,
     val leanChangeKg: Float? = null,
-    val weightChangeKg: Float? = null,
     val observedStart: LocalDate? = null,
     val observedEnd: LocalDate? = null,
 )
@@ -32,7 +31,6 @@ data class RecompositionResult(
 private data class CompositionSample(
     val date: LocalDate,
     val timeDays: Double,
-    val weightKg: Float,
     val fatMassKg: Float,
     val leanMassKg: Float,
 )
@@ -60,15 +58,12 @@ object RecompositionCalculator {
 
         val fatChange: Float
         val leanChange: Float
-        val weightChange: Float
         if (samples.size >= RecompositionConstants.MIN_SCANS_FOR_TREND) {
             fatChange = linearTrendChange(samples.map { TrendPoint(it.timeDays, it.fatMassKg) })
             leanChange = linearTrendChange(samples.map { TrendPoint(it.timeDays, it.leanMassKg) })
-            weightChange = linearTrendChange(samples.map { TrendPoint(it.timeDays, it.weightKg) })
         } else {
             fatChange = last.fatMassKg - first.fatMassKg
             leanChange = last.leanMassKg - first.leanMassKg
-            weightChange = last.weightKg - first.weightKg
         }
 
         val recomposition = fatChange < 0f && leanChange > 0f
@@ -81,7 +76,6 @@ object RecompositionCalculator {
             recomposedKg = if (recomposition) min(abs(fatChange), abs(leanChange)) else null,
             fatChangeKg = fatChange,
             leanChangeKg = leanChange,
-            weightChangeKg = weightChange,
             observedStart = first.date,
             observedEnd = last.date,
         )
@@ -96,20 +90,18 @@ object RecompositionCalculator {
 }
 
 private fun ScanRecord.toCompositionSample(zoneId: ZoneId): CompositionSample? {
-    val weight = estimatedWeightKg ?: weightKg ?: return null
-    val fatMass = fatBodyMassKg
-        ?: fatPercentage?.let { weight * it / 100f }
+    val weight = weightKg ?: estimatedWeightKg ?: return null
+    val fatMass = fatPercentage?.let { weight * it / RecompositionConstants.PERCENT }
+        ?: fatBodyMassKg
         ?: leanBodyMassKg?.let { weight - it }
         ?: return null
-    val leanMass = leanBodyMassKg ?: (weight - fatMass)
     val instant = Instant.ofEpochMilli(timestamp)
     val date = instant.atZone(zoneId).toLocalDate()
     return CompositionSample(
         date = date,
         timeDays = timestamp / MILLIS_PER_DAY.toDouble(),
-        weightKg = weight,
         fatMassKg = fatMass,
-        leanMassKg = leanMass,
+        leanMassKg = weight - fatMass,
     )
 }
 

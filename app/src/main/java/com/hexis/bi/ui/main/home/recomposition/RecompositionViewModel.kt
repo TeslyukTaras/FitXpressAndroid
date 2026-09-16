@@ -26,6 +26,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Locale
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 class RecompositionViewModel(
     application: Application,
@@ -112,11 +113,17 @@ class RecompositionViewModel(
             isRecomposition = isRecomposition,
             recomposedValue = result.recomposedKg?.takeIf { it > 0f }?.let { formatMagnitude(it.inDisplayMass()) }
                 ?: string(R.string.stat_unknown),
-            weightChangeText = signedValue(result.weightChangeKg?.inDisplayMass()),
+            weightChangeText = weightChangeText(result),
             weightSubtitle = string(weightSubtitleRes(result.state)),
             fat = metric(result.fatChangeKg, favorableWhenNegative = true),
             lean = metric(result.leanChangeKg, favorableWhenNegative = false),
         )
+    }
+
+    private fun weightChangeText(result: RecompositionResult): String {
+        val fatChange = result.fatChangeKg ?: return string(R.string.stat_unknown)
+        val leanChange = result.leanChangeKg ?: return string(R.string.stat_unknown)
+        return signedValue(fatChange.inDisplayMass() + leanChange.inDisplayMass())
     }
 
     /**
@@ -146,8 +153,11 @@ class RecompositionViewModel(
         )
     }
 
-    private fun Float.inDisplayMass(): Float =
-        if (_state.value.isMetric) this else kgToLb()
+    private fun Float.inDisplayMass(): Float {
+        val converted = if (_state.value.isMetric) this else kgToLb()
+        return (converted * RecompositionConstants.DISPLAY_DECIMAL_STEPS).roundToInt() /
+            RecompositionConstants.DISPLAY_DECIMAL_STEPS
+    }
 
     private fun massTolerance(): ChangeTolerance =
         if (_state.value.isMetric) {
