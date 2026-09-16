@@ -13,6 +13,20 @@
       },
       "description": "Insight wording \u2014 mirrors app assets/intelligence_wording_v1.json",
       "valueType": "JSON"
+    },
+    "minimum_supported_version_ios": {
+      "defaultValue": {
+        "value": "1.4"
+      },
+      "description": "Minimum iOS version allowed to use the app",
+      "valueType": "STRING"
+    },
+    "minimum_supported_version_android": {
+      "defaultValue": {
+        "value": "1.3.0"
+      },
+      "description": "Minimum Android version allowed to use the app",
+      "valueType": "STRING"
     }
   }
 }

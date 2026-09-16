@@ -37,4 +37,8 @@ internal object AnimationConstants {
 
     /** "Updating…" banner expanding above insight content while the engine re-runs. */
     const val UPDATING_BANNER_MS = 250
+
+    /** Forced-update screen fading in above the app once Remote Config reports it is required. */
+    const val UPDATE_GATE_FADE_IN_MS = 300
+    const val UPDATE_GATE_FADE_OUT_MS = 200
 }
