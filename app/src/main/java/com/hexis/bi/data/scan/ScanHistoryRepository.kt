@@ -26,6 +26,7 @@ import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_ESTIMATED_WEIGH
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_FAT_BODY_MASS
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_FAT_PERCENTAGE
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_GENDER
+import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_HAS_REPORTED_PROBLEM
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_HEIGHT
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_ID
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_LEAN_BODY_MASS
@@ -79,6 +80,7 @@ data class ScanRecord(
     /** 3DLOOK measurement UUID (the API `id`), distinct from the Firestore document id. */
     val measurementId: String? = null,
     val timestamp: Long = 0L,
+    val hasReportedProblem: Boolean = false,
     val model3dUrl: String? = null,
     val measurements: Map<String, Float> = emptyMap(),
     /** Front-view linear / ANFA-style params (from API `front_linear_params`). */
@@ -133,6 +135,7 @@ class ScanHistoryRepository internal constructor(
         val mainData = buildMap<String, Any?> {
             put(FIELD_ID, response.id)
             put(FIELD_STATUS, response.status)
+            put(FIELD_HAS_REPORTED_PROBLEM, !response.errors.isNullOrEmpty())
             put(FIELD_URL, response.url)
             put(FIELD_CREATED_AT, response.createdAt)
             put(FIELD_COMPLETED_AT, response.completedAt)
@@ -230,6 +233,7 @@ class ScanHistoryRepository internal constructor(
             id = scanId,
             measurementId = response.id,
             timestamp = savedAtMillis,
+            hasReportedProblem = !response.errors.isNullOrEmpty(),
             model3dUrl = response.model3dUrl,
             measurements = measurements,
             frontLinearParams = frontLinearParams,
@@ -375,6 +379,7 @@ class ScanHistoryRepository internal constructor(
                     ScanFetchProjection.LIST_SUMMARY -> ScanRecord(
                         id = doc.id,
                         timestamp = doc.savedAtMillis(),
+                        hasReportedProblem = doc.hasReportedProblem(),
                         measurements = loadSubNumericParams(doc, SUB_CIRCUMFERENCE_PARAMS),
                         weightKg = doc.numericField(FIELD_WEIGHT, FIELD_ESTIMATED_WEIGHT),
                         estimatedWeightKg = doc.numericField(FIELD_ESTIMATED_WEIGHT),
@@ -418,6 +423,7 @@ class ScanHistoryRepository internal constructor(
             id = doc.id,
             measurementId = doc.getString(FIELD_ID),
             timestamp = doc.savedAtMillis(),
+            hasReportedProblem = doc.hasReportedProblem(),
             model3dUrl = doc.getString(FIELD_MODEL_3D_URL),
             measurements = measurements,
             frontLinearParams = frontLinearParams,
@@ -442,6 +448,13 @@ class ScanHistoryRepository internal constructor(
 
     private fun DocumentSnapshot.savedAtMillis(): Long =
         getTimestamp(FIELD_SAVED_AT)?.toDate()?.time ?: 0L
+
+    private fun DocumentSnapshot.hasReportedProblem(): Boolean {
+        (get(FIELD_HAS_REPORTED_PROBLEM) as? Boolean)?.let { return it }
+        return getString(FIELD_STATUS)
+            ?.let { !it.equals(STATUS_SUCCESSFUL, ignoreCase = true) }
+            ?: false
+    }
 
     private suspend fun loadSubNumericParams(
         doc: DocumentSnapshot,
@@ -484,5 +497,6 @@ class ScanHistoryRepository internal constructor(
 
     private companion object {
         val SCAN_CACHE_TTL: Duration = Duration.ofHours(6)
+        const val STATUS_SUCCESSFUL = "successful"
     }
 }

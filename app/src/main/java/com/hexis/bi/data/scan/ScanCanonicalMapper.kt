@@ -8,6 +8,7 @@ internal fun CanonicalBodyScanAggregate.toScanRecord(): ScanRecord = ScanRecord(
     id = documentId,
     measurementId = measurementId,
     timestamp = savedAt.asInstant().toEpochMilli(),
+    hasReportedProblem = hasReportedProblem,
     model3dUrl = model3dUrl,
     measurements = MeasurementMapper.mergeMeasurementParams(
         circumference = circumferenceParamsCm.mapValues { it.value.toFloat() },
@@ -35,6 +36,7 @@ internal fun ScanRecord.toCanonicalAggregate(): CanonicalBodyScanAggregate {
         measurementId = measurementId,
         completedAt = Instant.ofEpochMilli(timestamp).toString(),
         savedAt = Instant.ofEpochMilli(timestamp).toString(),
+        hasReportedProblem = hasReportedProblem,
         model3dUrl = model3dUrl,
         heightCm = heightCm?.toDouble(),
         weightKg = weightKg?.toDouble(),

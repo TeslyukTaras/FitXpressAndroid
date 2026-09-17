@@ -13,6 +13,7 @@ object ScanFirestoreConstants {
 
     const val FIELD_ID = "id"
     const val FIELD_STATUS = "status"
+    const val FIELD_HAS_REPORTED_PROBLEM = "hasReportedProblem"
     const val FIELD_URL = "url"
     const val FIELD_CREATED_AT = "createdAt"
     const val FIELD_COMPLETED_AT = "completedAt"

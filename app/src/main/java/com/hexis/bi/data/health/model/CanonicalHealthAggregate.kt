@@ -133,6 +133,7 @@ internal data class CanonicalBodyScanAggregate(
     @SerialName("measurement_id") val measurementId: String? = null,
     @SerialName("completed_at") val completedAt: String,
     @SerialName("saved_at") val savedAt: String,
+    @SerialName("has_reported_problem") val hasReportedProblem: Boolean = false,
     @SerialName("model_3d_url") val model3dUrl: String? = null,
     @SerialName("height") val heightCm: Double? = null,
     @SerialName("weight") val weightKg: Double? = null,
