@@ -1129,4 +1129,9 @@
     <string name="insights_area_longevity">Longevity</string>
     <string name="engine_findings_empty_title">No insights yet</string>
     <string name="engine_findings_empty_body">Insights will appear here when enough data is available to identify a meaningful trend.</string>
+
+    <!-- Forced update gate (minimum supported version from Remote Config) -->
+    <string name="update_required_title">Update required</string>
+    <string name="update_required_body">Please update %1$s to continue.</string>
+    <string name="action_update_now">Update now</string>
 </resources>

@@ -15,6 +15,7 @@ import com.hexis.bi.data.health.local.HealthAggregateDatabase
 import com.hexis.bi.data.health.local.HealthLocalDataSource
 import com.hexis.bi.data.health.local.CanonicalUserCacheCleaner
 import com.hexis.bi.BuildConfig
+import com.hexis.bi.data.appupdate.AppUpdateRequirementRepository
 import com.hexis.bi.data.auth.AuthRepository
 import com.hexis.bi.data.auth.AccountDeletionApi
 import com.hexis.bi.data.auth.EmailVerificationApi
@@ -39,6 +40,7 @@ import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.health.remote.HealthRemoteDataSource
 import com.hexis.bi.data.intelligence.AssetIntelligenceConfigSource
 import com.hexis.bi.data.intelligence.RemoteIntelligenceConfigSource
+import com.hexis.bi.utils.constants.AppUpdateRemoteConfig
 import com.hexis.bi.utils.constants.IntelligenceRemoteConfig
 import com.hexis.bi.data.telemetry.FirebaseTelemetry
 import com.hexis.bi.data.telemetry.Telemetry
@@ -144,6 +146,13 @@ val appModule = module {
     single { HealthRemoteDataSource(get(), get(), get()) }
     single { HealthSyncCoordinator(get(), get(), get(), get(), get(), get(), get()) }
     single { FirebaseRemoteConfig.getInstance() }
+    single {
+        AppUpdateRequirementRepository(
+            remoteConfig = get(),
+            versionName = BuildConfig.VERSION_NAME,
+            minimumFetchIntervalSeconds = appUpdateFetchInterval(),
+        )
+    }
     single {
         IntelligenceConfigRepository(
             overrides = listOf(
@@ -284,4 +293,10 @@ private fun intelligenceFetchInterval(): Long = if (BuildConfig.DEBUG) {
     IntelligenceRemoteConfig.DEBUG_FETCH_INTERVAL_SECONDS
 } else {
     IntelligenceRemoteConfig.RELEASE_FETCH_INTERVAL_SECONDS
+}
+
+private fun appUpdateFetchInterval(): Long = if (BuildConfig.DEBUG) {
+    AppUpdateRemoteConfig.DEBUG_FETCH_INTERVAL_SECONDS
+} else {
+    AppUpdateRemoteConfig.RELEASE_FETCH_INTERVAL_SECONDS
 }

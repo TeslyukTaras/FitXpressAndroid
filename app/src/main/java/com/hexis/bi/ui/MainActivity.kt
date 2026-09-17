@@ -25,6 +25,7 @@ import com.hexis.bi.data.terra.TerraSdkConnectionOwnership
 import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.ui.navigation.AppNavGraph
 import com.hexis.bi.ui.theme.NocturnePulseTheme
+import com.hexis.bi.ui.update.UpdateRequiredGate
 import com.hexis.bi.utils.permissions.NotificationPermissionCoordinator
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
@@ -93,7 +94,9 @@ class MainActivity : ComponentActivity() {
         )
         setContent {
             NocturnePulseTheme {
-                AppNavGraph(modifier = Modifier.fillMaxSize())
+                UpdateRequiredGate(modifier = Modifier.fillMaxSize()) {
+                    AppNavGraph(modifier = Modifier.fillMaxSize())
+                }
             }
         }
     }
