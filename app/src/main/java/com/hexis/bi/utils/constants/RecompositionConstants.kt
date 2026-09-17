@@ -7,6 +7,9 @@ internal object RecompositionConstants {
 
     const val MIN_SCANS_FOR_TREND = 3
 
+    const val PERCENT = 100f
+    const val DISPLAY_DECIMAL_STEPS = 10f
+
     const val TREND_BAR_NORMALIZATION_KG = 5f
     const val TREND_BAR_CENTER_FRACTION = 0.5f
 }
