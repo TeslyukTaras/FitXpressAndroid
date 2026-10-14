@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import com.hexis.bi.R
 import com.hexis.bi.data.store.AppPreferencesDataStore
 import com.hexis.bi.data.store.AppPreferencesKeys
+import com.hexis.bi.utils.SuitContentPolicy
 import com.hexis.bi.utils.constants.NotificationInboxList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -36,7 +37,9 @@ class NotificationInboxRepository(
         val raw = prefs[itemEntriesKey] ?: return@map emptyList()
         // Drop legacy rows written under the previous schema: their JSON had `titleRes` /
         // `bodyRes` ints but no `title` / `body` strings, so they decode with blank fields.
-        decodeList(raw).filter { it.title.isNotBlank() }
+        decodeList(raw).filter {
+            it.title.isNotBlank() && SuitContentPolicy.canDisplay(it.title, it.body, it.feature)
+        }
     }
 
     val unreadCount: Flow<Int> = items.map { list -> list.count { !it.isRead } }
@@ -52,8 +55,8 @@ class NotificationInboxRepository(
         appendResolved(title, body)
     }
 
-    suspend fun appendRawInbox(title: String, body: String) {
-        appendResolved(title, body)
+    suspend fun appendRawInbox(title: String, body: String, feature: String? = null) {
+        appendResolved(title, body, feature)
     }
 
     suspend fun appendNextScheduledScanInboxDeduped(localizedDayName: String) {
@@ -75,16 +78,18 @@ class NotificationInboxRepository(
         }
     }
 
-    private suspend fun appendResolved(title: String, body: String) {
-        store.updateNotNull { list -> appendToList(list, newItem(title, body)) }
+    private suspend fun appendResolved(title: String, body: String, feature: String? = null) {
+        if (!SuitContentPolicy.canDisplay(title, body, feature)) return
+        store.updateNotNull { list -> appendToList(list, newItem(title, body, feature)) }
     }
 
-    private fun newItem(title: String, body: String) = InboxItem(
+    private fun newItem(title: String, body: String, feature: String? = null) = InboxItem(
         id = UUID.randomUUID().toString(),
         title = title,
         body = body,
         isRead = false,
         createdAtEpochMillis = System.currentTimeMillis(),
+        feature = feature,
     )
 
     private fun appendToList(

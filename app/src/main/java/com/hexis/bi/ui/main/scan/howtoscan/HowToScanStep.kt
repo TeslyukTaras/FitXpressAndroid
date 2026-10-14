@@ -3,6 +3,7 @@ package com.hexis.bi.ui.main.scan.howtoscan
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.hexis.bi.R
+import com.hexis.bi.config.AppConfig
 
 /**
  * One state of the single-screen "Prepare Your Scan" flow: a subtitle, a section
@@ -24,27 +25,22 @@ val howToScanSteps: List<HowToScanStep> = listOf(
             R.string.how_to_scan_step_1_b,
             R.string.how_to_scan_step_1_c,
         ),
-        imageRes = R.drawable.img_how_to_scan_1,
+        imageRes = if (AppConfig.suitVisible) R.drawable.img_how_to_scan_1
+        else R.drawable.img_how_to_scan_regular_1,
     ),
     HowToScanStep(
         subtitleRes = R.string.how_to_scan_subtitle_default,
         headerRes = R.string.how_to_scan_step_2_header,
         instructionsRes = listOf(
-            R.string.how_to_scan_step_2_a,
-            R.string.how_to_scan_step_2_b,
-            R.string.how_to_scan_step_2_c,
+            if (AppConfig.suitVisible) R.string.how_to_scan_step_2_a
+            else R.string.how_to_scan_regular_step_2_a,
+            if (AppConfig.suitVisible) R.string.how_to_scan_step_2_b
+            else R.string.how_to_scan_regular_step_2_b,
+            if (AppConfig.suitVisible) R.string.how_to_scan_step_2_c
+            else R.string.how_to_scan_regular_step_2_c,
         ),
-        imageRes = R.drawable.img_how_to_scan_2,
-    ),
-    HowToScanStep(
-        subtitleRes = R.string.how_to_scan_subtitle_phone,
-        headerRes = R.string.how_to_scan_step_3_header,
-        instructionsRes = listOf(
-            R.string.how_to_scan_step_3_a,
-            R.string.how_to_scan_step_3_b,
-            R.string.how_to_scan_step_3_c,
-        ),
-        imageRes = R.drawable.img_how_to_scan_3,
+        imageRes = if (AppConfig.suitVisible) R.drawable.img_how_to_scan_2
+        else R.drawable.img_how_to_scan_regular_2,
     ),
     HowToScanStep(
         subtitleRes = R.string.how_to_scan_subtitle_default,
@@ -54,6 +50,18 @@ val howToScanSteps: List<HowToScanStep> = listOf(
             R.string.how_to_scan_step_4_b,
             R.string.how_to_scan_step_4_c,
         ),
-        imageRes = R.drawable.img_how_to_scan_4,
+        imageRes = if (AppConfig.suitVisible) R.drawable.img_how_to_scan_4
+        else R.drawable.img_how_to_scan_regular_4,
+    ),
+    HowToScanStep(
+        subtitleRes = R.string.how_to_scan_subtitle_phone,
+        headerRes = R.string.how_to_scan_step_3_header,
+        instructionsRes = listOf(
+            R.string.how_to_scan_step_3_a,
+            R.string.how_to_scan_step_3_b,
+            R.string.how_to_scan_step_3_c,
+        ),
+        imageRes = if (AppConfig.suitVisible) R.drawable.img_how_to_scan_3
+        else R.drawable.img_how_to_scan_regular_3,
     ),
 )

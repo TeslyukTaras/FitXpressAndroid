@@ -2,6 +2,7 @@ package com.hexis.bi.ui.auth.onboarding
 
 import android.app.Application
 import com.hexis.bi.R
+import com.hexis.bi.config.AppConfig
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.domain.suit.SuitRepository
@@ -46,6 +47,7 @@ class OnboardingViewModel(
     fun updateSuitIdInput(value: String) = _state.update { it.copy(suitIdInput = value) }
 
     fun connectSuit() {
+        if (!AppConfig.suitVisible) return
         val suitId = _state.value.suitIdInput.trim()
         if (suitId.isBlank()) return
         launch {
@@ -63,6 +65,7 @@ class OnboardingViewModel(
     }
 
     fun reconnectSuit() {
+        if (!AppConfig.suitVisible) return
         _state.update {
             it.copy(
                 isSuitConnected = false,
@@ -86,6 +89,7 @@ class OnboardingViewModel(
     }
 
     fun buySuit() = launch {
+        if (!AppConfig.suitVisible) return@launch
         saveProfile()
             .onSuccess { emitEvent(OnboardingEvent.BuySuitScan) }
             .onFailure { setError(it.message) }
@@ -113,7 +117,7 @@ class OnboardingViewModel(
             else MeasurementConstants.UNIT_SYSTEM_IMPERIAL,
         )
         s.dateOfBirth.parseDob()?.let { fields["dateOfBirth"] = it }
-        if (s.isSuitConnected && s.connectedSuitId.isNotBlank()) {
+        if (AppConfig.suitVisible && s.isSuitConnected && s.connectedSuitId.isNotBlank()) {
             fields["suitId"] = s.connectedSuitId
         }
         return userRepository.updateFields(fields)

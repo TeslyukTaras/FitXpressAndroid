@@ -43,6 +43,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.BuildConfig
 import com.hexis.bi.R
+import com.hexis.bi.config.AppConfig
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.BodyGlassCard
@@ -276,19 +277,20 @@ private fun buildSettingsGroups(
             ),
         ),
         SettingsGroup(
-            titleRes = R.string.settings_group_suit_scanning,
-            items = listOf(
-                SettingsRow(
+            titleRes = if (AppConfig.suitVisible) R.string.settings_group_suit_scanning
+            else R.string.settings_group_scanning,
+            items = buildList {
+                if (AppConfig.suitVisible) add(SettingsRow(
                     R.drawable.ic_body,
                     R.string.settings_my_suit,
                     onClick = onNavigateToMySuit
-                ),
-                SettingsRow(
+                ))
+                add(SettingsRow(
                     R.drawable.ic_scan,
                     R.string.settings_scan_preferences,
                     onClick = onNavigateToScanPreferences
-                ),
-            ),
+                ))
+            },
         ),
         SettingsGroup(
             titleRes = R.string.settings_group_support_about,

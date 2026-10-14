@@ -17,4 +17,5 @@ data class InboxItem(
     val body: String = "",
     val isRead: Boolean = false,
     val createdAtEpochMillis: Long = 0L,
+    val feature: String? = null,
 )

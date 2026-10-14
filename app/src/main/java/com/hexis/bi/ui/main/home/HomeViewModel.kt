@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.BuildConfig
 import com.hexis.bi.R
+import com.hexis.bi.config.AppConfig
 import com.hexis.bi.data.activity.ActivityRepository
 import com.hexis.bi.data.health.sync.HealthSyncScheduler
 import com.hexis.bi.data.notification.NotificationInboxRepository
@@ -182,7 +183,7 @@ class HomeViewModel internal constructor(
             .catch { setError(it.message) }
             .launchIn(viewModelScope)
 
-        suitRepository.connectionState
+        if (AppConfig.suitVisible) suitRepository.connectionState
             .onEach { info ->
                 _state.update { current ->
                     current.copy(isSuitConnected = info != null)
@@ -257,7 +258,7 @@ class HomeViewModel internal constructor(
             }
             .launchIn(viewModelScope)
 
-        refreshTrigger
+        if (AppConfig.suitVisible) refreshTrigger
             .onEach { loadSuitOrder() }
             .launchIn(viewModelScope)
 
@@ -270,6 +271,7 @@ class HomeViewModel internal constructor(
     }
 
     private suspend fun loadSuitOrder() {
+        if (!AppConfig.suitVisible) return
         val order = orderRepository.getLatestActiveOrder().getOrNull()?.takeIf { it.isShownOnHome }
         _state.update { current ->
             current.copy(
@@ -282,7 +284,7 @@ class HomeViewModel internal constructor(
     }
 
     fun showOrderDetails() =
-        _state.update { it.copy(showOrderDetails = it.orderDetails != null) }
+        _state.update { it.copy(showOrderDetails = AppConfig.suitVisible && it.orderDetails != null) }
 
     fun dismissOrderDetails() =
         _state.update { it.copy(showOrderDetails = false) }
