@@ -4,6 +4,7 @@ import android.app.Application
 import com.google.i18n.phonenumbers.NumberParseException
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.hexis.bi.R
+import com.hexis.bi.config.AppConfig
 import com.hexis.bi.data.order.OrderDraftHolder
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.order.OrderContact
@@ -96,6 +97,7 @@ class ShippingDetailsViewModel(
         _state.update { it.copy(showShippingCountryPicker = false) }
 
     fun placeOrder() {
+        if (!AppConfig.suitVisible) return
         if (!validate()) return
         val sizing = orderDraftHolder.sizing
         if (sizing == null) {

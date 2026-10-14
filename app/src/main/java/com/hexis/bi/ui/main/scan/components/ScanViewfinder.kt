@@ -34,6 +34,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import com.hexis.bi.R
+import com.hexis.bi.config.AppConfig
 import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 private const val SCAN_ANIMATION_DURATION_MS = 5000
@@ -41,7 +42,7 @@ private const val SCAN_ANIMATION_DURATION_MS = 5000
 @Composable
 fun ScanViewfinder(
     modifier: Modifier = Modifier,
-    @DrawableRes image: Int = R.drawable.img_scan_preview,
+    @DrawableRes image: Int? = if (AppConfig.suitVisible) R.drawable.img_scan_preview else null,
     color: Color = MaterialTheme.colorScheme.onBackground,
     onClick: (() -> Unit)? = null,
 ) {
@@ -75,7 +76,7 @@ fun ScanViewfinder(
             ),
         contentAlignment = Alignment.Center
     ) {
-        Image(
+        if (image != null) Image(
             painter = painterResource(image),
             contentDescription = null,
             contentScale = ContentScale.Crop,

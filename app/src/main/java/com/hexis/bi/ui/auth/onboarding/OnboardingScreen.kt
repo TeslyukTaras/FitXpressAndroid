@@ -56,6 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
+import com.hexis.bi.config.AppConfig
 import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
@@ -103,10 +104,11 @@ fun OnboardingScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
 
-    val pagerState = rememberPagerState { PAGE_COUNT }
+    val pageCount = if (AppConfig.suitVisible) PAGE_COUNT else 1
+    val pagerState = rememberPagerState { pageCount }
     val scope = rememberCoroutineScope()
     var showBuySuitDialog by remember { mutableStateOf(false) }
-    val isLastPage = pagerState.currentPage == PAGE_COUNT - 1
+    val isLastPage = pagerState.currentPage == pageCount - 1
     val goToPage: (Int) -> Unit = { page ->
         scope.launch {
             pagerState.animateScrollToPage(page, animationSpec = tween(PAGE_SCROLL_DURATION_MS))
@@ -145,7 +147,7 @@ fun OnboardingScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .then(
-                    if (state.showDatePicker || showBuySuitDialog)
+                    if (state.showDatePicker || (AppConfig.suitVisible && showBuySuitDialog))
                         Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))
                     else Modifier
                 )
@@ -170,7 +172,7 @@ fun OnboardingScreen(
                 error = error,
                 onDismissError = viewModel::clearError,
                 topBar = {
-                    if (pagerState.currentPage != PAGE_PERSONAL_INFO) BaseTopBar(
+                    if (AppConfig.suitVisible && pagerState.currentPage != PAGE_PERSONAL_INFO) BaseTopBar(
                         title = stringResource(R.string.my_suit_title),
                         background = Color.Transparent,
                         onBack = { goToPage(PAGE_PERSONAL_INFO) },
@@ -179,10 +181,10 @@ fun OnboardingScreen(
                 bottomBar = {
                     OnboardingBottomBar(
                         currentPage = pagerState.currentPage,
-                        pageCount = PAGE_COUNT,
+                        pageCount = pageCount,
                         isLastPage = isLastPage,
-                        nextEnabled = isLastPage || state.isPersonalInfoValid,
-                        onBack = if (isLastPage) ({ goToPage(PAGE_PERSONAL_INFO) }) else null,
+                        nextEnabled = pagerState.currentPage != PAGE_PERSONAL_INFO || state.isPersonalInfoValid,
+                        onBack = if (pagerState.currentPage > PAGE_PERSONAL_INFO) ({ goToPage(PAGE_PERSONAL_INFO) }) else null,
                         onNext = { goToPage(pagerState.currentPage + 1) },
                         onFinish = viewModel::finish,
                     )
@@ -211,14 +213,14 @@ fun OnboardingScreen(
             onSelect = viewModel::updateDateOfBirth,
         )
 
-        if (state.showSuitCareSheet) SuitCareSheet(
+        if (AppConfig.suitVisible && state.showSuitCareSheet) SuitCareSheet(
             accepted = state.careInstructionsAccepted,
             onAcceptedChange = viewModel::setCareInstructionsAccepted,
             onContinue = viewModel::dismissSuitCareSheet,
             onDismiss = viewModel::dismissSuitCareSheet,
         )
 
-        if (showBuySuitDialog) AppDialog(onDismiss = { showBuySuitDialog = false }) {
+        if (AppConfig.suitVisible && showBuySuitDialog) AppDialog(onDismiss = { showBuySuitDialog = false }) {
             BuySuitDialogContent(
                 onBuySuit = {
                     showBuySuitDialog = false

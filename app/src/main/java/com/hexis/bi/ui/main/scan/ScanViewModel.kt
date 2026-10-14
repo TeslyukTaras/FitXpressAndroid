@@ -2,6 +2,7 @@ package com.hexis.bi.ui.main.scan
 
 import android.app.Application
 import androidx.lifecycle.viewModelScope
+import com.hexis.bi.config.AppConfig
 import com.hexis.bi.domain.suit.SuitRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +21,7 @@ class ScanViewModel(
     val state: StateFlow<ScanState> = _state.asStateFlow()
 
     init {
-        suitRepository.connectionState
+        if (AppConfig.suitVisible) suitRepository.connectionState
             .onEach { info ->
                 _state.update { it.copy(suitConnected = info != null) }
             }

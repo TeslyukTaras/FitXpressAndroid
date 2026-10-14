@@ -1,5 +1,7 @@
 package com.hexis.bi.ui.navigation
 
+import com.hexis.bi.config.AppConfig
+
 internal object Route {
     const val APP_INFO = "app_info"
     const val LOGIN = "login"
@@ -40,6 +42,13 @@ internal object Route {
         const val SCAN_RESULTS = "main/scan/results"
         const val SCAN_HISTORY = "main/scan/history"
         const val HOW_TO_SCAN = "main/scan/how_to"
+
+        fun availableDestination(route: String): String =
+            if (!AppConfig.suitVisible && isSuitDestination(route)) HOME else route
+
+        fun isSuitDestination(route: String): Boolean =
+            route == MY_SUIT || route == SUIT_SIZE_SCAN ||
+                    route.startsWith("main/buy_suit/")
 
         /** Routes that show the bottom navigation bar. */
         val tabRoutes = setOf(HOME, BODY)
