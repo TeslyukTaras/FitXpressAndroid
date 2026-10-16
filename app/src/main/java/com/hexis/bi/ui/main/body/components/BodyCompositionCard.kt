@@ -125,7 +125,7 @@ internal fun BodyCompositionCard(
 }
 
 @Composable
-private fun BodyMassUnitToggle(
+internal fun BodyMassUnitToggle(
     selected: BodyMassUnit,
     isMetric: Boolean,
     onSelected: (BodyMassUnit) -> Unit,

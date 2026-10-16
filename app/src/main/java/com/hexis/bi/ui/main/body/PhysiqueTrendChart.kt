@@ -6,6 +6,7 @@ import com.hexis.bi.intelligence.prediction.ScanDay
 import com.hexis.bi.intelligence.prediction.predictWeekly
 import com.hexis.bi.utils.constants.BodyConstants
 import com.hexis.bi.utils.constants.DateFormatConstants
+import com.hexis.bi.utils.kgToLb
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.ZoneId
@@ -22,19 +23,36 @@ internal object PhysiqueTrendChart {
         nowMillis: Long,
         gains: Map<PredictionSeries, Double> = emptyMap(),
         zone: ZoneId = ZoneId.systemDefault(),
+        massUnit: BodyMassUnit = BodyMassUnit.Percent,
+        isMetric: Boolean = true,
+        composition: Boolean = false,
     ): BodyChartData {
         val today = LocalDate.ofInstant(Date(nowMillis).toInstant(), zone)
         val window = window(days, range, today)
         val rangeStart = window.start.atStartOfDay(zone).toInstant().toEpochMilli()
         val rangeEnd = window.end.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
 
-        val confirmed = confirmedPoints(days, zone)
-        val visible = (confirmed + listOfNotNull(predictedPoint(days, range, today, gains, zone)))
+        val leanSeries = if (massUnit == BodyMassUnit.Percent) PredictionSeries.LEAN_PCT else PredictionSeries.LEAN_KG
+        val fatSeries = if (massUnit == BodyMassUnit.Percent) PredictionSeries.FAT_PCT else PredictionSeries.FAT_KG
+        val confirmed = confirmedPoints(days, zone, leanSeries, fatSeries)
+        val visible = (confirmed + listOfNotNull(predictedPoint(days, range, today, gains, zone, leanSeries, fatSeries)))
             .filter { it.timestamp in rangeStart..rangeEnd }
             .sortedBy { it.timestamp }
         val anchored = listOfNotNull(anchorPoint(confirmed, window.start, rangeStart, zone)) + visible
-        val points = applyBaselineDeltas(anchored)
-        val (yAxisBound, gridLines) = dynamicBounds(points)
+        val converted = if (massUnit == BodyMassUnit.Mass && !isMetric) anchored.map {
+            it.copy(absoluteFat = it.absoluteFat.kgToLb(), absoluteMuscle = it.absoluteMuscle.kgToLb())
+        } else anchored
+        val points = applyBaselineDeltas(converted)
+        val (deltaBound, deltaGrid) = dynamicBounds(points)
+        val values = points.flatMap { listOf(it.absoluteFat, it.absoluteMuscle) }
+        val minimum = values.minOrNull() ?: 0f
+        val maximum = values.maxOrNull() ?: 100f
+        val minimumPadding = if (massUnit == BodyMassUnit.Mass && !isMetric) 1f.kgToLb() else 1f
+        val padding = max((maximum - minimum) * 0.12f, minimumPadding)
+        val lower = (minimum - padding).coerceAtLeast(0f)
+        val upper = (maximum + padding).let { if (massUnit == BodyMassUnit.Percent) it.coerceAtMost(100f) else it }
+        val yAxisBound = if (composition) upper else deltaBound
+        val gridLines = if (composition) (0..4).map { lower + (upper - lower) * it / 4f } else deltaGrid
 
         return BodyChartData(
             rangeStartMillis = rangeStart,
@@ -43,6 +61,8 @@ internal object PhysiqueTrendChart {
             axisLabels = axisLabels(window, range, days, today, zone),
             rangeLabel = formatRangeLabel(rangeStart, rangeEnd),
             yAxisBound = yAxisBound,
+            yAxisMinimum = if (composition) lower else -yAxisBound,
+            isComposition = composition,
             gridLines = gridLines,
         )
     }
@@ -78,10 +98,10 @@ internal object PhysiqueTrendChart {
         return previous.copy(timestamp = midday(windowStart, zone), isInterpolated = true)
     }
 
-    private fun confirmedPoints(days: List<ScanDay>, zone: ZoneId): List<BodyTrendPoint> =
+    private fun confirmedPoints(days: List<ScanDay>, zone: ZoneId, leanSeries: PredictionSeries, fatSeries: PredictionSeries): List<BodyTrendPoint> =
         days.mapNotNull { day ->
-            val lean = day.values[PredictionSeries.LEAN_PCT] ?: return@mapNotNull null
-            val fat = day.values[PredictionSeries.FAT_PCT] ?: return@mapNotNull null
+            val lean = day.values[leanSeries] ?: return@mapNotNull null
+            val fat = day.values[fatSeries] ?: return@mapNotNull null
             BodyTrendPoint(
                 timestamp = midday(LocalDate.parse(day.date), zone),
                 deltaFat = 0f,
@@ -98,13 +118,15 @@ internal object PhysiqueTrendChart {
         today: LocalDate,
         gains: Map<PredictionSeries, Double>,
         zone: ZoneId,
+        leanSeries: PredictionSeries,
+        fatSeries: PredictionSeries,
     ): BodyTrendPoint? {
         if (!range.predicts) return null
         val lastDay = days.lastOrNull()?.date?.let(LocalDate::parse) ?: return null
         if (today.isAfter(lastDay.plusDays(BodyConstants.SCAN_CADENCE_DAYS))) return null
         val prediction = predictWeekly(days, gains) ?: return null
-        val lean = prediction.predicted[PredictionSeries.LEAN_PCT] ?: return null
-        val fat = prediction.predicted[PredictionSeries.FAT_PCT] ?: return null
+        val lean = prediction.predicted[leanSeries] ?: return null
+        val fat = prediction.predicted[fatSeries] ?: return null
         return BodyTrendPoint(
             timestamp = midday(LocalDate.parse(prediction.targetDate), zone),
             deltaFat = 0f,
