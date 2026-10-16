@@ -233,6 +233,8 @@
     <string name="body_range_one_year">1 Year</string>
     <string name="body_physique_trend">Physique Trend</string>
     <string name="body_chart_legend_muscle">Lean Advantage</string>
+    <string name="body_chart_legend_lean_mass">Lean Mass</string>
+    <string name="body_chart_legend_fat_mass">Fat Mass</string>
     <string name="body_chart_legend_fat">Fat Advantage</string>
     <string name="body_chart_legend_confirmed_scan">Confirmed Scan</string>
     <string name="body_chart_legend_confirmed">Confirmed</string>
@@ -340,7 +342,7 @@
     <string name="body_compare_left_scan">Left Scan</string>
     <string name="body_compare_right_scan">Right Scan</string>
     <string name="body_bis_sheet_title">How Physique Balance works</string>
-    <string name="body_bis_sheet_body">Physique Balance shows how your body is changing between scans.\nIt combines your scan results with activity, sleep, recovery, and weight trends to estimate your physique direction over time.</string>
+    <string name="body_bis_sheet_body">Physique Balance shows your fat and lean mass history. Switch between percentages and weight in your preferred kg or lb units. The chart scale adjusts to your visible values to make changes easier to see.\nSolid lines show scan results; dashed lines estimate your next weekly scan.</string>
     <string name="body_bis_sheet_heading_drift">1. Physique Drift</string>
     <string name="body_bis_sheet_body_drift">Shows the direction your physique is trending this week.\nA positive value means your trend is improving.</string>
     <string name="body_bis_sheet_heading_next_scan">2. Next Scan</string>
