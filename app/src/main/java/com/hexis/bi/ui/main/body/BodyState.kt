@@ -213,6 +213,8 @@ data class BodyChartData(
     val rangeLabel: String = "",
     val yAxisBound: Float = BodyConstants.DEFAULT_Y_HALF_RANGE,
     val gridLines: List<Float> = BodyConstants.DEFAULT_GRID_LINES,
+    val yAxisMinimum: Float = -yAxisBound,
+    val isComposition: Boolean = false,
 )
 
 data class BodyState(
@@ -225,6 +227,7 @@ data class BodyState(
     val periodPhysiqueDrift: Float? = null,
     val prediction: PhysiquePredictionState = PhysiquePredictionState.None,
     val chart: BodyChartData = BodyChartData(0L, 0L),
+    val compositionChart: BodyChartData = BodyChartData(0L, 0L),
     val showBisInfo: Boolean = false,
     val showBodyProportionInfo: Boolean = false,
     val visual: VisualState = VisualState(),
