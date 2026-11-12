@@ -65,6 +65,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.withResumed
 import com.hexis.bi.R
+import com.hexis.bi.config.AppConfig
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppPrimaryButton
@@ -120,6 +121,10 @@ fun StartScanScreen(
     scanPurpose: ScanPurpose = ScanPurpose.BodyScan,
     viewModel: StartScanViewModel = koinViewModel(),
 ) {
+    if (!AppConfig.suitVisible && scanPurpose == ScanPurpose.SuitSizeScan) {
+        LaunchedEffect(Unit) { onBack() }
+        return
+    }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val context = LocalContext.current

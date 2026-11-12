@@ -31,6 +31,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.hexis.bi.BuildConfig
 import com.hexis.bi.R
+import com.hexis.bi.config.AppConfig
 import com.hexis.bi.ui.main.home.intelligence.HomeInsightsSection
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.components.LightStatusBarIcons
@@ -141,7 +142,7 @@ fun HomeScreen(
                     age = state.age ?: unknown,
                 )
 
-                AnimatedContent(
+                if (AppConfig.suitVisible) AnimatedContent(
                     targetState = state.suitSection,
                     contentKey = { it::class },
                     modifier = Modifier.fillMaxWidth(),
@@ -234,7 +235,7 @@ fun HomeScreen(
     }
 
     val orderDetails = state.orderDetails
-    if (state.showOrderDetails && orderDetails != null) {
+    if (AppConfig.suitVisible && state.showOrderDetails && orderDetails != null) {
         OrderDetailsSheet(
             details = orderDetails,
             onDismiss = viewModel::dismissOrderDetails,

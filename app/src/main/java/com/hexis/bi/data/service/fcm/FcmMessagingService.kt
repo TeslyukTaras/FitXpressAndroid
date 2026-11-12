@@ -4,6 +4,7 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.hexis.bi.App
 import com.hexis.bi.utils.SystemNotificationHelper
+import com.hexis.bi.utils.SuitContentPolicy
 import com.hexis.bi.utils.constants.FcmDataKeys
 import com.hexis.bi.utils.constants.FcmTrayNotificationId
 import com.hexis.bi.utils.constants.SystemTrayChannel
@@ -65,6 +66,8 @@ class FcmMessagingService : FirebaseMessagingService() {
         val appLabel = applicationInfo.loadLabel(packageManager).toString()
         val displayTitle = title?.takeIf { it.isNotBlank() } ?: appLabel
         val displayBody = body.orEmpty()
+        val feature = message.data["feature"] ?: message.data["category"]
+        if (!SuitContentPolicy.canDisplay(displayTitle, displayBody, feature)) return
 
         val notificationId = run {
             val base = message.messageId?.hashCode() ?: message.data.hashCode()
@@ -87,7 +90,7 @@ class FcmMessagingService : FirebaseMessagingService() {
         val app = applicationContext as? App
         if (app != null) {
             val inbox = app.notificationInboxRepository()
-            ioScope.launch { inbox.appendRawInbox(displayTitle, displayBody) }
+            ioScope.launch { inbox.appendRawInbox(displayTitle, displayBody, feature) }
         }
     }
 }

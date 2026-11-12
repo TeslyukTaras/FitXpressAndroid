@@ -1,5 +1,6 @@
 package com.hexis.bi.data.suit
 
+import com.hexis.bi.config.AppConfig
 import com.hexis.bi.data.user.FirestoreSchema.UserFields
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.suit.SuitConnectionInfo
@@ -12,15 +13,18 @@ class UserProfileSuitRepository(
 ) : SuitRepository {
 
     override val connectionState: Flow<SuitConnectionInfo?> =
-        userRepository.observeUser().map { profile ->
+        if (!AppConfig.suitVisible) kotlinx.coroutines.flow.flowOf(null)
+        else userRepository.observeUser().map { profile ->
             profile.suitId?.trim()?.takeIf { it.isNotEmpty() }?.let { SuitConnectionInfo(suitId = it) }
         }
 
     override suspend fun connect(suitId: String) {
+        if (!AppConfig.suitVisible) return
         userRepository.updateFields(mapOf(UserFields.SUIT_ID to suitId))
     }
 
     override suspend fun disconnect() {
+        if (!AppConfig.suitVisible) return
         userRepository.updateFields(mapOf(UserFields.SUIT_ID to null))
     }
 }

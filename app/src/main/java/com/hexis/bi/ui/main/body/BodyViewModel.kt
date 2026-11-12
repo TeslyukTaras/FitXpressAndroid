@@ -84,6 +84,7 @@ class BodyViewModel internal constructor(
 
     fun selectMassUnit(unit: BodyMassUnit) {
         _state.update { it.copy(massUnit = unit) }
+        rebuildChart()
     }
 
     fun selectTimeRange(range: BodyTimeRange) {
@@ -449,13 +450,24 @@ class BodyViewModel internal constructor(
         val days = predictionDays()
         val now = System.currentTimeMillis()
         val chart = PhysiqueTrendChart.build(days, range, now, predictionGains)
+        val compositionChart = PhysiqueTrendChart.build(
+            days, range, now, predictionGains,
+            massUnit = _state.value.massUnit,
+            isMetric = _state.value.isMetric,
+            composition = true,
+        )
         val estimateChart = if (range == BodyTimeRange.FourWeeks) {
-            chart
+            compositionChart
         } else {
-            PhysiqueTrendChart.build(days, BodyTimeRange.FourWeeks, now, predictionGains)
+            PhysiqueTrendChart.build(
+                days, BodyTimeRange.FourWeeks, now, predictionGains,
+                massUnit = _state.value.massUnit,
+                isMetric = _state.value.isMetric,
+                composition = true,
+            )
         }
         val prediction = predictionState(days, estimateChart, now)
-        _state.update { it.copy(chart = chart, prediction = prediction) }
+        _state.update { it.copy(chart = chart, compositionChart = compositionChart, prediction = prediction) }
     }
 
     private fun predictionDays(): List<ScanDay> {

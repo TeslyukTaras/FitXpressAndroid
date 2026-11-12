@@ -4,6 +4,7 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import com.hexis.bi.R
+import com.hexis.bi.config.AppConfig
 import com.hexis.bi.data.notification.NotificationInboxRepository
 import com.hexis.bi.data.preferences.UserPreferencesRepository
 import com.hexis.bi.data.reminder.ScanReminderScheduler
@@ -42,7 +43,9 @@ class StartScanViewModel(
     private var personalizeHintEvaluated = false
 
     fun prepareForScan(purpose: ScanPurpose) {
-        scanPurpose = purpose
+        scanPurpose = if (!AppConfig.suitVisible && purpose == ScanPurpose.SuitSizeScan) {
+            ScanPurpose.BodyScan
+        } else purpose
     }
 
     fun onBodyResultsRevealed() {

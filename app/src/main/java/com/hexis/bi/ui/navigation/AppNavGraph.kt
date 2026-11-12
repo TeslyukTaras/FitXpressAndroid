@@ -14,6 +14,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.hexis.bi.config.AppConfig
 import com.hexis.bi.data.auth.AuthRepository
 import com.hexis.bi.data.auth.SessionCleaner
 import com.hexis.bi.data.preferences.UserPreferencesRepository
@@ -92,7 +93,7 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
         composable(Route.PROFILE_ONBOARDING) {
             OnboardingScreen(
                 onBuySuitScanRequested = {
-                    mainStartDestination = Route.Main.SUIT_SIZE_SCAN
+                    mainStartDestination = Route.Main.availableDestination(Route.Main.SUIT_SIZE_SCAN)
                     navController.navigate(Route.MAIN) {
                         popUpTo(Route.PROFILE_ONBOARDING) { inclusive = true }
                     }

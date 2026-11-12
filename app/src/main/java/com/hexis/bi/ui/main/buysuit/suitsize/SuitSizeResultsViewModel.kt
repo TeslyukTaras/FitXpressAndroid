@@ -2,6 +2,7 @@ package com.hexis.bi.ui.main.buysuit.suitsize
 
 import android.app.Application
 import com.hexis.bi.R
+import com.hexis.bi.config.AppConfig
 import com.hexis.bi.data.order.OrderDraftHolder
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanRecord
@@ -69,6 +70,7 @@ class SuitSizeResultsViewModel(
     }
 
     fun proceedToOrder() {
+        if (!AppConfig.suitVisible) return
         val s = _state.value
         val measurements = persistedUserMeasurements(s.heightCm, s.weightKg)
         if (measurements.heightCm == savedHeightCm && measurements.weightKg == savedWeightKg) {
@@ -94,6 +96,7 @@ class SuitSizeResultsViewModel(
     }
 
     private fun confirmSelection(s: SuitSizeResultsState) {
+        if (!AppConfig.suitVisible) return
         orderDraftHolder.sizing = OrderSizing(
             scanId = s.scanId,
             suitSize = s.suitSize.name,

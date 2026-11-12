@@ -2,6 +2,7 @@ package com.hexis.bi.ui.main.buysuit.editaddress
 
 import android.app.Application
 import com.hexis.bi.R
+import com.hexis.bi.config.AppConfig
 import com.hexis.bi.domain.order.OrderRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.main.buysuit.shipping.ShippingCountry
@@ -23,7 +24,7 @@ class EditAddressViewModel(
     val state: StateFlow<EditAddressState> = _state.asStateFlow()
 
     init {
-        loadOrderAddress()
+        if (AppConfig.suitVisible) loadOrderAddress()
     }
 
     /** Pre-fills with the order's current effective address (the pending request, if one exists). */
@@ -74,6 +75,7 @@ class EditAddressViewModel(
     fun dismissCountryPicker() = _state.update { it.copy(showCountryPicker = false) }
 
     fun submit() {
+        if (!AppConfig.suitVisible) return
         if (!validate()) return
         launch(onError = { setError(R.string.error_address_change_failed) }) {
             orderRepository.requestAddressChange(orderId, _state.value.toOrderShippingAddress()).getOrThrow()

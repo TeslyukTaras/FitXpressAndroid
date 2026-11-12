@@ -150,6 +150,7 @@
     <string name="settings_edit_profile">Edit Profile</string>
     <string name="settings_notifications">Notifications</string>
     <string name="settings_health_connections">Health Connections</string>
+    <string name="settings_group_scanning">Scanning</string>
     <string name="settings_group_suit_scanning">Suit &amp; Scanning</string>
     <string name="settings_my_suit">My Suit</string>
     <string name="settings_scan_preferences">Scan Preference</string>
@@ -232,6 +233,8 @@
     <string name="body_range_one_year">1 Year</string>
     <string name="body_physique_trend">Physique Trend</string>
     <string name="body_chart_legend_muscle">Lean Advantage</string>
+    <string name="body_chart_legend_lean_mass">Lean Mass</string>
+    <string name="body_chart_legend_fat_mass">Fat Mass</string>
     <string name="body_chart_legend_fat">Fat Advantage</string>
     <string name="body_chart_legend_confirmed_scan">Confirmed Scan</string>
     <string name="body_chart_legend_confirmed">Confirmed</string>
@@ -339,7 +342,7 @@
     <string name="body_compare_left_scan">Left Scan</string>
     <string name="body_compare_right_scan">Right Scan</string>
     <string name="body_bis_sheet_title">How Physique Balance works</string>
-    <string name="body_bis_sheet_body">Physique Balance shows how your body is changing between scans.\nIt combines your scan results with activity, sleep, recovery, and weight trends to estimate your physique direction over time.</string>
+    <string name="body_bis_sheet_body">Physique Balance shows your fat and lean mass history. Switch between percentages and weight in your preferred kg or lb units. The chart scale adjusts to your visible values to make changes easier to see.\nSolid lines show scan results; dashed lines estimate your next weekly scan.</string>
     <string name="body_bis_sheet_heading_drift">1. Physique Drift</string>
     <string name="body_bis_sheet_body_drift">Shows the direction your physique is trending this week.\nA positive value means your trend is improving.</string>
     <string name="body_bis_sheet_heading_next_scan">2. Next Scan</string>
@@ -864,7 +867,7 @@
     <!-- How to scan (Prepare Your Scan) flow -->
     <string name="how_to_scan_title">Prepare Your Scan</string>
     <string name="how_to_scan_subtitle_default">Follow these steps for the best results.</string>
-    <string name="how_to_scan_subtitle_phone">Place Your Phone Correctly For Teh Best Scan</string>
+    <string name="how_to_scan_subtitle_phone">Place Your Phone Correctly For The Best Scan</string>
     <string name="how_to_scan_step_counter">%1$d/%2$d</string>
     <string name="action_finish">Finish</string>
     <string name="cd_how_to_scan_illustration">Scan preparation illustration</string>
@@ -875,9 +878,12 @@
     <string name="how_to_scan_step_1_c">Keep your full body in frame</string>
 
     <string name="how_to_scan_step_2_header">What to wear</string>
+    <string name="how_to_scan_regular_step_2_a">Women: gym/yoga wear or sports bra</string>
+    <string name="how_to_scan_regular_step_2_b">Men: gym shorts or boxers, shirtless</string>
+    <string name="how_to_scan_regular_step_2_c">No shoes, socks, belts or accessories</string>
     <string name="how_to_scan_step_2_a">Put On The Hexis-Bi Suit</string>
-    <string name="how_to_scan_step_2_b">No Belts or Accessories</string>
-    <string name="how_to_scan_step_2_c">Tie Long Hair Up</string>
+    <string name="how_to_scan_step_2_b">Remove belts and accessories</string>
+    <string name="how_to_scan_step_2_c">Tie long hair up</string>
 
     <string name="how_to_scan_step_3_header">Phone setup</string>
     <string name="how_to_scan_step_3_a">Adjust the Volume to hear the Voice Instructions</string>

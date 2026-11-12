@@ -4,6 +4,7 @@ import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.hexis.bi.config.AppConfig
 import com.hexis.bi.domain.order.Order
 import com.hexis.bi.domain.order.OrderAddressChangeStatus
 import com.hexis.bi.domain.order.OrderDraft
@@ -49,6 +50,7 @@ class FirestoreOrderRepository(
         auth.currentUser?.uid ?: error("Not authenticated")
 
     override suspend fun placeOrder(draft: OrderDraft): Result<Order> = runCatching {
+        check(AppConfig.suitVisible) { "Feature unavailable" }
         val uid = currentUid()
         val docRef = ordersCollection().document()
         val now = Timestamp.now()
@@ -104,6 +106,7 @@ class FirestoreOrderRepository(
     }
 
     override suspend fun getLatestActiveOrder(): Result<Order?> = runCatching {
+        if (!AppConfig.suitVisible) return@runCatching null
         ordersCollection()
             .whereEqualTo(FIELD_USER_ID, currentUid())
             .orderBy(FIELD_CREATED_AT, Query.Direction.DESCENDING)
@@ -118,6 +121,7 @@ class FirestoreOrderRepository(
     }
 
     override suspend fun getOrderById(orderId: String): Result<Order?> = runCatching {
+        if (!AppConfig.suitVisible) return@runCatching null
         OrderFirestoreMapper.toOrder(ordersCollection().document(orderId).get().await())
     }.onFailure {
         Timber.e(it, "getOrderById failed")
@@ -127,6 +131,7 @@ class FirestoreOrderRepository(
         orderId: String,
         address: OrderShippingAddress,
     ): Result<Unit> = runCatching {
+        check(AppConfig.suitVisible) { "Feature unavailable" }
         ordersCollection().document(orderId)
             .update(
                 mapOf(
@@ -141,6 +146,7 @@ class FirestoreOrderRepository(
         orderId: String,
         address: OrderShippingAddress,
     ): Result<Unit> = runCatching {
+        check(AppConfig.suitVisible) { "Feature unavailable" }
         ordersCollection().document(orderId)
             .update(
                 mapOf(
@@ -156,6 +162,7 @@ class FirestoreOrderRepository(
     }
 
     override suspend fun activateSuit(orderId: String, suitId: String): Result<Unit> = runCatching {
+        check(AppConfig.suitVisible) { "Feature unavailable" }
         ordersCollection().document(orderId)
             .update(
                 mapOf(

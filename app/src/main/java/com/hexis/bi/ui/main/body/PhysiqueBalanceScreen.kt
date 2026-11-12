@@ -47,6 +47,7 @@ import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.components.LightStatusBarIcons
 import com.hexis.bi.ui.components.MedicalDisclaimerFooter
 import com.hexis.bi.ui.main.body.components.BisInfoBottomSheet
+import com.hexis.bi.ui.main.body.components.BodyMassUnitToggle
 import com.hexis.bi.ui.main.body.components.BodyMetricTile
 import com.hexis.bi.ui.main.body.components.BodyTrendChart
 import com.hexis.bi.ui.main.body.components.PhysiqueMetricCard
@@ -131,7 +132,11 @@ fun PhysiqueBalanceScreen(
 
                     BodyTrendChart(
                         loading = loading,
-                        chart = state.chart,
+                        chart = state.compositionChart,
+                        unitLabel = physiqueTrendUnitLabel(state.massUnit, state.isMetric),
+                        headerControl = {
+                            BodyMassUnitToggle(state.massUnit, state.isMetric, viewModel::selectMassUnit)
+                        },
                         timeRange = state.timeRange,
                         showSegmentLegend = true,
                         predictionActive = state.prediction is PhysiquePredictionState.Active,
@@ -162,6 +167,16 @@ fun PhysiqueBalanceScreen(
 
     if (state.showBisInfo) BisInfoBottomSheet(onDismiss = viewModel::dismissBisInfo)
 }
+
+@Composable
+private fun physiqueTrendUnitLabel(massUnit: BodyMassUnit, isMetric: Boolean): String =
+    stringResource(
+        when {
+            massUnit == BodyMassUnit.Percent -> R.string.unit_percent
+            isMetric -> R.string.unit_kg
+            else -> R.string.unit_lb
+        },
+    )
 
 @Composable
 private fun PhysiqueBalancePlaceholder(content: @Composable () -> Unit) {

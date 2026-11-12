@@ -1,5 +1,6 @@
 package com.hexis.bi.ui.main.home
 
+import com.hexis.bi.config.AppConfig
 import com.hexis.bi.ui.main.home.intelligence.InsightCard
 
 import androidx.annotation.StringRes
@@ -113,6 +114,7 @@ data class HomeState(
 
     val suitSection: SuitSection
         get() = when {
+            !AppConfig.suitVisible -> SuitSection.None
             suitOrder != null -> SuitSection.Order(suitOrder)
             suitSectionResolved && !isSuitConnected -> SuitSection.Promo
             else -> SuitSection.None

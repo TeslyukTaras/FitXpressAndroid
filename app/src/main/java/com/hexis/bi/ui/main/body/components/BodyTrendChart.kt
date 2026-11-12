@@ -92,6 +92,8 @@ internal fun BodyTrendChart(
     predictionActive: Boolean = false,
     status: (@Composable () -> Unit)? = null,
     footer: (@Composable ColumnScope.() -> Unit)? = null,
+    headerControl: (@Composable () -> Unit)? = null,
+    unitLabel: String = "",
 ) {
     val chartGap = dimensionResource(R.dimen.spacer_xs)
     val chartHeight = dimensionResource(R.dimen.body_chart_height)
@@ -116,12 +118,14 @@ internal fun BodyTrendChart(
     val fatColor = chartColors.chartFatAdvantage
     val pointBackgroundColor = MaterialTheme.colorScheme.surface
     val originRingColor = MaterialTheme.colorScheme.onSurface
+    fun fatValue(point: BodyTrendPoint) = if (chart.isComposition) point.absoluteFat else point.deltaFat
+    fun leanValue(point: BodyTrendPoint) = if (chart.isComposition) point.absoluteMuscle else point.deltaMuscle
     val rangeSpan = (chart.rangeEndMillis - chart.rangeStartMillis).coerceAtLeast(1L)
 
     val pointLabelMeasurer = rememberTextMeasurer()
     val pointLabelStyle = MaterialTheme.typography.bodySmall
     val labeledIndices = remember(chart, timeRange) {
-        if (timeRange.predicts) chart.points.indices.drop(1).toList() else emptyList()
+        if (timeRange.predicts && !chart.isComposition) chart.points.indices.drop(1).toList() else emptyList()
     }
 
     val selectedEntry = snapPoints.getOrNull(selectedSnap)?.value
@@ -167,6 +171,9 @@ internal fun BodyTrendChart(
                         .weight(1f)
                         .padding(top = dimensionResource(R.dimen.spacer_m)),
                 )
+                if (headerControl != null) Box(
+                    Modifier.padding(top = dimensionResource(R.dimen.spacer_m), end = dimensionResource(R.dimen.spacer_m)),
+                ) { headerControl() }
                 if (onOpenClick != null) IconButton(
                     onClick = onOpenClick,
                     enabled = !showTooltip,
@@ -220,16 +227,17 @@ internal fun BodyTrendChart(
                         ) {
                             chart.gridLines.forEach { value ->
                                 Text(
-                                    text = formatGridValue(value),
+                                    text = if (chart.isComposition) formatOneDecimal(value) else formatGridValue(value),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = when {
+                                        chart.isComposition -> MaterialTheme.colorScheme.secondary
                                         value > 0f -> muscleColor
                                         value < 0f -> fatColor
                                         else -> chartColors.chartZeroLabel
                                     },
                                     modifier = Modifier.align { size, space, _ ->
                                         val fraction =
-                                            mapValueToFraction(value, chart.yAxisBound)
+                                            mapValueToFraction(value, chart.yAxisBound, chart.yAxisMinimum)
                                         IntOffset(
                                             space.width - size.width,
                                             (space.height * fraction - size.height / 2).toInt()
@@ -263,7 +271,7 @@ internal fun BodyTrendChart(
                                     chart.gridLines.forEach { value ->
                                         val y = size.height * mapValueToFraction(
                                             value,
-                                            chart.yAxisBound
+                                            chart.yAxisBound, chart.yAxisMinimum
                                         )
                                         val isZero = value == 0f
                                         drawLine(
@@ -310,30 +318,32 @@ internal fun BodyTrendChart(
                                         rangeStart = chart.rangeStartMillis,
                                         rangeSpan = rangeSpan,
                                         yAxisBound = chart.yAxisBound,
+                                        yAxisMinimum = chart.yAxisMinimum,
                                         color = fatColor,
                                         strokeWidthPx = strokeWidth.toPx(),
                                         dashWidthPx = dashWidth.toPx(),
-                                        extractValue = { it.deltaFat },
+                                        extractValue = ::fatValue,
                                     )
                                     drawTimeSeries(
                                         points = chart.points,
                                         rangeStart = chart.rangeStartMillis,
                                         rangeSpan = rangeSpan,
                                         yAxisBound = chart.yAxisBound,
+                                        yAxisMinimum = chart.yAxisMinimum,
                                         color = muscleColor,
                                         strokeWidthPx = strokeWidth.toPx(),
                                         dashWidthPx = dashWidth.toPx(),
-                                        extractValue = { it.deltaMuscle },
+                                        extractValue = ::leanValue,
                                     )
 
                                     val origin = chart.points.firstOrNull()
                                         ?.takeIf { it.phase == BodyTrendPhase.ConfirmedScan }
-                                    if (origin != null) {
+                                    if (origin != null && !chart.isComposition) {
                                         val originX =
                                             ((origin.timestamp - chart.rangeStartMillis).toFloat() /
                                                     rangeSpan) * size.width
                                         val originY =
-                                            size.height * mapValueToFraction(0f, chart.yAxisBound)
+                                            size.height * mapValueToFraction(0f, chart.yAxisBound, chart.yAxisMinimum)
                                         drawCircle(
                                             pointBackgroundColor,
                                             pointRadius.toPx() * 0.7f,
@@ -359,7 +369,7 @@ internal fun BodyTrendChart(
                                             ?.let { origin ->
                                                 val ox = xOf(origin)
                                                 val oy = size.height *
-                                                        mapValueToFraction(0f, chart.yAxisBound)
+                                                        mapValueToFraction(0f, chart.yAxisBound, chart.yAxisMinimum)
                                                 val r = pointRadius.toPx()
                                                 occupied += Rect(ox - r, oy - r, ox + r, oy + r)
                                             }
@@ -376,6 +386,7 @@ internal fun BodyTrendChart(
                                                 dotRadiusPx = dotRadiusPx,
                                                 gapPx = labelGapPx,
                                                 yAxisBound = chart.yAxisBound,
+                                                yAxisMinimum = chart.yAxisMinimum,
                                                 textMeasurer = pointLabelMeasurer,
                                                 style = pointLabelStyle,
                                             )
@@ -388,6 +399,7 @@ internal fun BodyTrendChart(
                                                 dotRadiusPx = dotRadiusPx,
                                                 gapPx = labelGapPx,
                                                 yAxisBound = chart.yAxisBound,
+                                                yAxisMinimum = chart.yAxisMinimum,
                                                 textMeasurer = pointLabelMeasurer,
                                                 style = pointLabelStyle,
                                             )
@@ -405,13 +417,13 @@ internal fun BodyTrendChart(
                                         pathEffect = dashEffect,
                                     )
                                     val muscleY = size.height * mapValueToFraction(
-                                        entry.deltaMuscle,
-                                        chart.yAxisBound
+                                        leanValue(entry),
+                                        chart.yAxisBound, chart.yAxisMinimum
                                     )
                                     val fatY =
                                         size.height * mapValueToFraction(
-                                            entry.deltaFat,
-                                            chart.yAxisBound
+                                            fatValue(entry),
+                                            chart.yAxisBound, chart.yAxisMinimum
                                         )
                                     drawCircle(
                                         pointBackgroundColor,
@@ -483,11 +495,13 @@ internal fun BodyTrendChart(
                                         color = MaterialTheme.colorScheme.onSurface,
                                     )
                                     TooltipDeltaRow(
-                                        delta = tooltipEntry.deltaMuscle,
+                                        delta = leanValue(tooltipEntry),
+                                        unitLabel = if (chart.isComposition) unitLabel else null,
                                         color = muscleColor,
                                     )
                                     TooltipDeltaRow(
-                                        delta = tooltipEntry.deltaFat,
+                                        delta = fatValue(tooltipEntry),
+                                        unitLabel = if (chart.isComposition) unitLabel else null,
                                         color = fatColor,
                                     )
                                 }
@@ -565,11 +579,11 @@ internal fun BodyTrendChart(
             ) {
                 LegendDot(
                     color = muscleColor,
-                    label = stringResource(R.string.body_chart_legend_muscle)
+                    label = stringResource(if (chart.isComposition) R.string.body_chart_legend_lean_mass else R.string.body_chart_legend_muscle)
                 )
                 LegendDot(
                     color = fatColor,
-                    label = stringResource(R.string.body_chart_legend_fat)
+                    label = stringResource(if (chart.isComposition) R.string.body_chart_legend_fat_mass else R.string.body_chart_legend_fat)
                 )
                 if (!timeRange.predicts) SegmentLegendItem(
                     label = stringResource(R.string.body_chart_legend_confirmed),
@@ -669,7 +683,7 @@ private fun LegendDot(color: Color, label: String) {
 }
 
 @Composable
-private fun TooltipDeltaRow(delta: Float, color: Color) {
+private fun TooltipDeltaRow(delta: Float, color: Color, unitLabel: String? = null) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier
@@ -679,7 +693,7 @@ private fun TooltipDeltaRow(delta: Float, color: Color) {
         )
         Spacer(Modifier.width(dimensionResource(R.dimen.spacer_xxs)))
         Text(
-            text = formatDelta(delta),
+            text = if (unitLabel == null) formatDelta(delta) else "${formatOneDecimal(delta)} $unitLabel",
             style = MaterialTheme.typography.bodySmall,
             color = color,
         )
@@ -756,10 +770,11 @@ private fun DrawScope.drawSeriesLabel(
     dotRadiusPx: Float,
     gapPx: Float,
     yAxisBound: Float,
+    yAxisMinimum: Float,
     textMeasurer: TextMeasurer,
     style: TextStyle,
 ) {
-    val y = size.height * mapValueToFraction(value, yAxisBound)
+    val y = size.height * mapValueToFraction(value, yAxisBound, yAxisMinimum)
     drawCircle(color, dotRadiusPx, Offset(centerX, y))
 
     val layout = textMeasurer.measure(
@@ -787,10 +802,9 @@ private fun claim(x: Float, y: Float, width: Float, height: Float, padPx: Float)
 
 private const val LABEL_PLACEMENT_ATTEMPTS = 4
 
-private fun mapValueToFraction(value: Float, bound: Float): Float {
-    val b = bound.coerceAtLeast(BodyConstants.CHART_MIN_HALF_RANGE)
-    val clamped = value.coerceIn(-b, b)
-    return 0.5f - (clamped / (2f * b))
+private fun mapValueToFraction(value: Float, bound: Float, minimum: Float): Float {
+    val span = (bound - minimum).coerceAtLeast(0.001f)
+    return (bound - value.coerceIn(minimum, bound)) / span
 }
 
 private fun formatGridValue(value: Float): String =
@@ -810,6 +824,7 @@ private fun DrawScope.drawTimeSeries(
     rangeStart: Long,
     rangeSpan: Long,
     yAxisBound: Float,
+    yAxisMinimum: Float,
     color: Color,
     strokeWidthPx: Float,
     dashWidthPx: Float,
@@ -820,20 +835,20 @@ private fun DrawScope.drawTimeSeries(
     if (renderedPoints.size == 1) {
         val p = renderedPoints[0]
         val x = ((p.timestamp - rangeStart).toFloat() / rangeSpan) * size.width
-        val y = size.height * mapValueToFraction(extractValue(p), yAxisBound)
+        val y = size.height * mapValueToFraction(extractValue(p), yAxisBound, yAxisMinimum)
         drawCircle(color, strokeWidthPx, Offset(x, y))
         return
     }
 
     val coords = renderedPoints.map { p ->
         val x = ((p.timestamp - rangeStart).toFloat() / rangeSpan) * size.width
-        val y = size.height * mapValueToFraction(extractValue(p), yAxisBound)
+        val y = size.height * mapValueToFraction(extractValue(p), yAxisBound, yAxisMinimum)
         Offset(x, y)
     }
 
     val tangents = monotoneTangents(coords)
     val linePath = buildCubicPath(coords, tangents)
-    val zeroY = size.height * mapValueToFraction(0f, yAxisBound)
+    val zeroY = size.height * mapValueToFraction(0f, yAxisBound, yAxisMinimum)
     val fillPath = Path().apply {
         addPath(linePath)
         lineTo(coords.last().x, zeroY)
