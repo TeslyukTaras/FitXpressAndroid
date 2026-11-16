@@ -15,6 +15,8 @@ internal object GlassConstants {
     const val RIM_RANGE_ALPHA = 0.84f
 
     const val GLOW_BASE_ALPHA = 0.018f
+    const val BODY_GLOW_MID_STOP = 0.5f
+    const val BODY_GLOW_MID_ALPHA = 0.4f
     const val GLOW_RANGE_ALPHA = 0.055f
 
     /** Tight darkening just inside the bottom-left rim (occlusion). Scales with [level]. */

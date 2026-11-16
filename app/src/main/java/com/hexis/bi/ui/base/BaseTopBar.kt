@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
 
@@ -44,6 +45,7 @@ fun BaseTopBar(
     title: String,
     modifier: Modifier = Modifier,
     background: Color = MaterialTheme.colorScheme.background,
+    titleStyle: TextStyle = MaterialTheme.typography.titleLarge,
     onBack: (() -> Unit)? = null,
     actions: @Composable (RowScope.() -> Unit) = {},
 ) {
@@ -51,7 +53,7 @@ fun BaseTopBar(
         title = {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge,
+                style = titleStyle,
                 color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center,
             )
