@@ -105,7 +105,8 @@ class FirestoreSubscriptionRepository(
     }
 
     override suspend fun subscribe(plan: PlanId): PurchaseResult {
-        val current = status.first { it !is SubscriptionStatus.Loading }
+        val current = settledStatus()
+            ?: throw IllegalStateException(context.getString(R.string.subscription_error_unavailable))
         if (current is SubscriptionStatus.Expired && current.paymentIssue) {
             throw IllegalStateException(context.getString(R.string.subscription_error_payment_issue))
         }
