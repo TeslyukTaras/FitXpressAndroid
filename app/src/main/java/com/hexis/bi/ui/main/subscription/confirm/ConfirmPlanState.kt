@@ -12,6 +12,7 @@ data class ConfirmPlanState(
     val plans: List<SubscriptionPlan>? = null,
     val status: SubscriptionStatus = SubscriptionStatus.None,
     val completed: Boolean = false,
+    val awaitingConfirmation: Boolean = false,
 ) {
     val plan: SubscriptionPlan? get() = plans?.firstOrNull { it.id == planId }
 

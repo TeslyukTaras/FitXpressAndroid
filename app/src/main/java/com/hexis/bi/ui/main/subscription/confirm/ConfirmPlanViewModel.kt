@@ -8,12 +8,14 @@ import com.hexis.bi.domain.subscription.PurchaseResult
 import com.hexis.bi.domain.subscription.SubscriptionStatus
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.base.UiEvent
+import com.hexis.bi.utils.constants.SubscriptionConstants
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 class ConfirmPlanViewModel(
     application: Application,
@@ -63,14 +65,23 @@ class ConfirmPlanViewModel(
                     leave()
                     return@launch
                 }
+                val kind = _state.value.kind
                 val result = if (status !is SubscriptionStatus.Subscribed) {
                     repository.subscribe(planId)
                 } else {
                     repository.changePlan(planId)
                 }
-                if (result == PurchaseResult.COMPLETED) {
-                    _state.update { it.copy(completed = true) }
+                if (result != PurchaseResult.COMPLETED) return@launch
+                _state.update { it.copy(completed = true) }
+                if (kind == PlanChangeKind.DOWNGRADE || awaitPlan(planId)) {
                     emitEvent(ConfirmPlanEvent.Completed)
+                } else {
+                    _state.update { it.copy(awaitingConfirmation = true) }
+                    viewModelScope.launch {
+                        repository.status.first { it.isPlan(planId) }
+                        _state.update { it.copy(awaitingConfirmation = false) }
+                        emitEvent(ConfirmPlanEvent.Completed)
+                    }
                 }
             } finally {
                 confirming = false
@@ -83,4 +94,12 @@ class ConfirmPlanViewModel(
         leaving = true
         emitEvent(UiEvent.NavigateBack)
     }
+
+    private suspend fun awaitPlan(planId: PlanId): Boolean =
+        withTimeoutOrNull(SubscriptionConstants.PURCHASE_CONFIRM_WAIT_MS) {
+            repository.status.first { it.isPlan(planId) }
+        } != null
+
+    private fun SubscriptionStatus.isPlan(planId: PlanId): Boolean =
+        this is SubscriptionStatus.Subscribed && plan == planId
 }

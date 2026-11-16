@@ -1222,4 +1222,5 @@
     <string name="action_try_again">Try Again</string>
     <string name="settings_your_plan">Your Plan</string>
     <string name="subscription_no_rollover">Unused scans don\'t roll over to the next billing period.</string>
+    <string name="confirm_pending_note">Your payment went through. We\'re still confirming your plan, which can take a moment. You can leave this screen.</string>
 </resources>
