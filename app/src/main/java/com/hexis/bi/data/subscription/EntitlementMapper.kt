@@ -24,20 +24,22 @@ internal fun PlanId.productId(): String = when (this) {
 internal val PLAN_PRODUCT_IDS: Set<String> = PlanId.entries.map { it.productId() }.toSet()
 
 internal fun DocumentSnapshot.toSubscriptionStatus(): SubscriptionStatus {
-    if (!exists()) return SubscriptionStatus.None
+    if (!exists()) return SubscriptionStatus.None()
+    val state = getString(SubscriptionConstants.FIELD_STATE)
+    val freeScanUsed = (state != null && state != SubscriptionConstants.STATE_NONE) ||
+        getBoolean(SubscriptionConstants.FIELD_FREE_SCAN_USED) == true
     val plan = getString(SubscriptionConstants.FIELD_PLAN_ID)
         ?.let { id -> PlanId.entries.firstOrNull { it.name.equals(id, ignoreCase = true) } }
-        ?: return SubscriptionStatus.None
+        ?: return SubscriptionStatus.None(freeScanUsed)
     val scansUsed = (getLong(SubscriptionConstants.FIELD_SCANS_USED) ?: 0L).toInt()
     val scansAllowed = getLong(SubscriptionConstants.FIELD_SCANS_ALLOWED)?.toInt() ?: plan.scansPerMonth
-    val state = getString(SubscriptionConstants.FIELD_STATE)
     val platform = if (getString(SubscriptionConstants.FIELD_PLATFORM) == SubscriptionConstants.PLATFORM_IOS) {
         StorePlatform.IOS
     } else {
         StorePlatform.ANDROID
     }
     if (state in ACCESS_STATES && getTimestamp(SubscriptionConstants.FIELD_PERIOD_END) == null) {
-        return SubscriptionStatus.None
+        return SubscriptionStatus.None(freeScanUsed)
     }
     val renewsOn = getTimestamp(SubscriptionConstants.FIELD_PERIOD_END)?.toLocalDate() ?: LocalDate.now()
     return when (state) {
@@ -56,9 +58,11 @@ internal fun DocumentSnapshot.toSubscriptionStatus(): SubscriptionStatus {
         )
 
         SubscriptionConstants.STATE_ON_HOLD,
+        SubscriptionConstants.STATE_PENDING -> SubscriptionStatus.Expired(plan, platform, paymentIssue = true)
+
         SubscriptionConstants.STATE_EXPIRED -> SubscriptionStatus.Expired(plan, platform)
 
-        else -> SubscriptionStatus.None
+        else -> SubscriptionStatus.None(freeScanUsed)
     }
 }
 

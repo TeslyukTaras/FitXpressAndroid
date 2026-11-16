@@ -143,7 +143,7 @@ fun SubscriptionScreen(
         val planForDetails = when (val status = state.status) {
             is SubscriptionStatus.Subscribed -> status.plan
             is SubscriptionStatus.Expired -> status.plan
-            SubscriptionStatus.None, SubscriptionStatus.Loading -> null
+            is SubscriptionStatus.None, SubscriptionStatus.Loading -> null
         }
         if (state.showPlanDetails && planForDetails != null) {
             PlanDetailsSheet(
@@ -178,7 +178,7 @@ internal fun SubscriptionContent(
 ) {
     when (status) {
         SubscriptionStatus.Loading -> EmptyPlanState(loading = true, modifier = modifier)
-        SubscriptionStatus.None -> EmptyPlanState(loading = false, modifier = modifier)
+        is SubscriptionStatus.None -> EmptyPlanState(loading = false, modifier = modifier)
         is SubscriptionStatus.Subscribed -> SubscribedContent(
             status = status,
             price = state.priceOf(status.plan),
@@ -334,8 +334,14 @@ private fun ExpiredContent(
 ) {
     ScrollColumn(modifier) {
         PlanSummaryCard(
-            label = stringResource(R.string.subscription_inactive_label),
-            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            label = stringResource(
+                if (status.paymentIssue) R.string.subscription_payment_issue else R.string.subscription_inactive_label,
+            ),
+            labelColor = if (status.paymentIssue) {
+                NocturnePulseTheme.extendedColors.warning
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
             name = stringResource(
                 R.string.confirm_plan_name,
                 stringResource(status.plan.nameRes())
@@ -345,7 +351,9 @@ private fun ExpiredContent(
         )
         BodyGlassCard(contentPadding = PaddingValues(dimensionResource(R.dimen.spacer_l))) {
             InfoNote(
-                text = stringResource(R.string.subscription_expired_message),
+                text = stringResource(
+                    if (status.paymentIssue) R.string.subscription_on_hold_message else R.string.subscription_expired_message,
+                ),
                 icon = R.drawable.ic_calendar,
                 textStyle = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Normal),
                 gap = dimensionResource(R.dimen.spacer_xs),
@@ -356,6 +364,7 @@ private fun ExpiredContent(
                 onViewDetails = onViewDetails,
                 onChangePlan = onChangePlan,
                 onManage = onManage,
+                showChangePlan = !status.paymentIssue,
             )
         }
     }
@@ -366,9 +375,10 @@ private fun LinkRows(
     onViewDetails: () -> Unit,
     onChangePlan: () -> Unit,
     onManage: () -> Unit,
+    showChangePlan: Boolean = true,
 ) {
     LinkRow(R.string.subscription_view_details, onViewDetails)
-    LinkRow(R.string.subscription_change_plan, onChangePlan)
+    if (showChangePlan) LinkRow(R.string.subscription_change_plan, onChangePlan)
     LinkRow(R.string.subscription_manage, onManage)
 }
 
@@ -468,7 +478,12 @@ internal fun SubscriptionBottomBar(
                 onClick = onResolvePayment,
             )
 
-            is SubscriptionStatus.Expired -> {
+            is SubscriptionStatus.Expired -> if (status.paymentIssue) {
+                AppPrimaryButton(
+                    text = stringResource(R.string.subscription_resolve_payment),
+                    onClick = onResolvePayment,
+                )
+            } else {
                 AppPrimaryButton(
                     text = stringResource(R.string.subscription_renew),
                     onClick = onChoosePlan,
@@ -479,7 +494,7 @@ internal fun SubscriptionBottomBar(
                 )
             }
 
-            SubscriptionStatus.None -> {
+            is SubscriptionStatus.None -> {
                 AppPrimaryButton(
                     text = stringResource(R.string.subscription_choose_plan),
                     onClick = onChoosePlan,
@@ -495,8 +510,12 @@ internal fun SubscriptionBottomBar(
     }
 }
 
-private fun openManageSubscription(context: Context, status: SubscriptionStatus) {
-    val uri = if (status.storePlatform == StorePlatform.IOS) {
+internal fun openManageSubscription(context: Context, status: SubscriptionStatus) {
+    openManageSubscription(context, status.storePlatform ?: StorePlatform.ANDROID)
+}
+
+internal fun openManageSubscription(context: Context, platform: StorePlatform) {
+    val uri = if (platform == StorePlatform.IOS) {
         SubscriptionConstants.APPLE_SUBSCRIPTIONS_URL.toUri()
     } else {
         SubscriptionConstants.PLAY_SUBSCRIPTIONS_URL.toUri().buildUpon()

@@ -31,10 +31,12 @@ import com.hexis.bi.data.order.OrderDraftHolder
 import com.hexis.bi.data.preferences.UserPreferencesRepository
 import com.hexis.bi.data.subscription.FirestoreSubscriptionRepository
 import com.hexis.bi.data.subscription.PlanCatalog
+import com.hexis.bi.data.subscription.ScanGateConfig
 import com.hexis.bi.data.subscription.billing.CurrentActivityProvider
 import com.hexis.bi.data.subscription.billing.PlayBilling
 import com.hexis.bi.data.subscription.SubscriptionRepository
 import com.hexis.bi.domain.subscription.PlanId
+import com.hexis.bi.ui.main.scan.access.ScanAccessViewModel
 import com.hexis.bi.ui.main.subscription.SubscriptionViewModel
 import com.hexis.bi.ui.main.subscription.confirm.ConfirmPlanViewModel
 import com.hexis.bi.ui.main.subscription.plans.PlanSelectionViewModel
@@ -141,6 +143,7 @@ val appModule = module {
     single { CurrentActivityProvider() }
     single { PlayBilling(androidContext(), get()) }
     single { PlanCatalog(get(), planCatalogFetchInterval()) }
+    single { ScanGateConfig(get()) }
     single<SubscriptionRepository>(createdAtStart = true) {
         FirestoreSubscriptionRepository(
             androidContext(),
@@ -277,6 +280,7 @@ val appModule = module {
     viewModel { VerifyEmailViewModel(get(), androidApplication()) }
     viewModel { ScanPreferencesViewModel(androidApplication(), get(), get()) }
     viewModel { SubscriptionViewModel(androidApplication(), get()) }
+    viewModel { ScanAccessViewModel(androidApplication(), get(), get()) }
     viewModel { PlanSelectionViewModel(androidApplication(), get()) }
     viewModel { (planId: PlanId) -> ConfirmPlanViewModel(androidApplication(), get(), planId) }
     viewModel {

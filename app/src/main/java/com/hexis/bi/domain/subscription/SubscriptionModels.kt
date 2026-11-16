@@ -37,7 +37,7 @@ sealed interface SubscriptionStatus {
 
     data object Loading : SubscriptionStatus
 
-    data object None : SubscriptionStatus
+    data class None(val freeScanUsed: Boolean = false) : SubscriptionStatus
 
     sealed interface Subscribed : SubscriptionStatus {
         val plan: PlanId
@@ -68,6 +68,7 @@ sealed interface SubscriptionStatus {
     data class Expired(
         val plan: PlanId,
         val platform: StorePlatform = StorePlatform.ANDROID,
+        val paymentIssue: Boolean = false,
     ) : SubscriptionStatus
 }
 

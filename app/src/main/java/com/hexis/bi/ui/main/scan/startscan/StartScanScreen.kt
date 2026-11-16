@@ -75,6 +75,7 @@ import com.hexis.bi.ui.main.scan.ScanPurpose
 import com.hexis.bi.ui.main.scan.components.ScanChecklistSheet
 import com.hexis.bi.ui.main.scan.processing.ScanAnalyzingContent
 import com.hexis.bi.ui.main.scan.results.ResultsViewModel
+import com.hexis.bi.domain.subscription.ScanBlockReason
 import com.hexis.bi.ui.main.scan.results.content.PersonalizeResultsDialog
 import com.hexis.bi.ui.main.scan.results.content.ScanResultsContent
 import com.hexis.bi.ui.main.scan.results.isDisplayable
@@ -119,6 +120,7 @@ fun StartScanScreen(
     onOpenScanPreferences: () -> Unit,
     modifier: Modifier = Modifier,
     scanPurpose: ScanPurpose = ScanPurpose.BodyScan,
+    onScanBlocked: (ScanBlockReason) -> Unit = {},
     viewModel: StartScanViewModel = koinViewModel(),
 ) {
     if (!AppConfig.suitVisible && scanPurpose == ScanPurpose.SuitSizeScan) {
@@ -190,6 +192,13 @@ fun StartScanScreen(
     LaunchedEffect(state.isComplete, scanPurpose) {
         bodyResultsReady = false
         bodyProgressComplete = false
+    }
+
+    LaunchedEffect(state.blockedReason) {
+        state.blockedReason?.let { reason ->
+            viewModel.onScanBlockHandled()
+            onScanBlocked(reason)
+        }
     }
 
     LaunchedEffect(state.shouldNavigateBack) {

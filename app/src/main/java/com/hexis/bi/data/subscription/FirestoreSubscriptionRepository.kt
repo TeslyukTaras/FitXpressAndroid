@@ -52,7 +52,7 @@ class FirestoreSubscriptionRepository(
     @OptIn(ExperimentalCoroutinesApi::class)
     override val status: StateFlow<SubscriptionStatus> = signedInUid()
         .flatMapLatest { uid ->
-            if (uid == null) flowOf<SubscriptionStatus>(SubscriptionStatus.None)
+            if (uid == null) flowOf<SubscriptionStatus>(SubscriptionStatus.None())
             else flow {
                 emit(SubscriptionStatus.Loading)
                 emitAll(entitlement(uid))
@@ -103,8 +103,13 @@ class FirestoreSubscriptionRepository(
         return plans
     }
 
-    override suspend fun subscribe(plan: PlanId): PurchaseResult =
-        purchase(plan, replace = null)
+    override suspend fun subscribe(plan: PlanId): PurchaseResult {
+        val current = status.first { it !is SubscriptionStatus.Loading }
+        if (current is SubscriptionStatus.Expired && current.paymentIssue) {
+            throw IllegalStateException(context.getString(R.string.subscription_error_payment_issue))
+        }
+        return purchase(plan, replace = null)
+    }
 
     override suspend fun changePlan(plan: PlanId): PurchaseResult {
         val current = status.first { it !is SubscriptionStatus.Loading } as? SubscriptionStatus.Subscribed
@@ -204,7 +209,7 @@ class FirestoreSubscriptionRepository(
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     if (error.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
-                        trySend(SubscriptionStatus.None)
+                        trySend(SubscriptionStatus.None())
                     }
                     close(error)
                 } else if (snapshot != null) {

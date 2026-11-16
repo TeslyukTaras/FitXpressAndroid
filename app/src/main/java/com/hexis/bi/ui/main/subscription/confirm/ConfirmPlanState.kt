@@ -10,7 +10,7 @@ enum class PlanChangeKind { SUBSCRIBE, UPGRADE, DOWNGRADE }
 data class ConfirmPlanState(
     val planId: PlanId,
     val plans: List<SubscriptionPlan>? = null,
-    val status: SubscriptionStatus = SubscriptionStatus.None,
+    val status: SubscriptionStatus = SubscriptionStatus.None(),
     val completed: Boolean = false,
 ) {
     val plan: SubscriptionPlan? get() = plans?.firstOrNull { it.id == planId }

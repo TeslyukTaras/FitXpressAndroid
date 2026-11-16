@@ -30,11 +30,15 @@ internal object SubscriptionConstants {
     const val FIELD_GRACE_PERIOD_END = "gracePeriodEnd"
     const val FIELD_SCANS_USED = "scansUsed"
     const val FIELD_SCANS_ALLOWED = "scansAllowed"
+    const val FIELD_FREE_SCAN_USED = "freeScanUsed"
+    const val FIELD_REASON = "reason"
 
+    const val STATE_NONE = "none"
     const val STATE_ACTIVE = "active"
     const val STATE_CANCEL_SCHEDULED = "cancelScheduled"
     const val STATE_GRACE_PERIOD = "gracePeriod"
     const val STATE_ON_HOLD = "onHold"
+    const val STATE_PENDING = "pending"
     const val STATE_EXPIRED = "expired"
 
     const val REMOTE_CONFIG_PLANS_KEY = "subscription_plans"
@@ -52,4 +56,10 @@ internal object SubscriptionConstants {
 
     const val FEATURE_TILE_ALPHA = 0.15f
     const val EMPTY_TILE_ALPHA = 0.1f
+
+    const val REMOTE_CONFIG_SCAN_GATE_KEY = "subscription_gate_enabled"
+    const val SCAN_ACCESS_WAIT_MS = 3_000L
+    const val SCAN_BLOCK_ALL_SCANS_USED = "allScansUsed"
+    const val SCAN_BLOCK_ON_HOLD = "onHold"
+    const val SCAN_BLOCK_PENDING = "pending"
 }

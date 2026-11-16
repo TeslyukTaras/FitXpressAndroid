@@ -34,6 +34,13 @@
       },
       "valueType": "JSON",
       "description": "Subscription plans: rank, scans per month and optional badge. Prices come from the store."
+    },
+    "subscription_gate_enabled": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Turns on the in-app scan gate: first free scan, subscription required and all scans used. Keep it in step with SUBSCRIPTION_ENFORCEMENT on the backend."
     }
   }
 }

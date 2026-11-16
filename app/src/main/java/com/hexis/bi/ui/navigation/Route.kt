@@ -24,6 +24,7 @@ internal object Route {
         const val MY_SUIT = "main/my_suit"
         const val SUBSCRIPTION = "main/subscription"
         const val SUBSCRIPTION_PLANS = "main/subscription/plans"
+        const val SCANS_USED = "main/subscription/scans_used"
         const val ARG_PLAN_ID = "planId"
         const val SUBSCRIPTION_CONFIRM = "main/subscription/confirm/{$ARG_PLAN_ID}"
         fun subscriptionConfirm(planId: String) = "main/subscription/confirm/$planId"

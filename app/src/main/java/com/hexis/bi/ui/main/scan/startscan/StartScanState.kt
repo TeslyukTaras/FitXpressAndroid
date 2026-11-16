@@ -3,6 +3,7 @@ package com.hexis.bi.ui.main.scan.startscan
 import androidx.annotation.StringRes
 import com.hexis.bi.R
 import com.hexis.bi.data.scan.ScanProgress
+import com.hexis.bi.domain.subscription.ScanBlockReason
 
 data class ScanInstruction(
     @StringRes val textRes: Int,
@@ -21,6 +22,8 @@ data class StartScanState(
     val shouldNavigateBack: Boolean = false,
     val retakeOnErrorDismiss: Boolean = false,
     val showPersonalizeResultsHint: Boolean = false,
+    val blockedReason: ScanBlockReason? = null,
+    val retrySameCapture: Boolean = false,
 ) {
     val isProcessing: Boolean
         get() = isPreparingResults ||

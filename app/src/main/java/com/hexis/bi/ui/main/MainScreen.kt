@@ -70,6 +70,7 @@ import com.hexis.bi.ui.main.settings.notifications.NotificationsSettingsScreen
 import com.hexis.bi.ui.main.settings.scanpreferences.ScanPreferencesScreen
 import com.hexis.bi.domain.subscription.PlanId
 import com.hexis.bi.ui.main.subscription.SubscriptionScreen
+import com.hexis.bi.ui.main.subscription.scansused.ScansUsedScreen
 import com.hexis.bi.ui.main.subscription.confirm.ConfirmPlanScreen
 import com.hexis.bi.ui.main.subscription.plans.PlanSelectionScreen
 import com.hexis.bi.ui.navigation.Route
@@ -236,6 +237,16 @@ fun MainScreen(
                     onBuySuit = { if (AppConfig.suitVisible) showBuySuitDialog = true },
                     onShowHowToScan = { navController.navigate(Route.Main.HOW_TO_SCAN) },
                     onOpenScanPreferences = { navController.navigate(Route.Main.SCAN_PREFERENCES) },
+                    onChoosePlan = {
+                        navController.navigate(Route.Main.SUBSCRIPTION_PLANS) {
+                            popUpTo(Route.Main.SCAN) { inclusive = true }
+                        }
+                    },
+                    onScansUsed = {
+                        navController.navigate(Route.Main.SCANS_USED) {
+                            popUpTo(Route.Main.SCAN) { inclusive = true }
+                        }
+                    },
                 )
             }
             composable(Route.Main.SUIT_SIZE_SCAN) {
@@ -253,6 +264,16 @@ fun MainScreen(
                         onBuySuit = { if (AppConfig.suitVisible) showBuySuitDialog = true },
                         onShowHowToScan = { navController.navigate(Route.Main.HOW_TO_SCAN) },
                         onOpenScanPreferences = { navController.navigate(Route.Main.SCAN_PREFERENCES) },
+                        onChoosePlan = {
+                            navController.navigate(Route.Main.SUBSCRIPTION_PLANS) {
+                                popUpTo(Route.Main.SUIT_SIZE_SCAN) { inclusive = true }
+                            }
+                        },
+                        onScansUsed = {
+                            navController.navigate(Route.Main.SCANS_USED) {
+                                popUpTo(Route.Main.SUIT_SIZE_SCAN) { inclusive = true }
+                            }
+                        },
                         scanPurpose = ScanPurpose.SuitSizeScan,
                         requireConnectedSuit = false,
                     )
@@ -353,6 +374,12 @@ fun MainScreen(
                 SubscriptionScreen(
                     onBack = { navController.popBackStackOnce() },
                     onChoosePlan = { navController.navigate(Route.Main.SUBSCRIPTION_PLANS) },
+                )
+            }
+            composable(Route.Main.SCANS_USED) {
+                ScansUsedScreen(
+                    onBack = { navController.popBackStackOnce() },
+                    onUpgrade = { navController.navigate(Route.Main.SUBSCRIPTION_PLANS) },
                 )
             }
             composable(Route.Main.SUBSCRIPTION_PLANS) {

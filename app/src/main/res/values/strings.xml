@@ -1222,4 +1222,21 @@
     <string name="action_try_again">Try Again</string>
     <string name="settings_your_plan">Your Plan</string>
     <string name="subscription_no_rollover">Unused scans don\'t roll over to the next billing period.</string>
+
+    <string name="action_maybe_later">Maybe Later</string>
+    <string name="scan_view_guide">View Scanning Guide</string>
+    <string name="scan_first_free_title">Your First Scan Is Free</string>
+    <string name="scan_first_free_message">Complete your first HEXIS-BI scan for free and see your results.</string>
+    <string name="scan_first_free_note">A subscription is required for future scans and new insights.</string>
+    <string name="scan_subscription_required_title">Subscription Required to Scan</string>
+    <string name="scan_subscription_required_message">Your previous scans and results remain available.\nChoose a plan to continue scanning.</string>
+    <string name="scans_used_title">You\'ve used all your scans this month</string>
+    <string name="scans_used_plan">Your %1$s plan includes %2$d scans per month.</string>
+    <string name="scans_used_reset">Your scan allowance resets on %1$s.</string>
+    <string name="scans_used_upgrade">Upgrade Plan</string>
+    <string name="subscription_on_hold_message">We couldn\'t process your payment, so your subscription is on hold. Update your payment method in the store to restore access. Your account and previous data remain available.</string>
+    <string name="subscription_error_payment_issue">Resolve the payment issue with your current subscription in the store before choosing a new plan.</string>
+    <string name="scan_payment_issue_title">Payment Issue</string>
+    <string name="scan_payment_issue_message">Your subscription is on hold because of a payment problem. Resolve it to continue scanning. Your previous scans and results remain available.</string>
+    <string name="scan_error_connection_retry">We lost the connection. We\'ll send your scan again.</string>
 </resources>

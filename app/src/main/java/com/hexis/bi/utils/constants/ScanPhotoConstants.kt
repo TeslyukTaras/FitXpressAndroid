@@ -9,4 +9,6 @@ object ScanPhotoConstants {
     const val SCAN_PHOTO_JPEG_QUALITY = 88
     const val SCAN_PHOTO_MIN_JPEG_QUALITY = 60
     const val SCAN_PHOTO_QUALITY_STEP = 8
+
+    const val MAX_SAME_CAPTURE_RETRIES = 3
 }
