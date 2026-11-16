@@ -76,21 +76,33 @@ fun ActivityScreen(
             error = error,
             onDismissError = viewModel::clearError,
             topBar = {
-                BaseTopBar(
-                    title = stringResource(R.string.activity_screen_title),
-                    onBack = onBack,
-                    background = Color.Transparent,
-                    actions = {
-                        IconButton(onClick = viewModel::showSettingsDialog) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_settings),
-                                contentDescription = stringResource(R.string.cd_settings),
-                                tint = MaterialTheme.colorScheme.onBackground,
-                                modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
-                            )
-                        }
-                    },
-                )
+                Column {
+                    BaseTopBar(
+                        title = stringResource(R.string.activity_screen_title),
+                        onBack = onBack,
+                        background = Color.Transparent,
+                        actions = {
+                            IconButton(onClick = viewModel::showSettingsDialog) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_settings),
+                                    contentDescription = stringResource(R.string.cd_settings),
+                                    tint = MaterialTheme.colorScheme.onBackground,
+                                    modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+                                )
+                            }
+                        },
+                    )
+                    HealthAccessBanner(
+                        access = rememberHealthDataAccess(),
+                        freeText = stringResource(
+                            R.string.health_banner_free_history,
+                            SubscriptionConstants.FREE_WEEK_DAYS.toInt(),
+                        ),
+                        frozenText = stringResource(R.string.health_banner_frozen_history),
+                        spacerBelow = dimensionResource(R.dimen.health_banner_gap_data),
+                        modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+                    )
+                }
             },
         ) {
             Column(
@@ -100,16 +112,6 @@ fun ActivityScreen(
                     .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
             ) {
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
-
-                HealthAccessBanner(
-                    access = rememberHealthDataAccess(),
-                    freeText = stringResource(
-                        R.string.health_banner_free_history,
-                        SubscriptionConstants.FREE_WEEK_DAYS.toInt(),
-                    ),
-                    frozenText = stringResource(R.string.health_banner_frozen_history),
-                    spacerBelow = dimensionResource(R.dimen.spacer_xl),
-                )
 
                 AppTabSelector(
                     tabs = ActivityTab.entries,

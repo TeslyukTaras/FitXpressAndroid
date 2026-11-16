@@ -54,8 +54,6 @@ fun InsightsScreen(
 
     if (state.blocked) {
         InsightsBlockedScreen(
-            paymentIssue = state.paymentIssue,
-            storePlatform = state.storePlatform,
             onBack = onBack,
             onChoosePlan = onChoosePlan,
             modifier = modifier,
@@ -72,36 +70,35 @@ fun InsightsScreen(
                 .screenBackground(),
             containerColor = Color.Transparent,
             topBar = {
-                BaseTopBar(
-                    title = stringResource(R.string.insights_screen_title),
-                    onBack = onBack,
-                    background = Color.Transparent,
-                    actions = {
-                        IconButton(onClick = viewModel::showInfoSheet) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_info),
-                                contentDescription = stringResource(R.string.cd_info),
-                                tint = MaterialTheme.colorScheme.onBackground,
-                                modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
-                            )
-                        }
-                    },
-                )
+                Column {
+                    BaseTopBar(
+                        title = stringResource(R.string.insights_screen_title),
+                        onBack = onBack,
+                        background = Color.Transparent,
+                        actions = {
+                            IconButton(onClick = viewModel::showInfoSheet) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_info),
+                                    contentDescription = stringResource(R.string.cd_info),
+                                    tint = MaterialTheme.colorScheme.onBackground,
+                                    modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+                                )
+                            }
+                        },
+                    )
+                    HealthAccessBanner(
+                        access = rememberHealthDataAccess(),
+                        freeText = null,
+                        frozenText = stringResource(R.string.health_banner_frozen_insights),
+                        spacerBelow = dimensionResource(R.dimen.health_banner_gap_insights),
+                        modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+                    )
+                }
             },
         ) {
             val contentModifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = dimensionResource(R.dimen.padding_medium))
-            val healthAccess = rememberHealthDataAccess()
-            val banner: @Composable () -> Unit = {
-                HealthAccessBanner(
-                    access = healthAccess,
-                    freeText = null,
-                    frozenText = stringResource(R.string.health_banner_frozen_insights),
-                    spacerBelow = dimensionResource(R.dimen.spacer_2xl),
-                    spacerAbove = dimensionResource(R.dimen.spacer_xs),
-                )
-            }
             var lastCards by remember { mutableStateOf(state.cards) }
             if (state.cards.isNotEmpty()) lastCards = state.cards
 
@@ -112,7 +109,6 @@ fun InsightsScreen(
             ) { isEmpty ->
             if (isEmpty) {
                 Column(modifier = contentModifier) {
-                    banner()
                     InsightsHeader(state)
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -121,7 +117,6 @@ fun InsightsScreen(
                 }
             } else {
                 Column(modifier = contentModifier.verticalScroll(rememberScrollState())) {
-                    banner()
                     InsightsHeader(state)
 
                     val ranked = lastCards.groupBy { it.confidence == FindingConfidence.LOW }
