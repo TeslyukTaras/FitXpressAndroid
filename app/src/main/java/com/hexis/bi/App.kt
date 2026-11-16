@@ -11,6 +11,8 @@ import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
 import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.firestore.FirebaseFirestore
+import com.hexis.bi.data.health.access.HealthDataGate
+import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.data.subscription.billing.CurrentActivityProvider
 import com.hexis.bi.data.notification.NotificationInboxRepository
 import com.hexis.bi.data.reminder.ScanReminderScheduler
@@ -52,6 +54,7 @@ class App : Application(), KoinComponent {
             androidContext(this@App)
             modules(appModule)
         }
+        TerraSdkSync.accessCheck = get<HealthDataGate>()::sdkLookbackDays
         trackSignedInUser()
         SystemNotificationHelper.createChannels(this)
         scanReminderScheduler().onNotificationSettingsOrScanChanged()

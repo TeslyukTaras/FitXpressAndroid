@@ -75,6 +75,9 @@ object TerraSdkSync {
      * @param force skips the foreground debounce (e.g. right after a successful `initConnection`).
      * @return true when a pull actually ran; false when there was nothing to sync or it was debounced.
      */
+    @Volatile
+    var accessCheck: (suspend (reason: String, force: Boolean, lookbackDays: Long) -> Long?)? = null
+
     suspend fun syncLinkedConnections(
         manager: TerraManager?,
         ownedUserIds: Set<String>?,
@@ -83,6 +86,8 @@ object TerraSdkSync {
         lookbackDays: Long = DEFAULT_LOOKBACK_DAYS,
     ): Boolean {
         val mgr = manager ?: return false
+        val effectiveLookbackDays = accessCheck?.let { check -> check(reason, force, lookbackDays) ?: return false }
+            ?: lookbackDays
         val linked = enumValues<Connections>().filter { connection ->
             val userId = mgr.getUserId(connection) ?: return@filter false
             ownedUserIds == null || userId in ownedUserIds
@@ -95,7 +100,7 @@ object TerraSdkSync {
         }
 
         val end = Date()
-        val start = Date.from(Instant.now().minus(lookbackDays, ChronoUnit.DAYS))
+        val start = Date.from(Instant.now().minus(effectiveLookbackDays, ChronoUnit.DAYS))
 
         for (connection in linked) {
             awaitPull("getDaily", connection, reason) { cb ->
