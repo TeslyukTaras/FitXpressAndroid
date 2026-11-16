@@ -76,6 +76,20 @@ class UserPreferencesRepository(
         store.edit { it[stringPreferencesKey(k.FREE_WEEK_ANCHOR_PREFIX + uid)] = isoDate }
     }
 
+    suspend fun isFreeWeekImported(uid: String): Boolean =
+        store.data.map { it[stringPreferencesKey(k.FREE_WEEK_IMPORTED_PREFIX + uid)] != null }.first()
+
+    suspend fun setFreeWeekImported(uid: String) {
+        store.edit { it[stringPreferencesKey(k.FREE_WEEK_IMPORTED_PREFIX + uid)] = true.toString() }
+    }
+
+    suspend fun getInsightsRunDate(uid: String): String? =
+        store.data.map { it[stringPreferencesKey(k.INSIGHTS_RUN_DATE_PREFIX + uid)] }.first()
+
+    suspend fun setInsightsRunDate(uid: String, isoDate: String) {
+        store.edit { it[stringPreferencesKey(k.INSIGHTS_RUN_DATE_PREFIX + uid)] = isoDate }
+    }
+
     suspend fun hasAskedNotifPermission(uid: String): Boolean =
         store.data.map { it[k.askedNotifPermissionUids].orEmpty() }.first().contains(uid)
 

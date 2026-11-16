@@ -16,6 +16,7 @@ internal object SubscriptionConstants {
     const val PURCHASE_CONFIRM_WAIT_MS = 10_000L
     const val HEALTH_ACCESS_WAIT_MS = 3_000L
     const val FREE_WEEK_DAYS = 7L
+    const val TERRA_ACCESS_GRANTED_REASON = "access_granted"
     const val TERRA_POST_CONNECT_REASON = "post_connect"
 
     const val PLAY_BASE_PLAN_ID = "monthly"

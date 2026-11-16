@@ -12,6 +12,7 @@ import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.domain.trend.ChangeDirection
 import com.hexis.bi.domain.trend.changeDirection
+import com.hexis.bi.ui.main.home.intelligence.AreaFindings
 import com.hexis.bi.utils.constants.ChangeTolerances
 import com.hexis.bi.domain.activity.strideDistanceKm
 import com.hexis.bi.domain.intelligence.IntelligenceCoordinator
@@ -77,7 +78,11 @@ class ActivityViewModel internal constructor(
 
     private fun observeFindings() {
         intelligenceCoordinator.state.onEach { reportState ->
-            val run = reportState.run ?: return@onEach
+            val run = reportState.run
+            if (run == null) {
+                if (reportState.blocked) _state.update { it.copy(findings = AreaFindings.completed(), insightsUpdating = false) }
+                return@onEach
+            }
             val resolved = EngineFindingsMapper.forAreas(
                 report = run.report,
                 copy = run.copy,

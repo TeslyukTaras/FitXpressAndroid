@@ -30,6 +30,8 @@ object AppPreferencesKeys {
         val personalizeResultsHintShown = booleanPreferencesKey("personalize_results_hint_shown")
         val medicalDisclaimerAcknowledgedAt = longPreferencesKey("medical_disclaimer_acknowledged_at")
         const val FREE_WEEK_ANCHOR_PREFIX = "free_week_anchor_"
+        const val FREE_WEEK_IMPORTED_PREFIX = "free_week_imported_"
+        const val INSIGHTS_RUN_DATE_PREFIX = "insights_run_date_"
     }
 
     object NotificationInbox {

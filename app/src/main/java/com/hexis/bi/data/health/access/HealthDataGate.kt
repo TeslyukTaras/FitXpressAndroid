@@ -10,6 +10,7 @@ import com.hexis.bi.utils.constants.SubscriptionConstants
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.mapNotNull
@@ -25,6 +26,10 @@ class HealthDataGate(
     val accessFlow: Flow<HealthDataAccess> = combine(repository.status, gateConfig.enabledFlow) { status, enabled ->
         if (enabled) status.toHealthDataAccess() ?: HealthDataAccess.FULL else HealthDataAccess.FULL
     }.distinctUntilChanged()
+
+    val settledAccessFlow: Flow<HealthDataAccess> = combine(repository.status, gateConfig.enabledFlow) { status, enabled ->
+        if (enabled) status.toHealthDataAccess() else HealthDataAccess.FULL
+    }.filterNotNull().distinctUntilChanged()
 
     suspend fun refreshConfig() = gateConfig.refresh()
 
@@ -42,19 +47,25 @@ class HealthDataGate(
             preferences.setFreeWeekAnchor(uid, LocalDate.now().toString())
             return true
         }
-        return anchor == LocalDate.now()
+        return anchor == LocalDate.now() || !preferences.isFreeWeekImported(uid)
+    }
+
+    suspend fun markFreeWeekImported() {
+        val uid = auth.currentUser?.uid ?: return
+        preferences.setFreeWeekImported(uid)
     }
 
     private suspend fun freeWeekStillOpen(): Boolean {
+        val uid = auth.currentUser?.uid ?: return false
         val anchor = freeWeekAnchor()
-        return anchor == null || anchor == LocalDate.now()
+        return anchor == null || anchor == LocalDate.now() || !preferences.isFreeWeekImported(uid)
     }
 
     suspend fun allowedBounds(): ClosedRange<LocalDate>? = when (access()) {
         HealthDataAccess.FULL -> LocalDate.MIN..LocalDate.MAX
         HealthDataAccess.FROZEN -> null
         HealthDataAccess.FIRST_WEEK -> freeWeekAnchor()?.let {
-            it.minusDays(SubscriptionConstants.FREE_WEEK_DAYS)..it.plusDays(1)
+            it.minusDays(SubscriptionConstants.FREE_WEEK_DAYS - 1)..it
         }
     }
 

@@ -81,7 +81,9 @@ internal class HealthSyncWorker(
 
         if (access == HealthDataAccess.FIRST_WEEK) {
             report(syncTrigger, elapsed(), outcomeOf(BackfillOutcome.Skipped, failedOperations), failedOperations)
-            return if (failedOperations > 0) giveUpOrRetry() else Result.success()
+            if (failedOperations > 0) return giveUpOrRetry()
+            healthDataGate.markFreeWeekImported()
+            return Result.success()
         }
 
         coordinator.prewarmScans().onFailure { error ->

@@ -6,6 +6,7 @@ import com.hexis.bi.data.health.local.HealthLocalDataSource
 import com.hexis.bi.data.health.sync.HealthSyncScheduler
 import com.hexis.bi.data.intelligence.IntelligenceConfigRepository
 import com.hexis.bi.data.intelligence.observationWindow
+import com.hexis.bi.data.preferences.UserPreferencesRepository
 import com.hexis.bi.data.terra.decodeTerraRestIdentity
 import com.hexis.bi.utils.constants.IntelligenceCacheConstants
 import java.time.LocalDate
@@ -44,6 +45,7 @@ internal class IntelligenceCoordinator(
     private val auth: FirebaseAuth,
     healthSyncScheduler: HealthSyncScheduler,
     private val healthDataGate: HealthDataGate,
+    private val preferences: UserPreferencesRepository,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) {
     private val _state = MutableStateFlow(IntelligenceReportState())
@@ -114,7 +116,15 @@ internal class IntelligenceCoordinator(
                 _state.value = IntelligenceReportState(loading = false, blocked = true)
                 return@withLock
             }
-            if (access == HealthDataAccess.FROZEN && _state.value.run != null) return@withLock
+            var asOf: LocalDate? = null
+            if (access == HealthDataAccess.FROZEN) {
+                if (_state.value.run != null) return@withLock
+                asOf = preferences.getInsightsRunDate(uid)?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+                if (asOf == null) {
+                    _state.value = IntelligenceReportState(loading = false, blocked = true)
+                    return@withLock
+                }
+            }
 
             val now = System.currentTimeMillis()
             val throttle = IntelligenceCacheConstants.BACKFILL_RERUN_INTERVAL.toMillis()
@@ -122,11 +132,12 @@ internal class IntelligenceCoordinator(
 
             val previous = _state.value.run
             _state.update {
-                it.copy(loading = previous == null, updating = backfillInFlight, error = null)
+                it.copy(loading = previous == null, updating = backfillInFlight, error = null, blocked = false)
             }
-            runIntelligence().fold(
+            runIntelligence(asOf).fold(
                 onSuccess = { run ->
                     lastRunAtMillis = System.currentTimeMillis()
+                    if (access == HealthDataAccess.FULL) preferences.setInsightsRunDate(uid, LocalDate.now().toString())
                     _state.value = IntelligenceReportState(
                         run = run,
                         loading = false,
