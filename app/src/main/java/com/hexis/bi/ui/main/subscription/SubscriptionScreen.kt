@@ -278,7 +278,7 @@ private fun SubscribedContent(
                         .padding(start = dimensionResource(R.dimen.spacer_xs)),
                 )
                 Text(
-                    text = status.renewsOn.formatDisplay(),
+                    text = status.renewalDisplay(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
@@ -288,7 +288,7 @@ private fun SubscribedContent(
             InfoNote(
                 text = stringResource(
                     R.string.confirm_downgrade_note,
-                    status.renewsOn.formatDisplay(),
+                    status.renewalDisplay(),
                     stringResource(pendingPlan.nameRes()),
                 ),
                 icon = R.drawable.ic_calendar,

@@ -42,15 +42,22 @@ internal fun DocumentSnapshot.toSubscriptionStatus(): SubscriptionStatus {
         return SubscriptionStatus.None(freeScanUsed)
     }
     val renewsOn = getTimestamp(SubscriptionConstants.FIELD_PERIOD_END)?.toLocalDate() ?: LocalDate.now()
+    val renewsAtMillis = getTimestamp(SubscriptionConstants.FIELD_PERIOD_END)?.toDate()?.time ?: 0L
     val pendingPlan = getString(SubscriptionConstants.FIELD_PENDING_PLAN_ID)
         ?.let { id -> PlanId.entries.firstOrNull { it.name.equals(id, ignoreCase = true) } }
         ?.takeIf { it != plan }
     return when (state) {
         SubscriptionConstants.STATE_ACTIVE ->
-            SubscriptionStatus.Active(plan, scansUsed, renewsOn, scansAllowed, platform, pendingPlan = pendingPlan)
+            SubscriptionStatus.Active(
+                plan, scansUsed, renewsOn, scansAllowed, platform,
+                pendingPlan = pendingPlan, renewsAtMillis = renewsAtMillis,
+            )
 
         SubscriptionConstants.STATE_CANCEL_SCHEDULED ->
-            SubscriptionStatus.Active(plan, scansUsed, renewsOn, scansAllowed, platform, renews = false)
+            SubscriptionStatus.Active(
+                plan, scansUsed, renewsOn, scansAllowed, platform,
+                renews = false, renewsAtMillis = renewsAtMillis,
+            )
 
         SubscriptionConstants.STATE_GRACE_PERIOD -> SubscriptionStatus.GracePeriod(
             plan = plan,
@@ -59,6 +66,7 @@ internal fun DocumentSnapshot.toSubscriptionStatus(): SubscriptionStatus {
             graceEndsOn = getTimestamp(SubscriptionConstants.FIELD_GRACE_PERIOD_END)?.toLocalDate() ?: renewsOn,
             scansAllowed = scansAllowed,
             platform = platform,
+            renewsAtMillis = renewsAtMillis,
         )
 
         SubscriptionConstants.STATE_ON_HOLD,

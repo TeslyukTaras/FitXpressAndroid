@@ -47,6 +47,7 @@ sealed interface SubscriptionStatus {
         val scansUsed: Int
         val scansAllowed: Int
         val renewsOn: LocalDate
+        val renewsAtMillis: Long
         val platform: StorePlatform
     }
 
@@ -58,6 +59,7 @@ sealed interface SubscriptionStatus {
         override val platform: StorePlatform = StorePlatform.ANDROID,
         val renews: Boolean = true,
         val pendingPlan: PlanId? = null,
+        override val renewsAtMillis: Long = 0L,
     ) : Subscribed
 
     data class GracePeriod(
@@ -67,6 +69,7 @@ sealed interface SubscriptionStatus {
         val graceEndsOn: LocalDate,
         override val scansAllowed: Int = plan.scansPerMonth,
         override val platform: StorePlatform = StorePlatform.ANDROID,
+        override val renewsAtMillis: Long = 0L,
     ) : Subscribed
 
     data class Expired(
