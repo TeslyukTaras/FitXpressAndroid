@@ -68,7 +68,10 @@ import com.hexis.bi.ui.main.settings.healthconnections.HealthConnectionsScreen
 import com.hexis.bi.ui.main.settings.mysuit.MySuitScreen
 import com.hexis.bi.ui.main.settings.notifications.NotificationsSettingsScreen
 import com.hexis.bi.ui.main.settings.scanpreferences.ScanPreferencesScreen
+import com.hexis.bi.domain.subscription.PlanId
 import com.hexis.bi.ui.main.subscription.SubscriptionScreen
+import com.hexis.bi.ui.main.subscription.confirm.ConfirmPlanScreen
+import com.hexis.bi.ui.main.subscription.plans.PlanSelectionScreen
 import com.hexis.bi.ui.navigation.Route
 import com.hexis.bi.ui.navigation.popBackStackOnce
 import kotlinx.coroutines.launch
@@ -87,6 +90,18 @@ fun MainScreen(
     val currentRoute = currentBackStack?.destination?.route
     val showBottomBar = currentRoute in Route.Main.tabRoutes
 
+    val returnToSubscription: () -> Unit = {
+        if (!navController.popBackStack(Route.Main.SUBSCRIPTION, inclusive = false)) {
+            navController.navigate(Route.Main.SUBSCRIPTION) {
+                popUpTo(Route.Main.SUBSCRIPTION_PLANS) { inclusive = true }
+            }
+        }
+    }
+    val closeSubscription: () -> Unit = {
+        if (!navController.popBackStack(Route.Main.SUBSCRIPTION, inclusive = true)) {
+            navController.popBackStack(Route.Main.SUBSCRIPTION_PLANS, inclusive = true)
+        }
+    }
     val goHome: () -> Unit = {
         navController.navigate(Route.Main.HOME) {
             popUpTo(navController.graph.id) { inclusive = true }
@@ -337,8 +352,36 @@ fun MainScreen(
             composable(Route.Main.SUBSCRIPTION) {
                 SubscriptionScreen(
                     onBack = { navController.popBackStackOnce() },
-                    onChoosePlan = {},
+                    onChoosePlan = { navController.navigate(Route.Main.SUBSCRIPTION_PLANS) },
                 )
+            }
+            composable(Route.Main.SUBSCRIPTION_PLANS) {
+                PlanSelectionScreen(
+                    onBack = { navController.popBackStackOnce() },
+                    onClose = closeSubscription,
+                    onContinue = { plan ->
+                        navController.navigate(Route.Main.subscriptionConfirm(plan.name))
+                    },
+                    onRestored = returnToSubscription,
+                )
+            }
+            composable(
+                Route.Main.SUBSCRIPTION_CONFIRM,
+                arguments = listOf(
+                    navArgument(Route.Main.ARG_PLAN_ID) { type = NavType.StringType },
+                ),
+            ) { backStackEntry ->
+                val planId = backStackEntry.arguments?.getString(Route.Main.ARG_PLAN_ID)
+                    ?.let { name -> PlanId.entries.firstOrNull { it.name == name } }
+                if (planId == null) {
+                    LaunchedEffect(Unit) { navController.popBackStackOnce() }
+                } else {
+                    ConfirmPlanScreen(
+                        planId = planId,
+                        onBack = { navController.popBackStackOnce() },
+                        onCompleted = returnToSubscription,
+                    )
+                }
             }
             composable(Route.Main.HOW_TO_SCAN) {
                 HowToScanScreen(onBack = { navController.popBackStackOnce() })

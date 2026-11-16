@@ -43,4 +43,5 @@ internal object AnimationConstants {
     const val UPDATE_GATE_FADE_OUT_MS = 200
 
     const val SEGMENT_FILL_MS = 400
+    const val CONTENT_SWAP_FADE_MS = 250
 }
