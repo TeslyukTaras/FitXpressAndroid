@@ -29,6 +29,7 @@ object AppPreferencesKeys {
         val bodyVisualMode = stringPreferencesKey("body_visual_mode")
         val personalizeResultsHintShown = booleanPreferencesKey("personalize_results_hint_shown")
         val medicalDisclaimerAcknowledgedAt = longPreferencesKey("medical_disclaimer_acknowledged_at")
+        const val FREE_WEEK_ANCHOR_PREFIX = "free_week_anchor_"
     }
 
     object NotificationInbox {
