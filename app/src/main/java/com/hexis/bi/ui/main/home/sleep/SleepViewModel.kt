@@ -16,9 +16,9 @@ import com.hexis.bi.data.user.FirestoreSchema
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.intelligence.IntelligenceCoordinator
 import com.hexis.bi.domain.intelligence.IntelligenceRun
-import com.hexis.bi.ui.main.home.intelligence.AreaFindings
 import com.hexis.bi.ui.main.home.intelligence.EngineFindingsMapper
 import com.hexis.bi.ui.main.home.intelligence.BackfillTransition
+import com.hexis.bi.ui.main.home.intelligence.areaFindings
 import com.hexis.bi.ui.main.home.intelligence.backfillTransition
 import com.hexis.bi.ui.main.home.intelligence.NightComparison
 import com.hexis.bi.intelligence.engine.Metrics
@@ -68,22 +68,11 @@ class SleepViewModel internal constructor(
 
     private fun observeFindings() {
         intelligenceCoordinator.state.onEach { reportState ->
-            val run = reportState.run
-            if (run == null) {
-                if (reportState.blocked) _state.update { it.copy(findings = AreaFindings.completed(), insightsUpdating = false) }
-                return@onEach
-            }
-            lastRun = run
-            val resolved = EngineFindingsMapper.forAreas(
-                report = run.report,
-                copy = run.copy,
-                areas = setOf(Domains.SLEEP, Domains.RECOVERY, Domains.STRESS),
-                isMetric = run.isMetric,
-                analysisWindowDays = run.config.windows.analysisDays,
-            )
+            val findings = reportState.areaFindings(setOf(Domains.SLEEP, Domains.RECOVERY, Domains.STRESS)) ?: return@onEach
+            reportState.run?.let { lastRun = it }
             _state.update {
                 it.copy(
-                    findings = resolved,
+                    findings = findings,
                     dayComparisons = dayComparisons(),
                     insightsUpdating = reportState.updating,
                 )

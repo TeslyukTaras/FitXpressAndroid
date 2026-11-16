@@ -1,6 +1,7 @@
 package com.hexis.bi.ui.main.home.intelligence
 
 import com.hexis.bi.BuildConfig
+import com.hexis.bi.domain.intelligence.IntelligenceReportState
 import com.hexis.bi.domain.intelligence.RunIntelligenceUseCase
 import com.hexis.bi.intelligence.config.CopyConfig
 import com.hexis.bi.intelligence.engine.ConfidenceBuckets
@@ -323,6 +324,22 @@ private val Finding.confidenceRank: Int get() = confidenceLevel.ordinal
 
 private val Finding.subject: String
     get() = InsightSubjects.BY_INTERPRETATION[interpretation] ?: area
+
+internal fun IntelligenceReportState.areaFindings(areas: Set<String>): AreaFindings? {
+    val current = run
+    return when {
+        current != null -> EngineFindingsMapper.forAreas(
+            report = current.report,
+            copy = current.copy,
+            areas = areas,
+            isMetric = current.isMetric,
+            analysisWindowDays = current.config.windows.analysisDays,
+        )
+
+        blocked -> AreaFindings.completed()
+        else -> null
+    }
+}
 
 internal suspend fun RunIntelligenceUseCase.findingsFor(vararg areas: String): AreaFindings {
     if (!BuildConfig.INTELLIGENCE_ENGINE_ENABLED) return AreaFindings.completed()

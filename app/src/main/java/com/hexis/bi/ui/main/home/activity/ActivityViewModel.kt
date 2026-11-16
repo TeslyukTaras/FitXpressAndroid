@@ -12,12 +12,11 @@ import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.enums.GenderOption
 import com.hexis.bi.domain.trend.ChangeDirection
 import com.hexis.bi.domain.trend.changeDirection
-import com.hexis.bi.ui.main.home.intelligence.AreaFindings
+import com.hexis.bi.ui.main.home.intelligence.areaFindings
 import com.hexis.bi.utils.constants.ChangeTolerances
 import com.hexis.bi.domain.activity.strideDistanceKm
 import com.hexis.bi.domain.intelligence.IntelligenceCoordinator
 import com.hexis.bi.intelligence.engine.Domains
-import com.hexis.bi.ui.main.home.intelligence.EngineFindingsMapper
 import com.hexis.bi.ui.main.home.intelligence.BackfillTransition
 import com.hexis.bi.ui.main.home.intelligence.backfillTransition
 import com.hexis.bi.ui.base.BaseViewModel
@@ -78,24 +77,8 @@ class ActivityViewModel internal constructor(
 
     private fun observeFindings() {
         intelligenceCoordinator.state.onEach { reportState ->
-            val run = reportState.run
-            if (run == null) {
-                if (reportState.blocked) _state.update { it.copy(findings = AreaFindings.completed(), insightsUpdating = false) }
-                return@onEach
-            }
-            val resolved = EngineFindingsMapper.forAreas(
-                report = run.report,
-                copy = run.copy,
-                areas = setOf(Domains.ACTIVITY),
-                isMetric = run.isMetric,
-                analysisWindowDays = run.config.windows.analysisDays,
-            )
-            _state.update {
-                it.copy(
-                    findings = resolved,
-                    insightsUpdating = reportState.updating,
-                )
-            }
+            val findings = reportState.areaFindings(setOf(Domains.ACTIVITY)) ?: return@onEach
+            _state.update { it.copy(findings = findings, insightsUpdating = reportState.updating) }
         }.launchIn(viewModelScope)
     }
 
