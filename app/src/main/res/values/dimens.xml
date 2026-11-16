@@ -220,6 +220,11 @@
     <dimen name="insight_card_corner">6dp</dimen>
 
     <!-- Subscriptions -->
+    <dimen name="touch_target_size">48dp</dimen>
+    <dimen name="subscription_close_top_padding">24dp</dimen>
+    <dimen name="subscription_change_title_gap">20dp</dimen>
+    <dimen name="subscription_close_bottom_padding">20dp</dimen>
+    <dimen name="subscription_feature_tile_size">44dp</dimen>
     <dimen name="subscription_empty_icon_tile">64dp</dimen>
     <dimen name="subscription_empty_icon_size">35dp</dimen>
 </resources>
