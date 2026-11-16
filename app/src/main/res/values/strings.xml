@@ -1193,6 +1193,7 @@
     <string name="subscription_all_scans_used">All scans used for this billing period</string>
     <string name="subscription_renews_on">Renews on</string>
     <string name="subscription_ends_on">Ends on</string>
+    <string name="subscription_changes_to">Changes to %1$s on</string>
     <string name="subscription_view_details">View plan details</string>
     <string name="subscription_change_plan">Change plan</string>
     <string name="subscription_manage">Manage subscription</string>

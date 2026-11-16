@@ -34,6 +34,7 @@ internal object SubscriptionConstants {
     const val FIELD_SCANS_USED = "scansUsed"
     const val FIELD_SCANS_ALLOWED = "scansAllowed"
     const val FIELD_FREE_SCAN_USED = "freeScanUsed"
+    const val FIELD_PENDING_PLAN_ID = "pendingPlanId"
     const val FIELD_REASON = "reason"
 
     const val STATE_NONE = "none"

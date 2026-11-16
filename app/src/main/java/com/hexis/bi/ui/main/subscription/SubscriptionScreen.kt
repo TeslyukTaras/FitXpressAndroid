@@ -232,6 +232,7 @@ private fun SubscribedContent(
     onManage: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val pendingPlan = (status as? SubscriptionStatus.Active)?.pendingPlan
     ScrollColumn(modifier) {
         PlanSummaryCard(
             label = stringResource(R.string.subscription_active_plan),
@@ -263,13 +264,13 @@ private fun SubscribedContent(
                     modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
                 )
                 Text(
-                    text = stringResource(
-                        if (status is SubscriptionStatus.Active && !status.renews) {
-                            R.string.subscription_ends_on
-                        } else {
-                            R.string.subscription_renews_on
-                        },
-                    ),
+                    text = when {
+                        pendingPlan != null ->
+                            stringResource(R.string.subscription_changes_to, stringResource(pendingPlan.nameRes()))
+
+                        status is SubscriptionStatus.Active && !status.renews -> stringResource(R.string.subscription_ends_on)
+                        else -> stringResource(R.string.subscription_renews_on)
+                    },
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Normal),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
@@ -282,6 +283,18 @@ private fun SubscribedContent(
                     color = MaterialTheme.colorScheme.onBackground,
                 )
             }
+        }
+        if (pendingPlan != null) BodyGlassCard(contentPadding = PaddingValues(dimensionResource(R.dimen.spacer_l))) {
+            InfoNote(
+                text = stringResource(
+                    R.string.confirm_downgrade_note,
+                    status.renewsOn.formatDisplay(),
+                    stringResource(pendingPlan.nameRes()),
+                ),
+                icon = R.drawable.ic_calendar,
+                textStyle = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Normal),
+                gap = dimensionResource(R.dimen.spacer_xs),
+            )
         }
         BodyGlassCard(contentPadding = PaddingValues(dimensionResource(R.dimen.spacer_xs))) {
             if (status is SubscriptionStatus.GracePeriod)

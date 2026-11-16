@@ -42,8 +42,12 @@ internal fun DocumentSnapshot.toSubscriptionStatus(): SubscriptionStatus {
         return SubscriptionStatus.None(freeScanUsed)
     }
     val renewsOn = getTimestamp(SubscriptionConstants.FIELD_PERIOD_END)?.toLocalDate() ?: LocalDate.now()
+    val pendingPlan = getString(SubscriptionConstants.FIELD_PENDING_PLAN_ID)
+        ?.let { id -> PlanId.entries.firstOrNull { it.name.equals(id, ignoreCase = true) } }
+        ?.takeIf { it != plan }
     return when (state) {
-        SubscriptionConstants.STATE_ACTIVE -> SubscriptionStatus.Active(plan, scansUsed, renewsOn, scansAllowed, platform)
+        SubscriptionConstants.STATE_ACTIVE ->
+            SubscriptionStatus.Active(plan, scansUsed, renewsOn, scansAllowed, platform, pendingPlan = pendingPlan)
 
         SubscriptionConstants.STATE_CANCEL_SCHEDULED ->
             SubscriptionStatus.Active(plan, scansUsed, renewsOn, scansAllowed, platform, renews = false)

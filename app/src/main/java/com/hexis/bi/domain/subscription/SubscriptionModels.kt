@@ -57,6 +57,7 @@ sealed interface SubscriptionStatus {
         override val scansAllowed: Int = plan.scansPerMonth,
         override val platform: StorePlatform = StorePlatform.ANDROID,
         val renews: Boolean = true,
+        val pendingPlan: PlanId? = null,
     ) : Subscribed
 
     data class GracePeriod(
