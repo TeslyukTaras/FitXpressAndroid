@@ -102,7 +102,7 @@ fun SubscriptionScreen(
             containerColor = Color.Transparent,
             isLoading = isLoading,
             error = error,
-            onDismissError = viewModel::dismissError,
+            onDismissError = viewModel::clearError,
             viewModel = viewModel,
             topBar = {
                 BaseTopBar(
@@ -182,6 +182,7 @@ internal fun SubscriptionContent(
         is SubscriptionStatus.Subscribed -> SubscribedContent(
             status = status,
             price = state.priceOf(status.plan),
+            priceUnavailable = state.plansUnavailable,
             onViewDetails = onViewDetails,
             onChangePlan = onChangePlan,
             onManage = onManage,
@@ -191,6 +192,7 @@ internal fun SubscriptionContent(
         is SubscriptionStatus.Expired -> ExpiredContent(
             status = status,
             price = state.priceOf(status.plan),
+            priceUnavailable = state.plansUnavailable,
             onViewDetails = onViewDetails,
             onChangePlan = onChangePlan,
             onManage = onManage,
@@ -224,6 +226,7 @@ private fun ScrollColumn(
 private fun SubscribedContent(
     status: SubscriptionStatus.Subscribed,
     price: String?,
+    priceUnavailable: Boolean,
     onViewDetails: () -> Unit,
     onChangePlan: () -> Unit,
     onManage: () -> Unit,
@@ -237,7 +240,7 @@ private fun SubscribedContent(
                 stringResource(status.plan.nameRes())
             ),
             price = price,
-            showPrice = status.platform == StorePlatform.ANDROID,
+            showPrice = status.platform == StorePlatform.ANDROID && !priceUnavailable,
         )
         BodyGlassCard(contentPadding = PaddingValues(dimensionResource(R.dimen.spacer_l))) {
             Text(
@@ -327,6 +330,7 @@ private fun PaymentIssueHeader(graceEndsOn: String) {
 private fun ExpiredContent(
     status: SubscriptionStatus.Expired,
     price: String?,
+    priceUnavailable: Boolean,
     onViewDetails: () -> Unit,
     onChangePlan: () -> Unit,
     onManage: () -> Unit,
@@ -341,7 +345,7 @@ private fun ExpiredContent(
                 stringResource(status.plan.nameRes())
             ),
             price = price,
-            showPrice = status.platform == StorePlatform.ANDROID,
+            showPrice = status.platform == StorePlatform.ANDROID && !priceUnavailable,
         )
         BodyGlassCard(contentPadding = PaddingValues(dimensionResource(R.dimen.spacer_l))) {
             InfoNote(
