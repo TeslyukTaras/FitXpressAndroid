@@ -11,6 +11,7 @@ internal object SubscriptionConstants {
 
     const val RESTORE_STATUS_WAIT_MS = 3_000L
     const val STATUS_WAIT_MS = 10_000L
+    const val EMPTY_STATE_TOP_FRACTION = 1f / 3f
     const val PURCHASE_CONFIRM_WAIT_MS = 10_000L
 
     const val PLAY_BASE_PLAN_ID = "monthly"

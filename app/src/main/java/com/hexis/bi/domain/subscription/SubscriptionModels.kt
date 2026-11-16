@@ -12,6 +12,9 @@ enum class PlanId(val scansPerMonth: Int, val rank: Int) {
     ),
 }
 
+val PlanId.isTopPlan: Boolean
+    get() = rank == PlanId.entries.minOf { it.rank }
+
 data class PlanInfo(
     val id: PlanId,
     val rank: Int,

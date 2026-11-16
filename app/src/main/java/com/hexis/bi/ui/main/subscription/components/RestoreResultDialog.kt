@@ -74,6 +74,7 @@ internal fun RestoreResultDialog(
             AppPrimaryButton(
                 text = action,
                 onClick = if (outcome.result == RestoreResult.FAILED) onRetry else onDismiss,
+                height = dimensionResource(R.dimen.height_button_compact),
             )
         }
     }
