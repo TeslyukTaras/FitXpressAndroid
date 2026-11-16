@@ -15,6 +15,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.asStateFlow
+import com.hexis.bi.data.health.access.HealthDataGate
+import com.hexis.bi.domain.subscription.HealthDataAccess
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -29,6 +32,7 @@ internal data class IntelligenceReportState(
     val loading: Boolean = true,
     val updating: Boolean = false,
     val error: Throwable? = null,
+    val blocked: Boolean = false,
 )
 
 /** App-scoped owner of intelligence readiness and report generation. */
@@ -39,6 +43,7 @@ internal class IntelligenceCoordinator(
     private val configRepository: IntelligenceConfigRepository,
     private val auth: FirebaseAuth,
     healthSyncScheduler: HealthSyncScheduler,
+    private val healthDataGate: HealthDataGate,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) {
     private val _state = MutableStateFlow(IntelligenceReportState())
@@ -69,6 +74,11 @@ internal class IntelligenceCoordinator(
             .onEach { refresh(force = !backfillInFlight) }
             .launchIn(scope)
 
+        healthDataGate.accessFlow
+            .drop(1)
+            .onEach { refresh(force = true) }
+            .launchIn(scope)
+
         scope.launch { refresh(force = true) }
     }
 
@@ -95,6 +105,12 @@ internal class IntelligenceCoordinator(
             if (loadedUserId != uid) {
                 loadedUserId = uid
                 _state.value = IntelligenceReportState(updating = backfillInFlight)
+            }
+
+            if (healthDataGate.access() != HealthDataAccess.FULL) {
+                lastRunAtMillis = 0L
+                _state.value = IntelligenceReportState(loading = false, blocked = true)
+                return@withLock
             }
 
             val now = System.currentTimeMillis()
