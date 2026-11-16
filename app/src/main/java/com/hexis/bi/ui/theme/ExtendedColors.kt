@@ -60,6 +60,7 @@ data class ExtendedColors(
     val red300: Color,
     val green: Color,
     val yellow: Color,
+    val warning: Color,
     // Sleep stages
     val sleepStageAwake: Color,
     val sleepStageRem: Color,
@@ -161,6 +162,7 @@ internal val DefaultExtendedColors = ExtendedColors(
     red300 = Red300,
     green = Green,
     yellow = Yellow,
+    warning = Warning,
     sleepStageAwake = SleepStageAwake,
     sleepStageRem = SleepStageRem,
     sleepStageDeep = SleepStageDeep,

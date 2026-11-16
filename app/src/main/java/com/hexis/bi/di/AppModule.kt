@@ -29,6 +29,12 @@ import com.hexis.bi.data.notification.NotificationInboxRepository
 import com.hexis.bi.data.order.FirestoreOrderRepository
 import com.hexis.bi.data.order.OrderDraftHolder
 import com.hexis.bi.data.preferences.UserPreferencesRepository
+import com.hexis.bi.data.subscription.FirestoreSubscriptionRepository
+import com.hexis.bi.data.subscription.PlanCatalog
+import com.hexis.bi.data.subscription.billing.CurrentActivityProvider
+import com.hexis.bi.data.subscription.billing.PlayBilling
+import com.hexis.bi.data.subscription.SubscriptionRepository
+import com.hexis.bi.ui.main.subscription.SubscriptionViewModel
 import com.hexis.bi.data.recovery.RecoveryRepository
 import com.hexis.bi.data.recovery.DefaultRecoveryRepository
 import com.hexis.bi.data.reminder.ScanReminderScheduler
@@ -41,6 +47,7 @@ import com.hexis.bi.data.health.remote.HealthRemoteDataSource
 import com.hexis.bi.data.intelligence.AssetIntelligenceConfigSource
 import com.hexis.bi.data.intelligence.RemoteIntelligenceConfigSource
 import com.hexis.bi.utils.constants.AppUpdateRemoteConfig
+import com.hexis.bi.utils.constants.SubscriptionConstants
 import com.hexis.bi.utils.constants.IntelligenceRemoteConfig
 import com.hexis.bi.data.telemetry.FirebaseTelemetry
 import com.hexis.bi.data.telemetry.Telemetry
@@ -105,6 +112,9 @@ import com.hexis.bi.ui.main.settings.scanpreferences.ScanPreferencesViewModel
 import com.hexis.bi.utils.constants.NetworkConstants.HTTP_TIMEOUT_SECONDS
 import com.hexis.bi.utils.permissions.NotificationPermissionCoordinator
 import okhttp3.OkHttpClient
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
@@ -125,6 +135,20 @@ val appModule = module {
     single { HealthLocalDataSource(get(), BuildConfig.ENVIRONMENT) }
     single<CanonicalUserCacheCleaner> { get<HealthLocalDataSource>() }
     single { UserPreferencesRepository(get()) }
+    single { CurrentActivityProvider() }
+    single { PlayBilling(androidContext(), get()) }
+    single { PlanCatalog(get(), planCatalogFetchInterval()) }
+    single<SubscriptionRepository>(createdAtStart = true) {
+        FirestoreSubscriptionRepository(
+            androidContext(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            CoroutineScope(SupervisorJob() + Dispatchers.Default),
+        )
+    }
     single { NotificationInboxRepository(androidContext(), get()) }
     single {
         ScanReminderWorkRunner(
@@ -249,6 +273,7 @@ val appModule = module {
     viewModel { ForgotPasswordViewModel(get(), androidApplication()) }
     viewModel { VerifyEmailViewModel(get(), androidApplication()) }
     viewModel { ScanPreferencesViewModel(androidApplication(), get(), get()) }
+    viewModel { SubscriptionViewModel(androidApplication(), get()) }
     viewModel {
         HealthConnectionsViewModel(
             androidApplication(),
@@ -293,6 +318,12 @@ private fun intelligenceFetchInterval(): Long = if (BuildConfig.DEBUG) {
     IntelligenceRemoteConfig.DEBUG_FETCH_INTERVAL_SECONDS
 } else {
     IntelligenceRemoteConfig.RELEASE_FETCH_INTERVAL_SECONDS
+}
+
+private fun planCatalogFetchInterval(): Long = if (BuildConfig.DEBUG) {
+    SubscriptionConstants.PLANS_DEBUG_FETCH_INTERVAL_SECONDS
+} else {
+    SubscriptionConstants.PLANS_RELEASE_FETCH_INTERVAL_SECONDS
 }
 
 private fun appUpdateFetchInterval(): Long = if (BuildConfig.DEBUG) {

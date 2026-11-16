@@ -12,6 +12,7 @@ kotlin = "2.4.20"
 koin = "4.2.2"
 splashscreen = "1.2.0"
 firebaseBom = "34.18.0"
+billing = "8.0.0"
 navigationCompose = "2.9.8"
 credentials = "1.6.0"
 googleid = "1.2.0"
@@ -63,6 +64,7 @@ firebase-storage = { group = "com.google.firebase", name = "firebase-storage" }
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
 firebase-config = { group = "com.google.firebase", name = "firebase-config" }
+billing-ktx = { group = "com.android.billingclient", name = "billing-ktx", version.ref = "billing" }
 firebase-appcheck-playintegrity = { group = "com.google.firebase", name = "firebase-appcheck-playintegrity" }
 firebase-appcheck-debug = { group = "com.google.firebase", name = "firebase-appcheck-debug" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
