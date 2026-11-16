@@ -62,6 +62,10 @@ class StartScanViewModel(
         }
     }
 
+    fun onRescan() {
+        if (_state.value.retrySameCapture) onErrorDismissed() else startCamera()
+    }
+
     fun onScanBlockHandled() {
         _state.update { it.copy(blockedReason = null) }
     }
@@ -250,6 +254,7 @@ class StartScanViewModel(
             weightKg = weightKg,
             gender = gender,
             age = age,
+            resumeMeasurementId = pending.measurementId,
         ).collect { progress ->
             Timber.d("submitPhotos: progress=%s", progress)
             _state.update {
@@ -328,6 +333,9 @@ class StartScanViewModel(
                     if (progress.retryable && sameCapture != null &&
                         sameCapture.attempts < ScanPhotoConstants.MAX_SAME_CAPTURE_RETRIES
                     ) {
+                        capture = sameCapture.copy(
+                            measurementId = progress.measurementId ?: sameCapture.measurementId,
+                        )
                         _state.update {
                             it.copy(
                                 scanProgress = null,
@@ -339,6 +347,7 @@ class StartScanViewModel(
                         }
                         return@collect
                     }
+                    capture = null
                     val message = resolveFailureMessage(progress)
                     if (scanPurpose == ScanPurpose.SuitSizeScan) {
                         _state.update {
@@ -362,6 +371,7 @@ class StartScanViewModel(
                 }
 
                 is ScanProgress.Blocked -> {
+                    capture = null
                     _state.update {
                         it.copy(scanProgress = null, isPreparingResults = false, blockedReason = progress.reason)
                     }
@@ -444,4 +454,5 @@ private data class PendingCapture(
     val side: Uri,
     val scanId: String,
     val attempts: Int = 0,
+    val measurementId: String? = null,
 )

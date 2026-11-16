@@ -50,6 +50,8 @@ internal object SubscriptionConstants {
     const val REMOTE_CONFIG_PLANS_KEY = "subscription_plans"
     const val PLAN_BADGE_MOST_POPULAR = "mostPopular"
     const val PLANS_DEBUG_FETCH_INTERVAL_SECONDS = 60L
+    const val SCAN_GATE_DEBUG_FETCH_INTERVAL_SECONDS = 10L
+    const val SCAN_GATE_RELEASE_FETCH_INTERVAL_SECONDS = 5L * 60
     const val PLANS_RELEASE_FETCH_INTERVAL_SECONDS = 60L * 60
 
     const val BILLING_UNSOLICITED_BUFFER = 8
@@ -65,6 +67,7 @@ internal object SubscriptionConstants {
 
     const val REMOTE_CONFIG_SCAN_GATE_KEY = "subscription_gate_enabled"
     const val SCAN_ACCESS_WAIT_MS = 3_000L
+    const val SCAN_BLOCK_NO_SUBSCRIPTION = "noSubscription"
     const val SCAN_BLOCK_ALL_SCANS_USED = "allScansUsed"
     const val SCAN_BLOCK_ON_HOLD = "onHold"
     const val SCAN_BLOCK_PENDING = "pending"

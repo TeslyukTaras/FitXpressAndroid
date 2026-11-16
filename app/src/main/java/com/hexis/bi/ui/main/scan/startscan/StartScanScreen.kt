@@ -299,7 +299,7 @@ fun StartScanScreen(
                             isComplete = state.isComplete,
                             errorMessage = state.scanErrorMessage,
                             onResults = onScanComplete,
-                            onRescan = viewModel::startCamera,
+                            onRescan = viewModel::onRescan,
                         )
                     }
                 }

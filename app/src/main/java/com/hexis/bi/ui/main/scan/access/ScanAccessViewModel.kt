@@ -31,7 +31,12 @@ class ScanAccessViewModel(
     init {
         viewModelScope.launch {
             gateConfig.refresh()
-            _access.value = if (gateConfig.enabled) resolveAccess() else ScanAccess.Allowed
+            if (!gateConfig.enabled) {
+                _access.value = ScanAccess.Allowed
+                return@launch
+            }
+            _access.value = resolveAccess()
+            restoreWhenAllowed()
         }
     }
 
@@ -44,6 +49,14 @@ class ScanAccessViewModel(
 
     fun onScanBlocked(reason: ScanBlockReason) {
         _access.value = reason.toScanAccess()
+    }
+
+    private suspend fun restoreWhenAllowed() {
+        repository.status.collect { status ->
+            if (status.toScanAccess() == ScanAccess.Allowed && _access.value != ScanAccess.Allowed) {
+                _access.value = ScanAccess.Allowed
+            }
+        }
     }
 
     private suspend fun resolveAccess(): ScanAccess =
