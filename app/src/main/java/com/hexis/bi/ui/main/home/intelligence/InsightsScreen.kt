@@ -38,6 +38,8 @@ import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.LightStatusBarIcons
 import com.hexis.bi.ui.components.MedicalDisclaimerFooter
+import com.hexis.bi.ui.main.subscription.components.HealthAccessBanner
+import com.hexis.bi.ui.main.subscription.components.rememberHealthDataAccess
 import com.hexis.bi.ui.theme.screenBackground
 import org.koin.androidx.compose.koinViewModel
 
@@ -90,6 +92,16 @@ fun InsightsScreen(
             val contentModifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = dimensionResource(R.dimen.padding_medium))
+            val healthAccess = rememberHealthDataAccess()
+            val banner: @Composable () -> Unit = {
+                HealthAccessBanner(
+                    access = healthAccess,
+                    freeText = null,
+                    frozenText = stringResource(R.string.health_banner_frozen_insights),
+                    spacerBelow = dimensionResource(R.dimen.spacer_2xl),
+                    spacerAbove = dimensionResource(R.dimen.spacer_xs),
+                )
+            }
             var lastCards by remember { mutableStateOf(state.cards) }
             if (state.cards.isNotEmpty()) lastCards = state.cards
 
@@ -100,6 +112,7 @@ fun InsightsScreen(
             ) { isEmpty ->
             if (isEmpty) {
                 Column(modifier = contentModifier) {
+                    banner()
                     InsightsHeader(state)
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -108,6 +121,7 @@ fun InsightsScreen(
                 }
             } else {
                 Column(modifier = contentModifier.verticalScroll(rememberScrollState())) {
+                    banner()
                     InsightsHeader(state)
 
                     val ranked = lastCards.groupBy { it.confidence == FindingConfidence.LOW }

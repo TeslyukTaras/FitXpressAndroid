@@ -1106,6 +1106,9 @@
     <string name="engine_findings_value_separator">" · "</string>
     <string name="engine_findings_label_separator">": "</string>
     <string name="insights_screen_title">Insights</string>
+    <string name="health_banner_free_history">Free plan includes %1$d days of data history</string>
+    <string name="health_banner_frozen_history">New history data require an active subscription</string>
+    <string name="health_banner_frozen_insights">New insights require an active subscription</string>
     <string name="insights_subtitle">Based on Latest Scan · %1$s</string>
     <string name="insights_updating">Updating</string>
     <string name="insights_updating_body">We\'re analyzing your latest data.</string>

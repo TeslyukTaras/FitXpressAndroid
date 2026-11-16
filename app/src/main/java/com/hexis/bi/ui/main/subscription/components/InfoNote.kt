@@ -7,6 +7,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -22,6 +23,7 @@ internal fun InfoNote(
     @DrawableRes icon: Int = R.drawable.ic_info,
     textStyle: TextStyle = TitleDimTextStyle,
     gap: Dp = dimensionResource(R.dimen.spacer_m),
+    color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
     Layout(
         modifier = modifier,
@@ -29,13 +31,13 @@ internal fun InfoNote(
             Icon(
                 painter = painterResource(icon),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = color,
                 modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
             )
             Text(
                 text = text,
                 style = textStyle,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = color,
             )
         },
     ) { measurables, constraints ->

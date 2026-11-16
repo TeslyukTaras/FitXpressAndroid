@@ -107,7 +107,7 @@ internal class IntelligenceCoordinator(
                 _state.value = IntelligenceReportState(updating = backfillInFlight)
             }
 
-            if (healthDataGate.access() != HealthDataAccess.FULL) {
+            if (healthDataGate.access() == HealthDataAccess.FIRST_WEEK) {
                 lastRunAtMillis = 0L
                 _state.value = IntelligenceReportState(loading = false, blocked = true)
                 return@withLock

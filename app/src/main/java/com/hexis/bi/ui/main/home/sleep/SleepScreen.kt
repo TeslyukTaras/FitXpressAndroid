@@ -35,6 +35,9 @@ import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppDialog
 import com.hexis.bi.ui.components.AppTabSelector
+import com.hexis.bi.ui.main.subscription.components.HealthAccessBanner
+import com.hexis.bi.ui.main.subscription.components.rememberHealthDataAccess
+import com.hexis.bi.utils.constants.SubscriptionConstants
 import com.hexis.bi.ui.components.LightStatusBarIcons
 import com.hexis.bi.ui.components.MedicalDisclaimerFooter
 import com.hexis.bi.ui.main.home.sleep.components.SleepRecoverySheetBody
@@ -99,6 +102,16 @@ fun SleepScreen(
                     .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
             ) {
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
+
+                HealthAccessBanner(
+                    access = rememberHealthDataAccess(),
+                    freeText = stringResource(
+                        R.string.health_banner_free_history,
+                        SubscriptionConstants.FREE_WEEK_DAYS.toInt(),
+                    ),
+                    frozenText = stringResource(R.string.health_banner_frozen_history),
+                    spacerBelow = dimensionResource(R.dimen.spacer_xl),
+                )
 
                 AppTabSelector(
                     tabs = SleepTab.entries,
