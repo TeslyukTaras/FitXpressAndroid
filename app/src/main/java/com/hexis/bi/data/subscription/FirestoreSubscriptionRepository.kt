@@ -37,6 +37,7 @@ import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 
 class FirestoreSubscriptionRepository(
@@ -112,7 +113,9 @@ class FirestoreSubscriptionRepository(
     }
 
     override suspend fun changePlan(plan: PlanId): PurchaseResult {
-        val current = status.first { it !is SubscriptionStatus.Loading } as? SubscriptionStatus.Subscribed
+        val settled = settledStatus()
+            ?: throw IllegalStateException(context.getString(R.string.subscription_error_unavailable))
+        val current = settled as? SubscriptionStatus.Subscribed
             ?: throw IllegalStateException(context.getString(R.string.subscription_error_no_purchase))
         if (current.platform != StorePlatform.ANDROID) {
             throw IllegalStateException(context.getString(R.string.subscription_error_other_platform))
@@ -132,7 +135,7 @@ class FirestoreSubscriptionRepository(
     }
 
     override suspend fun restorePurchases(): RestoreResult {
-        val current = status.first { it !is SubscriptionStatus.Loading }
+        val current = settledStatus() ?: return RestoreResult.FAILED
         val subscribed = current as? SubscriptionStatus.Subscribed
         if (subscribed != null && subscribed.platform != StorePlatform.ANDROID) return RestoreResult.RESTORED
         val uid = auth.currentUser?.uid
@@ -171,6 +174,11 @@ class FirestoreSubscriptionRepository(
             .filter { it.isPlanProduct() && it.belongsTo(uid) && !it.isAcknowledged }
             .forEach { verify(it) }
     }
+
+    private suspend fun settledStatus(): SubscriptionStatus? =
+        withTimeoutOrNull(SubscriptionConstants.STATUS_WAIT_MS) {
+            status.first { it !is SubscriptionStatus.Loading }
+        }
 
     private suspend fun <T> billingCall(block: suspend () -> T): T =
         try {

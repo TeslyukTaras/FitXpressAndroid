@@ -120,12 +120,17 @@ fun ConfirmPlanScreen(
                         state.plan?.formattedPrice.orEmpty()
                     ),
                     onClick = viewModel::confirm,
-                    enabled = state.plan != null && state.status !is SubscriptionStatus.Loading && !isLoading,
+                    enabled = state.plan != null && state.status !is SubscriptionStatus.Loading && !isLoading &&
+                        !state.isCurrentPlan && !state.awaitingConfirmation,
                 )
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
                 Text(
                     text = stringResource(
-                        if (isChange) R.string.confirm_footer_change else R.string.confirm_footer_subscribe,
+                        when {
+                            state.awaitingConfirmation -> R.string.confirm_pending_note
+                            isChange -> R.string.confirm_footer_change
+                            else -> R.string.confirm_footer_subscribe
+                        },
                     ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

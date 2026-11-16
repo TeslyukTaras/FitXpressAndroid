@@ -10,6 +10,8 @@ internal object SubscriptionConstants {
     const val TRANSFORMATION_RANK = 1
 
     const val RESTORE_STATUS_WAIT_MS = 3_000L
+    const val STATUS_WAIT_MS = 10_000L
+    const val PURCHASE_CONFIRM_WAIT_MS = 10_000L
 
     const val PLAY_BASE_PLAN_ID = "monthly"
     const val PRODUCT_ESSENTIAL = "hexis_bi_essential"
