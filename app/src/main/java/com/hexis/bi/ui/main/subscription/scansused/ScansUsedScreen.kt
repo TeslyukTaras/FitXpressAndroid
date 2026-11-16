@@ -59,11 +59,11 @@ fun ScansUsedScreen(
             )
         },
         bottomBar = {
-            if (status != null && !status.plan.isTopPlan) SubscriptionActionBar {
+            if (status?.plan?.isTopPlan != true) SubscriptionActionBar {
                 AppPrimaryButton(
                     text = stringResource(R.string.scans_used_upgrade),
                     onClick = {
-                        if (status.platform == StorePlatform.IOS) openManageSubscription(
+                        if (status != null && status.platform == StorePlatform.IOS) openManageSubscription(
                             context,
                             status
                         )
@@ -74,6 +74,7 @@ fun ScansUsedScreen(
         },
     ) {
         if (status != null) ScansUsedContent(status)
+        else EmptyStateContent(title = stringResource(R.string.scans_used_title)) {}
     }
 }
 

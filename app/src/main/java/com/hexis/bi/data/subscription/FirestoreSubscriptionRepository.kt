@@ -1,6 +1,7 @@
 package com.hexis.bi.data.subscription
 
 import android.content.Context
+import java.util.concurrent.atomic.AtomicBoolean
 import com.android.billingclient.api.Purchase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -212,17 +213,24 @@ class FirestoreSubscriptionRepository(
         awaitClose { auth.removeAuthStateListener(listener) }
     }.distinctUntilChanged()
 
-    private fun entitlement(uid: String): Flow<SubscriptionStatus> = callbackFlow {
+    private fun entitlement(uid: String): Flow<SubscriptionStatus> {
+        val freeScanUsed = AtomicBoolean(false)
+        return entitlementUpdates(uid, freeScanUsed)
+    }
+
+    private fun entitlementUpdates(uid: String, freeScanUsed: AtomicBoolean): Flow<SubscriptionStatus> = callbackFlow {
         val registration = firestore.collection(SubscriptionConstants.COLLECTION_SUBSCRIPTIONS)
             .document(uid)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     if (error.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
-                        trySend(SubscriptionStatus.None())
+                        trySend(SubscriptionStatus.None(freeScanUsed.get()))
                     }
                     close(error)
                 } else if (snapshot != null) {
-                    trySend(snapshot.toSubscriptionStatus())
+                    val status = snapshot.toSubscriptionStatus()
+                    freeScanUsed.set(status !is SubscriptionStatus.None || status.freeScanUsed)
+                    trySend(status)
                 }
             }
         awaitClose { registration.remove() }

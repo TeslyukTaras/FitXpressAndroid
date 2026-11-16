@@ -143,7 +143,7 @@ val appModule = module {
     single { CurrentActivityProvider() }
     single { PlayBilling(androidContext(), get()) }
     single { PlanCatalog(get(), planCatalogFetchInterval()) }
-    single { ScanGateConfig(get()) }
+    single { ScanGateConfig(get(), scanGateFetchInterval()) }
     single<SubscriptionRepository>(createdAtStart = true) {
         FirestoreSubscriptionRepository(
             androidContext(),
@@ -327,6 +327,12 @@ private fun intelligenceFetchInterval(): Long = if (BuildConfig.DEBUG) {
     IntelligenceRemoteConfig.DEBUG_FETCH_INTERVAL_SECONDS
 } else {
     IntelligenceRemoteConfig.RELEASE_FETCH_INTERVAL_SECONDS
+}
+
+private fun scanGateFetchInterval(): Long = if (BuildConfig.DEBUG) {
+    SubscriptionConstants.SCAN_GATE_DEBUG_FETCH_INTERVAL_SECONDS
+} else {
+    SubscriptionConstants.SCAN_GATE_RELEASE_FETCH_INTERVAL_SECONDS
 }
 
 private fun planCatalogFetchInterval(): Long = if (BuildConfig.DEBUG) {
