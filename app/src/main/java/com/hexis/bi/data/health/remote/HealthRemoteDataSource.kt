@@ -1,6 +1,7 @@
 package com.hexis.bi.data.health.remote
 
 import com.hexis.bi.data.health.access.HealthDataGate
+import com.hexis.bi.data.health.access.HealthDataGated
 import com.hexis.bi.data.health.sync.HealthSourceUnavailable
 import com.hexis.bi.data.healthconnect.HealthConnectPermissionChecker
 import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
@@ -44,19 +45,22 @@ internal class HealthRemoteDataSource(
         fetchJson: suspend (terraUserId: String, LocalDate, LocalDate) -> Result<List<Any?>>,
         parse: (List<Any?>) -> List<T>,
     ): Result<MergedSourceResult<T>> {
-        if (!healthDataGate.allowsRange(start, end)) {
-            return Result.failure(HealthSourceUnavailable(IllegalStateException("No subscription: new data is not fetched")))
-        }
+        val bounds = healthDataGate.allowedBounds() ?: return Result.failure(HealthDataGated())
+        val from = maxOf(start, bounds.start)
+        val to = minOf(end, bounds.endInclusive)
+        if (from.isAfter(to)) return Result.failure(HealthDataGated())
         return fetchMergedFromAllSources(
             identities = identities,
             gate = gate,
-            start = start,
-            end = end,
+            start = from,
+            end = to,
             fetchJson = fetchJson,
             parse = parse,
             onIdentityRejected = ::retireRejectedIdentity,
         )
     }
+
+    suspend fun allowedBounds(): ClosedRange<LocalDate>? = healthDataGate.allowedBounds()
 
     fun fetchableIdentities(identities: List<TerraRestIdentity>): List<TerraRestIdentity> {
         val queryable = identities.filterNot { it.terraUserId in rejectedByTerra }

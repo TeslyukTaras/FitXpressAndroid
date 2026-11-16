@@ -63,7 +63,10 @@ internal class HealthSyncWorker(
             Timber.d("Health sync worker: no subscription (%s), new data is not fetched", access)
             return Result.success()
         }
-        if (access == HealthDataAccess.FIRST_WEEK) healthDataGate.markFreeWeek()
+        if (access == HealthDataAccess.FIRST_WEEK && !healthDataGate.openFreeWeek()) {
+            Timber.d("Health sync worker: the free week was already used, new data is not fetched")
+            return Result.success()
+        }
 
         val quickSyncFailures = runCatching { coordinator.syncRecentWindow() }
             .getOrElse { error ->
@@ -78,7 +81,7 @@ internal class HealthSyncWorker(
 
         if (access == HealthDataAccess.FIRST_WEEK) {
             report(syncTrigger, elapsed(), outcomeOf(BackfillOutcome.Skipped, failedOperations), failedOperations)
-            return Result.success()
+            return if (failedOperations > 0) giveUpOrRetry() else Result.success()
         }
 
         coordinator.prewarmScans().onFailure { error ->

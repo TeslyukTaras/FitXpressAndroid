@@ -79,6 +79,7 @@ internal class IntelligenceCoordinator(
             .onEach { refresh(force = true) }
             .launchIn(scope)
 
+        scope.launch { healthDataGate.refreshConfig() }
         scope.launch { refresh(force = true) }
     }
 
@@ -107,11 +108,13 @@ internal class IntelligenceCoordinator(
                 _state.value = IntelligenceReportState(updating = backfillInFlight)
             }
 
-            if (healthDataGate.access() == HealthDataAccess.FIRST_WEEK) {
+            val access = healthDataGate.access()
+            if (access == HealthDataAccess.FIRST_WEEK) {
                 lastRunAtMillis = 0L
                 _state.value = IntelligenceReportState(loading = false, blocked = true)
                 return@withLock
             }
+            if (access == HealthDataAccess.FROZEN && _state.value.run != null) return@withLock
 
             val now = System.currentTimeMillis()
             val throttle = IntelligenceCacheConstants.BACKFILL_RERUN_INTERVAL.toMillis()

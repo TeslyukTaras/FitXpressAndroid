@@ -1,14 +1,13 @@
 package com.hexis.bi.data.subscription
 
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
-import com.google.firebase.remoteconfig.remoteConfigSettings
+import com.hexis.bi.utils.fetchAndActivate
 import com.hexis.bi.domain.subscription.PlanId
 import com.hexis.bi.domain.subscription.PlanInfo
 import com.hexis.bi.utils.constants.SubscriptionConstants
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import timber.log.Timber
@@ -35,10 +34,7 @@ class PlanCatalog(
 
     suspend fun refresh() {
         runCatching {
-            remoteConfig.setConfigSettingsAsync(
-                remoteConfigSettings { minimumFetchIntervalInSeconds = minimumFetchIntervalSeconds },
-            ).await()
-            remoteConfig.fetchAndActivate().await()
+            remoteConfig.fetchAndActivate(minimumFetchIntervalSeconds)
         }.onFailure { Timber.w(it, "Plan catalog fetch failed; using the last activated values") }
         publish()
     }

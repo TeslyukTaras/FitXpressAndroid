@@ -71,13 +71,13 @@ object TerraSdkSync {
         _dataSynced.tryEmit(Unit)
     }
 
+    @Volatile
+    var accessCheck: (suspend (reason: String, force: Boolean, lookbackDays: Long) -> Long?)? = null
+
     /**
      * @param force skips the foreground debounce (e.g. right after a successful `initConnection`).
      * @return true when a pull actually ran; false when there was nothing to sync or it was debounced.
      */
-    @Volatile
-    var accessCheck: (suspend (reason: String, force: Boolean, lookbackDays: Long) -> Long?)? = null
-
     suspend fun syncLinkedConnections(
         manager: TerraManager?,
         ownedUserIds: Set<String>?,
