@@ -40,11 +40,7 @@ class SubscriptionViewModel(
         }
     }
 
-    override fun onInitialize() {
-        loadPlans()
-    }
-
-    private fun loadPlans() {
+    fun loadPlans() {
         viewModelScope.launch {
             try {
                 val plans = repository.loadPlans()

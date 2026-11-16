@@ -1,7 +1,10 @@
 package com.hexis.bi.data.subscription
 
 import android.content.Context
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import android.os.SystemClock
 import com.android.billingclient.api.Purchase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -62,6 +65,9 @@ class FirestoreSubscriptionRepository(
         }
         .stateIn(scope, SharingStarted.Eagerly, SubscriptionStatus.Loading)
 
+    private val purchaseLock = Mutex()
+    private var lastReconcileAt = 0L
+
     init {
         scope.launch {
             billing.unsolicitedPurchases.collect { purchase ->
@@ -74,6 +80,9 @@ class FirestoreSubscriptionRepository(
         scope.launch {
             billing.foreground.collect {
                 val uid = auth.currentUser?.uid ?: return@collect
+                val now = SystemClock.elapsedRealtime()
+                if (now - lastReconcileAt < SubscriptionConstants.RECONCILE_MIN_INTERVAL_MS) return@collect
+                lastReconcileAt = now
                 runCatching { reconcileUnverified(uid) }
                     .onFailure { Timber.w(it, "Reconciling owned purchases on resume failed") }
             }
@@ -148,7 +157,10 @@ class FirestoreSubscriptionRepository(
         return if (restored) RestoreResult.RESTORED else RestoreResult.NOT_FOUND
     }
 
-    private suspend fun purchase(plan: PlanId, replace: Pair<Purchase, ReplacementKind>?): PurchaseResult {
+    private suspend fun purchase(plan: PlanId, replace: Pair<Purchase, ReplacementKind>?): PurchaseResult =
+        purchaseLock.withLock { purchaseLocked(plan, replace) }
+
+    private suspend fun purchaseLocked(plan: PlanId, replace: Pair<Purchase, ReplacementKind>?): PurchaseResult {
         val uid = auth.currentUser?.uid
             ?: throw IllegalStateException(context.getString(R.string.subscription_error_signed_out))
         return when (val outcome = billingCall { billing.purchase(plan.productId(), uid, replace) }) {
@@ -172,9 +184,14 @@ class FirestoreSubscriptionRepository(
     }
 
     private suspend fun reconcileUnverified(uid: String) {
-        billing.ownedSubscriptions()
-            .filter { it.isPlanProduct() && it.belongsTo(uid) && !it.isAcknowledged }
-            .forEach { verify(it) }
+        if (!purchaseLock.tryLock()) return
+        try {
+            billing.ownedSubscriptions()
+                .filter { it.isPlanProduct() && it.belongsTo(uid) && !it.isAcknowledged }
+                .forEach { verify(it) }
+        } finally {
+            purchaseLock.unlock()
+        }
     }
 
     private suspend fun settledStatus(): SubscriptionStatus? =
@@ -214,22 +231,22 @@ class FirestoreSubscriptionRepository(
     }.distinctUntilChanged()
 
     private fun entitlement(uid: String): Flow<SubscriptionStatus> {
-        val freeScanUsed = AtomicBoolean(false)
-        return entitlementUpdates(uid, freeScanUsed)
+        val lastKnown = AtomicReference<SubscriptionStatus?>(null)
+        return entitlementUpdates(uid, lastKnown)
     }
 
-    private fun entitlementUpdates(uid: String, freeScanUsed: AtomicBoolean): Flow<SubscriptionStatus> = callbackFlow {
+    private fun entitlementUpdates(uid: String, lastKnown: AtomicReference<SubscriptionStatus?>): Flow<SubscriptionStatus> = callbackFlow {
         val registration = firestore.collection(SubscriptionConstants.COLLECTION_SUBSCRIPTIONS)
             .document(uid)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     if (error.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
-                        trySend(SubscriptionStatus.None(freeScanUsed.get()))
+                        if (lastKnown.get() == null) trySend(SubscriptionStatus.None())
                     }
                     close(error)
                 } else if (snapshot != null) {
                     val status = snapshot.toSubscriptionStatus()
-                    freeScanUsed.set(status !is SubscriptionStatus.None || status.freeScanUsed)
+                    lastKnown.set(status)
                     trySend(status)
                 }
             }
