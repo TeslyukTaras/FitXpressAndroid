@@ -8,6 +8,8 @@ import com.hexis.bi.domain.subscription.SubscriptionStatus
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.main.subscription.components.RestoreOutcome
 import com.hexis.bi.utils.constants.SubscriptionConstants
+import kotlinx.coroutines.CancellationException
+import timber.log.Timber
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,15 +44,17 @@ class SubscriptionViewModel(
         loadPlans()
     }
 
-    fun dismissError() {
-        clearError()
-        if (_state.value.plans == null) loadPlans()
-    }
-
     private fun loadPlans() {
-        launch(showLoading = false) {
-            val plans = repository.loadPlans()
-            _state.update { it.copy(plans = plans) }
+        viewModelScope.launch {
+            try {
+                val plans = repository.loadPlans()
+                _state.update { it.copy(plans = plans, plansUnavailable = false) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Plan prices are unavailable")
+                _state.update { it.copy(plansUnavailable = true) }
+            }
         }
     }
 
@@ -74,7 +78,12 @@ class SubscriptionViewModel(
             } else {
                 null
             }
-            _state.update { it.copy(restore = RestoreOutcome(result, plan)) }
+            val outcome = if (result == RestoreResult.RESTORED && plan == null) {
+                RestoreOutcome(RestoreResult.FAILED, null)
+            } else {
+                RestoreOutcome(result, plan)
+            }
+            _state.update { it.copy(restore = outcome) }
         }
     }
 

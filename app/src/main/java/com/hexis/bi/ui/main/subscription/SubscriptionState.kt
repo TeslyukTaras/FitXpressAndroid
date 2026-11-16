@@ -8,6 +8,7 @@ import com.hexis.bi.ui.main.subscription.components.RestoreOutcome
 data class SubscriptionState(
     val status: SubscriptionStatus = SubscriptionStatus.None,
     val plans: List<SubscriptionPlan>? = null,
+    val plansUnavailable: Boolean = false,
     val showPlanDetails: Boolean = false,
     val restore: RestoreOutcome? = null,
 ) {

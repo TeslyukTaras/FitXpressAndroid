@@ -107,7 +107,7 @@ class PlayBilling(
     ): PurchaseOutcome = purchaseMutex.withLock {
         val activity = activityProvider.get()
             ?: throw PlayBillingException("No foreground activity to start the purchase")
-        val details = productDetails()[productId]
+        val details = productDetails(refresh = true)[productId]
             ?: throw PlayBillingException("Product $productId is not available")
         val offer = details.baseOffer()
             ?: throw PlayBillingException("Product $productId has no base plan to buy")
@@ -139,13 +139,16 @@ class PlayBilling(
                 requireOk(launched)
             }
             waiting.await()
+        } catch (e: PlayBillingException) {
+            cachedDetails = emptyMap()
+            throw e
         } finally {
             launchResult = null
         }
     }
 
-    private suspend fun productDetails(): Map<String, ProductDetails> {
-        cachedDetails.takeIf { it.keys.containsAll(PLAN_PRODUCT_IDS) }?.let { return it }
+    private suspend fun productDetails(refresh: Boolean = false): Map<String, ProductDetails> {
+        if (!refresh) cachedDetails.takeIf { it.keys.containsAll(PLAN_PRODUCT_IDS) }?.let { return it }
         ensureConnected()
         val result = client.queryProductDetails(
             QueryProductDetailsParams.newBuilder()

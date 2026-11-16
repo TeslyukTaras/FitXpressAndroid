@@ -13,6 +13,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -102,7 +104,7 @@ fun SubscriptionScreen(
             containerColor = Color.Transparent,
             isLoading = isLoading,
             error = error,
-            onDismissError = viewModel::dismissError,
+            onDismissError = viewModel::clearError,
             viewModel = viewModel,
             topBar = {
                 BaseTopBar(
@@ -182,6 +184,7 @@ internal fun SubscriptionContent(
         is SubscriptionStatus.Subscribed -> SubscribedContent(
             status = status,
             price = state.priceOf(status.plan),
+            priceUnavailable = state.plansUnavailable,
             onViewDetails = onViewDetails,
             onChangePlan = onChangePlan,
             onManage = onManage,
@@ -191,6 +194,7 @@ internal fun SubscriptionContent(
         is SubscriptionStatus.Expired -> ExpiredContent(
             status = status,
             price = state.priceOf(status.plan),
+            priceUnavailable = state.plansUnavailable,
             onViewDetails = onViewDetails,
             onChangePlan = onChangePlan,
             onManage = onManage,
@@ -224,6 +228,7 @@ private fun ScrollColumn(
 private fun SubscribedContent(
     status: SubscriptionStatus.Subscribed,
     price: String?,
+    priceUnavailable: Boolean,
     onViewDetails: () -> Unit,
     onChangePlan: () -> Unit,
     onManage: () -> Unit,
@@ -237,7 +242,7 @@ private fun SubscribedContent(
                 stringResource(status.plan.nameRes())
             ),
             price = price,
-            showPrice = status.platform == StorePlatform.ANDROID,
+            showPrice = status.platform == StorePlatform.ANDROID && !priceUnavailable,
         )
         BodyGlassCard(contentPadding = PaddingValues(dimensionResource(R.dimen.spacer_l))) {
             Text(
@@ -327,6 +332,7 @@ private fun PaymentIssueHeader(graceEndsOn: String) {
 private fun ExpiredContent(
     status: SubscriptionStatus.Expired,
     price: String?,
+    priceUnavailable: Boolean,
     onViewDetails: () -> Unit,
     onChangePlan: () -> Unit,
     onManage: () -> Unit,
@@ -341,7 +347,7 @@ private fun ExpiredContent(
                 stringResource(status.plan.nameRes())
             ),
             price = price,
-            showPrice = status.platform == StorePlatform.ANDROID,
+            showPrice = status.platform == StorePlatform.ANDROID && !priceUnavailable,
         )
         BodyGlassCard(contentPadding = PaddingValues(dimensionResource(R.dimen.spacer_l))) {
             InfoNote(
@@ -399,46 +405,49 @@ private fun LinkRow(@StringRes label: Int, onClick: () -> Unit) {
 
 @Composable
 private fun EmptyPlanState(loading: Boolean, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Spacer(Modifier.weight(1f))
-        Box(
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        Column(
             modifier = Modifier
-                .size(dimensionResource(R.dimen.subscription_empty_icon_tile))
-                .background(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = SubscriptionConstants.EMPTY_TILE_ALPHA),
-                    shape = MaterialTheme.shapes.medium,
-                ),
-            contentAlignment = Alignment.Center,
+                .fillMaxWidth()
+                .heightIn(min = maxHeight)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
         ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_layers),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(dimensionResource(R.dimen.subscription_empty_icon_size)),
+            Box(
+                modifier = Modifier
+                    .size(dimensionResource(R.dimen.subscription_empty_icon_tile))
+                    .background(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = SubscriptionConstants.EMPTY_TILE_ALPHA),
+                        shape = MaterialTheme.shapes.medium,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_layers),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(dimensionResource(R.dimen.subscription_empty_icon_size)),
+                )
+            }
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+            Text(
+                text = stringResource(R.string.subscription_none_title),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.alpha(if (loading) 0f else 1f),
+            )
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+            Text(
+                text = stringResource(R.string.subscription_none_message),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.alpha(if (loading) 0f else 1f),
             )
         }
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-        Text(
-            text = stringResource(R.string.subscription_none_title),
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.alpha(if (loading) 0f else 1f),
-        )
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-        Text(
-            text = stringResource(R.string.subscription_none_message),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.alpha(if (loading) 0f else 1f),
-        )
-        Spacer(Modifier.weight(2f))
     }
 }
 
