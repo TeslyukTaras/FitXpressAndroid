@@ -34,7 +34,10 @@ import com.hexis.bi.data.subscription.PlanCatalog
 import com.hexis.bi.data.subscription.billing.CurrentActivityProvider
 import com.hexis.bi.data.subscription.billing.PlayBilling
 import com.hexis.bi.data.subscription.SubscriptionRepository
+import com.hexis.bi.domain.subscription.PlanId
 import com.hexis.bi.ui.main.subscription.SubscriptionViewModel
+import com.hexis.bi.ui.main.subscription.confirm.ConfirmPlanViewModel
+import com.hexis.bi.ui.main.subscription.plans.PlanSelectionViewModel
 import com.hexis.bi.data.recovery.RecoveryRepository
 import com.hexis.bi.data.recovery.DefaultRecoveryRepository
 import com.hexis.bi.data.reminder.ScanReminderScheduler
@@ -274,6 +277,8 @@ val appModule = module {
     viewModel { VerifyEmailViewModel(get(), androidApplication()) }
     viewModel { ScanPreferencesViewModel(androidApplication(), get(), get()) }
     viewModel { SubscriptionViewModel(androidApplication(), get()) }
+    viewModel { PlanSelectionViewModel(androidApplication(), get()) }
+    viewModel { (planId: PlanId) -> ConfirmPlanViewModel(androidApplication(), get(), planId) }
     viewModel {
         HealthConnectionsViewModel(
             androidApplication(),
