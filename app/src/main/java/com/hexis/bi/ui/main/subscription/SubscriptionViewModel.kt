@@ -74,7 +74,12 @@ class SubscriptionViewModel(
             } else {
                 null
             }
-            _state.update { it.copy(restore = RestoreOutcome(result, plan)) }
+            val outcome = if (result == RestoreResult.RESTORED && plan == null) {
+                RestoreOutcome(RestoreResult.FAILED, null)
+            } else {
+                RestoreOutcome(result, plan)
+            }
+            _state.update { it.copy(restore = outcome) }
         }
     }
 
