@@ -22,6 +22,7 @@ internal object Route {
         const val NOTIFICATION_SETTINGS = "main/notification_settings"
         const val SCAN_PREFERENCES = "main/scan_preferences"
         const val MY_SUIT = "main/my_suit"
+        const val SUBSCRIPTION = "main/subscription"
         const val SLEEP = "main/sleep"
         const val RECOVERY = "main/recovery"
         const val RECOMPOSITION = "main/recomposition"

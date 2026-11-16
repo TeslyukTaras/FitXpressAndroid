@@ -27,6 +27,13 @@
       },
       "description": "Minimum Android version allowed to use the app",
       "valueType": "STRING"
+    },
+    "subscription_plans": {
+      "defaultValue": {
+        "value": "[{\"planId\":\"essential\",\"rank\":3,\"scansPerMonth\":2},{\"planId\":\"progress\",\"rank\":2,\"scansPerMonth\":4,\"badge\":\"mostPopular\"},{\"planId\":\"transformation\",\"rank\":1,\"scansPerMonth\":6}]"
+      },
+      "valueType": "JSON",
+      "description": "Subscription plans: rank, scans per month and optional badge. Prices come from the store."
     }
   }
 }

@@ -68,6 +68,7 @@ import com.hexis.bi.ui.main.settings.healthconnections.HealthConnectionsScreen
 import com.hexis.bi.ui.main.settings.mysuit.MySuitScreen
 import com.hexis.bi.ui.main.settings.notifications.NotificationsSettingsScreen
 import com.hexis.bi.ui.main.settings.scanpreferences.ScanPreferencesScreen
+import com.hexis.bi.ui.main.subscription.SubscriptionScreen
 import com.hexis.bi.ui.navigation.Route
 import com.hexis.bi.ui.navigation.popBackStackOnce
 import kotlinx.coroutines.launch
@@ -330,6 +331,13 @@ fun MainScreen(
                     onNavigateToScanPreferences = { navController.navigate(Route.Main.SCAN_PREFERENCES) },
                     onNavigateToMySuit = { if (AppConfig.suitVisible) navController.navigate(Route.Main.MY_SUIT) },
                     onNavigateToHowToScan = { navController.navigate(Route.Main.HOW_TO_SCAN) },
+                    onNavigateToSubscription = { navController.navigate(Route.Main.SUBSCRIPTION) },
+                )
+            }
+            composable(Route.Main.SUBSCRIPTION) {
+                SubscriptionScreen(
+                    onBack = { navController.popBackStackOnce() },
+                    onChoosePlan = {},
                 )
             }
             composable(Route.Main.HOW_TO_SCAN) {

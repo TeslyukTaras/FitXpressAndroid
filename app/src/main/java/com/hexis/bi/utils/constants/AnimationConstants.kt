@@ -41,4 +41,6 @@ internal object AnimationConstants {
     /** Forced-update screen fading in above the app once Remote Config reports it is required. */
     const val UPDATE_GATE_FADE_IN_MS = 300
     const val UPDATE_GATE_FADE_OUT_MS = 200
+
+    const val SEGMENT_FILL_MS = 400
 }
