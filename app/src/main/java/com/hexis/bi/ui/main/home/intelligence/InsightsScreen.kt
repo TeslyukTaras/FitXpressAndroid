@@ -44,10 +44,22 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun InsightsScreen(
     onBack: () -> Unit,
+    onChoosePlan: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: InsightsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    if (state.blocked) {
+        InsightsBlockedScreen(
+            paymentIssue = state.paymentIssue,
+            storePlatform = state.storePlatform,
+            onBack = onBack,
+            onChoosePlan = onChoosePlan,
+            modifier = modifier,
+        )
+        return
+    }
 
     LightStatusBarIcons()
 

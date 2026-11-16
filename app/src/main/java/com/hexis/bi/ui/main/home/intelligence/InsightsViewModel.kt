@@ -3,7 +3,11 @@ package com.hexis.bi.ui.main.home.intelligence
 import android.app.Application
 import androidx.lifecycle.viewModelScope
 import com.hexis.bi.data.scan.ScanHistoryRepository
+import com.hexis.bi.data.subscription.SubscriptionRepository
 import com.hexis.bi.domain.intelligence.IntelligenceCoordinator
+import com.hexis.bi.domain.subscription.StorePlatform
+import com.hexis.bi.domain.subscription.SubscriptionStatus
+import com.hexis.bi.domain.subscription.storePlatform
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.millisToShortMonthDay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,12 +21,16 @@ data class InsightsState(
     val updating: Boolean = false,
     val latestScanDate: String? = null,
     val showInfoSheet: Boolean = false,
+    val blocked: Boolean = false,
+    val paymentIssue: Boolean = false,
+    val storePlatform: StorePlatform = StorePlatform.ANDROID,
 )
 
 class InsightsViewModel internal constructor(
     application: Application,
     private val intelligenceCoordinator: IntelligenceCoordinator,
     private val scanHistoryRepository: ScanHistoryRepository,
+    private val subscriptionRepository: SubscriptionRepository,
 ) : BaseViewModel(application, initialLoading = false) {
 
     private val _state = MutableStateFlow(InsightsState())
@@ -32,6 +40,16 @@ class InsightsViewModel internal constructor(
     init {
         intelligenceCoordinator.refreshIfStale()
         loadScanDate()
+        subscriptionRepository.status
+            .onEach { status ->
+                _state.update {
+                    it.copy(
+                        paymentIssue = (status as? SubscriptionStatus.Expired)?.paymentIssue == true,
+                        storePlatform = status.storePlatform ?: StorePlatform.ANDROID,
+                    )
+                }
+            }
+            .launchIn(viewModelScope)
         intelligenceCoordinator.state
             .onEach { reportState ->
                 val cards = reportState.run?.let { run ->
@@ -46,6 +64,7 @@ class InsightsViewModel internal constructor(
                     it.copy(
                         cards = cards ?: it.cards,
                         updating = reportState.updating,
+                        blocked = reportState.blocked,
                     )
                 }
             }

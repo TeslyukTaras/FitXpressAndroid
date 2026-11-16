@@ -310,7 +310,7 @@ val appModule = module {
     viewModel { LongevityViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { PaceOfAgingViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { PhysiqueDriftViewModel(androidApplication(), get(), get(), get(), get(), get()) }
-    viewModel { InsightsViewModel(androidApplication(), get(), get()) }
+    viewModel { InsightsViewModel(androidApplication(), get(), get(), get()) }
     viewModel { RecompositionViewModel(androidApplication(), get(), get()) }
     viewModel { ScanViewModel(androidApplication(), get()) }
     viewModel { StartScanViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get()) }
