@@ -1,5 +1,7 @@
 package com.hexis.bi.ui.main.scan.access
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,6 +33,7 @@ internal fun FirstFreeScanDialog(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(dimensionResource(R.dimen.padding_large)),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -82,6 +85,7 @@ internal fun SubscriptionRequiredDialog(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(dimensionResource(R.dimen.padding_large)),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -118,6 +122,7 @@ internal fun PaymentIssueScanDialog(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(dimensionResource(R.dimen.padding_large)),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {

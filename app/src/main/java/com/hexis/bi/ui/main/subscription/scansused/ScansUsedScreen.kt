@@ -2,6 +2,11 @@ package com.hexis.bi.ui.main.subscription.scansused
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -109,51 +114,54 @@ private fun ScansUsedContent(status: SubscriptionStatus.Subscribed) {
         text = stringResource(R.string.scans_used_reset, status.renewsOn.formatDisplay()),
         parts = listOf(status.renewsOn.formatDisplay()),
     )
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Spacer(Modifier.weight(1f))
-        Box(
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        Column(
             modifier = Modifier
-                .size(dimensionResource(R.dimen.subscription_empty_icon_tile))
-                .background(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = SubscriptionConstants.EMPTY_TILE_ALPHA),
-                    shape = MaterialTheme.shapes.medium,
-                ),
-            contentAlignment = Alignment.Center,
+                .fillMaxWidth()
+                .heightIn(min = maxHeight)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
         ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_layers),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(dimensionResource(R.dimen.subscription_empty_icon_size)),
+            Box(
+                modifier = Modifier
+                    .size(dimensionResource(R.dimen.subscription_empty_icon_tile))
+                    .background(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = SubscriptionConstants.EMPTY_TILE_ALPHA),
+                        shape = MaterialTheme.shapes.medium,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_layers),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(dimensionResource(R.dimen.subscription_empty_icon_size)),
+                )
+            }
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+            Text(
+                text = stringResource(R.string.scans_used_title),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+            Text(
+                text = planLine,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+            Text(
+                text = resetLine,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
             )
         }
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-        Text(
-            text = stringResource(R.string.scans_used_title),
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-        Text(
-            text = planLine,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-        Text(
-            text = resetLine,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.weight(2f))
     }
 }
 
