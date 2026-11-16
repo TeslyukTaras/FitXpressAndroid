@@ -24,6 +24,8 @@ data class ConfirmPlanState(
 
     val current: SubscriptionStatus.Subscribed? get() = status as? SubscriptionStatus.Subscribed
 
+    val isCurrentPlan: Boolean get() = current?.plan == planId
+
     val kind: PlanChangeKind
         get() {
             val currentPlan = current?.plan ?: return PlanChangeKind.SUBSCRIBE

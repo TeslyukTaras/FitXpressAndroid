@@ -120,7 +120,8 @@ fun ConfirmPlanScreen(
                         state.plan?.formattedPrice.orEmpty()
                     ),
                     onClick = viewModel::confirm,
-                    enabled = state.plan != null && state.status !is SubscriptionStatus.Loading && !isLoading,
+                    enabled = state.plan != null && state.status !is SubscriptionStatus.Loading && !isLoading &&
+                        !state.isCurrentPlan,
                 )
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xl)))
                 Text(

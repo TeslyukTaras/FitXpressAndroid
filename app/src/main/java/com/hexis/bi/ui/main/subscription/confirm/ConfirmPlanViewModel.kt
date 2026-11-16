@@ -7,6 +7,7 @@ import com.hexis.bi.domain.subscription.PlanId
 import com.hexis.bi.domain.subscription.PurchaseResult
 import com.hexis.bi.domain.subscription.SubscriptionStatus
 import com.hexis.bi.ui.base.BaseViewModel
+import com.hexis.bi.ui.base.UiEvent
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,7 +28,11 @@ class ConfirmPlanViewModel(
 
     override fun onInitialize() {
         viewModelScope.launch {
-            repository.status.collect { status -> _state.update { if (it.completed) it else it.copy(status = status) } }
+            repository.status.collect { status ->
+                _state.update { if (it.completed) it else it.copy(status = status) }
+                val state = _state.value
+                if (!confirming && !state.completed && state.isCurrentPlan) leave()
+            }
         }
         loadPlans()
     }
@@ -45,6 +50,7 @@ class ConfirmPlanViewModel(
     }
 
     private var confirming = false
+    private var leaving = false
 
     fun confirm() {
         if (confirming) return
@@ -53,6 +59,10 @@ class ConfirmPlanViewModel(
         launch {
             try {
                 val status = repository.status.first { it !is SubscriptionStatus.Loading }
+                if (status is SubscriptionStatus.Subscribed && status.plan == planId) {
+                    leave()
+                    return@launch
+                }
                 val result = if (status !is SubscriptionStatus.Subscribed) {
                     repository.subscribe(planId)
                 } else {
@@ -66,5 +76,11 @@ class ConfirmPlanViewModel(
                 confirming = false
             }
         }
+    }
+
+    private fun leave() {
+        if (leaving) return
+        leaving = true
+        emitEvent(UiEvent.NavigateBack)
     }
 }
