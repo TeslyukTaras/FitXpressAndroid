@@ -24,7 +24,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -39,11 +41,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
-import com.hexis.bi.domain.enums.ReminderDay
 import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppHorizontalGradientDivider
-import com.hexis.bi.ui.components.AppListPicker
+import com.hexis.bi.ui.components.AppDatePicker
 import com.hexis.bi.ui.components.AppScrollPicker
 import com.hexis.bi.ui.components.AppSwitch
 import com.hexis.bi.ui.components.BodyGlassCard
@@ -54,7 +55,13 @@ import com.hexis.bi.utils.constants.TimeConstants
 import com.hexis.bi.utils.hour12ToHour24
 import com.hexis.bi.utils.hour24ToHour12
 import com.hexis.bi.utils.isHour24Pm
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import org.koin.androidx.compose.koinViewModel
+
+private val reminderDateFormatter: DateTimeFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,7 +73,8 @@ fun NotificationsSettingsScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
-    val showAnyDialog = state.showDayPicker || state.showTimePicker
+    val showAnyDialog = state.showDatePicker || state.showTimePicker
+    val reminderRowsEnabled = state.remindToScanEnabled && state.nextReminderDate != null && state.dateRange != null
     val context = LocalContext.current
 
     LightStatusBarIcons()
@@ -176,33 +184,43 @@ fun NotificationsSettingsScreen(
                     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_m)))
 
                     PickerRow(
-                        label = stringResource(R.string.notifications_day),
-                        value = stringResource(state.reminderDay.labelRes()),
-                        enabled = state.remindToScanEnabled,
-                        onClick = viewModel::showDayPicker,
+                        label = stringResource(R.string.notifications_next_reminder),
+                        value = state.nextReminderDate?.format(reminderDateFormatter)
+                            ?: stringResource(R.string.notifications_not_scheduled),
+                        enabled = reminderRowsEnabled,
+                        onClick = viewModel::showDatePicker,
                     )
 
                     PickerRow(
                         label = stringResource(R.string.notifications_time),
                         value = formatHourOnly(state.reminderHour),
-                        enabled = state.remindToScanEnabled,
+                        enabled = reminderRowsEnabled,
                         onClick = viewModel::showTimePicker,
                     )
                 }
             }
         }
 
-        if (state.showDayPicker) {
-            AppListPicker(
-                items = ReminderDay.entries,
-                selectedItem = state.reminderDay,
-                onItemSelected = viewModel::selectDay,
-                onDismiss = viewModel::hideDayPicker,
-                itemLabel = { stringResource(it.labelRes()) },
-                title = stringResource(R.string.notifications_day).trimEnd(':'),
+        val dateRange = state.dateRange
+        if (state.showDatePicker && dateRange != null) {
+            val zone = ZoneOffset.UTC
+            val datePickerState = rememberDatePickerState(
+                initialSelectedDateMillis = state.nextReminderDate?.atStartOfDay(zone)?.toInstant()?.toEpochMilli(),
+                selectableDates = object : SelectableDates {
+                    override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+                        Instant.ofEpochMilli(utcTimeMillis).atZone(zone).toLocalDate() in dateRange
+                },
+            )
+            AppDatePicker(
+                state = datePickerState,
+                onDismissRequest = viewModel::hideDatePicker,
+                onSelect = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        viewModel.selectDate(Instant.ofEpochMilli(millis).atZone(zone).toLocalDate())
+                    }
+                },
             )
         }
-
 
         if (state.showTimePicker) {
             val hourState = rememberAppHourPickerState(initialHour = state.reminderHour)

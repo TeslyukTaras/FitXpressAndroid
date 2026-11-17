@@ -73,16 +73,16 @@ internal class HealthDomainSync<T>(
         local.coverage(uid, identities, spec.source, dateRange(start, end))
     }
 
-    suspend fun sync(start: LocalDate, end: LocalDate): Result<HealthSyncTally> {
+    suspend fun sync(start: LocalDate, end: LocalDate, force: Boolean = false): Result<HealthSyncTally> {
         val uid = auth.currentUser?.uid ?: return Result.failure(notAuthenticated())
-        return refresh(uid, start, end)
+        return refresh(uid, start, end, force)
     }
 
     suspend fun range(start: LocalDate, end: LocalDate, withSamples: Boolean = false): Result<List<T>> {
         val uid = auth.currentUser?.uid ?: return Result.failure(notAuthenticated())
         val days = dateRange(start, end)
         val known = storedIdentities(uid)
-        if (hasGaps(uid, known, days)) fillInBackground(uid, start, end)
+        if (hasGaps(uid, known, permitted(days))) fillInBackground(uid, start, end)
         return Result.success(mergedAny(uid, known.ids(), days, withSamples))
     }
 
@@ -91,10 +91,16 @@ internal class HealthDomainSync<T>(
         known: List<TerraRestIdentity>,
         days: List<LocalDate>,
     ): Boolean = withContext(io) {
+        if (days.isEmpty()) return@withContext false
         if (known.isEmpty()) return@withContext true
         val fetchable = remote.fetchableIdentities(known).ids()
         if (fetchable.isEmpty()) return@withContext false
         local.hasUnsyncedDays(uid, fetchable, spec.source, days, TTL)
+    }
+
+    private suspend fun permitted(days: List<LocalDate>): List<LocalDate> {
+        val bounds = remote.allowedBounds() ?: return emptyList()
+        return days.filter { it in bounds }
     }
 
     private fun fillInBackground(uid: String, start: LocalDate, end: LocalDate) {
@@ -109,10 +115,17 @@ internal class HealthDomainSync<T>(
         }
     }
 
-    private suspend fun refresh(uid: String, start: LocalDate, end: LocalDate): Result<HealthSyncTally> =
+    private suspend fun refresh(
+        uid: String,
+        start: LocalDate,
+        end: LocalDate,
+        force: Boolean = false,
+    ): Result<HealthSyncTally> =
         withContext(io) {
             local.singleFlight(uid, spec.source) {
-                val days = dateRange(start, end)
+                val permittedDays = permitted(dateRange(start, end))
+                if (permittedDays.isEmpty()) return@singleFlight Result.success(HealthSyncTally.NOTHING_FETCHED)
+                val days = permittedDays
                 val identities = remote.identities().getOrElse { error ->
                     Timber.w(error, "Provider lookup failed")
                     return@singleFlight Result.failure(error)
@@ -135,7 +148,7 @@ internal class HealthDomainSync<T>(
                     return@singleFlight Result.success(HealthSyncTally.NOTHING_FETCHED)
                 }
 
-                val missing = local.missingDays(uid, fetchable.ids(), spec.source, days, TTL)
+                val missing = if (force) days else local.missingDays(uid, fetchable.ids(), spec.source, days, TTL)
                 if (missing.isEmpty()) {
                     recordSynced(uid, fetchable, days.first()..days.last())
                     return@singleFlight Result.success(HealthSyncTally.NOTHING_FETCHED)
@@ -148,10 +161,8 @@ internal class HealthDomainSync<T>(
                 var consecutiveFailures = 0
                 var unreachable = false
 
-                val bounds = remote.allowedBounds()
                 for (window in windows) {
-                    val allowed = window.clampTo(bounds) ?: continue
-                    val merged = fetchWindow(fetchable, allowed).getOrElse { error ->
+                    val merged = fetchWindow(fetchable, window).getOrElse { error ->
                         if (error !is HealthDataGated) {
                             failure = error
                             consecutiveFailures++
@@ -167,7 +178,7 @@ internal class HealthDomainSync<T>(
                     }
                     consecutiveFailures = 0
                     local.recordProviderCalls(uid, spec.source, merged.totalSources)
-                    tally += store(uid, allowed, merged)
+                    tally += store(uid, window, merged)
                     stored++
                 }
 
@@ -268,12 +279,6 @@ internal class HealthDomainSync<T>(
 
     private fun ClosedRange<LocalDate>.toDateList(): List<LocalDate> = dateRange(start, endInclusive)
 
-    private fun ClosedRange<LocalDate>.clampTo(bounds: ClosedRange<LocalDate>?): ClosedRange<LocalDate>? {
-        if (bounds == null) return null
-        val from = maxOf(start, bounds.start)
-        val to = minOf(endInclusive, bounds.endInclusive)
-        return if (from.isAfter(to)) null else from..to
-    }
 
     private fun ClosedRange<LocalDate>.windowed(
         size: Long = TerraSyncConstants.SYNC_WINDOW_DAYS,

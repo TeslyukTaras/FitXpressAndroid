@@ -37,7 +37,6 @@ import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_URL
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.FIELD_WEIGHT
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.PARAMS_DOC_ID
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.SCAN_HISTORY_DEFAULT_LIMIT
-import com.hexis.bi.utils.constants.ScanFirestoreConstants.SCAN_HISTORY_TIMESTAMP_LOOKBACK
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.SUB_CIRCUMFERENCE_PARAMS
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.SUB_FRONT_LINEAR_PARAMS
 import com.hexis.bi.utils.constants.ScanFirestoreConstants.SUB_SIDE_LINEAR_PARAMS
@@ -312,18 +311,6 @@ class ScanHistoryRepository internal constructor(
     ): Result<List<ScanRecord>> = runCatching {
         cachedFullSnapshot().filter { it.timestamp < savedAtCutoff.toDate().time }
             .sortedByDescending { it.timestamp }.take(limit.toInt())
-    }
-
-    /** True if any saved scan in recent history has [ScanRecord.timestamp] in the inclusive range. */
-    suspend fun hasScanSavedBetween(
-        startMillisInclusive: Long,
-        endMillisInclusive: Long,
-        lookback: Long = SCAN_HISTORY_TIMESTAMP_LOOKBACK,
-    ): Result<Boolean> = fetchRecentScans(
-        limit = lookback,
-        projection = ScanFetchProjection.TIMESTAMPS_ONLY,
-    ).map { scans ->
-        scans.any { it.timestamp in startMillisInclusive..endMillisInclusive }
     }
 
     private suspend fun fetchRecentScans(

@@ -72,6 +72,7 @@ internal object SubscriptionConstants {
 
     const val REMOTE_CONFIG_SCAN_GATE_KEY = "subscription_gate_enabled"
     const val SCAN_ACCESS_WAIT_MS = 3_000L
+    const val FIRST_FREE_SCAN_CONSENT_TTL_MS = 120_000L
     const val SCAN_BLOCK_NO_SUBSCRIPTION = "noSubscription"
     const val SCAN_BLOCK_ALL_SCANS_USED = "allScansUsed"
     const val SCAN_BLOCK_ON_HOLD = "onHold"

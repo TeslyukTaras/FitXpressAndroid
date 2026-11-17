@@ -22,15 +22,16 @@ object AppPreferencesKeys {
         val onboardingShown = booleanPreferencesKey("onboarding_shown")
         val voiceGuidanceEnabled = booleanPreferencesKey("voice_guidance_enabled")
         val voiceMigratedToFirestore = booleanPreferencesKey("voice_migrated_to_firestore")
-        val lastScanTodayIsoWeek = stringPreferencesKey("last_scan_today_iso_week")
-        val lastScanNudgeIsoWeek = stringPreferencesKey("last_scan_nudge_iso_week")
-        val lastScanMissedIsoWeek = stringPreferencesKey("last_scan_missed_iso_week")
+        val scanReminderTodaySent = stringPreferencesKey("scan_reminder_today_sent")
+        val scanReminderNudgeSent = stringPreferencesKey("scan_reminder_nudge_sent")
+        val scanReminderMissedSent = stringPreferencesKey("scan_reminder_missed_sent")
         val askedNotifPermissionUids = stringSetPreferencesKey("asked_notif_permission_uids")
         val bodyVisualMode = stringPreferencesKey("body_visual_mode")
         val personalizeResultsHintShown = booleanPreferencesKey("personalize_results_hint_shown")
         val medicalDisclaimerAcknowledgedAt = longPreferencesKey("medical_disclaimer_acknowledged_at")
         const val FREE_WEEK_ANCHOR_PREFIX = "free_week_anchor_"
         const val FREE_WEEK_IMPORTED_PREFIX = "free_week_imported_"
+        const val FREE_WEEK_IMPORT_ROWS_PREFIX = "free_week_import_rows_"
         const val INSIGHTS_RUN_DATE_PREFIX = "insights_run_date_"
     }
 

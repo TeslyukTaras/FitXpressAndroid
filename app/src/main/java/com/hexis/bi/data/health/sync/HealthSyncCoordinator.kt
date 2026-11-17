@@ -17,6 +17,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import timber.log.Timber
 
+data class RecentWindowSync(val failures: List<Throwable>, val rows: Int)
+
 internal class HealthSyncCoordinator(
     private val activityRepository: ActivityRepository,
     private val sleepRepository: SleepRepository,
@@ -36,26 +38,28 @@ internal class HealthSyncCoordinator(
         return windows.observationDays
     }
 
-    suspend fun syncRecentWindow(today: LocalDate = LocalDate.now()): List<Throwable> {
-        val uid = auth.currentUser?.uid ?: return emptyList()
-        local.pruneExpiredDaysOnStartup(uid)
-        val start = today.minusDays(CanonicalCacheConstants.FORCED_REFRESH_DAYS - 1)
-        return coroutineScope {
-            val activity = async { activityRepository.sync(start, today).logFailure("activity") }
-            val sleep = async { sleepRepository.sync(start, today).logFailure("sleep") }
-            listOfNotNull(activity.await(), sleep.await())
-        }
+    suspend fun syncRecentWindow(today: LocalDate = LocalDate.now()): List<Throwable> =
+        syncRecentWindowResult(today).failures
+
+    suspend fun syncRecentWindowResult(today: LocalDate = LocalDate.now()): RecentWindowSync =
+        syncRange(today.minusDays(CanonicalCacheConstants.FORCED_REFRESH_DAYS - 1), today, force = false)
+
+    suspend fun syncFreeWeek(): RecentWindowSync {
+        val bounds = remote.allowedBounds() ?: return RecentWindowSync(emptyList(), 0)
+        return syncRange(bounds.start, minOf(bounds.endInclusive, LocalDate.now()), force = true)
     }
 
-    suspend fun syncFreeWeek(): List<Throwable> {
-        val uid = auth.currentUser?.uid ?: return emptyList()
-        val bounds = remote.allowedBounds() ?: return emptyList()
+    private suspend fun syncRange(start: LocalDate, end: LocalDate, force: Boolean): RecentWindowSync {
+        val uid = auth.currentUser?.uid ?: return RecentWindowSync(emptyList(), 0)
         local.pruneExpiredDaysOnStartup(uid)
-        val end = minOf(bounds.endInclusive, LocalDate.now())
         return coroutineScope {
-            val activity = async { activityRepository.sync(bounds.start, end).logFailure("activity") }
-            val sleep = async { sleepRepository.sync(bounds.start, end).logFailure("sleep") }
-            listOfNotNull(activity.await(), sleep.await())
+            val activity = async { activityRepository.sync(start, end, force) }
+            val sleep = async { sleepRepository.sync(start, end, force) }
+            val results = listOf("activity" to activity.await(), "sleep" to sleep.await())
+            RecentWindowSync(
+                failures = results.mapNotNull { (source, result) -> result.logFailure(source) },
+                rows = results.sumOf { (_, result) -> result.getOrNull()?.rows ?: 0 },
+            )
         }
     }
 

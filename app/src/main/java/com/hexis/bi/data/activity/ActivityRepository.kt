@@ -12,7 +12,7 @@ interface ActivityRepository {
 
     suspend fun coverage(start: LocalDate, end: LocalDate): HealthRangeCoverage
 
-    suspend fun sync(start: LocalDate, end: LocalDate): Result<HealthSyncTally>
+    suspend fun sync(start: LocalDate, end: LocalDate, force: Boolean = false): Result<HealthSyncTally>
 
     val updates: Flow<Unit>
 }

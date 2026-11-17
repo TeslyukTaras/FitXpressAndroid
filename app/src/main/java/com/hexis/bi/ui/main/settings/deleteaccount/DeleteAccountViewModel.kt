@@ -9,6 +9,8 @@ import com.hexis.bi.data.auth.AccountDeletionApi
 import com.hexis.bi.data.auth.AuthRepository
 import com.hexis.bi.data.auth.FirebaseAuthProviders
 import com.hexis.bi.data.auth.SessionCleaner
+import com.hexis.bi.data.subscription.SubscriptionRepository
+import com.hexis.bi.domain.subscription.SubscriptionStatus
 import com.hexis.bi.ui.base.BaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,6 +22,7 @@ class DeleteAccountViewModel(
     private val authRepository: AuthRepository,
     private val accountDeletionApi: AccountDeletionApi,
     private val sessionCleaner: SessionCleaner,
+    private val subscriptionRepository: SubscriptionRepository,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(DeleteAccountState())
@@ -33,10 +36,19 @@ class DeleteAccountViewModel(
             FirebaseAuthProviders.EMAIL_PASSWORD in providerIds -> AuthProvider.EMAIL
             else -> AuthProvider.UNKNOWN
         }
+        val subscription = subscriptionRepository.status.value
+        val renewing = when (subscription) {
+            is SubscriptionStatus.Active -> subscription.renews
+            is SubscriptionStatus.GracePeriod -> true
+            else -> false
+        }
         _state.update {
             it.copy(
                 showDialog = true,
                 provider = provider,
+                renewingSubscription = (subscription as? SubscriptionStatus.Subscribed)
+                    ?.takeIf { renewing }
+                    ?.let { RenewingSubscription(it.platform) },
                 password = "",
                 passwordVisible = false,
                 passwordError = null,

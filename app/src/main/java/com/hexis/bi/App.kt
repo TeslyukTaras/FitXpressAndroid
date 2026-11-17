@@ -2,8 +2,12 @@ package com.hexis.bi
 
 import android.app.Activity
 import android.app.Application
+import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.os.Process
+import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.auth.FirebaseAuth
@@ -11,6 +15,7 @@ import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
 import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.firestore.FirebaseFirestore
+import com.hexis.bi.R
 import com.hexis.bi.data.health.access.HealthDataGate
 import com.hexis.bi.data.terra.TerraSdkSync
 import com.hexis.bi.data.subscription.billing.CurrentActivityProvider
@@ -22,7 +27,10 @@ import com.hexis.bi.data.telemetry.Telemetry
 import com.hexis.bi.di.appModule
 import com.hexis.bi.utils.CrashlyticsTree
 import com.hexis.bi.utils.SystemNotificationHelper
+import com.hexis.bi.utils.constants.AnimationConstants
 import com.look.camera.sdk.SdkActivity
+import java.util.Collections
+import java.util.WeakHashMap
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.component.KoinComponent
@@ -59,6 +67,7 @@ class App : Application(), KoinComponent {
         SystemNotificationHelper.createChannels(this)
         scanReminderScheduler().onNotificationSettingsOrScanChanged()
         registerActivityLifecycleCallbacks(KeepScreenOn)
+        registerActivityLifecycleCallbacks(ScanCameraCover)
         registerActivityLifecycleCallbacks(get<CurrentActivityProvider>())
     }
 
@@ -117,6 +126,33 @@ class App : Application(), KoinComponent {
                     it.methodName.contains("initHealthConnect")
             }
     }
+}
+
+private object ScanCameraCover : Application.ActivityLifecycleCallbacks {
+    private val covered = Collections.newSetFromMap(WeakHashMap<Activity, Boolean>())
+
+    override fun onActivityStarted(activity: Activity) {
+        if (activity !is SdkActivity || !covered.add(activity)) return
+        val cover = View(activity).apply { setBackgroundColor(Color.BLACK) }
+        activity.addContentView(cover, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        cover.postDelayed(
+            {
+                cover.animate()
+                    .alpha(0f)
+                    .setDuration(AnimationConstants.SDK_CAMERA_COVER_FADE_MS)
+                    .withEndAction { (cover.parent as? ViewGroup)?.removeView(cover) }
+                    .start()
+            },
+            AnimationConstants.SDK_CAMERA_COVER_HOLD_MS,
+        )
+    }
+
+    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+    override fun onActivityResumed(activity: Activity) {}
+    override fun onActivityPaused(activity: Activity) {}
+    override fun onActivityStopped(activity: Activity) {}
+    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+    override fun onActivityDestroyed(activity: Activity) {}
 }
 
 private object KeepScreenOn : Application.ActivityLifecycleCallbacks {

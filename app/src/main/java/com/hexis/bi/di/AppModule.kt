@@ -31,6 +31,7 @@ import com.hexis.bi.data.order.OrderDraftHolder
 import com.hexis.bi.data.preferences.UserPreferencesRepository
 import com.hexis.bi.data.subscription.FirestoreSubscriptionRepository
 import com.hexis.bi.data.subscription.PlanCatalog
+import com.hexis.bi.data.subscription.FirstFreeScanConsent
 import com.hexis.bi.data.subscription.ScanGateConfig
 import com.hexis.bi.data.subscription.billing.CurrentActivityProvider
 import com.hexis.bi.data.subscription.billing.PlayBilling
@@ -42,6 +43,7 @@ import com.hexis.bi.ui.main.subscription.confirm.ConfirmPlanViewModel
 import com.hexis.bi.ui.main.subscription.plans.PlanSelectionViewModel
 import com.hexis.bi.data.recovery.RecoveryRepository
 import com.hexis.bi.data.recovery.DefaultRecoveryRepository
+import com.hexis.bi.data.reminder.ScanReminderResolver
 import com.hexis.bi.data.reminder.ScanReminderScheduler
 import com.hexis.bi.data.reminder.ScanReminderSchedulerImpl
 import com.hexis.bi.data.reminder.ScanReminderWorkRunner
@@ -145,6 +147,7 @@ val appModule = module {
     single { PlayBilling(androidContext(), get()) }
     single { PlanCatalog(get(), planCatalogFetchInterval()) }
     single { ScanGateConfig(get(), scanGateFetchInterval()) }
+    single { FirstFreeScanConsent() }
     single<SubscriptionRepository>(createdAtStart = true) {
         FirestoreSubscriptionRepository(
             androidContext(),
@@ -168,7 +171,8 @@ val appModule = module {
             get(),
         )
     }
-    single<ScanReminderScheduler> { ScanReminderSchedulerImpl(androidContext(), get(), get()) }
+    single { ScanReminderResolver(get(), get(), get()) }
+    single<ScanReminderScheduler> { ScanReminderSchedulerImpl(androidContext(), get(), get(), get(), get()) }
     single { NotificationPermissionCoordinator(androidContext(), get(), get(), get(), get()) }
     single { EmailVerificationApi(get()) }
     single { AccountDeletionApi(get()) }
@@ -282,7 +286,7 @@ val appModule = module {
     viewModel { VerifyEmailViewModel(get(), androidApplication()) }
     viewModel { ScanPreferencesViewModel(androidApplication(), get(), get()) }
     viewModel { SubscriptionViewModel(androidApplication(), get()) }
-    viewModel { ScanAccessViewModel(androidApplication(), get(), get()) }
+    viewModel { ScanAccessViewModel(androidApplication(), get(), get(), get()) }
     viewModel { PlanSelectionViewModel(androidApplication(), get()) }
     viewModel { (planId: PlanId) -> ConfirmPlanViewModel(androidApplication(), get(), planId) }
     viewModel {
@@ -301,7 +305,7 @@ val appModule = module {
         )
     }
     viewModel { MySuitViewModel(androidApplication(), get()) }
-    viewModel { NotificationsSettingsViewModel(androidApplication(), get(), get(), get(), get()) }
+    viewModel { NotificationsSettingsViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { NotificationsViewModel(androidApplication(), get()) }
     viewModel { BodyViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { SleepViewModel(androidApplication(), get(), get(), get(), get(), get()) }
@@ -319,8 +323,8 @@ val appModule = module {
     viewModel { ShippingDetailsViewModel(androidApplication(), get(), get(), get()) }
     viewModel { (orderId: String) -> EditAddressViewModel(androidApplication(), get(), orderId) }
     viewModel { ScanHistoryViewModel(androidApplication(), get(), get()) }
-    viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get(), get()) }
-    viewModel { OnboardingViewModel(androidApplication(), get(), get()) }
+    viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get(), get(), get()) }
+    viewModel { OnboardingViewModel(androidApplication(), get(), get(), get(), get(), get()) }
 }
 
 private const val FIREBASE_FUNCTIONS_REGION = "us-central1"

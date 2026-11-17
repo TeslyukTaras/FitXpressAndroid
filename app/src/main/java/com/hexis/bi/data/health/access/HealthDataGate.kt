@@ -54,9 +54,15 @@ class HealthDataGate(
         return anchor == LocalDate.now() || !preferences.isFreeWeekImported(uid)
     }
 
-    suspend fun markFreeWeekImported() {
-        val uid = auth.currentUser?.uid ?: return
-        preferences.setFreeWeekImported(uid)
+    suspend fun recordFreeWeekImport(rows: Int): Boolean {
+        val uid = auth.currentUser?.uid ?: return false
+        val previous = preferences.getFreeWeekImportRows(uid)
+        if (rows > 0 && previous == rows) {
+            preferences.setFreeWeekImported(uid)
+            return true
+        }
+        preferences.setFreeWeekImportRows(uid, rows)
+        return false
     }
 
     private suspend fun freeWeekStillOpen(): Boolean {

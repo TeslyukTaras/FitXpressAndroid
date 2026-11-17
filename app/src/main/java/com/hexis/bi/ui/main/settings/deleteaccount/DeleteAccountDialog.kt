@@ -16,22 +16,25 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
+import com.hexis.bi.domain.subscription.StorePlatform
 import com.hexis.bi.ui.components.AppButton
 import com.hexis.bi.ui.components.AppDialog
 import com.hexis.bi.ui.components.AppOutlinedButton
 import com.hexis.bi.ui.components.AppOutlinedTextField
+import com.hexis.bi.ui.main.subscription.components.InfoNote
 import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
@@ -44,6 +47,7 @@ fun DeleteAccountDialog(
     onTogglePasswordVisibility: () -> Unit,
     onCancel: () -> Unit,
     onDelete: () -> Unit,
+    onManageSubscription: () -> Unit = {},
 ) {
     val isEmailProvider = state.provider == AuthProvider.EMAIL
 
@@ -55,7 +59,14 @@ fun DeleteAccountDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(dimensionResource(R.dimen.padding_large)),
+                    .padding(
+                        start = dimensionResource(R.dimen.padding_large),
+                        top = dimensionResource(R.dimen.padding_large),
+                        end = dimensionResource(R.dimen.padding_large),
+                        bottom = dimensionResource(
+                            if (state.renewingSubscription != null) R.dimen.spacer_s else R.dimen.padding_large,
+                        ),
+                    ),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
@@ -76,6 +87,16 @@ fun DeleteAccountDialog(
                     color = MaterialTheme.colorScheme.onBackground,
                     textAlign = TextAlign.Center,
                 )
+
+                state.renewingSubscription?.let { subscription ->
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+                    InfoNote(
+                        text = stringResource(
+                            if (subscription.platform == StorePlatform.IOS) R.string.delete_account_subscription_note_app_store
+                            else R.string.delete_account_subscription_note_play,
+                        ),
+                    )
+                }
 
                 if (isEmailProvider) {
                     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))
@@ -130,9 +151,24 @@ fun DeleteAccountDialog(
                         onClick = onDelete,
                         enabled = !isLoading,
                         containerColor = NocturnePulseTheme.extendedColors.red300,
-                        contentColor = Color.White,
+                        contentColor = MaterialTheme.colorScheme.onError,
                         modifier = Modifier.weight(1f),
                     )
+                }
+
+                if (state.renewingSubscription != null) {
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
+                    TextButton(
+                        onClick = onManageSubscription,
+                        enabled = !isLoading,
+                        modifier = Modifier.height(dimensionResource(R.dimen.scan_gate_button_height)),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.delete_account_manage_subscription),
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Normal),
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                 }
             }
 

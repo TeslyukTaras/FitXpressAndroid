@@ -7,6 +7,9 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.draw.drawWithContent
+import androidx.core.app.ActivityOptionsCompat
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -82,9 +85,12 @@ import com.hexis.bi.ui.main.scan.results.isDisplayable
 import com.hexis.bi.ui.main.scan.results.resultsActions
 import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.screenBackground
+import com.hexis.bi.utils.constants.AnimationConstants
 import com.hexis.bi.utils.gradientBackground
 import com.look.camera.sdk.SdkActivity
 import com.look.camera.sdk.data.LaunchOption
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import timber.log.Timber
 
@@ -144,9 +150,27 @@ fun StartScanScreen(
         onDispose { window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
     }
 
+    val scope = rememberCoroutineScope()
+    var cameraOpening by remember { mutableStateOf(false) }
+    val handoffAlpha by animateFloatAsState(
+        targetValue = if (cameraOpening) 1f else 0f,
+        animationSpec = tween(
+            if (cameraOpening) AnimationConstants.CAMERA_HANDOFF_FADE_IN_MS else AnimationConstants.CAMERA_HANDOFF_FADE_OUT_MS,
+        ),
+        label = "camera-handoff",
+    )
+
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
     ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            cameraOpening = false
+        } else {
+            scope.launch {
+                delay(AnimationConstants.CAMERA_HANDOFF_CANCEL_HOLD_MS)
+                cameraOpening = false
+            }
+        }
         Timber.d("camera result code=%d data=%s", result.resultCode, result.data)
         if (result.resultCode == Activity.RESULT_OK) {
             val frontUri = SdkActivity.getFrontPhotoUri(result.data)
@@ -157,8 +181,15 @@ fun StartScanScreen(
         } else viewModel.onCameraCancelled()
     }
 
-    val launchCamera = {
-        cameraLauncher.launch(SdkActivity.start(context, LaunchOption.POSE_RECOGNITION_BY_MYSELF))
+    val launchCamera: () -> Unit = {
+        cameraOpening = true
+        scope.launch {
+            delay(AnimationConstants.CAMERA_HANDOFF_DELAY_MS)
+            cameraLauncher.launch(
+                SdkActivity.start(context, LaunchOption.POSE_RECOGNITION_BY_MYSELF),
+                ActivityOptionsCompat.makeCustomAnimation(context, R.anim.scan_fade_in, R.anim.scan_fade_out),
+            )
+        }
     }
 
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
@@ -216,6 +247,10 @@ fun StartScanScreen(
     BaseScreen(
         modifier = modifier
             .then(if (mode.isDark) Modifier.screenBackground() else Modifier)
+            .drawWithContent {
+                drawContent()
+                if (handoffAlpha > 0f) drawRect(androidx.compose.ui.graphics.Color.Black, alpha = handoffAlpha)
+            }
             .then(
                 if (state.showPersonalizeResultsHint) {
                     Modifier.blur(dimensionResource(R.dimen.blur_dialog_backdrop))

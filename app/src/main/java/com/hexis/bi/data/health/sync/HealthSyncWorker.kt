@@ -68,8 +68,8 @@ internal class HealthSyncWorker(
             return Result.success()
         }
 
-        val quickSyncFailures = runCatching {
-            if (access == HealthDataAccess.FIRST_WEEK) coordinator.syncFreeWeek() else coordinator.syncRecentWindow()
+        val recentWindow = runCatching {
+            if (access == HealthDataAccess.FIRST_WEEK) coordinator.syncFreeWeek() else coordinator.syncRecentWindowResult()
         }
             .getOrElse { error ->
                 if (error is CancellationException) throw error
@@ -78,13 +78,15 @@ internal class HealthSyncWorker(
                 report(syncTrigger, elapsed(), SyncOutcome.Failed, QUICK_SYNC_SOURCES)
                 return giveUpOrRetry()
             }
-        quickSyncFailures.forEach { telemetry.healthSyncFailed(syncTrigger, SyncStage.QuickSyncSource, it) }
-        failedOperations += quickSyncFailures.size
+        recentWindow.failures.forEach { telemetry.healthSyncFailed(syncTrigger, SyncStage.QuickSyncSource, it) }
+        failedOperations += recentWindow.failures.size
 
         if (access == HealthDataAccess.FIRST_WEEK) {
             report(syncTrigger, elapsed(), outcomeOf(BackfillOutcome.Skipped, failedOperations), failedOperations)
-            if (failedOperations > 0) return giveUpOrRetry()
-            healthDataGate.markFreeWeekImported()
+            if (failedOperations > 0 || recentWindow.rows == 0 || !healthDataGate.recordFreeWeekImport(recentWindow.rows)) {
+                Timber.d("Health sync worker: the free week is still arriving (%d rows), trying again", recentWindow.rows)
+                return giveUpOrRetry()
+            }
             return Result.success()
         }
 

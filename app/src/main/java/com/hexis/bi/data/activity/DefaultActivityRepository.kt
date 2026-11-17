@@ -28,7 +28,8 @@ internal class DefaultActivityRepository(
     override suspend fun coverage(start: LocalDate, end: LocalDate): HealthRangeCoverage =
         sync.coverage(start, end)
 
-    override suspend fun sync(start: LocalDate, end: LocalDate): Result<HealthSyncTally> = sync.sync(start, end)
+    override suspend fun sync(start: LocalDate, end: LocalDate, force: Boolean): Result<HealthSyncTally> =
+        sync.sync(start, end, force)
 
     override suspend fun getSummariesForRange(
         start: LocalDate,

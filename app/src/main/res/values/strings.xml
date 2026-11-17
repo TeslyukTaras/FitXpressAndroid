@@ -56,29 +56,23 @@
     <string name="notif_scan_today_body">It\'s time for your scheduled body scan.</string>
     <string name="notif_finish_scan_today_title">It\'s time for your scheduled body scan.</string>
     <string name="notif_finish_scan_today_body">Finish your body scan today to keep your progress on track.</string>
-    <string name="notif_missed_title">You missed this week\'s scan</string>
-    <string name="notif_missed_body">Come back next %1$s for your next scheduled scan.</string>
+    <string name="notif_missed_title">You missed your scheduled scan</string>
+    <string name="notif_missed_body">Scan when you\'re ready to keep your progress on track.</string>
+    <string name="notif_free_scan_title">Ready for your next scan?</string>
+    <string name="notif_free_scan_body">Pick a plan to keep tracking your body progress.</string>
     <string name="notif_body_scan_done_title">Body scan completed</string>
     <string name="notif_body_scan_done_body">Your scan was saved successfully.</string>
     <string name="notifications_empty">No notifications yet</string>
     <string name="notifications_toggle">Notifications</string>
     <string name="notifications_voice">Voice</string>
     <string name="notifications_remind_to_scan">Remind Me To Scan</string>
-    <string name="notifications_remind_to_scan_subtitle">Get reminders to do your next body scan.</string>
-    <string name="notifications_day">Day:</string>
+    <string name="notifications_remind_to_scan_subtitle">Get reminders for your next recommended scan.</string>
+    <string name="notifications_next_reminder">Next reminder</string>
+    <string name="notifications_not_scheduled">Not scheduled</string>
     <string name="notifications_time">Time:</string>
     <string name="notifications_select_time">Select time</string>
     <string name="error_notifications_permission_denied">Enable notifications in system settings to receive scan reminders.</string>
     <string name="error_camera_permission_denied">Enable camera access in system settings to take a scan.</string>
-
-    <!-- Days of the week -->
-    <string name="day_monday">Monday</string>
-    <string name="day_tuesday">Tuesday</string>
-    <string name="day_wednesday">Wednesday</string>
-    <string name="day_thursday">Thursday</string>
-    <string name="day_friday">Friday</string>
-    <string name="day_saturday">Saturday</string>
-    <string name="day_sunday">Sunday</string>
 
     <!-- Edit profile screen -->
     <string name="edit_profile_title">Edit Profile</string>
@@ -172,6 +166,9 @@
     <string name="delete_account_dialog_body_password">For security reasons, enter your password to continue.</string>
     <string name="delete_account_dialog_body_confirm">Are you sure you want to delete your account? This action cannot be undone.</string>
     <string name="delete_account_dialog_action_delete">Delete</string>
+    <string name="delete_account_subscription_note_play">Deleting your account does not cancel your subscription. Cancel it in Google Play first, or you will keep being charged.</string>
+    <string name="delete_account_subscription_note_app_store">Deleting your account does not cancel your subscription. Cancel it in the App Store first, or you will keep being charged.</string>
+    <string name="delete_account_manage_subscription">Manage subscription</string>
 
     <!-- Home screen -->
     <string name="home_latest_scan">Latest Scan · %1$s</string>
@@ -1229,6 +1226,14 @@
 
     <string name="action_maybe_later">Maybe Later</string>
     <string name="scan_view_guide">View Scanning Guide</string>
+    <string name="onboarding_free_scan_subtitle">Complete your first HEXIS-BI body scan at no cost and see your personalized results.</string>
+    <string name="onboarding_free_scan_item_phone">Scan using your phone</string>
+    <string name="onboarding_free_scan_item_clothing">Wear form-fitting clothing</string>
+    <string name="onboarding_free_scan_item_shoes">No shoes or socks</string>
+    <string name="onboarding_free_scan_item_frame">Keep your full body in frame</string>
+    <string name="onboarding_free_scan_note">After your free scan, an active subscription is required for future scans, new advanced insights, and premium analytics.</string>
+    <string name="onboarding_free_scan_unavailable">Your free scan is not available right now.</string>
+    <string name="action_start_free_scan">Start Free Scan</string>
     <string name="scan_first_free_title">Your First Scan Is Free</string>
     <string name="scan_first_free_message">Complete your first HEXIS-BI scan for free and see your results.</string>
     <string name="scan_first_free_note">A subscription is required for future scans and new insights.</string>
