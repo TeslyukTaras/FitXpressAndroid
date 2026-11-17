@@ -6,6 +6,7 @@ import com.hexis.bi.data.health.local.HealthLocalDataSource
 import com.hexis.bi.data.health.sync.HealthSyncScheduler
 import com.hexis.bi.data.intelligence.IntelligenceConfigRepository
 import com.hexis.bi.data.intelligence.observationWindow
+import com.hexis.bi.data.preferences.UserPreferencesRepository
 import com.hexis.bi.data.terra.decodeTerraRestIdentity
 import com.hexis.bi.utils.constants.IntelligenceCacheConstants
 import java.time.LocalDate
@@ -15,6 +16,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.asStateFlow
+import com.hexis.bi.data.health.access.HealthDataGate
+import com.hexis.bi.domain.subscription.HealthDataAccess
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -29,6 +33,7 @@ internal data class IntelligenceReportState(
     val loading: Boolean = true,
     val updating: Boolean = false,
     val error: Throwable? = null,
+    val blocked: Boolean = false,
 )
 
 /** App-scoped owner of intelligence readiness and report generation. */
@@ -39,6 +44,8 @@ internal class IntelligenceCoordinator(
     private val configRepository: IntelligenceConfigRepository,
     private val auth: FirebaseAuth,
     healthSyncScheduler: HealthSyncScheduler,
+    private val healthDataGate: HealthDataGate,
+    private val preferences: UserPreferencesRepository,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) {
     private val _state = MutableStateFlow(IntelligenceReportState())
@@ -69,6 +76,12 @@ internal class IntelligenceCoordinator(
             .onEach { refresh(force = !backfillInFlight) }
             .launchIn(scope)
 
+        healthDataGate.accessFlow
+            .drop(1)
+            .onEach { refresh(force = true) }
+            .launchIn(scope)
+
+        scope.launch { healthDataGate.refreshConfig() }
         scope.launch { refresh(force = true) }
     }
 
@@ -97,17 +110,34 @@ internal class IntelligenceCoordinator(
                 _state.value = IntelligenceReportState(updating = backfillInFlight)
             }
 
+            val access = healthDataGate.access()
+            if (access == HealthDataAccess.FIRST_WEEK) {
+                lastRunAtMillis = 0L
+                _state.value = IntelligenceReportState(loading = false, blocked = true)
+                return@withLock
+            }
+            var asOf: LocalDate? = null
+            if (access == HealthDataAccess.FROZEN) {
+                if (_state.value.run != null) return@withLock
+                asOf = preferences.getInsightsRunDate(uid)?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+                if (asOf == null) {
+                    _state.value = IntelligenceReportState(loading = false, blocked = true)
+                    return@withLock
+                }
+            }
+
             val now = System.currentTimeMillis()
             val throttle = IntelligenceCacheConstants.BACKFILL_RERUN_INTERVAL.toMillis()
             if (!force && now - lastRunAtMillis < throttle) return@withLock
 
             val previous = _state.value.run
             _state.update {
-                it.copy(loading = previous == null, updating = backfillInFlight, error = null)
+                it.copy(loading = previous == null, updating = backfillInFlight, error = null, blocked = false)
             }
-            runIntelligence().fold(
+            runIntelligence(asOf).fold(
                 onSuccess = { run ->
                     lastRunAtMillis = System.currentTimeMillis()
+                    if (access == HealthDataAccess.FULL) preferences.setInsightsRunDate(uid, LocalDate.now().toString())
                     _state.value = IntelligenceReportState(
                         run = run,
                         loading = false,

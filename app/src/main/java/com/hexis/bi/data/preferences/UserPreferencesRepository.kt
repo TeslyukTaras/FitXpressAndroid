@@ -2,6 +2,7 @@ package com.hexis.bi.data.preferences
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.edit
 import com.hexis.bi.data.store.AppPreferencesDataStore
 import com.hexis.bi.data.store.AppPreferencesKeys
@@ -66,6 +67,27 @@ class UserPreferencesRepository(
 
     suspend fun setLastScanMissedIsoWeek(weekKey: String) {
         store.edit { it[k.lastScanMissedIsoWeek] = weekKey }
+    }
+
+    suspend fun getFreeWeekAnchor(uid: String): String? =
+        store.data.map { it[stringPreferencesKey(k.FREE_WEEK_ANCHOR_PREFIX + uid)] }.first()
+
+    suspend fun setFreeWeekAnchor(uid: String, isoDate: String) {
+        store.edit { it[stringPreferencesKey(k.FREE_WEEK_ANCHOR_PREFIX + uid)] = isoDate }
+    }
+
+    suspend fun isFreeWeekImported(uid: String): Boolean =
+        store.data.map { it[stringPreferencesKey(k.FREE_WEEK_IMPORTED_PREFIX + uid)] != null }.first()
+
+    suspend fun setFreeWeekImported(uid: String) {
+        store.edit { it[stringPreferencesKey(k.FREE_WEEK_IMPORTED_PREFIX + uid)] = true.toString() }
+    }
+
+    suspend fun getInsightsRunDate(uid: String): String? =
+        store.data.map { it[stringPreferencesKey(k.INSIGHTS_RUN_DATE_PREFIX + uid)] }.first()
+
+    suspend fun setInsightsRunDate(uid: String, isoDate: String) {
+        store.edit { it[stringPreferencesKey(k.INSIGHTS_RUN_DATE_PREFIX + uid)] = isoDate }
     }
 
     suspend fun hasAskedNotifPermission(uid: String): Boolean =

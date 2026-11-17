@@ -17,6 +17,7 @@ data class InsightsState(
     val updating: Boolean = false,
     val latestScanDate: String? = null,
     val showInfoSheet: Boolean = false,
+    val blocked: Boolean = false,
 )
 
 class InsightsViewModel internal constructor(
@@ -46,6 +47,7 @@ class InsightsViewModel internal constructor(
                     it.copy(
                         cards = cards ?: it.cards,
                         updating = reportState.updating,
+                        blocked = reportState.blocked,
                     )
                 }
             }

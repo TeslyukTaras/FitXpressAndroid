@@ -20,12 +20,12 @@ import com.hexis.bi.domain.longevity.PaceOfAgingResult
 import com.hexis.bi.domain.longevity.agingLevel
 import com.hexis.bi.domain.trend.ChangeDirection
 import com.hexis.bi.domain.trend.changeDirection
+import com.hexis.bi.ui.main.home.intelligence.areaFindings
 import com.hexis.bi.utils.constants.ChangeTolerances
 import com.hexis.bi.domain.longevity.computePaceOfAging
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.domain.intelligence.IntelligenceCoordinator
 import com.hexis.bi.intelligence.engine.Domains
-import com.hexis.bi.ui.main.home.intelligence.EngineFindingsMapper
 import com.hexis.bi.ui.main.home.intelligence.BackfillTransition
 import com.hexis.bi.ui.main.home.intelligence.backfillTransition
 import com.hexis.bi.ui.main.home.longevity.LongevityTrend
@@ -68,20 +68,8 @@ class PaceOfAgingViewModel internal constructor(
 
     private fun observeFindings() {
         intelligenceCoordinator.state.onEach { reportState ->
-            val run = reportState.run ?: return@onEach
-            val resolved = EngineFindingsMapper.forAreas(
-                report = run.report,
-                copy = run.copy,
-                areas = setOf(Domains.AGING),
-                isMetric = run.isMetric,
-                analysisWindowDays = run.config.windows.analysisDays,
-            )
-            _state.update {
-                it.copy(
-                    findings = resolved,
-                    insightsUpdating = reportState.updating,
-                )
-            }
+            val findings = reportState.areaFindings(setOf(Domains.AGING)) ?: return@onEach
+            _state.update { it.copy(findings = findings, insightsUpdating = reportState.updating) }
         }.launchIn(viewModelScope)
     }
 

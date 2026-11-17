@@ -220,7 +220,10 @@ fun MainScreen(
                 PaceOfAgingScreen(onBack = { navController.popBackStackOnce() })
             }
             composable(Route.Main.INSIGHTS) {
-                InsightsScreen(onBack = { navController.popBackStackOnce() })
+                InsightsScreen(
+                    onBack = { navController.popBackStackOnce() },
+                    onChoosePlan = { navController.navigate(Route.Main.SUBSCRIPTION_PLANS) },
+                )
             }
             composable(Route.Main.ACTIVITY) {
                 ActivityScreen(onBack = { navController.popBackStackOnce() })

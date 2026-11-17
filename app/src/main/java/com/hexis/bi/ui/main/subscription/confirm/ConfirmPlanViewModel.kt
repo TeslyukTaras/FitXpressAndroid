@@ -2,6 +2,7 @@ package com.hexis.bi.ui.main.subscription.confirm
 
 import android.app.Application
 import androidx.lifecycle.viewModelScope
+import com.hexis.bi.R
 import com.hexis.bi.data.subscription.SubscriptionRepository
 import com.hexis.bi.domain.subscription.PlanId
 import com.hexis.bi.domain.subscription.PurchaseResult
@@ -60,7 +61,9 @@ class ConfirmPlanViewModel(
         val planId = _state.value.planId
         launch {
             try {
-                val status = repository.status.first { it !is SubscriptionStatus.Loading }
+                val status = withTimeoutOrNull(SubscriptionConstants.STATUS_WAIT_MS) {
+                    repository.status.first { it !is SubscriptionStatus.Loading }
+                } ?: throw IllegalStateException(appContext.getString(R.string.subscription_error_unavailable))
                 if (status is SubscriptionStatus.Subscribed && status.plan == planId) {
                     leave()
                     return@launch

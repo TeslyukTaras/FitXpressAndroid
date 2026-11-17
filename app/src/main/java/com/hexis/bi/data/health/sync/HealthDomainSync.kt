@@ -1,5 +1,6 @@
 package com.hexis.bi.data.health.sync
 
+import com.hexis.bi.data.health.access.HealthDataGated
 import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.data.health.local.HealthLocalDataSource
 import com.hexis.bi.data.health.local.contiguousDateRanges
@@ -147,10 +148,14 @@ internal class HealthDomainSync<T>(
                 var consecutiveFailures = 0
                 var unreachable = false
 
+                val bounds = remote.allowedBounds()
                 for (window in windows) {
-                    val merged = fetchWindow(fetchable, window).getOrElse { error ->
-                        failure = error
-                        consecutiveFailures++
+                    val allowed = window.clampTo(bounds) ?: continue
+                    val merged = fetchWindow(fetchable, allowed).getOrElse { error ->
+                        if (error !is HealthDataGated) {
+                            failure = error
+                            consecutiveFailures++
+                        }
                         null
                     }
                     if (merged == null) {
@@ -162,7 +167,7 @@ internal class HealthDomainSync<T>(
                     }
                     consecutiveFailures = 0
                     local.recordProviderCalls(uid, spec.source, merged.totalSources)
-                    tally += store(uid, window, merged)
+                    tally += store(uid, allowed, merged)
                     stored++
                 }
 
@@ -179,7 +184,7 @@ internal class HealthDomainSync<T>(
                     )
                 }
 
-                if (tally.fetchedNothing) {
+                if (stored > 0 && tally.fetchedNothing) {
                     Timber.w(
                         "%s refresh stored no rows at all from %d source(s) across %d window(s)",
                         spec.label, fetchable.size, tally.windows,
@@ -262,6 +267,13 @@ internal class HealthDomainSync<T>(
     }
 
     private fun ClosedRange<LocalDate>.toDateList(): List<LocalDate> = dateRange(start, endInclusive)
+
+    private fun ClosedRange<LocalDate>.clampTo(bounds: ClosedRange<LocalDate>?): ClosedRange<LocalDate>? {
+        if (bounds == null) return null
+        val from = maxOf(start, bounds.start)
+        val to = minOf(endInclusive, bounds.endInclusive)
+        return if (from.isAfter(to)) null else from..to
+    }
 
     private fun ClosedRange<LocalDate>.windowed(
         size: Long = TerraSyncConstants.SYNC_WINDOW_DAYS,

@@ -38,16 +38,28 @@ import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.LightStatusBarIcons
 import com.hexis.bi.ui.components.MedicalDisclaimerFooter
+import com.hexis.bi.ui.main.subscription.components.HealthAccessBanner
+import com.hexis.bi.ui.main.subscription.components.rememberHealthDataAccess
 import com.hexis.bi.ui.theme.screenBackground
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun InsightsScreen(
     onBack: () -> Unit,
+    onChoosePlan: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: InsightsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    if (state.blocked) {
+        InsightsBlockedScreen(
+            onBack = onBack,
+            onChoosePlan = onChoosePlan,
+            modifier = modifier,
+        )
+        return
+    }
 
     LightStatusBarIcons()
 
@@ -58,21 +70,30 @@ fun InsightsScreen(
                 .screenBackground(),
             containerColor = Color.Transparent,
             topBar = {
-                BaseTopBar(
-                    title = stringResource(R.string.insights_screen_title),
-                    onBack = onBack,
-                    background = Color.Transparent,
-                    actions = {
-                        IconButton(onClick = viewModel::showInfoSheet) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_info),
-                                contentDescription = stringResource(R.string.cd_info),
-                                tint = MaterialTheme.colorScheme.onBackground,
-                                modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
-                            )
-                        }
-                    },
-                )
+                Column {
+                    BaseTopBar(
+                        title = stringResource(R.string.insights_screen_title),
+                        onBack = onBack,
+                        background = Color.Transparent,
+                        actions = {
+                            IconButton(onClick = viewModel::showInfoSheet) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_info),
+                                    contentDescription = stringResource(R.string.cd_info),
+                                    tint = MaterialTheme.colorScheme.onBackground,
+                                    modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+                                )
+                            }
+                        },
+                    )
+                    HealthAccessBanner(
+                        access = rememberHealthDataAccess(),
+                        freeText = null,
+                        frozenText = stringResource(R.string.health_banner_frozen_insights),
+                        spacerBelow = dimensionResource(R.dimen.health_banner_gap_insights),
+                        modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+                    )
+                }
             },
         ) {
             val contentModifier = Modifier

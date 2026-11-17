@@ -35,6 +35,9 @@ import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppDialog
 import com.hexis.bi.ui.components.AppTabSelector
+import com.hexis.bi.ui.main.subscription.components.HealthAccessBanner
+import com.hexis.bi.ui.main.subscription.components.rememberHealthDataAccess
+import com.hexis.bi.utils.constants.SubscriptionConstants
 import com.hexis.bi.ui.components.LightStatusBarIcons
 import com.hexis.bi.ui.components.MedicalDisclaimerFooter
 import com.hexis.bi.ui.main.home.sleep.components.SleepRecoverySheetBody
@@ -75,21 +78,33 @@ fun SleepScreen(
             error = error,
             onDismissError = viewModel::clearError,
             topBar = {
-                BaseTopBar(
-                    title = stringResource(R.string.sleep_screen_title),
-                    onBack = onBack,
-                    background = Color.Transparent,
-                    actions = {
-                        IconButton(onClick = viewModel::showSettingsDialog) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_settings),
-                                contentDescription = stringResource(R.string.cd_settings),
-                                tint = MaterialTheme.colorScheme.onBackground,
-                                modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
-                            )
-                        }
-                    },
-                )
+                Column {
+                    BaseTopBar(
+                        title = stringResource(R.string.sleep_screen_title),
+                        onBack = onBack,
+                        background = Color.Transparent,
+                        actions = {
+                            IconButton(onClick = viewModel::showSettingsDialog) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_settings),
+                                    contentDescription = stringResource(R.string.cd_settings),
+                                    tint = MaterialTheme.colorScheme.onBackground,
+                                    modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+                                )
+                            }
+                        },
+                    )
+                    HealthAccessBanner(
+                        access = rememberHealthDataAccess(),
+                        freeText = stringResource(
+                            R.string.health_banner_free_history,
+                            SubscriptionConstants.FREE_WEEK_DAYS.toInt(),
+                        ),
+                        frozenText = stringResource(R.string.health_banner_frozen_history),
+                        spacerBelow = dimensionResource(R.dimen.health_banner_gap_data),
+                        modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+                    )
+                }
             },
         ) {
             Column(

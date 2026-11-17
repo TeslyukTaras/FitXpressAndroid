@@ -29,6 +29,7 @@ import com.hexis.bi.data.terra.isTerraUnknownUserId
 import com.hexis.bi.data.terra.ownedSdkUserIds
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.constants.TerraProviders
+import com.hexis.bi.utils.constants.SubscriptionConstants
 import com.hexis.bi.utils.constants.TerraSyncConstants
 import com.hexis.bi.utils.redactSensitiveId
 import java.util.concurrent.ConcurrentHashMap
@@ -47,6 +48,7 @@ private const val HIDE_PROVIDERS_WITHOUT_BRANDED_ICON = true
 
 private const val VERIFY_MAX_ATTEMPTS = 5
 private const val VERIFY_RETRY_DELAY_MS = 2_000L
+
 
 class HealthConnectionsViewModel internal constructor(
     application: Application,
@@ -491,7 +493,7 @@ class HealthConnectionsViewModel internal constructor(
             TerraSdkSync.syncLinkedConnections(
                 mgr,
                 ownedUserIds = setOf(liveTerraUserId),
-                reason = "post_connect",
+                reason = SubscriptionConstants.TERRA_POST_CONNECT_REASON,
                 force = true,
             )
         }

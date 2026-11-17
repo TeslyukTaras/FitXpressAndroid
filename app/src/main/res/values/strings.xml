@@ -1106,6 +1106,9 @@
     <string name="engine_findings_value_separator">" · "</string>
     <string name="engine_findings_label_separator">": "</string>
     <string name="insights_screen_title">Insights</string>
+    <string name="health_banner_free_history">Free plan includes %1$d days of data history</string>
+    <string name="health_banner_frozen_history">New history data require an active subscription</string>
+    <string name="health_banner_frozen_insights">New insights require an active subscription</string>
     <string name="insights_subtitle">Based on Latest Scan · %1$s</string>
     <string name="insights_updating">Updating</string>
     <string name="insights_updating_body">We\'re analyzing your latest data.</string>
@@ -1242,4 +1245,6 @@
     <string name="scan_payment_issue_message">Your subscription is on hold because of a payment problem. Resolve it to continue scanning. Your previous scans and results remain available.</string>
     <string name="scan_error_connection_retry">We lost the connection. We\'ll send your scan again.</string>
     <string name="confirm_pending_note">Your payment went through. We\'re still confirming your plan, which can take a moment. You can leave this screen.</string>
+    <string name="insights_blocked_title">No insights yet</string>
+    <string name="insights_blocked_message">Subscribe to receive Body Intelligence insights based on your scan and health data.</string>
 </resources>
