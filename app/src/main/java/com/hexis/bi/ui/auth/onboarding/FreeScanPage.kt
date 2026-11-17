@@ -1,7 +1,6 @@
 package com.hexis.bi.ui.auth.onboarding
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -10,23 +9,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.hexis.bi.R
 import com.hexis.bi.ui.components.AppHorizontalGradientDivider
-import com.hexis.bi.ui.components.AppLogo
 import com.hexis.bi.ui.main.subscription.components.InfoNote
 import com.hexis.bi.ui.main.subscription.components.PlanFeatureRow
 
@@ -41,29 +34,7 @@ internal fun FreeScanPage(onBack: () -> Unit) {
                 .navigationBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        top = dimensionResource(R.dimen.spacer_2xl),
-                        bottom = dimensionResource(R.dimen.spacer_xxl),
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart)) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_arrow),
-                        contentDescription = stringResource(R.string.cd_back),
-                        tint = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier
-                            .size(dimensionResource(R.dimen.icon_medium))
-                            .rotate(BACK_ARROW_ROTATION),
-                    )
-                }
-                AppLogo()
-            }
-
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_5xl)))
+            OnboardingHeader(onBack = onBack)
 
             Column(
                 modifier = Modifier
@@ -97,5 +68,3 @@ internal fun FreeScanPage(onBack: () -> Unit) {
         }
     }
 }
-
-private const val BACK_ARROW_ROTATION = 180f

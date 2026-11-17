@@ -1,5 +1,10 @@
 package com.hexis.bi.ui.main.scan
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -8,6 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.config.AppConfig
 import com.hexis.bi.domain.subscription.ScanAccess
+import com.hexis.bi.utils.constants.AnimationConstants
 import com.hexis.bi.ui.main.scan.access.FirstFreeScanDialog
 import com.hexis.bi.ui.main.scan.access.PaymentIssueScanDialog
 import com.hexis.bi.ui.main.scan.access.ScanAccessViewModel
@@ -43,7 +49,14 @@ fun ScanScreen(
         return
     }
 
-    if (!AppConfig.suitVisible || !requireConnectedSuit || state.suitConnected) when (access) {
+    if (!AppConfig.suitVisible || !requireConnectedSuit || state.suitConnected) AnimatedContent(
+        targetState = access,
+        transitionSpec = {
+            fadeIn(tween(AnimationConstants.SCAN_GATE_FADE_MS)) togetherWith
+                fadeOut(tween(AnimationConstants.SCAN_GATE_FADE_MS))
+        },
+        label = "scan-gate",
+    ) { target -> when (target) {
         null -> ScanGateBackdrop(onBack = onBack, blurred = false, modifier = modifier)
         ScanAccess.Allowed -> StartScanScreen(
             onBack = onBack,
@@ -81,7 +94,7 @@ fun ScanScreen(
             ScanGateBackdrop(onBack = onBack, blurred = false, modifier = modifier)
             LaunchedEffect(Unit) { onScansUsed() }
         }
-    }
+    } }
     else ScanErrorScreen(
         onBack = onBack,
         onConnectSuit = onConnectSuit,

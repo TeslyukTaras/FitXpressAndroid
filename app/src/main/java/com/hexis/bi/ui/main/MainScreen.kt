@@ -4,6 +4,12 @@ import android.Manifest
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -79,7 +85,10 @@ import com.hexis.bi.ui.main.subscription.confirm.ConfirmPlanScreen
 import com.hexis.bi.ui.main.subscription.plans.PlanSelectionScreen
 import com.hexis.bi.ui.navigation.Route
 import com.hexis.bi.ui.navigation.popBackStackOnce
+import com.hexis.bi.ui.theme.screenBackground
+import com.hexis.bi.utils.constants.AnimationConstants
 import com.hexis.bi.utils.permissions.NotificationPermissionCoordinator
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
@@ -195,8 +204,8 @@ fun MainScreen(
                 }
             } else {
                 showProfileIncompleteDialog = true
+                scanLaunching = false
             }
-            scanLaunching = false
         }
     }
 
@@ -204,6 +213,15 @@ fun MainScreen(
         if (startScan) {
             onStartScanHandled()
             launchScan()
+        }
+    }
+    LaunchedEffect(currentRoute) {
+        if (currentRoute == Route.Main.SCAN) scanLaunching = false
+    }
+    LaunchedEffect(scanLaunching) {
+        if (scanLaunching) {
+            delay(AnimationConstants.SCAN_LAUNCH_OVERLAY_TIMEOUT_MS)
+            scanLaunching = false
         }
     }
 
@@ -222,7 +240,17 @@ fun MainScreen(
             navController = navController,
             startDestination = Route.Main.availableDestination(startDestination),
         ) {
-            composable(Route.Main.HOME) {
+            composable(
+                Route.Main.HOME,
+                exitTransition = {
+                    if (targetState.destination.route == Route.Main.SCAN) ExitTransition.None
+                    else fadeOut(tween(AnimationConstants.NAV_DEFAULT_FADE_MS))
+                },
+                popEnterTransition = {
+                    if (initialState.destination.route == Route.Main.SCAN) fadeIn(tween(AnimationConstants.SCAN_ENTER_FADE_MS))
+                    else fadeIn(tween(AnimationConstants.NAV_DEFAULT_FADE_MS))
+                },
+            ) {
                 HomeScreen(
                     message = startMessage,
                     onMessageShown = onStartMessageShown,
@@ -269,7 +297,13 @@ fun MainScreen(
             composable(Route.Main.ACTIVITY) {
                 ActivityScreen(onBack = { navController.popBackStackOnce() })
             }
-            composable(Route.Main.SCAN) {
+            composable(
+                Route.Main.SCAN,
+                enterTransition = { fadeIn(tween(AnimationConstants.SCAN_ENTER_FADE_MS)) },
+                exitTransition = { fadeOut(tween(AnimationConstants.SCAN_EXIT_FADE_MS)) },
+                popEnterTransition = { fadeIn(tween(AnimationConstants.SCAN_ENTER_FADE_MS)) },
+                popExitTransition = { fadeOut(tween(AnimationConstants.SCAN_EXIT_FADE_MS)) },
+            ) {
                 ScanScreen(
                     onBack = { navController.popBackStackOnce() },
                     onScanComplete = {
@@ -524,6 +558,14 @@ fun MainScreen(
                     }
                 },
             )
+        }
+
+        AnimatedVisibility(
+            visible = scanLaunching,
+            enter = EnterTransition.None,
+            exit = fadeOut(tween(AnimationConstants.SCAN_LAUNCH_OVERLAY_FADE_MS)),
+        ) {
+            Box(modifier = Modifier.fillMaxSize().screenBackground())
         }
 
         if (AppConfig.suitVisible && showBuySuitDialog) {

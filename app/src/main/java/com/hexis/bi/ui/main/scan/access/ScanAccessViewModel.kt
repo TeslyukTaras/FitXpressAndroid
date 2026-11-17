@@ -27,19 +27,17 @@ class ScanAccessViewModel(
     private val firstFreeScanConsent: FirstFreeScanConsent,
 ) : BaseViewModel(application) {
 
-    private val _access = MutableStateFlow<ScanAccess?>(null)
+    private val _access = MutableStateFlow<ScanAccess?>(if (firstFreeScanConsent.consume()) ScanAccess.Allowed else null)
     val access: StateFlow<ScanAccess?> = _access.asStateFlow()
 
     init {
-        viewModelScope.launch {
+        if (_access.value == null) viewModelScope.launch {
             gateConfig.refresh()
             if (!gateConfig.enabled) {
                 _access.value = ScanAccess.Allowed
                 return@launch
             }
-            val resolved = resolveAccess()
-            _access.value =
-                if (resolved == ScanAccess.FirstFreeScan && firstFreeScanConsent.consume()) ScanAccess.Allowed else resolved
+            _access.value = resolveAccess()
             restoreWhenAllowed()
         }
     }

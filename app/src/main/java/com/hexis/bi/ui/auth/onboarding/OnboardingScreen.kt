@@ -64,7 +64,6 @@ import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppDatePicker
 import com.hexis.bi.ui.components.AppDialog
-import com.hexis.bi.ui.components.AppLogo
 import com.hexis.bi.ui.components.AppOutlinedButton
 import com.hexis.bi.ui.components.AppOutlinedTextField
 import com.hexis.bi.ui.components.AppPrimaryButton
@@ -381,19 +380,7 @@ private fun PersonalInfoPage(
                 .navigationBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        top = dimensionResource(R.dimen.spacer_2xl),
-                        bottom = dimensionResource(R.dimen.spacer_xxl),
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                AppLogo()
-            }
-
-            Spacer(Modifier.weight(1f))
+            OnboardingHeader()
 
             Column(
                 modifier = Modifier
