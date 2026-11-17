@@ -15,15 +15,15 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -59,7 +59,14 @@ fun DeleteAccountDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(dimensionResource(R.dimen.padding_large)),
+                    .padding(
+                        start = dimensionResource(R.dimen.padding_large),
+                        top = dimensionResource(R.dimen.padding_large),
+                        end = dimensionResource(R.dimen.padding_large),
+                        bottom = dimensionResource(
+                            if (state.renewingSubscription != null) R.dimen.spacer_s else R.dimen.padding_large,
+                        ),
+                    ),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
@@ -89,13 +96,6 @@ fun DeleteAccountDialog(
                             else R.string.delete_account_subscription_note_play,
                         ),
                     )
-                    TextButton(onClick = onManageSubscription) {
-                        Text(
-                            text = stringResource(R.string.delete_account_manage_subscription),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
                 }
 
                 if (isEmailProvider) {
@@ -151,9 +151,24 @@ fun DeleteAccountDialog(
                         onClick = onDelete,
                         enabled = !isLoading,
                         containerColor = NocturnePulseTheme.extendedColors.red300,
-                        contentColor = Color.White,
+                        contentColor = MaterialTheme.colorScheme.onError,
                         modifier = Modifier.weight(1f),
                     )
+                }
+
+                if (state.renewingSubscription != null) {
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_xs)))
+                    TextButton(
+                        onClick = onManageSubscription,
+                        enabled = !isLoading,
+                        modifier = Modifier.height(dimensionResource(R.dimen.scan_gate_button_height)),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.delete_account_manage_subscription),
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Normal),
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                 }
             }
 
