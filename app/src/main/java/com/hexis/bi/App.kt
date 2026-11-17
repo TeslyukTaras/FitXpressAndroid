@@ -62,7 +62,7 @@ class App : Application(), KoinComponent {
             androidContext(this@App)
             modules(appModule)
         }
-        TerraSdkSync.accessCheck = get<HealthDataGate>()::sdkLookbackDays
+        TerraSdkSync.accessCheck = get<HealthDataGate>()::sdkPullRange
         trackSignedInUser()
         SystemNotificationHelper.createChannels(this)
         scanReminderScheduler().onNotificationSettingsOrScanChanged()

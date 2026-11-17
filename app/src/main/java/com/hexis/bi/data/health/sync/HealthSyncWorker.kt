@@ -68,7 +68,9 @@ internal class HealthSyncWorker(
             return Result.success()
         }
 
-        val recentWindow = runCatching { coordinator.syncRecentWindowResult() }
+        val recentWindow = runCatching {
+            if (access == HealthDataAccess.FIRST_WEEK) coordinator.syncFreeWeek() else coordinator.syncRecentWindowResult()
+        }
             .getOrElse { error ->
                 if (error is CancellationException) throw error
                 Timber.w(error, "Health sync worker: recent window failed")

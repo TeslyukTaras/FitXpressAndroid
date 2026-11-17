@@ -41,13 +41,20 @@ internal class HealthSyncCoordinator(
     suspend fun syncRecentWindow(today: LocalDate = LocalDate.now()): List<Throwable> =
         syncRecentWindowResult(today).failures
 
-    suspend fun syncRecentWindowResult(today: LocalDate = LocalDate.now()): RecentWindowSync {
+    suspend fun syncRecentWindowResult(today: LocalDate = LocalDate.now()): RecentWindowSync =
+        syncRange(today.minusDays(CanonicalCacheConstants.FORCED_REFRESH_DAYS - 1), today)
+
+    suspend fun syncFreeWeek(): RecentWindowSync {
+        val bounds = remote.allowedBounds() ?: return RecentWindowSync(emptyList(), 0)
+        return syncRange(bounds.start, minOf(bounds.endInclusive, LocalDate.now()))
+    }
+
+    private suspend fun syncRange(start: LocalDate, end: LocalDate): RecentWindowSync {
         val uid = auth.currentUser?.uid ?: return RecentWindowSync(emptyList(), 0)
         local.pruneExpiredDaysOnStartup(uid)
-        val start = today.minusDays(CanonicalCacheConstants.FORCED_REFRESH_DAYS - 1)
         return coroutineScope {
-            val activity = async { activityRepository.sync(start, today) }
-            val sleep = async { sleepRepository.sync(start, today) }
+            val activity = async { activityRepository.sync(start, end) }
+            val sleep = async { sleepRepository.sync(start, end) }
             val results = listOf("activity" to activity.await(), "sleep" to sleep.await())
             RecentWindowSync(
                 failures = results.mapNotNull { (source, result) -> result.logFailure(source) },
