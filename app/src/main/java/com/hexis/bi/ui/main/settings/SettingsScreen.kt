@@ -54,6 +54,7 @@ import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountDialog
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountEvent
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountViewModel
 import com.hexis.bi.ui.main.subscription.SubscriptionViewModel
+import com.hexis.bi.ui.main.subscription.openManageSubscription
 import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.utils.legal.LegalUrls
@@ -185,6 +186,9 @@ fun SettingsScreen(
                 onTogglePasswordVisibility = viewModel::togglePasswordVisibility,
                 onCancel = viewModel::dismissDialog,
                 onDelete = onDelete,
+                onManageSubscription = {
+                    state.renewingSubscription?.let { openManageSubscription(context, it.platform) }
+                },
             )
         }
 

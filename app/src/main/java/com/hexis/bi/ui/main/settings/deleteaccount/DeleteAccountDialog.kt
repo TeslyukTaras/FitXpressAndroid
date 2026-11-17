@@ -15,6 +15,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -28,10 +29,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import com.hexis.bi.R
+import com.hexis.bi.domain.subscription.StorePlatform
 import com.hexis.bi.ui.components.AppButton
 import com.hexis.bi.ui.components.AppDialog
 import com.hexis.bi.ui.components.AppOutlinedButton
 import com.hexis.bi.ui.components.AppOutlinedTextField
+import com.hexis.bi.ui.main.subscription.components.InfoNote
 import com.hexis.bi.ui.theme.NocturnePulseTheme
 
 @Composable
@@ -44,6 +47,7 @@ fun DeleteAccountDialog(
     onTogglePasswordVisibility: () -> Unit,
     onCancel: () -> Unit,
     onDelete: () -> Unit,
+    onManageSubscription: () -> Unit = {},
 ) {
     val isEmailProvider = state.provider == AuthProvider.EMAIL
 
@@ -76,6 +80,23 @@ fun DeleteAccountDialog(
                     color = MaterialTheme.colorScheme.onBackground,
                     textAlign = TextAlign.Center,
                 )
+
+                state.renewingSubscription?.let { subscription ->
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
+                    InfoNote(
+                        text = stringResource(
+                            if (subscription.platform == StorePlatform.IOS) R.string.delete_account_subscription_note_app_store
+                            else R.string.delete_account_subscription_note_play,
+                        ),
+                    )
+                    TextButton(onClick = onManageSubscription) {
+                        Text(
+                            text = stringResource(R.string.delete_account_manage_subscription),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
 
                 if (isEmailProvider) {
                     Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl)))

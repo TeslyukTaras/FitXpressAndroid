@@ -319,7 +319,7 @@ val appModule = module {
     viewModel { ShippingDetailsViewModel(androidApplication(), get(), get(), get()) }
     viewModel { (orderId: String) -> EditAddressViewModel(androidApplication(), get(), orderId) }
     viewModel { ScanHistoryViewModel(androidApplication(), get(), get()) }
-    viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get(), get()) }
+    viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get(), get(), get()) }
     viewModel { OnboardingViewModel(androidApplication(), get(), get(), get(), get()) }
 }
 

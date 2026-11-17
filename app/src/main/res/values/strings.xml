@@ -172,6 +172,9 @@
     <string name="delete_account_dialog_body_password">For security reasons, enter your password to continue.</string>
     <string name="delete_account_dialog_body_confirm">Are you sure you want to delete your account? This action cannot be undone.</string>
     <string name="delete_account_dialog_action_delete">Delete</string>
+    <string name="delete_account_subscription_note_play">Deleting your account does not cancel your subscription. Cancel it in Google Play first, or you will keep being charged.</string>
+    <string name="delete_account_subscription_note_app_store">Deleting your account does not cancel your subscription. Cancel it in the App Store first, or you will keep being charged.</string>
+    <string name="delete_account_manage_subscription">Manage subscription</string>
 
     <!-- Home screen -->
     <string name="home_latest_scan">Latest Scan · %1$s</string>
@@ -1229,9 +1232,6 @@
 
     <string name="action_maybe_later">Maybe Later</string>
     <string name="scan_view_guide">View Scanning Guide</string>
-    <string name="scan_first_free_title">Your First Scan Is Free</string>
-    <string name="scan_first_free_message">Complete your first HEXIS-BI scan for free and see your results.</string>
-    <string name="scan_first_free_note">A subscription is required for future scans and new insights.</string>
     <string name="onboarding_free_scan_subtitle">Complete your first HEXIS-BI body scan at no cost and see your personalized results.</string>
     <string name="onboarding_free_scan_item_phone">Scan using your phone</string>
     <string name="onboarding_free_scan_item_clothing">Wear form-fitting clothing</string>
@@ -1240,6 +1240,9 @@
     <string name="onboarding_free_scan_note">After your free scan, an active subscription is required for future scans, new advanced insights, and premium analytics.</string>
     <string name="onboarding_free_scan_unavailable">Your free scan is not available right now.</string>
     <string name="action_start_free_scan">Start Free Scan</string>
+    <string name="scan_first_free_title">Your First Scan Is Free</string>
+    <string name="scan_first_free_message">Complete your first HEXIS-BI scan for free and see your results.</string>
+    <string name="scan_first_free_note">A subscription is required for future scans and new insights.</string>
     <string name="scan_subscription_required_title">Subscription Required to Scan</string>
     <string name="scan_subscription_required_message">Your previous scans and results remain available.\nChoose a plan to continue scanning.</string>
     <string name="scans_used_title">You\'ve used all your scans this month</string>
