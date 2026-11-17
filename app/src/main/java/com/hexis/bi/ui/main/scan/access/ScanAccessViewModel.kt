@@ -27,20 +27,25 @@ class ScanAccessViewModel(
     private val firstFreeScanConsent: FirstFreeScanConsent,
 ) : BaseViewModel(application) {
 
-    private val _access = MutableStateFlow<ScanAccess?>(if (firstFreeScanConsent.consume()) ScanAccess.Allowed else null)
+    private val consented = firstFreeScanConsent.consume()
+
+    private val _access = MutableStateFlow(if (consented) repository.status.value.toScanAccess().withConsent() else null)
     val access: StateFlow<ScanAccess?> = _access.asStateFlow()
 
     init {
-        if (_access.value == null) viewModelScope.launch {
+        viewModelScope.launch {
             gateConfig.refresh()
             if (!gateConfig.enabled) {
                 _access.value = ScanAccess.Allowed
                 return@launch
             }
-            _access.value = resolveAccess()
+            if (_access.value == null) _access.value = resolveAccess().withConsent()
             restoreWhenAllowed()
         }
     }
+
+    private fun ScanAccess?.withConsent(): ScanAccess? =
+        if (consented && this == ScanAccess.FirstFreeScan) ScanAccess.Allowed else this
 
     val storePlatform: StorePlatform
         get() = repository.status.value.storePlatform ?: StorePlatform.ANDROID

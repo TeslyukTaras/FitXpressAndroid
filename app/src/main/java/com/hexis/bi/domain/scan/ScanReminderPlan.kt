@@ -80,6 +80,7 @@ object ScanReminderPlan {
         val hour: Int,
         val periodEnd: LocalDate?,
         val notBefore: ZonedDateTime?,
+        val lockedFrom: LocalDate?,
     )
 
     fun forecast(input: ReminderInput): ReminderForecast {
@@ -100,7 +101,8 @@ object ScanReminderPlan {
             next = events.firstOrNull { it.kind == ReminderKind.TODAY },
             nextHour = firstPending?.hour ?: input.defaultHour,
             pickerRange = firstPending?.let {
-                today..maxOf(today, it.cap ?: it.due.plusDays(ScanReminderRules.PICKER_EXTRA_DAYS))
+                val first = maxOf(today, it.lockedFrom ?: today)
+                first..maxOf(first, it.cap ?: it.due.plusDays(ScanReminderRules.PICKER_EXTRA_DAYS))
             },
             baselineScanMillis = baseline,
         )
@@ -122,6 +124,7 @@ object ScanReminderPlan {
             hour = input.defaultHour,
             periodEnd = plan.periodEnd.plusMonths(1),
             notBefore = plan.renewsAt?.plusHours(ScanReminderRules.RENEWAL_SETTLE_HOURS),
+            lockedFrom = nextPeriodDue,
         )
         if (plan.scansAllowed - plan.scansUsed <= 0) return listOf(nextPeriod)
         val currentDue = minOf(maxOf(base ?: periodStart, periodStart), latest)
@@ -132,6 +135,7 @@ object ScanReminderPlan {
             hour = input.defaultHour,
             periodEnd = plan.periodEnd,
             notBefore = null,
+            lockedFrom = null,
         )
         return listOf(current, nextPeriod)
     }
@@ -147,6 +151,7 @@ object ScanReminderPlan {
                 hour = input.defaultHour,
                 periodEnd = null,
                 notBefore = null,
+                lockedFrom = null,
             ),
         )
     }
@@ -160,14 +165,12 @@ object ScanReminderPlan {
         val index = evaluated.indexOfFirst { it.hasToday }
         if (index < 0) return evaluated
         val target = evaluated[index].candidate
-        val key = if (target.key.startsWith(ScanReminderRules.KEY_FREE)) freeKey(override.date) else planKey(override.date)
+        val date = target.lockedFrom?.let { maxOf(override.date, it) } ?: override.date
+        val key = if (target.key.startsWith(ScanReminderRules.KEY_FREE)) freeKey(date) else planKey(date)
         val alreadyFired = input.sent.todayKey == key
-        if (override.date < input.now.toLocalDate() && !alreadyFired) return evaluated
+        if (date < input.now.toLocalDate() && !alreadyFired) return evaluated
         return evaluated.toMutableList().also {
-            it[index] = evaluate(
-                input,
-                target.copy(key = key, due = override.date, cap = null, hour = override.hour, notBefore = null),
-            )
+            it[index] = evaluate(input, target.copy(key = key, due = date, cap = null, hour = override.hour))
         }
     }
 

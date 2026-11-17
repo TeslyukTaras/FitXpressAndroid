@@ -73,9 +73,9 @@ internal class HealthDomainSync<T>(
         local.coverage(uid, identities, spec.source, dateRange(start, end))
     }
 
-    suspend fun sync(start: LocalDate, end: LocalDate): Result<HealthSyncTally> {
+    suspend fun sync(start: LocalDate, end: LocalDate, force: Boolean = false): Result<HealthSyncTally> {
         val uid = auth.currentUser?.uid ?: return Result.failure(notAuthenticated())
-        return refresh(uid, start, end)
+        return refresh(uid, start, end, force)
     }
 
     suspend fun range(start: LocalDate, end: LocalDate, withSamples: Boolean = false): Result<List<T>> {
@@ -115,7 +115,12 @@ internal class HealthDomainSync<T>(
         }
     }
 
-    private suspend fun refresh(uid: String, start: LocalDate, end: LocalDate): Result<HealthSyncTally> =
+    private suspend fun refresh(
+        uid: String,
+        start: LocalDate,
+        end: LocalDate,
+        force: Boolean = false,
+    ): Result<HealthSyncTally> =
         withContext(io) {
             local.singleFlight(uid, spec.source) {
                 val permittedDays = permitted(dateRange(start, end))
@@ -143,7 +148,7 @@ internal class HealthDomainSync<T>(
                     return@singleFlight Result.success(HealthSyncTally.NOTHING_FETCHED)
                 }
 
-                val missing = local.missingDays(uid, fetchable.ids(), spec.source, days, TTL)
+                val missing = if (force) days else local.missingDays(uid, fetchable.ids(), spec.source, days, TTL)
                 if (missing.isEmpty()) {
                     recordSynced(uid, fetchable, days.first()..days.last())
                     return@singleFlight Result.success(HealthSyncTally.NOTHING_FETCHED)
