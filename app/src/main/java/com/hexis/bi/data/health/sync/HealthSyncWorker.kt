@@ -81,11 +81,10 @@ internal class HealthSyncWorker(
 
         if (access == HealthDataAccess.FIRST_WEEK) {
             report(syncTrigger, elapsed(), outcomeOf(BackfillOutcome.Skipped, failedOperations), failedOperations)
-            if (failedOperations > 0 || recentWindow.rows == 0) {
-                Timber.d("Health sync worker: the free week has not arrived yet, trying again")
+            if (failedOperations > 0 || recentWindow.rows == 0 || !healthDataGate.recordFreeWeekImport(recentWindow.rows)) {
+                Timber.d("Health sync worker: the free week is still arriving (%d rows), trying again", recentWindow.rows)
                 return giveUpOrRetry()
             }
-            healthDataGate.markFreeWeekImported()
             return Result.success()
         }
 

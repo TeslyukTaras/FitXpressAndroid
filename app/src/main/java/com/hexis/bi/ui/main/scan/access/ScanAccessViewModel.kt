@@ -2,6 +2,7 @@ package com.hexis.bi.ui.main.scan.access
 
 import android.app.Application
 import androidx.lifecycle.viewModelScope
+import com.hexis.bi.data.subscription.FirstFreeScanConsent
 import com.hexis.bi.data.subscription.ScanGateConfig
 import com.hexis.bi.data.subscription.SubscriptionRepository
 import com.hexis.bi.domain.subscription.ScanAccess
@@ -23,6 +24,7 @@ class ScanAccessViewModel(
     application: Application,
     private val repository: SubscriptionRepository,
     private val gateConfig: ScanGateConfig,
+    private val firstFreeScanConsent: FirstFreeScanConsent,
 ) : BaseViewModel(application) {
 
     private val _access = MutableStateFlow<ScanAccess?>(null)
@@ -35,7 +37,9 @@ class ScanAccessViewModel(
                 _access.value = ScanAccess.Allowed
                 return@launch
             }
-            _access.value = resolveAccess()
+            val resolved = resolveAccess()
+            _access.value =
+                if (resolved == ScanAccess.FirstFreeScan && firstFreeScanConsent.consume()) ScanAccess.Allowed else resolved
             restoreWhenAllowed()
         }
     }

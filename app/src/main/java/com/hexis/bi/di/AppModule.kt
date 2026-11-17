@@ -31,6 +31,7 @@ import com.hexis.bi.data.order.OrderDraftHolder
 import com.hexis.bi.data.preferences.UserPreferencesRepository
 import com.hexis.bi.data.subscription.FirestoreSubscriptionRepository
 import com.hexis.bi.data.subscription.PlanCatalog
+import com.hexis.bi.data.subscription.FirstFreeScanConsent
 import com.hexis.bi.data.subscription.ScanGateConfig
 import com.hexis.bi.data.subscription.billing.CurrentActivityProvider
 import com.hexis.bi.data.subscription.billing.PlayBilling
@@ -145,6 +146,7 @@ val appModule = module {
     single { PlayBilling(androidContext(), get()) }
     single { PlanCatalog(get(), planCatalogFetchInterval()) }
     single { ScanGateConfig(get(), scanGateFetchInterval()) }
+    single { FirstFreeScanConsent() }
     single<SubscriptionRepository>(createdAtStart = true) {
         FirestoreSubscriptionRepository(
             androidContext(),
@@ -282,7 +284,7 @@ val appModule = module {
     viewModel { VerifyEmailViewModel(get(), androidApplication()) }
     viewModel { ScanPreferencesViewModel(androidApplication(), get(), get()) }
     viewModel { SubscriptionViewModel(androidApplication(), get()) }
-    viewModel { ScanAccessViewModel(androidApplication(), get(), get()) }
+    viewModel { ScanAccessViewModel(androidApplication(), get(), get(), get()) }
     viewModel { PlanSelectionViewModel(androidApplication(), get()) }
     viewModel { (planId: PlanId) -> ConfirmPlanViewModel(androidApplication(), get(), planId) }
     viewModel {
@@ -320,7 +322,7 @@ val appModule = module {
     viewModel { (orderId: String) -> EditAddressViewModel(androidApplication(), get(), orderId) }
     viewModel { ScanHistoryViewModel(androidApplication(), get(), get()) }
     viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get(), get(), get()) }
-    viewModel { OnboardingViewModel(androidApplication(), get(), get(), get(), get()) }
+    viewModel { OnboardingViewModel(androidApplication(), get(), get(), get(), get(), get()) }
 }
 
 private const val FIREBASE_FUNCTIONS_REGION = "us-central1"

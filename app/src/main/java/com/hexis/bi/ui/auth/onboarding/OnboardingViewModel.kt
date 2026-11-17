@@ -3,6 +3,7 @@ package com.hexis.bi.ui.auth.onboarding
 import android.app.Application
 import com.hexis.bi.R
 import com.hexis.bi.config.AppConfig
+import com.hexis.bi.data.subscription.FirstFreeScanConsent
 import com.hexis.bi.data.subscription.ScanGateConfig
 import com.hexis.bi.data.subscription.SubscriptionRepository
 import com.hexis.bi.data.user.UserRepository
@@ -33,6 +34,7 @@ class OnboardingViewModel(
     private val suitRepository: SuitRepository,
     private val gateConfig: ScanGateConfig,
     private val subscriptionRepository: SubscriptionRepository,
+    private val firstFreeScanConsent: FirstFreeScanConsent,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(OnboardingState())
@@ -116,6 +118,7 @@ class OnboardingViewModel(
             }
             val access = status?.toScanAccess()
             if (status == null || access == ScanAccess.FirstFreeScan || access == ScanAccess.Allowed) {
+                firstFreeScanConsent.grant()
                 emitEvent(OnboardingEvent.StartFreeScan)
             } else {
                 emitEvent(

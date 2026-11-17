@@ -31,6 +31,7 @@ object AppPreferencesKeys {
         val medicalDisclaimerAcknowledgedAt = longPreferencesKey("medical_disclaimer_acknowledged_at")
         const val FREE_WEEK_ANCHOR_PREFIX = "free_week_anchor_"
         const val FREE_WEEK_IMPORTED_PREFIX = "free_week_imported_"
+        const val FREE_WEEK_IMPORT_ROWS_PREFIX = "free_week_import_rows_"
         const val INSIGHTS_RUN_DATE_PREFIX = "insights_run_date_"
     }
 

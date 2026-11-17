@@ -83,6 +83,13 @@ class UserPreferencesRepository(
         store.edit { it[stringPreferencesKey(k.FREE_WEEK_IMPORTED_PREFIX + uid)] = true.toString() }
     }
 
+    suspend fun getFreeWeekImportRows(uid: String): Int? =
+        store.data.map { it[stringPreferencesKey(k.FREE_WEEK_IMPORT_ROWS_PREFIX + uid)]?.toIntOrNull() }.first()
+
+    suspend fun setFreeWeekImportRows(uid: String, rows: Int) {
+        store.edit { it[stringPreferencesKey(k.FREE_WEEK_IMPORT_ROWS_PREFIX + uid)] = rows.toString() }
+    }
+
     suspend fun getInsightsRunDate(uid: String): String? =
         store.data.map { it[stringPreferencesKey(k.INSIGHTS_RUN_DATE_PREFIX + uid)] }.first()
 

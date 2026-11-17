@@ -1,6 +1,9 @@
 package com.hexis.bi.ui.main
 
+import android.Manifest
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +34,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.R
 import com.hexis.bi.config.AppConfig
 import com.hexis.bi.data.preferences.UserPreferencesRepository
@@ -75,6 +79,7 @@ import com.hexis.bi.ui.main.subscription.confirm.ConfirmPlanScreen
 import com.hexis.bi.ui.main.subscription.plans.PlanSelectionScreen
 import com.hexis.bi.ui.navigation.Route
 import com.hexis.bi.ui.navigation.popBackStackOnce
+import com.hexis.bi.utils.permissions.NotificationPermissionCoordinator
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
@@ -129,10 +134,32 @@ fun MainScreen(
     val scope = rememberCoroutineScope()
     var showProfileIncompleteDialog by remember { mutableStateOf(false) }
     var showBuySuitDialog by remember { mutableStateOf(false) }
-    var showDisclaimerAcknowledgement by remember { mutableStateOf(false) }
+    var disclaimerPending by remember { mutableStateOf(false) }
+    var disclaimerResolved by remember { mutableStateOf(false) }
+    var scanLaunching by remember { mutableStateOf(startScan) }
+    val homeVisible = currentRoute == Route.Main.HOME && !scanLaunching
+    val showDisclaimerAcknowledgement = disclaimerPending && homeVisible
 
     LaunchedEffect(Unit) {
-        showDisclaimerAcknowledgement = !preferencesRepository.isMedicalDisclaimerAcknowledged()
+        disclaimerPending = !preferencesRepository.isMedicalDisclaimerAcknowledged()
+        disclaimerResolved = true
+    }
+
+    val notificationPermissionCoordinator: NotificationPermissionCoordinator = koinInject()
+    val firebaseAuth: FirebaseAuth = koinInject()
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        val uid = firebaseAuth.currentUser?.uid ?: return@rememberLauncherForActivityResult
+        scope.launch { notificationPermissionCoordinator.onPermissionResult(uid, granted) }
+    }
+    LaunchedEffect(homeVisible, disclaimerResolved, disclaimerPending) {
+        val uid = firebaseAuth.currentUser?.uid ?: return@LaunchedEffect
+        if (homeVisible && disclaimerResolved && !disclaimerPending &&
+            notificationPermissionCoordinator.shouldPromptOnSignIn(uid)
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
     val startSuitSizeScan: () -> Unit = {
         if (AppConfig.suitVisible) scope.launch {
@@ -169,6 +196,7 @@ fun MainScreen(
             } else {
                 showProfileIncompleteDialog = true
             }
+            scanLaunching = false
         }
     }
 
@@ -509,7 +537,7 @@ fun MainScreen(
             MedicalDisclaimerSheet(
                 requireAcknowledgement = true,
                 onDismiss = {
-                    showDisclaimerAcknowledgement = false
+                    disclaimerPending = false
                     scope.launch { preferencesRepository.setMedicalDisclaimerAcknowledged() }
                 },
             )

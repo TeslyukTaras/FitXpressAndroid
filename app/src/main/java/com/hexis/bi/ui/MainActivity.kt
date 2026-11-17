@@ -1,15 +1,12 @@
 package com.hexis.bi.ui
 
-import android.Manifest
 import android.content.Intent
 import android.graphics.Color
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -47,15 +44,6 @@ class MainActivity : ComponentActivity() {
     private val terraSdkConnectionOwnership: TerraSdkConnectionOwnership by inject()
     private val healthDataGate: HealthDataGate by inject()
 
-    private val notificationPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) { granted ->
-        val uid = firebaseAuth.currentUser?.uid ?: return@registerForActivityResult
-        lifecycleScope.launch {
-            notificationPermissionCoordinator.onPermissionResult(uid, granted)
-        }
-    }
-
     private var lastAuthUid: String? = null
 
     private val authListener = FirebaseAuth.AuthStateListener { auth ->
@@ -73,11 +61,6 @@ class MainActivity : ComponentActivity() {
         }
         if (uid != null) lifecycleScope.launch {
             notificationPermissionCoordinator.reconcilePushSetting()
-            if (notificationPermissionCoordinator.shouldPromptOnSignIn(uid) &&
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-            ) {
-                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
             scanReminderScheduler.onNotificationSettingsOrScanChanged()
         }
         else lifecycleScope.launch {
