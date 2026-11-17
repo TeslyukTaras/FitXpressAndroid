@@ -22,6 +22,8 @@ import kotlin.coroutines.resume
  * Debounced foreground hooks that drive Terra SDK pull APIs so normalized data reaches REST
  * (`/v2/daily`, `/v2/sleep`). `getDaily` and `getSleep` are separate pipelines — both must run.
  */
+data class SdkPullRange(val start: Instant, val end: Instant)
+
 object TerraSdkSync {
 
     private val debounceMutex = Mutex()
@@ -72,7 +74,7 @@ object TerraSdkSync {
     }
 
     @Volatile
-    var accessCheck: (suspend (reason: String, force: Boolean, lookbackDays: Long) -> Long?)? = null
+    var accessCheck: (suspend (reason: String, force: Boolean, lookbackDays: Long) -> SdkPullRange?)? = null
 
     /**
      * @param force skips the foreground debounce (e.g. right after a successful `initConnection`).
@@ -86,8 +88,8 @@ object TerraSdkSync {
         lookbackDays: Long = DEFAULT_LOOKBACK_DAYS,
     ): Boolean {
         val mgr = manager ?: return false
-        val effectiveLookbackDays = accessCheck?.let { check -> check(reason, force, lookbackDays) ?: return false }
-            ?: lookbackDays
+        val pullRange = accessCheck?.let { check -> check(reason, force, lookbackDays) ?: return false }
+            ?: Instant.now().let { now -> SdkPullRange(now.minus(lookbackDays, ChronoUnit.DAYS), now) }
         val linked = enumValues<Connections>().filter { connection ->
             val userId = mgr.getUserId(connection) ?: return@filter false
             ownedUserIds == null || userId in ownedUserIds
@@ -99,8 +101,8 @@ object TerraSdkSync {
             return false
         }
 
-        val end = Date()
-        val start = Date.from(Instant.now().minus(effectiveLookbackDays, ChronoUnit.DAYS))
+        val end = Date.from(pullRange.end)
+        val start = Date.from(pullRange.start)
 
         for (connection in linked) {
             awaitPull("getDaily", connection, reason) { cb ->

@@ -47,6 +47,18 @@ internal class HealthSyncCoordinator(
         }
     }
 
+    suspend fun syncFreeWeek(): List<Throwable> {
+        val uid = auth.currentUser?.uid ?: return emptyList()
+        val bounds = remote.allowedBounds() ?: return emptyList()
+        local.pruneExpiredDaysOnStartup(uid)
+        val end = minOf(bounds.endInclusive, LocalDate.now())
+        return coroutineScope {
+            val activity = async { activityRepository.sync(bounds.start, end).logFailure("activity") }
+            val sleep = async { sleepRepository.sync(bounds.start, end).logFailure("sleep") }
+            listOfNotNull(activity.await(), sleep.await())
+        }
+    }
+
     suspend fun prewarmScans(): Result<Unit> {
         if (auth.currentUser == null) return Result.success(Unit)
         return scanHistoryRepository.sync()

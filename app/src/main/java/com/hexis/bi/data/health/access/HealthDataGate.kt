@@ -5,9 +5,13 @@ import com.hexis.bi.data.preferences.UserPreferencesRepository
 import com.hexis.bi.data.subscription.ScanGateConfig
 import com.hexis.bi.data.subscription.SubscriptionRepository
 import com.hexis.bi.domain.subscription.HealthDataAccess
+import com.hexis.bi.data.terra.SdkPullRange
 import com.hexis.bi.domain.subscription.toHealthDataAccess
 import com.hexis.bi.utils.constants.SubscriptionConstants
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
@@ -69,16 +73,24 @@ class HealthDataGate(
         }
     }
 
-    suspend fun sdkLookbackDays(reason: String, force: Boolean, requested: Long): Long? = when (access()) {
-        HealthDataAccess.FULL -> requested
+    suspend fun sdkPullRange(reason: String, force: Boolean, requestedLookbackDays: Long): SdkPullRange? = when (access()) {
+        HealthDataAccess.FULL -> Instant.now().let { now -> SdkPullRange(now.minus(requestedLookbackDays, ChronoUnit.DAYS), now) }
         HealthDataAccess.FIRST_WEEK ->
             if (force && reason == SubscriptionConstants.TERRA_POST_CONNECT_REASON && freeWeekStillOpen()) {
-                SubscriptionConstants.FREE_WEEK_DAYS
+                freeWeekPullRange()
             } else {
                 null
             }
 
         HealthDataAccess.FROZEN -> null
+    }
+
+    private suspend fun freeWeekPullRange(): SdkPullRange {
+        val anchor = freeWeekAnchor() ?: LocalDate.now()
+        val zone = ZoneId.systemDefault()
+        val start = anchor.minusDays(SubscriptionConstants.FREE_WEEK_DAYS - 1).atStartOfDay(zone).toInstant()
+        val end = minOf(anchor.plusDays(1).atStartOfDay(zone).toInstant(), Instant.now())
+        return SdkPullRange(start, end)
     }
 
     private suspend fun freeWeekAnchor(): LocalDate? {
