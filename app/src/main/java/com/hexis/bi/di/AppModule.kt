@@ -305,7 +305,7 @@ val appModule = module {
         )
     }
     viewModel { MySuitViewModel(androidApplication(), get()) }
-    viewModel { NotificationsSettingsViewModel(androidApplication(), get(), get(), get(), get()) }
+    viewModel { NotificationsSettingsViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { NotificationsViewModel(androidApplication(), get()) }
     viewModel { BodyViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { SleepViewModel(androidApplication(), get(), get(), get(), get(), get()) }

@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import com.hexis.bi.ui.MainActivity
 import com.hexis.bi.utils.constants.NotificationPendingIntent
 import com.hexis.bi.utils.constants.ScanReminderAlarms
@@ -38,6 +40,7 @@ class ScanReminderSchedulerImpl(
 ) : ScanReminderScheduler {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val rescheduleLock = Mutex()
 
     init {
         subscriptionRepository.status
@@ -51,31 +54,35 @@ class ScanReminderSchedulerImpl(
 
     override fun onNotificationSettingsOrScanChanged() {
         scope.launch {
-            val am = context.getSystemService<AlarmManager>() ?: return@launch
-            if (auth.currentUser == null) {
-                cancelAllScanReminders(am)
-                return@launch
-            }
-            val settings = userRepository.getUserSettings().getOrElse {
-                Timber.w(it, "ScanReminderScheduler: getUserSettings failed; leaving alarms as-is")
-                return@launch
-            }
-            if (settings.pushNotificationsEnabled != true || settings.scanRemindersEnabled != true) {
-                cancelAllScanReminders(am)
-                return@launch
-            }
-            val now = ZonedDateTime.now(ZoneId.systemDefault())
-            val forecast = resolver.forecast(now, settings) ?: run {
-                Timber.w("ScanReminderScheduler: forecast unavailable; leaving alarms as-is")
-                return@launch
-            }
-            for (kind in ReminderKind.entries) {
-                setNextAlarm(
-                    am,
-                    kind.alarmKind(),
-                    forecast.events.firstOrNull { it.kind == kind }?.at,
-                )
-            }
+            rescheduleLock.withLock { reschedule() }
+        }
+    }
+
+    private suspend fun reschedule() {
+        val am = context.getSystemService<AlarmManager>() ?: return
+        if (auth.currentUser == null) {
+            cancelAllScanReminders(am)
+            return
+        }
+        val settings = userRepository.getUserSettings().getOrElse {
+            Timber.w(it, "ScanReminderScheduler: getUserSettings failed; leaving alarms as-is")
+            return
+        }
+        if (settings.pushNotificationsEnabled != true || settings.scanRemindersEnabled != true) {
+            cancelAllScanReminders(am)
+            return
+        }
+        val now = ZonedDateTime.now(ZoneId.systemDefault())
+        val forecast = resolver.forecast(now, settings) ?: run {
+            Timber.w("ScanReminderScheduler: forecast unavailable; leaving alarms as-is")
+            return
+        }
+        for (kind in ReminderKind.entries) {
+            setNextAlarm(
+                am,
+                kind.alarmKind(),
+                forecast.events.firstOrNull { it.kind == kind }?.at,
+            )
         }
     }
 

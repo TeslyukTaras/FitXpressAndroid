@@ -47,21 +47,17 @@ class NotificationInboxRepository(
     suspend fun appendInbox(
         @StringRes titleRes: Int,
         @StringRes bodyRes: Int,
-        bodyFormatArg: String? = null,
     ) {
-        val title = context.getString(titleRes)
-        val body = if (bodyFormatArg != null) context.getString(bodyRes, bodyFormatArg)
-        else context.getString(bodyRes)
-        appendResolved(title, body)
+        appendResolved(context.getString(titleRes), context.getString(bodyRes))
     }
 
     suspend fun appendRawInbox(title: String, body: String, feature: String? = null) {
         appendResolved(title, body, feature)
     }
 
-    suspend fun appendNextScheduledScanInboxDeduped(localizedDayName: String) {
+    suspend fun appendNextScheduledScanInboxDeduped(localizedDate: String) {
         val title = context.getString(R.string.notif_next_scheduled_scan_title)
-        val body = context.getString(R.string.notif_next_scheduled_scan_body, localizedDayName)
+        val body = context.getString(R.string.notif_next_scheduled_scan_body, localizedDate)
         store.updateNotNull { list ->
             if (list.any { it.title == title && it.body == body }) list
             else appendToList(list, newItem(title, body))

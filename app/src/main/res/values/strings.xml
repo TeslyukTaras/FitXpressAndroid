@@ -66,21 +66,13 @@
     <string name="notifications_toggle">Notifications</string>
     <string name="notifications_voice">Voice</string>
     <string name="notifications_remind_to_scan">Remind Me To Scan</string>
-    <string name="notifications_remind_to_scan_subtitle">Get reminders to do your next body scan.</string>
-    <string name="notifications_day">Day:</string>
+    <string name="notifications_remind_to_scan_subtitle">Get reminders for your next recommended scan.</string>
+    <string name="notifications_next_reminder">Next reminder</string>
+    <string name="notifications_not_scheduled">Not scheduled</string>
     <string name="notifications_time">Time:</string>
     <string name="notifications_select_time">Select time</string>
     <string name="error_notifications_permission_denied">Enable notifications in system settings to receive scan reminders.</string>
     <string name="error_camera_permission_denied">Enable camera access in system settings to take a scan.</string>
-
-    <!-- Days of the week -->
-    <string name="day_monday">Monday</string>
-    <string name="day_tuesday">Tuesday</string>
-    <string name="day_wednesday">Wednesday</string>
-    <string name="day_thursday">Thursday</string>
-    <string name="day_friday">Friday</string>
-    <string name="day_saturday">Saturday</string>
-    <string name="day_sunday">Sunday</string>
 
     <!-- Edit profile screen -->
     <string name="edit_profile_title">Edit Profile</string>

@@ -32,7 +32,6 @@ internal object FirestoreSchema {
         const val PUSH_NOTIFICATIONS_ENABLED = "pushNotificationsEnabled"
         const val VOICE_GUIDANCE_ENABLED = "voiceGuidanceEnabled"
         const val SCAN_REMINDERS_ENABLED = "scanRemindersEnabled"
-        const val REMINDER_DAY = "reminderDay"
         const val REMINDER_HOUR = "reminderHour"
         const val NEXT_REMINDER_DATE = "nextReminderDate"
         const val NEXT_REMINDER_HOUR = "nextReminderHour"

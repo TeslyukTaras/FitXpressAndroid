@@ -65,6 +65,7 @@ object ScanReminderRules {
     const val NEXT_DAY_OFFSET: Long = 1L
     const val STALE_EVENT_HOURS: Long = 24L
     const val FIRE_TOLERANCE_MINUTES: Long = 1L
+    const val LATE_FIRE_GRACE_HOURS: Long = 2L
     const val RENEWAL_SETTLE_HOURS: Long = 1L
     const val PICKER_EXTRA_DAYS: Long = 14L
     const val STATUS_WAIT_MS: Long = 5_000L

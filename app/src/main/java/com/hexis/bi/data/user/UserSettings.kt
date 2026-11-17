@@ -12,7 +12,6 @@ data class UserSettings(
     val pushNotificationsEnabled: Boolean? = null,
     val voiceGuidanceEnabled: Boolean? = null,
     val scanRemindersEnabled: Boolean? = null,
-    val reminderDay: String? = null,
     val reminderHour: Int? = null,
     val nextReminderDate: String? = null,
     val nextReminderHour: Int? = null,

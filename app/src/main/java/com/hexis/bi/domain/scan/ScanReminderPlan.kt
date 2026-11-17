@@ -2,7 +2,6 @@ package com.hexis.bi.domain.scan
 
 import com.hexis.bi.utils.constants.ScanReminderRules
 import java.time.LocalDate
-import java.time.LocalTime
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import kotlin.math.roundToLong
@@ -70,6 +69,10 @@ data class ReminderForecast(
 
 object ScanReminderPlan {
 
+    private data class Evaluated(val candidate: Candidate, val events: List<ReminderEvent>) {
+        val hasToday: Boolean get() = events.any { it.kind == ReminderKind.TODAY }
+    }
+
     private data class Candidate(
         val key: String,
         val due: LocalDate,
@@ -88,9 +91,9 @@ object ScanReminderPlan {
         }
         if (candidates.isEmpty()) return ReminderForecast.empty(baseline)
 
-        val resolved = applyOverride(input, candidates)
-        val events = resolved.flatMap { eventsFor(input, it) }.sortedBy { it.at }
-        val firstPending = resolved.firstOrNull { c -> eventsFor(input, c).any { it.kind == ReminderKind.TODAY } }
+        val evaluated = applyOverride(input, candidates.map { evaluate(input, it) })
+        val events = evaluated.flatMap { it.events }.sortedBy { it.at }
+        val firstPending = evaluated.firstOrNull { it.hasToday }?.candidate
         val today = input.now.toLocalDate()
         return ReminderForecast(
             events = events,
@@ -148,16 +151,23 @@ object ScanReminderPlan {
         )
     }
 
-    private fun applyOverride(input: ReminderInput, candidates: List<Candidate>): List<Candidate> {
-        val override = input.override ?: return candidates
+    private fun evaluate(input: ReminderInput, c: Candidate) = Evaluated(c, eventsFor(input, c))
+
+    private fun applyOverride(input: ReminderInput, evaluated: List<Evaluated>): List<Evaluated> {
+        val override = input.override ?: return evaluated
         val baseline = input.lastScanAt?.toInstant()?.toEpochMilli() ?: 0L
-        if (override.scanMillis != baseline || override.date < input.now.toLocalDate()) return candidates
-        val index = candidates.indexOfFirst { c -> eventsFor(input, c).any { it.kind == ReminderKind.TODAY } }
-        if (index < 0) return candidates
-        val target = candidates[index]
+        if (override.scanMillis != baseline) return evaluated
+        val index = evaluated.indexOfFirst { it.hasToday }
+        if (index < 0) return evaluated
+        val target = evaluated[index].candidate
         val key = if (target.key.startsWith(ScanReminderRules.KEY_FREE)) freeKey(override.date) else planKey(override.date)
-        return candidates.toMutableList().also {
-            it[index] = target.copy(key = key, due = override.date, cap = null, hour = override.hour, notBefore = null)
+        val alreadyFired = input.sent.todayKey == key
+        if (override.date < input.now.toLocalDate() && !alreadyFired) return evaluated
+        return evaluated.toMutableList().also {
+            it[index] = evaluate(
+                input,
+                target.copy(key = key, due = override.date, cap = null, hour = override.hour, notBefore = null),
+            )
         }
     }
 
@@ -195,8 +205,11 @@ object ScanReminderPlan {
         return events.filter { it.at.isAfter(oldest) }
     }
 
-    private fun earliestDate(now: ZonedDateTime, hour: Int): LocalDate =
-        if (now.toLocalTime() < LocalTime.of(hour, 0)) now.toLocalDate() else now.toLocalDate().plusDays(1)
+    private fun earliestDate(now: ZonedDateTime, hour: Int): LocalDate {
+        val todayAtHour = now.toLocalDate().atTime(hour, 0).atZone(now.zone)
+        val stillToday = now.isBefore(todayAtHour.plusHours(ScanReminderRules.LATE_FIRE_GRACE_HOURS))
+        return if (stillToday) now.toLocalDate() else now.toLocalDate().plusDays(1)
+    }
 
     private fun planKey(due: LocalDate) = ScanReminderRules.KEY_PLAN + ":" + due
 
