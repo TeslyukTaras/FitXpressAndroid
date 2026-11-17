@@ -85,6 +85,10 @@ fun MainScreen(
     onDeleteAccount: () -> Unit,
     modifier: Modifier = Modifier,
     startDestination: String = Route.Main.HOME,
+    startScan: Boolean = false,
+    onStartScanHandled: () -> Unit = {},
+    startMessage: String? = null,
+    onStartMessageShown: () -> Unit = {},
 ) {
     val navController = rememberNavController()
     val currentBackStack by navController.currentBackStackEntryAsState()
@@ -168,6 +172,13 @@ fun MainScreen(
         }
     }
 
+    LaunchedEffect(startScan) {
+        if (startScan) {
+            onStartScanHandled()
+            launchScan()
+        }
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         val dialogBlurModifier =
             if (showProfileIncompleteDialog || (AppConfig.suitVisible && showBuySuitDialog) || showDisclaimerAcknowledgement) {
@@ -185,6 +196,8 @@ fun MainScreen(
         ) {
             composable(Route.Main.HOME) {
                 HomeScreen(
+                    message = startMessage,
+                    onMessageShown = onStartMessageShown,
                     onLogout = onLogout,
                     onNotificationClick = { navController.navigate(Route.Main.NOTIFICATIONS) },
                     onSettingsClick = { navController.navigate(Route.Main.SETTINGS) },

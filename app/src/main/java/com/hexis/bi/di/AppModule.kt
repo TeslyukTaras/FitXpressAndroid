@@ -320,7 +320,7 @@ val appModule = module {
     viewModel { (orderId: String) -> EditAddressViewModel(androidApplication(), get(), orderId) }
     viewModel { ScanHistoryViewModel(androidApplication(), get(), get()) }
     viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get(), get()) }
-    viewModel { OnboardingViewModel(androidApplication(), get(), get()) }
+    viewModel { OnboardingViewModel(androidApplication(), get(), get(), get(), get()) }
 }
 
 private const val FIREBASE_FUNCTIONS_REGION = "us-central1"
