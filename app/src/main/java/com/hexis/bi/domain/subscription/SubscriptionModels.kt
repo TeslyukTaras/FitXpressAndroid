@@ -12,6 +12,9 @@ enum class PlanId(val scansPerMonth: Int, val rank: Int) {
     ),
 }
 
+val PlanId.isTopPlan: Boolean
+    get() = rank == PlanId.entries.minOf { it.rank }
+
 data class PlanInfo(
     val id: PlanId,
     val rank: Int,
@@ -37,13 +40,14 @@ sealed interface SubscriptionStatus {
 
     data object Loading : SubscriptionStatus
 
-    data object None : SubscriptionStatus
+    data class None(val freeScanUsed: Boolean = false) : SubscriptionStatus
 
     sealed interface Subscribed : SubscriptionStatus {
         val plan: PlanId
         val scansUsed: Int
         val scansAllowed: Int
         val renewsOn: LocalDate
+        val renewsAtMillis: Long
         val platform: StorePlatform
     }
 
@@ -54,6 +58,8 @@ sealed interface SubscriptionStatus {
         override val scansAllowed: Int = plan.scansPerMonth,
         override val platform: StorePlatform = StorePlatform.ANDROID,
         val renews: Boolean = true,
+        val pendingPlan: PlanId? = null,
+        override val renewsAtMillis: Long = 0L,
     ) : Subscribed
 
     data class GracePeriod(
@@ -63,11 +69,13 @@ sealed interface SubscriptionStatus {
         val graceEndsOn: LocalDate,
         override val scansAllowed: Int = plan.scansPerMonth,
         override val platform: StorePlatform = StorePlatform.ANDROID,
+        override val renewsAtMillis: Long = 0L,
     ) : Subscribed
 
     data class Expired(
         val plan: PlanId,
         val platform: StorePlatform = StorePlatform.ANDROID,
+        val paymentIssue: Boolean = false,
     ) : SubscriptionStatus
 }
 

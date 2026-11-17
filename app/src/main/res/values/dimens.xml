@@ -115,6 +115,7 @@
     <dimen name="size_indicator_bigger">6dp</dimen>
     <dimen name="size_social_button">48dp</dimen>
     <dimen name="height_button">48dp</dimen>
+    <dimen name="height_button_compact">40dp</dimen>
     <dimen name="size_loading_indicator">20dp</dimen>
     <dimen name="size_avatar_button">28dp</dimen>
     <dimen name="size_avatar">50dp</dimen>
@@ -227,4 +228,5 @@
     <dimen name="subscription_feature_tile_size">44dp</dimen>
     <dimen name="subscription_empty_icon_tile">64dp</dimen>
     <dimen name="subscription_empty_icon_size">35dp</dimen>
+    <dimen name="scan_gate_button_height">40dp</dimen>
 </resources>

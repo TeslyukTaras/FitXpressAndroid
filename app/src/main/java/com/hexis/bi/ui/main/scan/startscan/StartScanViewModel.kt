@@ -17,8 +17,10 @@ import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.avatar.prefetchMetricAvatarModel
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.ui.main.scan.ScanPurpose
+import com.hexis.bi.utils.constants.ScanPhotoConstants
 import com.hexis.bi.utils.calculateAge
 import kotlinx.coroutines.CoroutineStart
+import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -41,6 +43,7 @@ class StartScanViewModel(
     val state: StateFlow<StartScanState> = _state.asStateFlow()
     private var scanPurpose: ScanPurpose = ScanPurpose.BodyScan
     private var personalizeHintEvaluated = false
+    private var capture: PendingCapture? = null
 
     fun prepareForScan(purpose: ScanPurpose) {
         scanPurpose = if (!AppConfig.suitVisible && purpose == ScanPurpose.SuitSizeScan) {
@@ -57,6 +60,14 @@ class StartScanViewModel(
                 _state.update { it.copy(showPersonalizeResultsHint = true) }
             }
         }
+    }
+
+    fun onRescan() {
+        if (_state.value.retrySameCapture) onErrorDismissed() else startCamera()
+    }
+
+    fun onScanBlockHandled() {
+        _state.update { it.copy(blockedReason = null) }
     }
 
     fun onPersonalizeResultsHintDismissed() {
@@ -129,8 +140,10 @@ class StartScanViewModel(
 
     fun onPhotosReceived(frontUri: Uri, sideUri: Uri) {
         Timber.d("onPhotosReceived front=%s side=%s", frontUri, sideUri)
+        val pending = PendingCapture(frontUri, sideUri, UUID.randomUUID().toString())
+        capture = pending
         _state.update { it.copy(scanProgress = ScanProgress.Submitting) }
-        submitPhotos(frontUri, sideUri)
+        submitPhotos(pending)
     }
 
     /** SDK returned OK but photos were missing — relaunch camera. */
@@ -152,20 +165,27 @@ class StartScanViewModel(
      */
     fun onErrorDismissed() {
         val retake = _state.value.retakeOnErrorDismiss
+        val retrySame = _state.value.retrySameCapture
         clearError()
         _state.update {
             it.copy(
                 retakeOnErrorDismiss = false,
-                scanProgress = null,
+                retrySameCapture = false,
+                scanProgress = if (retrySame) ScanProgress.Submitting else null,
                 scanErrorMessage = null,
                 isPreparingResults = false,
                 shouldLaunchCamera = retake,
-                shouldNavigateBack = !retake,
+                shouldNavigateBack = !retake && !retrySame,
             )
+        }
+        if (retrySame) capture?.let { previous ->
+            val next = previous.copy(attempts = previous.attempts + 1)
+            capture = next
+            submitPhotos(next)
         }
     }
 
-    private fun submitPhotos(frontUri: Uri, sideUri: Uri) = launch(
+    private fun submitPhotos(pending: PendingCapture) = launch(
         showLoading = scanPurpose == ScanPurpose.BodyScan,
         onError = { throwable ->
             val message =
@@ -227,12 +247,14 @@ class StartScanViewModel(
         )
 
         threeDLookRepository.submitScan(
-            frontPhoto = frontUri,
-            sidePhoto = sideUri,
+            scanId = pending.scanId,
+            frontPhoto = pending.front,
+            sidePhoto = pending.side,
             heightCm = heightCm,
             weightKg = weightKg,
             gender = gender,
             age = age,
+            resumeMeasurementId = pending.measurementId,
         ).collect { progress ->
             Timber.d("submitPhotos: progress=%s", progress)
             _state.update {
@@ -244,6 +266,7 @@ class StartScanViewModel(
 
             when (progress) {
                 is ScanProgress.Success -> {
+                    capture = null
                     prewarmResultModelInBackground(progress.response.model3dUrl)
 
                     // Every scan is a real body scan and is persisted, so the suit-size flow sizes
@@ -306,6 +329,25 @@ class StartScanViewModel(
                 }
 
                 is ScanProgress.Failed -> {
+                    val sameCapture = capture
+                    if (progress.retryable && sameCapture != null &&
+                        sameCapture.attempts < ScanPhotoConstants.MAX_SAME_CAPTURE_RETRIES
+                    ) {
+                        capture = sameCapture.copy(
+                            measurementId = progress.measurementId ?: sameCapture.measurementId,
+                        )
+                        _state.update {
+                            it.copy(
+                                scanProgress = null,
+                                isPreparingResults = false,
+                                scanErrorMessage = appContext.getString(R.string.scan_error_connection_retry),
+                                retakeOnErrorDismiss = false,
+                                retrySameCapture = true,
+                            )
+                        }
+                        return@collect
+                    }
+                    capture = null
                     val message = resolveFailureMessage(progress)
                     if (scanPurpose == ScanPurpose.SuitSizeScan) {
                         _state.update {
@@ -325,6 +367,13 @@ class StartScanViewModel(
                                 retakeOnErrorDismiss = true,
                             )
                         }
+                    }
+                }
+
+                is ScanProgress.Blocked -> {
+                    capture = null
+                    _state.update {
+                        it.copy(scanProgress = null, isPreparingResults = false, blockedReason = progress.reason)
                     }
                 }
 
@@ -399,3 +448,11 @@ class StartScanViewModel(
         }
     }
 }
+
+private data class PendingCapture(
+    val front: Uri,
+    val side: Uri,
+    val scanId: String,
+    val attempts: Int = 0,
+    val measurementId: String? = null,
+)

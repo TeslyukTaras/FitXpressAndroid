@@ -4,6 +4,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.unit.Dp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,6 +36,8 @@ fun AppOutlinedButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     isLoading: Boolean = false,
+    width: Dp? = null,
+    height: Dp? = null,
 ) {
     val isActive = enabled && !isLoading
     val shape = MaterialTheme.shapes.small
@@ -72,34 +78,36 @@ fun AppOutlinedButton(
             )
     }
 
-    Button(
-        onClick = onClick,
-        enabled = isActive,
-        shape = shape,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Color.Transparent,
-            contentColor = MaterialTheme.colorScheme.onBackground,
-            disabledContainerColor = Color.Transparent,
-            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        ),
-        elevation = ButtonDefaults.buttonElevation(
-            defaultElevation = dimensionResource(R.dimen.elevation_none),
-            pressedElevation = dimensionResource(R.dimen.elevation_none),
-            disabledElevation = dimensionResource(R.dimen.elevation_none),
-        ),
-        modifier = modifier
-            .fillMaxWidth()
-            .height(dimensionResource(R.dimen.height_button))
-            .then(decorationModifier),
-    ) {
-        if (isLoading) CircularProgressIndicator(
-            color = MaterialTheme.colorScheme.onBackground,
-            strokeWidth = dimensionResource(R.dimen.border_thin),
-            modifier = Modifier.size(dimensionResource(R.dimen.size_loading_indicator)),
-        )
-        else Text(
-            text = text,
-            style = MaterialTheme.typography.bodyLarge,
-        )
+    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
+        Button(
+            onClick = onClick,
+            enabled = isActive,
+            shape = shape,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Transparent,
+                contentColor = MaterialTheme.colorScheme.onBackground,
+                disabledContainerColor = Color.Transparent,
+                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
+            elevation = ButtonDefaults.buttonElevation(
+                defaultElevation = dimensionResource(R.dimen.elevation_none),
+                pressedElevation = dimensionResource(R.dimen.elevation_none),
+                disabledElevation = dimensionResource(R.dimen.elevation_none),
+            ),
+            modifier = modifier
+                .then(if (width != null) Modifier.width(width) else Modifier.fillMaxWidth())
+                .height(height ?: dimensionResource(R.dimen.height_button))
+                .then(decorationModifier),
+        ) {
+            if (isLoading) CircularProgressIndicator(
+                color = MaterialTheme.colorScheme.onBackground,
+                strokeWidth = dimensionResource(R.dimen.border_thin),
+                modifier = Modifier.size(dimensionResource(R.dimen.size_loading_indicator)),
+            )
+            else Text(
+                text = text,
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        }
     }
 }

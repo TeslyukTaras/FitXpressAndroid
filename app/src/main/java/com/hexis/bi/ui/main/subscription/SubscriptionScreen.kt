@@ -13,8 +13,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -22,7 +20,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -36,7 +33,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
@@ -44,7 +40,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hexis.bi.R
@@ -58,9 +53,12 @@ import com.hexis.bi.ui.components.AppOutlinedButton
 import com.hexis.bi.ui.components.AppPrimaryButton
 import com.hexis.bi.ui.components.BodyGlassCard
 import com.hexis.bi.ui.components.LightStatusBarIcons
+import com.hexis.bi.ui.main.subscription.components.EmptyStateContent
+import com.hexis.bi.ui.main.subscription.components.EmptyStateMessage
 import com.hexis.bi.ui.main.subscription.components.InfoNote
 import com.hexis.bi.ui.main.subscription.components.PlanDetailsSheet
 import com.hexis.bi.ui.main.subscription.components.PlanSummaryCard
+import com.hexis.bi.ui.main.subscription.components.SubscriptionActionBar
 import com.hexis.bi.ui.main.subscription.components.RestoreResultDialog
 import com.hexis.bi.ui.main.subscription.components.ScansUsage
 import com.hexis.bi.ui.theme.NocturnePulseTheme
@@ -145,7 +143,7 @@ fun SubscriptionScreen(
         val planForDetails = when (val status = state.status) {
             is SubscriptionStatus.Subscribed -> status.plan
             is SubscriptionStatus.Expired -> status.plan
-            SubscriptionStatus.None, SubscriptionStatus.Loading -> null
+            is SubscriptionStatus.None, SubscriptionStatus.Loading -> null
         }
         if (state.showPlanDetails && planForDetails != null) {
             PlanDetailsSheet(
@@ -180,7 +178,7 @@ internal fun SubscriptionContent(
 ) {
     when (status) {
         SubscriptionStatus.Loading -> EmptyPlanState(loading = true, modifier = modifier)
-        SubscriptionStatus.None -> EmptyPlanState(loading = false, modifier = modifier)
+        is SubscriptionStatus.None -> EmptyPlanState(loading = false, modifier = modifier)
         is SubscriptionStatus.Subscribed -> SubscribedContent(
             status = status,
             price = state.priceOf(status.plan),
@@ -234,6 +232,7 @@ private fun SubscribedContent(
     onManage: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val pendingPlan = (status as? SubscriptionStatus.Active)?.pendingPlan
     ScrollColumn(modifier) {
         PlanSummaryCard(
             label = stringResource(R.string.subscription_active_plan),
@@ -265,13 +264,13 @@ private fun SubscribedContent(
                     modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
                 )
                 Text(
-                    text = stringResource(
-                        if (status is SubscriptionStatus.Active && !status.renews) {
-                            R.string.subscription_ends_on
-                        } else {
-                            R.string.subscription_renews_on
-                        },
-                    ),
+                    text = when {
+                        pendingPlan != null ->
+                            stringResource(R.string.subscription_changes_to, stringResource(pendingPlan.nameRes()))
+
+                        status is SubscriptionStatus.Active && !status.renews -> stringResource(R.string.subscription_ends_on)
+                        else -> stringResource(R.string.subscription_renews_on)
+                    },
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Normal),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
@@ -279,11 +278,23 @@ private fun SubscribedContent(
                         .padding(start = dimensionResource(R.dimen.spacer_xs)),
                 )
                 Text(
-                    text = status.renewsOn.formatDisplay(),
+                    text = status.renewalDisplay(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
             }
+        }
+        if (pendingPlan != null) BodyGlassCard(contentPadding = PaddingValues(dimensionResource(R.dimen.spacer_l))) {
+            InfoNote(
+                text = stringResource(
+                    R.string.confirm_downgrade_note,
+                    status.renewalDisplay(),
+                    stringResource(pendingPlan.nameRes()),
+                ),
+                icon = R.drawable.ic_calendar,
+                textStyle = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Normal),
+                gap = dimensionResource(R.dimen.spacer_xs),
+            )
         }
         BodyGlassCard(contentPadding = PaddingValues(dimensionResource(R.dimen.spacer_xs))) {
             if (status is SubscriptionStatus.GracePeriod)
@@ -340,8 +351,14 @@ private fun ExpiredContent(
 ) {
     ScrollColumn(modifier) {
         PlanSummaryCard(
-            label = stringResource(R.string.subscription_inactive_label),
-            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            label = stringResource(
+                if (status.paymentIssue) R.string.subscription_payment_issue else R.string.subscription_inactive_label,
+            ),
+            labelColor = if (status.paymentIssue) {
+                NocturnePulseTheme.extendedColors.warning
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
             name = stringResource(
                 R.string.confirm_plan_name,
                 stringResource(status.plan.nameRes())
@@ -351,7 +368,9 @@ private fun ExpiredContent(
         )
         BodyGlassCard(contentPadding = PaddingValues(dimensionResource(R.dimen.spacer_l))) {
             InfoNote(
-                text = stringResource(R.string.subscription_expired_message),
+                text = stringResource(
+                    if (status.paymentIssue) R.string.subscription_on_hold_message else R.string.subscription_expired_message,
+                ),
                 icon = R.drawable.ic_calendar,
                 textStyle = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Normal),
                 gap = dimensionResource(R.dimen.spacer_xs),
@@ -362,6 +381,7 @@ private fun ExpiredContent(
                 onViewDetails = onViewDetails,
                 onChangePlan = onChangePlan,
                 onManage = onManage,
+                showChangePlan = !status.paymentIssue,
             )
         }
     }
@@ -372,9 +392,10 @@ private fun LinkRows(
     onViewDetails: () -> Unit,
     onChangePlan: () -> Unit,
     onManage: () -> Unit,
+    showChangePlan: Boolean = true,
 ) {
     LinkRow(R.string.subscription_view_details, onViewDetails)
-    LinkRow(R.string.subscription_change_plan, onChangePlan)
+    if (showChangePlan) LinkRow(R.string.subscription_change_plan, onChangePlan)
     LinkRow(R.string.subscription_manage, onManage)
 }
 
@@ -405,49 +426,12 @@ private fun LinkRow(@StringRes label: Int, onClick: () -> Unit) {
 
 @Composable
 private fun EmptyPlanState(loading: Boolean, modifier: Modifier = Modifier) {
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = maxHeight)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(dimensionResource(R.dimen.subscription_empty_icon_tile))
-                    .background(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = SubscriptionConstants.EMPTY_TILE_ALPHA),
-                        shape = MaterialTheme.shapes.medium,
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_layers),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(dimensionResource(R.dimen.subscription_empty_icon_size)),
-                )
-            }
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-            Text(
-                text = stringResource(R.string.subscription_none_title),
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.alpha(if (loading) 0f else 1f),
-            )
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-            Text(
-                text = stringResource(R.string.subscription_none_message),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.alpha(if (loading) 0f else 1f),
-            )
-        }
+    EmptyStateContent(
+        title = stringResource(R.string.subscription_none_title),
+        modifier = modifier,
+        hidden = loading,
+    ) {
+        EmptyStateMessage(stringResource(R.string.subscription_none_message))
     }
 }
 
@@ -460,24 +444,19 @@ internal fun SubscriptionBottomBar(
 ) {
     val hasActions = status !is SubscriptionStatus.Active && status !is SubscriptionStatus.Loading
     if (!hasActions) return
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = dimensionResource(R.dimen.padding_medium))
-            .padding(
-                top = dimensionResource(R.dimen.spacer_m),
-                bottom = dimensionResource(R.dimen.spacer_xl),
-            )
-            .navigationBarsPadding(),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_l)),
-    ) {
+    SubscriptionActionBar {
         when (status) {
             is SubscriptionStatus.GracePeriod -> AppPrimaryButton(
                 text = stringResource(R.string.subscription_resolve_payment),
                 onClick = onResolvePayment,
             )
 
-            is SubscriptionStatus.Expired -> {
+            is SubscriptionStatus.Expired -> if (status.paymentIssue) {
+                AppPrimaryButton(
+                    text = stringResource(R.string.subscription_resolve_payment),
+                    onClick = onResolvePayment,
+                )
+            } else {
                 AppPrimaryButton(
                     text = stringResource(R.string.subscription_renew),
                     onClick = onChoosePlan,
@@ -488,7 +467,7 @@ internal fun SubscriptionBottomBar(
                 )
             }
 
-            SubscriptionStatus.None -> {
+            is SubscriptionStatus.None -> {
                 AppPrimaryButton(
                     text = stringResource(R.string.subscription_choose_plan),
                     onClick = onChoosePlan,
@@ -504,8 +483,12 @@ internal fun SubscriptionBottomBar(
     }
 }
 
-private fun openManageSubscription(context: Context, status: SubscriptionStatus) {
-    val uri = if (status.storePlatform == StorePlatform.IOS) {
+internal fun openManageSubscription(context: Context, status: SubscriptionStatus) {
+    openManageSubscription(context, status.storePlatform ?: StorePlatform.ANDROID)
+}
+
+internal fun openManageSubscription(context: Context, platform: StorePlatform) {
+    val uri = if (platform == StorePlatform.IOS) {
         SubscriptionConstants.APPLE_SUBSCRIPTIONS_URL.toUri()
     } else {
         SubscriptionConstants.PLAY_SUBSCRIPTIONS_URL.toUri().buildUpon()

@@ -11,6 +11,7 @@ internal object SubscriptionConstants {
 
     const val RESTORE_STATUS_WAIT_MS = 3_000L
     const val STATUS_WAIT_MS = 10_000L
+    const val EMPTY_STATE_TOP_FRACTION = 1f / 3f
     const val PURCHASE_CONFIRM_WAIT_MS = 10_000L
 
     const val PLAY_BASE_PLAN_ID = "monthly"
@@ -32,16 +33,25 @@ internal object SubscriptionConstants {
     const val FIELD_GRACE_PERIOD_END = "gracePeriodEnd"
     const val FIELD_SCANS_USED = "scansUsed"
     const val FIELD_SCANS_ALLOWED = "scansAllowed"
+    const val FIELD_FREE_SCAN_USED = "freeScanUsed"
+    const val FIELD_PENDING_PLAN_ID = "pendingPlanId"
+    const val DEV_ENVIRONMENT = "dev"
+    const val DEV_RENEWAL_TIME_PATTERN = "MMM d, yyyy HH:mm:ss"
+    const val FIELD_REASON = "reason"
 
+    const val STATE_NONE = "none"
     const val STATE_ACTIVE = "active"
     const val STATE_CANCEL_SCHEDULED = "cancelScheduled"
     const val STATE_GRACE_PERIOD = "gracePeriod"
     const val STATE_ON_HOLD = "onHold"
+    const val STATE_PENDING = "pending"
     const val STATE_EXPIRED = "expired"
 
     const val REMOTE_CONFIG_PLANS_KEY = "subscription_plans"
     const val PLAN_BADGE_MOST_POPULAR = "mostPopular"
     const val PLANS_DEBUG_FETCH_INTERVAL_SECONDS = 60L
+    const val SCAN_GATE_DEBUG_FETCH_INTERVAL_SECONDS = 10L
+    const val SCAN_GATE_RELEASE_FETCH_INTERVAL_SECONDS = 5L * 60
     const val PLANS_RELEASE_FETCH_INTERVAL_SECONDS = 60L * 60
 
     const val BILLING_UNSOLICITED_BUFFER = 8
@@ -54,4 +64,11 @@ internal object SubscriptionConstants {
 
     const val FEATURE_TILE_ALPHA = 0.15f
     const val EMPTY_TILE_ALPHA = 0.1f
+
+    const val REMOTE_CONFIG_SCAN_GATE_KEY = "subscription_gate_enabled"
+    const val SCAN_ACCESS_WAIT_MS = 3_000L
+    const val SCAN_BLOCK_NO_SUBSCRIPTION = "noSubscription"
+    const val SCAN_BLOCK_ALL_SCANS_USED = "allScansUsed"
+    const val SCAN_BLOCK_ON_HOLD = "onHold"
+    const val SCAN_BLOCK_PENDING = "pending"
 }

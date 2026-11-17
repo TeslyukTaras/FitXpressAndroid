@@ -19,7 +19,6 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import timber.log.Timber
-import java.util.UUID
 
 class ThreeDLookApi(
     private val functions: FirebaseFunctions,
@@ -30,6 +29,7 @@ class ThreeDLookApi(
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun createMeasurement(
+        scanId: String,
         frontPhoto: Uri,
         sidePhoto: Uri,
         heightCm: Float,
@@ -39,7 +39,6 @@ class ThreeDLookApi(
     ): Result<String> = withContext(Dispatchers.IO) {
         val uid = auth.currentUser?.uid
             ?: return@withContext Result.failure(IllegalStateException("Not authenticated"))
-        val scanId = UUID.randomUUID().toString()
         val frontPath = "$TMP_SCAN_ROOT/$uid/$scanId/$FRONT_PHOTO_FILENAME"
         val sidePath = "$TMP_SCAN_ROOT/$uid/$scanId/$SIDE_PHOTO_FILENAME"
         val frontRef = storage.reference.child(frontPath)

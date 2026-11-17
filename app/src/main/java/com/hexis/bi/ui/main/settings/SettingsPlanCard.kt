@@ -75,28 +75,36 @@ private fun PlanCardDetails(status: SubscriptionStatus) {
             modifier = Modifier.alpha(0f),
         )
 
-        SubscriptionStatus.None -> StatusLine(stringResource(R.string.subscription_none_title))
-        is SubscriptionStatus.Expired -> StatusLine(stringResource(R.string.subscription_inactive_label))
+        is SubscriptionStatus.None -> StatusLine(stringResource(R.string.subscription_none_title))
+        is SubscriptionStatus.Expired -> if (status.paymentIssue) {
+            PaymentIssueLine()
+        } else {
+            StatusLine(stringResource(R.string.subscription_inactive_label))
+        }
         is SubscriptionStatus.Subscribed -> Column {
             ScansUsage(status = status, barGap = dimensionResource(R.dimen.spacer_2xs))
             Spacer(Modifier.height(dimensionResource(R.dimen.spacer_l)))
-            if (status is SubscriptionStatus.GracePeriod) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_warning),
-                        contentDescription = null,
-                        tint = NocturnePulseTheme.extendedColors.warning,
-                        modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
-                    )
-                    Text(
-                        text = stringResource(R.string.subscription_payment_issue),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = NocturnePulseTheme.extendedColors.warning,
-                        modifier = Modifier.padding(start = dimensionResource(R.dimen.spacer_xs)),
-                    )
-                }
-            } else InfoNote(text = stringResource(R.string.subscription_no_rollover))
+            if (status is SubscriptionStatus.GracePeriod) PaymentIssueLine()
+            else InfoNote(text = stringResource(R.string.subscription_no_rollover))
         }
+    }
+}
+
+@Composable
+private fun PaymentIssueLine() {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            painter = painterResource(R.drawable.ic_warning),
+            contentDescription = null,
+            tint = NocturnePulseTheme.extendedColors.warning,
+            modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+        )
+        Text(
+            text = stringResource(R.string.subscription_payment_issue),
+            style = MaterialTheme.typography.bodyMedium,
+            color = NocturnePulseTheme.extendedColors.warning,
+            modifier = Modifier.padding(start = dimensionResource(R.dimen.spacer_xs)),
+        )
     }
 }
 
