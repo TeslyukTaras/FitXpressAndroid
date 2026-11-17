@@ -56,8 +56,10 @@
     <string name="notif_scan_today_body">It\'s time for your scheduled body scan.</string>
     <string name="notif_finish_scan_today_title">It\'s time for your scheduled body scan.</string>
     <string name="notif_finish_scan_today_body">Finish your body scan today to keep your progress on track.</string>
-    <string name="notif_missed_title">You missed this week\'s scan</string>
-    <string name="notif_missed_body">Come back next %1$s for your next scheduled scan.</string>
+    <string name="notif_missed_title">You missed your scheduled scan</string>
+    <string name="notif_missed_body">Scan when you\'re ready to keep your progress on track.</string>
+    <string name="notif_free_scan_title">Ready for your next scan?</string>
+    <string name="notif_free_scan_body">Pick a plan to keep tracking your body progress.</string>
     <string name="notif_body_scan_done_title">Body scan completed</string>
     <string name="notif_body_scan_done_body">Your scan was saved successfully.</string>
     <string name="notifications_empty">No notifications yet</string>

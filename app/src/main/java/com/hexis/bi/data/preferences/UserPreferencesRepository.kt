@@ -48,25 +48,25 @@ class UserPreferencesRepository(
         store.edit { it[k.voiceMigratedToFirestore] = true }
     }
 
-    suspend fun getLastScanTodayIsoWeek(): String? =
-        store.data.map { it[k.lastScanTodayIsoWeek] }.first()
+    suspend fun getScanReminderTodaySent(): String? =
+        store.data.map { it[k.scanReminderTodaySent] }.first()
 
-    suspend fun setLastScanTodayIsoWeek(weekKey: String) {
-        store.edit { it[k.lastScanTodayIsoWeek] = weekKey }
+    suspend fun setScanReminderTodaySent(value: String) {
+        store.edit { it[k.scanReminderTodaySent] = value }
     }
 
-    suspend fun getLastScanNudgeIsoWeek(): String? =
-        store.data.map { it[k.lastScanNudgeIsoWeek] }.first()
+    suspend fun getScanReminderNudgeSent(): String? =
+        store.data.map { it[k.scanReminderNudgeSent] }.first()
 
-    suspend fun setLastScanNudgeIsoWeek(weekKey: String) {
-        store.edit { it[k.lastScanNudgeIsoWeek] = weekKey }
+    suspend fun setScanReminderNudgeSent(value: String) {
+        store.edit { it[k.scanReminderNudgeSent] = value }
     }
 
-    suspend fun getLastScanMissedIsoWeek(): String? =
-        store.data.map { it[k.lastScanMissedIsoWeek] }.first()
+    suspend fun getScanReminderMissedSent(): String? =
+        store.data.map { it[k.scanReminderMissedSent] }.first()
 
-    suspend fun setLastScanMissedIsoWeek(weekKey: String) {
-        store.edit { it[k.lastScanMissedIsoWeek] = weekKey }
+    suspend fun setScanReminderMissedSent(value: String) {
+        store.edit { it[k.scanReminderMissedSent] = value }
     }
 
     suspend fun getFreeWeekAnchor(uid: String): String? =

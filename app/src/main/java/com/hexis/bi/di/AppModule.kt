@@ -43,6 +43,7 @@ import com.hexis.bi.ui.main.subscription.confirm.ConfirmPlanViewModel
 import com.hexis.bi.ui.main.subscription.plans.PlanSelectionViewModel
 import com.hexis.bi.data.recovery.RecoveryRepository
 import com.hexis.bi.data.recovery.DefaultRecoveryRepository
+import com.hexis.bi.data.reminder.ScanReminderResolver
 import com.hexis.bi.data.reminder.ScanReminderScheduler
 import com.hexis.bi.data.reminder.ScanReminderSchedulerImpl
 import com.hexis.bi.data.reminder.ScanReminderWorkRunner
@@ -170,7 +171,8 @@ val appModule = module {
             get(),
         )
     }
-    single<ScanReminderScheduler> { ScanReminderSchedulerImpl(androidContext(), get(), get()) }
+    single { ScanReminderResolver(get(), get(), get()) }
+    single<ScanReminderScheduler> { ScanReminderSchedulerImpl(androidContext(), get(), get(), get(), get()) }
     single { NotificationPermissionCoordinator(androidContext(), get(), get(), get(), get()) }
     single { EmailVerificationApi(get()) }
     single { AccountDeletionApi(get()) }

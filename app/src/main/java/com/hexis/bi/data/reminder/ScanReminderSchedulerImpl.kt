@@ -9,8 +9,15 @@ import androidx.core.content.getSystemService
 import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.data.notification.ScanReminderBroadcastReceiver
 import com.hexis.bi.data.user.UserRepository
-import com.hexis.bi.data.user.UserSettings
-import com.hexis.bi.domain.scan.ScanReminderPolicy
+import com.hexis.bi.data.subscription.SubscriptionRepository
+import com.hexis.bi.domain.scan.ReminderKind
+import com.hexis.bi.domain.subscription.SubscriptionStatus
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import com.hexis.bi.ui.MainActivity
 import com.hexis.bi.utils.constants.NotificationPendingIntent
 import com.hexis.bi.utils.constants.ScanReminderAlarms
@@ -26,9 +33,21 @@ class ScanReminderSchedulerImpl(
     private val context: Context,
     private val userRepository: UserRepository,
     private val auth: FirebaseAuth,
+    private val resolver: ScanReminderResolver,
+    private val subscriptionRepository: SubscriptionRepository,
 ) : ScanReminderScheduler {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    init {
+        subscriptionRepository.status
+            .filter { it !is SubscriptionStatus.Loading }
+            .map { it.reminderFingerprint() }
+            .distinctUntilChanged()
+            .drop(1)
+            .onEach { onNotificationSettingsOrScanChanged() }
+            .launchIn(scope)
+    }
 
     override fun onNotificationSettingsOrScanChanged() {
         scope.launch {
@@ -41,8 +60,22 @@ class ScanReminderSchedulerImpl(
                 Timber.w(it, "ScanReminderScheduler: getUserSettings failed; leaving alarms as-is")
                 return@launch
             }
+            if (settings.pushNotificationsEnabled != true || settings.scanRemindersEnabled != true) {
+                cancelAllScanReminders(am)
+                return@launch
+            }
             val now = ZonedDateTime.now(ZoneId.systemDefault())
-            rescheduleAlarms(am, now, settings)
+            val forecast = resolver.forecast(now, settings) ?: run {
+                Timber.w("ScanReminderScheduler: forecast unavailable; leaving alarms as-is")
+                return@launch
+            }
+            for (kind in ReminderKind.entries) {
+                setNextAlarm(
+                    am,
+                    kind.alarmKind(),
+                    forecast.events.firstOrNull { it.kind == kind }?.at,
+                )
+            }
         }
     }
 
@@ -56,26 +89,10 @@ class ScanReminderSchedulerImpl(
         }
     }
 
-    private fun rescheduleAlarms(
-        am: AlarmManager,
-        now: ZonedDateTime,
-        settings: UserSettings,
-    ) {
-        setNextAlarm(
-            am,
-            ScanReminderAlarms.KIND_TODAY,
-            ScanReminderPolicy.nextTodayAt(now, settings),
-        )
-        setNextAlarm(
-            am,
-            ScanReminderAlarms.KIND_NUDGE,
-            ScanReminderPolicy.nextNudgeAt(now, settings),
-        )
-        setNextAlarm(
-            am,
-            ScanReminderAlarms.KIND_MISSED,
-            ScanReminderPolicy.nextMissedAt(now, settings),
-        )
+    private fun SubscriptionStatus.reminderFingerprint(): List<Any?> = when (this) {
+        is SubscriptionStatus.Subscribed -> listOf(plan, scansUsed, scansAllowed, renewsOn)
+        is SubscriptionStatus.None -> listOf(freeScanUsed)
+        else -> listOf(this::class)
     }
 
     private fun setNextAlarm(
@@ -148,5 +165,11 @@ class ScanReminderSchedulerImpl(
         ScanReminderAlarms.KIND_NUDGE -> ScanReminderAlarms.RequestCode.BROADCAST_NUDGE
         ScanReminderAlarms.KIND_MISSED -> ScanReminderAlarms.RequestCode.BROADCAST_MISSED
         else -> null
+    }
+
+    private fun ReminderKind.alarmKind(): String = when (this) {
+        ReminderKind.TODAY -> ScanReminderAlarms.KIND_TODAY
+        ReminderKind.NUDGE -> ScanReminderAlarms.KIND_NUDGE
+        ReminderKind.MISSED -> ScanReminderAlarms.KIND_MISSED
     }
 }
