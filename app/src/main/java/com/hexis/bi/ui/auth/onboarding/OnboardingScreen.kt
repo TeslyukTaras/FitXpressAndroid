@@ -38,6 +38,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -114,6 +115,7 @@ fun OnboardingScreen(
         }
     }
     val pagerState = rememberPagerState { pages.size }
+    val currentPages by rememberUpdatedState(pages)
     val scope = rememberCoroutineScope()
     var showBuySuitDialog by remember { mutableStateOf(false) }
     val currentPage = pages[pagerState.currentPage.coerceIn(pages.indices)]
@@ -131,8 +133,10 @@ fun OnboardingScreen(
             when (event) {
                 is OnboardingEvent.Finished -> onFinish()
                 is OnboardingEvent.BuySuitScan -> onBuySuitScanRequested()
-                is OnboardingEvent.ProfileSaved ->
-                    if (state.showFreeScanPage) goToPage(OnboardingPage.FreeScan.ordinal.coerceAtMost(pages.size - 1)) else onFinish()
+                is OnboardingEvent.ProfileSaved -> {
+                    val target = currentPages.indexOf(OnboardingPage.FreeScan)
+                    if (target >= 0) goToPage(target) else onFinish()
+                }
                 is OnboardingEvent.StartFreeScan -> onStartFreeScan()
                 is OnboardingEvent.FreeScanUnavailable -> onFreeScanUnavailable(event.message)
             }
