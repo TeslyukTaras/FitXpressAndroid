@@ -55,6 +55,7 @@ fun PlanSelectionScreen(
                 PlanSelectionBottomBar(
                     selected = state.selected,
                     isChangeMode = state.isChangeMode,
+                    canContinue = state.canContinue,
                     onContinue = { state.selected?.let(onContinue) },
                     onRestore = viewModel::restorePurchases,
                     onOpenTerms = { uriHandler.openUri(LegalUrls.TERMS_AND_CONDITIONS) },

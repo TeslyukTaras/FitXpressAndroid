@@ -127,7 +127,7 @@ internal fun PlanSelectionBody(
                         (plan?.mostPopular ?: (planId == MostPopularPlan)) -> PlanBadge.MOST_POPULAR
                         else -> null
                     },
-                    enabled = price != null && planId != currentPlan,
+                    enabled = price != null,
                     onClick = { onSelect(planId) },
                 )
             }
@@ -145,6 +145,7 @@ internal fun PlanSelectionBody(
 internal fun PlanSelectionBottomBar(
     selected: PlanId?,
     isChangeMode: Boolean,
+    canContinue: Boolean,
     onContinue: () -> Unit,
     onRestore: () -> Unit,
     onOpenTerms: () -> Unit,
@@ -172,7 +173,7 @@ internal fun PlanSelectionBottomBar(
                 else -> stringResource(R.string.plans_continue_with_plan)
             },
             onClick = onContinue,
-            enabled = selected != null,
+            enabled = canContinue,
         )
         Spacer(Modifier.height(dimensionResource(R.dimen.spacer_s)))
         if (isChangeMode) Text(

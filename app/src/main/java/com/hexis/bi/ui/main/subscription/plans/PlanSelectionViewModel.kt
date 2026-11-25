@@ -31,8 +31,7 @@ class PlanSelectionViewModel(
         viewModelScope.launch {
             repository.status.collect { status ->
                 _state.update {
-                    val current = status.subscribedPlan()
-                    it.copy(currentPlan = current, selected = it.selected?.takeIf { selected -> selected != current })
+                    it.copy(currentPlan = status.subscribedPlan())
                 }
             }
         }
@@ -52,7 +51,6 @@ class PlanSelectionViewModel(
     }
 
     fun selectPlan(plan: PlanId) {
-        if (plan == _state.value.currentPlan) return
         _state.update { it.copy(selected = plan) }
     }
 

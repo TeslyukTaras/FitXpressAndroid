@@ -152,7 +152,7 @@
     <string name="settings_how_scanning_works">How Scanning Works</string>
     <string name="settings_help">Help &amp; Support</string>
     <string name="settings_terms_privacy">Terms &amp; Privacy</string>
-    <string name="settings_medical_disclaimer">Medical disclaimer</string>
+    <string name="settings_medical_disclaimer">Medical Disclaimer</string>
     <string name="settings_report_problem">Report a Problem</string>
     <string name="support_email_address" translatable="false">support@hexis-bi.com</string>
     <string name="support_email_subject">Hexis-BI Support Request</string>
