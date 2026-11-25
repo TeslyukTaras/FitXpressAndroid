@@ -124,6 +124,8 @@ kotlin {
 }
 
 dependencies {
+    implementation("com.appsflyer:purchase-connector:2.2.0")
+    implementation("com.appsflyer:af-android-sdk:6.17.1")
     implementation(project(":intelligence"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

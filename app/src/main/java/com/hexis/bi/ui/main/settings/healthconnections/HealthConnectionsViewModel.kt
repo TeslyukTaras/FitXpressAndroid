@@ -14,6 +14,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.R
 import com.hexis.bi.data.health.sync.HealthSyncScheduler
 import com.hexis.bi.data.health.sync.HealthSyncTrigger
+import com.hexis.bi.data.telemetry.Telemetry
 import com.hexis.bi.data.healthconnect.HealthConnectPermissionChecker
 import com.hexis.bi.data.healthconnections.HealthConnection
 import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
@@ -62,6 +63,7 @@ class HealthConnectionsViewModel internal constructor(
     private val terraConnectionReconciler: TerraConnectionReconciler,
     private val healthConnectPermissions: HealthConnectPermissionChecker,
     private val healthSyncScheduler: HealthSyncScheduler,
+    private val telemetry: Telemetry,
 ) : BaseViewModel(application, initialLoading = true) {
 
     private val _state = MutableStateFlow(HealthConnectionsState())
@@ -217,6 +219,7 @@ class HealthConnectionsViewModel internal constructor(
     private suspend fun reconcileAndBackfillNewSources(): Set<String> {
         val recovered = terraConnectionReconciler.reconcile().getOrElse { emptySet() }
         if (recovered.isNotEmpty()) {
+            recovered.forEach { _ -> telemetry.wearableConnected() }
             healthSyncScheduler.enqueueHistoryBackfill(HealthSyncTrigger.SourceConnected)
         }
         discardDeadSdkIdentity()
@@ -498,6 +501,7 @@ class HealthConnectionsViewModel internal constructor(
             )
         }
         refreshHealthConnectRowState()
+        telemetry.wearableConnected()
         healthSyncScheduler.enqueueHistoryBackfill(HealthSyncTrigger.SourceConnected)
         if (provider.equals(TerraProviders.HEALTH_CONNECT, ignoreCase = true)) {
             setMessage(R.string.msg_health_connect_connected)

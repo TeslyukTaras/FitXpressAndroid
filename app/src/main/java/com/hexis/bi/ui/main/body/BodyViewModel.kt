@@ -8,6 +8,7 @@ import com.hexis.bi.data.scan.ScanFetchProjection
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanRecord
 import com.hexis.bi.data.scan.ThreeDLookRepository
+import com.hexis.bi.data.telemetry.Telemetry
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.body.BodyMeasurementRegion
 import com.hexis.bi.domain.body.comparablePhysiqueScoreDelta
@@ -43,12 +44,14 @@ class BodyViewModel internal constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val intelligenceConfigRepository: IntelligenceConfigRepository,
     private val physiquePredictionRepository: PhysiquePredictionRepository,
+    private val telemetry: Telemetry,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(BodyState())
     val state: StateFlow<BodyState> = _state.asStateFlow()
 
     private var allScans: List<ScanRecord> = emptyList()
+    private var reportedView: BodyTab? = null
     private var heightCm: Float? = null
     private var engineConfig: EngineConfig? = null
     private var gender: String? = null
@@ -68,6 +71,8 @@ class BodyViewModel internal constructor(
 
     fun selectTab(tab: BodyTab) {
         _state.update { it.copy(selectedTab = tab) }
+        if (reportedView != tab) reportedView = null
+        reportTabView()
 
         if (_state.value.visual.mode != BodyVisualMode.Color) return
         when (tab) {
@@ -78,6 +83,28 @@ class BodyViewModel internal constructor(
             }
 
             BodyTab.Compare -> loadCompareColorMeshesIfNeeded()
+            else -> Unit
+        }
+    }
+
+    private fun reportTabView() {
+        val current = _state.value
+        if (reportedView == current.selectedTab) return
+        when (current.selectedTab) {
+            BodyTab.Compare -> {
+                val left = current.compare.leftScanTimestamp
+                val right = current.compare.rightScanTimestamp
+                if (left != null && right != null && left != right) {
+                    reportedView = BodyTab.Compare
+                    telemetry.scanComparisonViewed()
+                }
+            }
+
+            BodyTab.Visual -> if (current.visual.latestModel3dUrl != null) {
+                reportedView = BodyTab.Visual
+                telemetry.bodyModelViewed()
+            }
+
             else -> Unit
         }
     }
@@ -267,6 +294,7 @@ class BodyViewModel internal constructor(
                 ),
             )
         }
+        reportTabView()
         if (_state.value.visual.mode == BodyVisualMode.Color &&
             _state.value.selectedTab == BodyTab.Visual
         ) {
@@ -360,6 +388,7 @@ class BodyViewModel internal constructor(
                 ),
             )
         }
+        reportTabView()
         if (_state.value.compare.mode == BodyVisualMode.Color &&
             _state.value.selectedTab == BodyTab.Compare
         ) {

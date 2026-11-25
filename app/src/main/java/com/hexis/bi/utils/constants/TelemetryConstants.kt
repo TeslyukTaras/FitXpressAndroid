@@ -6,6 +6,20 @@ internal object TelemetryEvents {
     const val HEALTH_SYNC_FAILED = "health_sync_failed"
 
     const val INTELLIGENCE_RUN_COMPLETED = "intelligence_run_completed"
+
+    const val SCAN_STARTED = "scan_started"
+
+    const val FIRST_SCAN_COMPLETED = "first_scan_completed"
+
+    const val SCAN_COMPLETED = "scan_completed"
+
+    const val SCAN_COMPARISON_VIEWED = "scan_comparison_viewed"
+
+    const val INSIGHTS_VIEWED = "insights_viewed"
+
+    const val BODY_MODEL_VIEWED = "body_model_viewed"
+
+    const val WEARABLE_CONNECTED = "wearable_connected"
 }
 
 internal object TelemetryParams {

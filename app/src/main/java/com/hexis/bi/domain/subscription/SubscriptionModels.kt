@@ -28,6 +28,8 @@ data class SubscriptionPlan(
     val scansPerMonth: Int = id.scansPerMonth,
     val rank: Int = id.rank,
     val mostPopular: Boolean = false,
+    val priceMicros: Long? = null,
+    val currency: String? = null,
 )
 
 enum class RestoreResult { RESTORED, NOT_FOUND, FAILED }

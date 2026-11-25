@@ -1,5 +1,7 @@
 package com.hexis.bi.data.auth
 
+import com.hexis.bi.data.telemetry.MarketingAnalytics
+import com.hexis.bi.data.telemetry.MarketingAnalytics.Method
 import android.app.Activity
 import android.content.Context
 import androidx.credentials.CredentialManager
@@ -44,6 +46,7 @@ class FirebaseAuthRepository(
     override suspend fun signInWithEmail(email: String, password: String): Result<Unit> =
         runCatching {
             auth.signInWithEmailAndPassword(email, password).await()
+            if (isEmailVerified) MarketingAnalytics.signedIn(context, Method.EMAIL)
             Unit
         }.mapAuthError(context)
 
@@ -54,6 +57,7 @@ class FirebaseAuthRepository(
         password: String,
     ): Result<Unit> = runCatching {
         val result = auth.createUserWithEmailAndPassword(email, password).await()
+        result.user?.let { MarketingAnalytics.newAccount(context, it.uid, Method.EMAIL) }
         val profileUpdate = UserProfileChangeRequest.Builder()
             .setDisplayName("$firstName $lastName")
             .build()
@@ -72,13 +76,27 @@ class FirebaseAuthRepository(
         val result = requestGoogleCredential(context, request)
         val idToken = GoogleIdTokenCredential.createFrom(result.credential.data).idToken
         val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
-        auth.signInWithCredential(firebaseCredential).await()
+        val signedIn = auth.signInWithCredential(firebaseCredential).await()
+        signedIn.user?.let { user ->
+            if (signedIn.additionalUserInfo?.isNewUser == true) {
+                MarketingAnalytics.newAccount(this.context, user.uid, Method.GOOGLE)
+            } else {
+                MarketingAnalytics.signedIn(this.context, Method.GOOGLE)
+            }
+        }
         Unit
     }.mapAuthError(context)
 
     override suspend fun signInWithApple(activity: Activity): Result<Unit> = runCatching {
         val provider = OAuthProvider.newBuilder(FirebaseAuthProviders.APPLE).build()
-        auth.startActivityForSignInWithProvider(activity, provider).await()
+        val signedIn = auth.startActivityForSignInWithProvider(activity, provider).await()
+        signedIn.user?.let { user ->
+            if (signedIn.additionalUserInfo?.isNewUser == true) {
+                MarketingAnalytics.newAccount(this.context, user.uid, Method.APPLE)
+            } else {
+                MarketingAnalytics.signedIn(this.context, Method.APPLE)
+            }
+        }
         Unit
     }.mapAuthError(context)
 

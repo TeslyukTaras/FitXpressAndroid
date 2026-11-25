@@ -105,6 +105,8 @@ class FirestoreSubscriptionRepository(
             SubscriptionPlan(
                 id = id,
                 formattedPrice = offer.formattedPrice,
+                priceMicros = offer.priceMicros,
+                currency = offer.currency,
                 scansPerMonth = details.scansPerMonth,
                 rank = details.rank,
                 mostPopular = details.mostPopular,
