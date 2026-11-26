@@ -287,8 +287,9 @@
     <string name="body_proportion_status_fit">Fit</string>
     <string name="body_proportion_status_strong_calves">Strong calves</string>
     <string name="body_proportion_status_hourglass">Hourglass</string>
-    <string name="body_proportion_status_pear">Pear</string>
-    <string name="body_proportion_status_inverted_triangle">Inverted Triangle</string>
+    <string name="body_proportion_status_shoulder_dominant">Shoulder Dominant</string>
+    <string name="body_proportion_status_balanced_proportions">Balanced Proportions</string>
+    <string name="body_proportion_status_hip_dominant">Hip Dominant</string>
     <!-- Body Proportion info sheet -->
     <string name="body_proportion_info_title">Body Proportion</string>
     <string name="body_proportion_info_intro">See how your upper body, midsection, and lower body compare using ratios from your latest scan. Each value is shown against a reference range to help you understand your current proportions.</string>

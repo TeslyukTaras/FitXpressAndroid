@@ -173,7 +173,7 @@ private fun waistHipStatus(value: Float?): Int = when {
 
 private fun hipShoulderStatus(value: Float?): Int = when {
     value == null -> R.string.body_proportion_status_not_available
-    value >= 1.05f -> R.string.body_proportion_status_pear
-    value > 0.95f -> R.string.body_proportion_status_hourglass
-    else -> R.string.body_proportion_status_inverted_triangle
+    value > 1.05f -> R.string.body_proportion_status_hip_dominant
+    value >= 0.95f -> R.string.body_proportion_status_balanced_proportions
+    else -> R.string.body_proportion_status_shoulder_dominant
 }
