@@ -239,6 +239,8 @@ fun MainScreen(
                 .then(dialogBlurModifier),
             navController = navController,
             startDestination = Route.Main.availableDestination(startDestination),
+            predictivePopEnterTransition = { fadeIn(tween(AnimationConstants.NAV_DEFAULT_FADE_MS)) },
+            predictivePopExitTransition = { fadeOut(tween(AnimationConstants.NAV_DEFAULT_FADE_MS)) },
         ) {
             composable(
                 Route.Main.HOME,

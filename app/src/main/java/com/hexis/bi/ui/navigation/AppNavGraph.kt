@@ -80,6 +80,8 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
                 tween(NAV_ANIM_DURATION_MS)
             )
         },
+        predictivePopEnterTransition = { slideIntoContainer(SlideDirection.Right, tween(NAV_ANIM_DURATION_MS)) },
+        predictivePopExitTransition = { slideOutOfContainer(SlideDirection.Right, tween(NAV_ANIM_DURATION_MS)) },
     ) {
         composable(Route.APP_INFO) {
             AppInfoScreen(
