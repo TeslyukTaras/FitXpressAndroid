@@ -37,6 +37,12 @@ internal object MarketingConfig {
 
     const val REMOTE_KEY_SANDBOX = "appsflyer_android_sandbox"
 
+    const val REMOTE_KEY_PURCHASE_CONNECTOR = "appsflyer_purchase_connector_enabled"
+
+    const val MAX_PENDING_EVENTS = 50
+
+    const val START_RETRY_INTERVAL_MS = 30_000L
+
     const val PENDING_REGISTRATION_PREFS = "pending_registration_method"
 
     const val MICROS_PER_UNIT = 1_000_000.0

@@ -31,6 +31,9 @@ uiUnit = "1.12.1"
 terraAndroid = "1.7.4"
 androidxBrowser = "1.10.0"
 libphonenumber = "9.0.44"
+afAndroidSdk = "7.0.4"
+purchaseConnector = "2.2.0"
+installReferrer = "2.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -89,6 +92,9 @@ androidx-compose-ui-unit = { group = "androidx.compose.ui", name = "ui-unit", ve
 terra-android = { group = "co.tryterra", name = "terra-android", version.ref = "terraAndroid" }
 androidx-browser = { group = "androidx.browser", name = "browser", version.ref = "androidxBrowser" }
 libphonenumber = { group = "com.googlecode.libphonenumber", name = "libphonenumber", version.ref = "libphonenumber" }
+purchase-connector = { group = "com.appsflyer", name = "purchase-connector", version.ref = "purchaseConnector" }
+appsflyer-android = { group = "com.appsflyer", name = "af-android-sdk", version.ref = "afAndroidSdk" }
+install-referrer = { group = "com.android.installreferrer", name = "installreferrer", version.ref = "installReferrer" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

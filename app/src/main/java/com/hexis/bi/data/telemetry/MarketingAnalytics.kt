@@ -1,16 +1,21 @@
 package com.hexis.bi.data.telemetry
 
 import android.content.Context
+import android.os.SystemClock
 import com.appsflyer.AppsFlyerLib
 import com.appsflyer.api.PurchaseClient
 import com.appsflyer.api.Store
+import com.appsflyer.share.SessionReadyListener
+import com.appsflyer.share.attribution.AppsFlyerRequestListener
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
+import com.hexis.bi.BuildConfig
 import com.hexis.bi.domain.subscription.PlanId
 import com.hexis.bi.utils.constants.MarketingConfig
 import com.hexis.bi.utils.constants.MarketingEvents
 import com.hexis.bi.utils.constants.MarketingMethods
 import com.hexis.bi.utils.constants.MarketingParams
+import timber.log.Timber
 
 internal object MarketingAnalytics {
     enum class Method(val label: String) {
@@ -25,7 +30,12 @@ internal object MarketingAnalytics {
     private var purchases: PurchaseClient? = null
 
     @Synchronized private fun whenReady(event: () -> Unit) {
-        if (ready) event() else if (loading) pendingEvents.add(event)
+        if (ready) {
+            event()
+        } else if (loading) {
+            if (pendingEvents.size >= MarketingConfig.MAX_PENDING_EVENTS) pendingEvents.removeAt(0)
+            pendingEvents.add(event)
+        }
     }
 
     @Synchronized private fun finishLoading(enabled: Boolean) {
@@ -35,23 +45,55 @@ internal object MarketingAnalytics {
         pendingEvents.clear()
     }
 
-    fun start(context: Context) {
+    private var started = false
+    private var lastAttemptAt = 0L
+
+    @Synchronized private fun allowRetry() {
+        started = false
+    }
+
+    @Synchronized fun start(context: Context) {
+        if (started) return
+        val now = SystemClock.elapsedRealtime()
+        if (lastAttemptAt != 0L && now - lastAttemptAt < MarketingConfig.START_RETRY_INTERVAL_MS) return
+        lastAttemptAt = now
+        started = true
         val config = FirebaseRemoteConfig.getInstance()
+        config.setDefaultsAsync(mapOf(MarketingConfig.REMOTE_KEY_PURCHASE_CONNECTOR to false))
         config.fetchAndActivate().addOnCompleteListener {
             val key = config.getString(MarketingConfig.REMOTE_KEY_SDK_KEY)
             if (key.isBlank()) {
-                finishLoading(false)
+                Timber.w("AppsFlyer not started: no dev key in Remote Config, will retry")
+                allowRetry()
                 return@addOnCompleteListener
             }
-            AppsFlyerLib.getInstance().apply {
-                init(key, null, context)
-                start(context)
+            val appsFlyer = AppsFlyerLib.getInstance()
+            appsFlyer.setDebugLog(BuildConfig.DEBUG)
+            appsFlyer.init(key, null, context)
+            appsFlyer.registerSessionReadyListener(object : SessionReadyListener {
+                override fun onSessionReady() {
+                    Timber.i("AppsFlyer session ready")
+                }
+            })
+            appsFlyer.start(object : AppsFlyerRequestListener {
+                override fun onSuccess() {
+                    Timber.i("AppsFlyer started")
+                }
+
+                override fun onError(code: Int, description: String) {
+                    Timber.w("AppsFlyer start failed code=%d %s", code, description)
+                }
+            })
+            val connectorEnabled = config.getBoolean(MarketingConfig.REMOTE_KEY_PURCHASE_CONNECTOR)
+            if (connectorEnabled) {
+                runCatching {
+                    purchases = PurchaseClient.Builder(context, Store.GOOGLE)
+                        .logSubscriptions(true)
+                        .setSandbox(config.getBoolean(MarketingConfig.REMOTE_KEY_SANDBOX))
+                        .build()
+                    purchases?.startObservingTransactions()
+                }.onFailure { Timber.w(it, "Purchase connector failed to start") }
             }
-            purchases = PurchaseClient.Builder(context, Store.GOOGLE)
-                .logSubscriptions(true)
-                .setSandbox(config.getBoolean(MarketingConfig.REMOTE_KEY_SANDBOX))
-                .build()
-            purchases?.startObservingTransactions()
             finishLoading(true)
         }
     }
@@ -64,9 +106,11 @@ internal object MarketingAnalytics {
     }
 
     fun signedIn(context: Context, method: Method) {
+        val app = context.applicationContext
+        start(app)
         whenReady {
             AppsFlyerLib.getInstance().logEvent(
-                context,
+                app,
                 MarketingEvents.LOGIN,
                 mapOf(MarketingParams.LOGIN_METHOD to method.label),
             )
@@ -74,6 +118,8 @@ internal object MarketingAnalytics {
     }
 
     @Synchronized fun profileSaved(context: Context) {
+        val app = context.applicationContext
+        start(app)
         val user = FirebaseAuth.getInstance().currentUser ?: return
         val prefs = pending(context)
         val method = prefs.getString(user.uid, null) ?: return
@@ -81,7 +127,7 @@ internal object MarketingAnalytics {
         whenReady {
             if (!prefs.contains(user.uid)) return@whenReady
             AppsFlyerLib.getInstance().logEvent(
-                context,
+                app,
                 MarketingEvents.COMPLETE_REGISTRATION,
                 mapOf(MarketingParams.REGISTRATION_METHOD to method),
             )
@@ -102,16 +148,20 @@ internal object MarketingAnalytics {
         productId: String,
         priceMicros: Long,
         currency: String,
-    ) = whenReady {
-        AppsFlyerLib.getInstance().logEvent(
-            context,
-            event,
-            mapOf(
-                MarketingParams.PLAN_ID to plan.name.lowercase(),
-                MarketingParams.PRODUCT_ID to productId,
-                MarketingParams.DISPLAYED_PRICE to priceMicros / MarketingConfig.MICROS_PER_UNIT,
-                MarketingParams.CURRENCY to currency,
-            ),
-        )
+    ) {
+        val app = context.applicationContext
+        start(app)
+        whenReady {
+            AppsFlyerLib.getInstance().logEvent(
+                app,
+                event,
+                mapOf(
+                    MarketingParams.PLAN_ID to plan.name.lowercase(),
+                    MarketingParams.PRODUCT_ID to productId,
+                    MarketingParams.DISPLAYED_PRICE to priceMicros / MarketingConfig.MICROS_PER_UNIT,
+                    MarketingParams.CURRENCY to currency,
+                ),
+            )
+        }
     }
 }
