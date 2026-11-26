@@ -1,6 +1,8 @@
 package com.hexis.bi.data.telemetry
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import com.appsflyer.AppsFlyerLib
 import com.appsflyer.api.PurchaseClient
@@ -47,9 +49,12 @@ internal object MarketingAnalytics {
 
     private var started = false
     private var lastAttemptAt = 0L
+    private val retryHandler = Handler(Looper.getMainLooper())
 
-    @Synchronized private fun allowRetry() {
+    @Synchronized private fun scheduleRetry(context: Context) {
         started = false
+        retryHandler.removeCallbacksAndMessages(null)
+        retryHandler.postDelayed({ start(context) }, MarketingConfig.START_RETRY_INTERVAL_MS)
     }
 
     @Synchronized fun start(context: Context) {
@@ -58,18 +63,20 @@ internal object MarketingAnalytics {
         if (lastAttemptAt != 0L && now - lastAttemptAt < MarketingConfig.START_RETRY_INTERVAL_MS) return
         lastAttemptAt = now
         started = true
+        retryHandler.removeCallbacksAndMessages(null)
+        val app = context.applicationContext
         val config = FirebaseRemoteConfig.getInstance()
         config.setDefaultsAsync(mapOf(MarketingConfig.REMOTE_KEY_PURCHASE_CONNECTOR to false))
         config.fetchAndActivate().addOnCompleteListener {
             val key = config.getString(MarketingConfig.REMOTE_KEY_SDK_KEY)
             if (key.isBlank()) {
                 Timber.w("AppsFlyer not started: no dev key in Remote Config, will retry")
-                allowRetry()
+                scheduleRetry(app)
                 return@addOnCompleteListener
             }
             val appsFlyer = AppsFlyerLib.getInstance()
             appsFlyer.setDebugLog(BuildConfig.DEBUG)
-            appsFlyer.init(key, null, context)
+            appsFlyer.init(key, null, app)
             appsFlyer.registerSessionReadyListener(object : SessionReadyListener {
                 override fun onSessionReady() {
                     Timber.i("AppsFlyer session ready")
@@ -87,7 +94,7 @@ internal object MarketingAnalytics {
             val connectorEnabled = config.getBoolean(MarketingConfig.REMOTE_KEY_PURCHASE_CONNECTOR)
             if (connectorEnabled) {
                 runCatching {
-                    purchases = PurchaseClient.Builder(context, Store.GOOGLE)
+                    purchases = PurchaseClient.Builder(app, Store.GOOGLE)
                         .logSubscriptions(true)
                         .setSandbox(config.getBoolean(MarketingConfig.REMOTE_KEY_SANDBOX))
                         .build()
