@@ -56,7 +56,12 @@ fun PlanSelectionScreen(
                     selected = state.selected,
                     isChangeMode = state.isChangeMode,
                     canContinue = state.canContinue,
-                    onContinue = { state.selected?.let(onContinue) },
+                    onContinue = {
+                        state.selected?.let { plan ->
+                            viewModel.confirmPlan(plan)
+                            onContinue(plan)
+                        }
+                    },
                     onRestore = viewModel::restorePurchases,
                     onOpenTerms = { uriHandler.openUri(LegalUrls.TERMS_AND_CONDITIONS) },
                     onOpenPrivacy = { uriHandler.openUri(LegalUrls.PRIVACY_POLICY) },
