@@ -52,16 +52,11 @@ class PlanSelectionViewModel(
         }
     }
 
-    private var confirmedPlan: PlanId? = null
-
     fun selectPlan(plan: PlanId) {
-        confirmedPlan = null
         _state.update { it.copy(selected = plan) }
     }
 
     fun confirmPlan(plan: PlanId) {
-        if (confirmedPlan == plan) return
-        confirmedPlan = plan
         val offer = _state.value.plans?.firstOrNull { it.id == plan } ?: return
         MarketingAnalytics.planSelected(appContext, plan, plan.productId(), offer.priceMicros ?: return, offer.currency ?: return)
     }
