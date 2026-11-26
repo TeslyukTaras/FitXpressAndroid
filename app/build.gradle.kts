@@ -31,7 +31,11 @@ val validateProductionConfig = tasks.register("validateProductionConfig") {
 
 android {
     namespace = "com.hexis.bi"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 1
+        }
+    }
 
     defaultConfig {
         applicationId = "com.hexis.bi"
