@@ -13,6 +13,7 @@ import com.hexis.bi.data.scan.ScanProgress
 import com.hexis.bi.data.scan.ScanResult
 import com.hexis.bi.data.scan.ScanResultRepository
 import com.hexis.bi.data.scan.ThreeDLookRepository
+import com.hexis.bi.data.telemetry.Telemetry
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.ui.avatar.prefetchMetricAvatarModel
 import com.hexis.bi.ui.base.BaseViewModel
@@ -28,7 +29,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
-class StartScanViewModel(
+class StartScanViewModel internal constructor(
     application: Application,
     private val userRepository: UserRepository,
     private val threeDLookRepository: ThreeDLookRepository,
@@ -37,6 +38,7 @@ class StartScanViewModel(
     private val scanReminderScheduler: ScanReminderScheduler,
     private val notificationInbox: NotificationInboxRepository,
     private val userPreferencesRepository: UserPreferencesRepository,
+    private val telemetry: Telemetry,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(StartScanState())
@@ -135,6 +137,7 @@ class StartScanViewModel(
     }
 
     fun onCameraLaunched() {
+        telemetry.scanStarted()
         _state.update { it.copy(shouldLaunchCamera = false) }
     }
 
@@ -272,6 +275,7 @@ class StartScanViewModel(
                     // Every scan is a real body scan and is persisted, so the suit-size flow sizes
                     // off the just-taken scan (and the order's scanId references it). A scan just
                     // happened, so the next-scan reminder is rescheduled regardless of purpose.
+                    val isFirstScan = scanHistoryRepository.getLatestScan().let { it.isSuccess && it.getOrNull() == null }
                     val savedAtMillis = System.currentTimeMillis()
                     val savedScanId = scanHistoryRepository
                         .saveScan(progress.response, savedAtMillis)
@@ -300,6 +304,9 @@ class StartScanViewModel(
                         }
                         return@collect
                     }
+
+                    telemetry.scanCompleted()
+                    if (isFirstScan) telemetry.firstScanCompleted()
 
                     scanResultRepository.latestResult = ScanResult(
                         measurementId = progress.response.id,

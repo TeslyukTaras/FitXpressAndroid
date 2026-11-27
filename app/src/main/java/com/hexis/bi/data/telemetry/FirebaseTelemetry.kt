@@ -61,6 +61,20 @@ internal class FirebaseTelemetry(
         analytics.setUserProperty(TelemetryUserProperties.STILL_LEARNING, stillLearning.toString())
     }
 
+    override fun scanStarted() = log(TelemetryEvents.SCAN_STARTED) {}
+
+    override fun firstScanCompleted() = log(TelemetryEvents.FIRST_SCAN_COMPLETED) {}
+
+    override fun scanCompleted() = log(TelemetryEvents.SCAN_COMPLETED) {}
+
+    override fun scanComparisonViewed() = log(TelemetryEvents.SCAN_COMPARISON_VIEWED) {}
+
+    override fun insightsViewed() = log(TelemetryEvents.INSIGHTS_VIEWED) {}
+
+    override fun bodyModelViewed() = log(TelemetryEvents.BODY_MODEL_VIEWED) {}
+
+    override fun wearableConnected() = log(TelemetryEvents.WEARABLE_CONNECTED) {}
+
     override fun identify(userId: String?) {
         analytics.setUserId(userId)
         crashlytics.setUserId(userId.orEmpty())

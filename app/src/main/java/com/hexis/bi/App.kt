@@ -1,5 +1,6 @@
 package com.hexis.bi
 
+import com.hexis.bi.data.telemetry.MarketingAnalytics
 import android.app.Activity
 import android.app.Application
 import android.graphics.Color
@@ -55,6 +56,7 @@ class App : Application(), KoinComponent {
         else Timber.plant(CrashlyticsTree())
         
         installAppCheck()
+        MarketingAnalytics.start(this)
         wipeFirestoreCacheIfPending()
 
         startKoin {

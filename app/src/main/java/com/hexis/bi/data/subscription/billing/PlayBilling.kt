@@ -1,5 +1,8 @@
 package com.hexis.bi.data.subscription.billing
 
+import com.hexis.bi.data.telemetry.MarketingAnalytics
+import com.hexis.bi.data.subscription.productId
+import com.hexis.bi.domain.subscription.PlanId
 import android.content.Context
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
@@ -31,6 +34,8 @@ data class PlanOffer(
     val productId: String,
     val offerToken: String,
     val formattedPrice: String,
+    val priceMicros: Long,
+    val currency: String,
 )
 
 sealed interface PurchaseOutcome {
@@ -84,10 +89,13 @@ class PlayBilling(
     suspend fun offers(): Map<String, PlanOffer> =
         productDetails().mapNotNull { (productId, details) ->
             val offer = details.baseOffer() ?: return@mapNotNull null
+            val phase = offer.pricingPhases.pricingPhaseList.first()
             productId to PlanOffer(
                 productId = productId,
                 offerToken = offer.offerToken,
-                formattedPrice = offer.pricingPhases.pricingPhaseList.first().formattedPrice,
+                formattedPrice = phase.formattedPrice,
+                priceMicros = phase.priceAmountMicros,
+                currency = phase.priceCurrencyCode,
             )
         }.toMap()
 
@@ -137,6 +145,10 @@ class PlayBilling(
                     return@withLock PurchaseOutcome.Cancelled
                 }
                 requireOk(launched)
+            }
+            val phase = offer.pricingPhases.pricingPhaseList.first()
+            PlanId.entries.firstOrNull { it.productId() == productId }?.let { plan ->
+                MarketingAnalytics.checkoutStarted(activity, plan, productId, phase.priceAmountMicros, phase.priceCurrencyCode)
             }
             waiting.await()
         } catch (e: PlayBillingException) {

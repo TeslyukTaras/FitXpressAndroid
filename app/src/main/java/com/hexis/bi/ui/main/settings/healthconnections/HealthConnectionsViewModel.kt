@@ -14,6 +14,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.R
 import com.hexis.bi.data.health.sync.HealthSyncScheduler
 import com.hexis.bi.data.health.sync.HealthSyncTrigger
+import com.hexis.bi.data.telemetry.Telemetry
 import com.hexis.bi.data.healthconnect.HealthConnectPermissionChecker
 import com.hexis.bi.data.healthconnections.HealthConnection
 import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
@@ -41,6 +42,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /** Set false to show all Terra rows again (including those still on [R.drawable.ic_connect]). */
@@ -62,6 +64,7 @@ class HealthConnectionsViewModel internal constructor(
     private val terraConnectionReconciler: TerraConnectionReconciler,
     private val healthConnectPermissions: HealthConnectPermissionChecker,
     private val healthSyncScheduler: HealthSyncScheduler,
+    private val telemetry: Telemetry,
 ) : BaseViewModel(application, initialLoading = true) {
 
     private val _state = MutableStateFlow(HealthConnectionsState())
@@ -217,6 +220,7 @@ class HealthConnectionsViewModel internal constructor(
     private suspend fun reconcileAndBackfillNewSources(): Set<String> {
         val recovered = terraConnectionReconciler.reconcile().getOrElse { emptySet() }
         if (recovered.isNotEmpty()) {
+            recovered.forEach { _ -> telemetry.wearableConnected() }
             healthSyncScheduler.enqueueHistoryBackfill(HealthSyncTrigger.SourceConnected)
         }
         discardDeadSdkIdentity()
@@ -480,6 +484,7 @@ class HealthConnectionsViewModel internal constructor(
             setError(R.string.error_health_connect_failed)
             return@launch
         }
+        if (provider.equals(TerraProviders.HEALTH_CONNECT, ignoreCase = true)) awaitHealthConnectPermissions()
         enableBackgroundDelivery()
         val listed = listTerraConnections(provider)
         val liveTerraUserId = persistSdkConnection(provider, listed)
@@ -489,20 +494,29 @@ class HealthConnectionsViewModel internal constructor(
             return@launch
         }
         realignSdkIdentity(activity, uid, connection, liveTerraUserId)
-        terraManagerHolder.current?.let { mgr ->
-            TerraSdkSync.syncLinkedConnections(
-                mgr,
-                ownedUserIds = setOf(liveTerraUserId),
-                reason = SubscriptionConstants.TERRA_POST_CONNECT_REASON,
-                force = true,
-            )
-        }
+        syncAfterConnect(liveTerraUserId)
         refreshHealthConnectRowState()
+        telemetry.wearableConnected()
         healthSyncScheduler.enqueueHistoryBackfill(HealthSyncTrigger.SourceConnected)
         if (provider.equals(TerraProviders.HEALTH_CONNECT, ignoreCase = true)) {
             setMessage(R.string.msg_health_connect_connected)
+            viewModelScope.launch {
+                delay(TerraSyncConstants.POST_CONNECT_RETRY_DELAY_MS)
+                syncAfterConnect(liveTerraUserId)
+            }
         } else {
             setMessage(R.string.msg_wearable_connected, displayName)
+        }
+    }
+
+    private suspend fun syncAfterConnect(terraUserId: String) {
+        terraManagerHolder.current?.let { mgr ->
+            TerraSdkSync.syncLinkedConnections(
+                mgr,
+                ownedUserIds = setOf(terraUserId),
+                reason = SubscriptionConstants.TERRA_POST_CONNECT_REASON,
+                force = true,
+            )
         }
     }
 
@@ -539,6 +553,13 @@ class HealthConnectionsViewModel internal constructor(
         TerraSdkSync.invalidateCaches()
         retireSupersededSdkConnections(provider, liveTerraUserId = terraUserId)
         return terraUserId
+    }
+
+    private suspend fun awaitHealthConnectPermissions() {
+        repeat(TerraSyncConstants.PERMISSION_SETTLE_ATTEMPTS) {
+            if (!healthConnectPermissions.status().isBlocked) return
+            delay(TerraSyncConstants.PERMISSION_SETTLE_DELAY_MS)
+        }
     }
 
     private suspend fun enableBackgroundDelivery() {

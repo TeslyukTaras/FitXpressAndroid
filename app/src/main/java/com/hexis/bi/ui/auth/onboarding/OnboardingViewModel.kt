@@ -168,6 +168,8 @@ class OnboardingViewModel(
         if (AppConfig.suitVisible && s.isSuitConnected && s.connectedSuitId.isNotBlank()) {
             fields["suitId"] = s.connectedSuitId
         }
-        return userRepository.updateFields(fields)
+        return userRepository.updateFields(fields).onSuccess {
+            com.hexis.bi.data.telemetry.MarketingAnalytics.profileSaved(appContext)
+        }
     }
 }

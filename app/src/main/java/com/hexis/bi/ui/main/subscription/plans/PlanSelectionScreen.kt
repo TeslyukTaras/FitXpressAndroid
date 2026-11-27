@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.dimensionResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.dropUnlessResumed
 import com.hexis.bi.R
 import com.hexis.bi.domain.subscription.PlanId
 import com.hexis.bi.domain.subscription.RestoreResult
@@ -56,7 +57,12 @@ fun PlanSelectionScreen(
                     selected = state.selected,
                     isChangeMode = state.isChangeMode,
                     canContinue = state.canContinue,
-                    onContinue = { state.selected?.let(onContinue) },
+                    onContinue = dropUnlessResumed {
+                        state.selected?.let { plan ->
+                            viewModel.confirmPlan(plan)
+                            onContinue(plan)
+                        }
+                    },
                     onRestore = viewModel::restorePurchases,
                     onOpenTerms = { uriHandler.openUri(LegalUrls.TERMS_AND_CONDITIONS) },
                     onOpenPrivacy = { uriHandler.openUri(LegalUrls.PRIVACY_POLICY) },

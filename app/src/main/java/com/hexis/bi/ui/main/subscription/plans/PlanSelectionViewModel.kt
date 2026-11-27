@@ -1,5 +1,7 @@
 package com.hexis.bi.ui.main.subscription.plans
 
+import com.hexis.bi.data.subscription.productId
+import com.hexis.bi.data.telemetry.MarketingAnalytics
 import android.app.Application
 import androidx.lifecycle.viewModelScope
 import com.hexis.bi.data.subscription.SubscriptionRepository
@@ -52,6 +54,11 @@ class PlanSelectionViewModel(
 
     fun selectPlan(plan: PlanId) {
         _state.update { it.copy(selected = plan) }
+    }
+
+    fun confirmPlan(plan: PlanId) {
+        val offer = _state.value.plans?.firstOrNull { it.id == plan } ?: return
+        MarketingAnalytics.planSelected(appContext, plan, plan.productId(), offer.priceMicros ?: return, offer.currency ?: return)
     }
 
     fun restorePurchases() {
