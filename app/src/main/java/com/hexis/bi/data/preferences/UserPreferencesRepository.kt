@@ -2,6 +2,7 @@ package com.hexis.bi.data.preferences
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.edit
 import com.hexis.bi.data.store.AppPreferencesDataStore
 import com.hexis.bi.data.store.AppPreferencesKeys
@@ -47,25 +48,53 @@ class UserPreferencesRepository(
         store.edit { it[k.voiceMigratedToFirestore] = true }
     }
 
-    suspend fun getLastScanTodayIsoWeek(): String? =
-        store.data.map { it[k.lastScanTodayIsoWeek] }.first()
+    suspend fun getScanReminderTodaySent(): String? =
+        store.data.map { it[k.scanReminderTodaySent] }.first()
 
-    suspend fun setLastScanTodayIsoWeek(weekKey: String) {
-        store.edit { it[k.lastScanTodayIsoWeek] = weekKey }
+    suspend fun setScanReminderTodaySent(value: String) {
+        store.edit { it[k.scanReminderTodaySent] = value }
     }
 
-    suspend fun getLastScanNudgeIsoWeek(): String? =
-        store.data.map { it[k.lastScanNudgeIsoWeek] }.first()
+    suspend fun getScanReminderNudgeSent(): String? =
+        store.data.map { it[k.scanReminderNudgeSent] }.first()
 
-    suspend fun setLastScanNudgeIsoWeek(weekKey: String) {
-        store.edit { it[k.lastScanNudgeIsoWeek] = weekKey }
+    suspend fun setScanReminderNudgeSent(value: String) {
+        store.edit { it[k.scanReminderNudgeSent] = value }
     }
 
-    suspend fun getLastScanMissedIsoWeek(): String? =
-        store.data.map { it[k.lastScanMissedIsoWeek] }.first()
+    suspend fun getScanReminderMissedSent(): String? =
+        store.data.map { it[k.scanReminderMissedSent] }.first()
 
-    suspend fun setLastScanMissedIsoWeek(weekKey: String) {
-        store.edit { it[k.lastScanMissedIsoWeek] = weekKey }
+    suspend fun setScanReminderMissedSent(value: String) {
+        store.edit { it[k.scanReminderMissedSent] = value }
+    }
+
+    suspend fun getFreeWeekAnchor(uid: String): String? =
+        store.data.map { it[stringPreferencesKey(k.FREE_WEEK_ANCHOR_PREFIX + uid)] }.first()
+
+    suspend fun setFreeWeekAnchor(uid: String, isoDate: String) {
+        store.edit { it[stringPreferencesKey(k.FREE_WEEK_ANCHOR_PREFIX + uid)] = isoDate }
+    }
+
+    suspend fun isFreeWeekImported(uid: String): Boolean =
+        store.data.map { it[stringPreferencesKey(k.FREE_WEEK_IMPORTED_PREFIX + uid)] != null }.first()
+
+    suspend fun setFreeWeekImported(uid: String) {
+        store.edit { it[stringPreferencesKey(k.FREE_WEEK_IMPORTED_PREFIX + uid)] = true.toString() }
+    }
+
+    suspend fun getFreeWeekImportRows(uid: String): Int? =
+        store.data.map { it[stringPreferencesKey(k.FREE_WEEK_IMPORT_ROWS_PREFIX + uid)]?.toIntOrNull() }.first()
+
+    suspend fun setFreeWeekImportRows(uid: String, rows: Int) {
+        store.edit { it[stringPreferencesKey(k.FREE_WEEK_IMPORT_ROWS_PREFIX + uid)] = rows.toString() }
+    }
+
+    suspend fun getInsightsRunDate(uid: String): String? =
+        store.data.map { it[stringPreferencesKey(k.INSIGHTS_RUN_DATE_PREFIX + uid)] }.first()
+
+    suspend fun setInsightsRunDate(uid: String, isoDate: String) {
+        store.edit { it[stringPreferencesKey(k.INSIGHTS_RUN_DATE_PREFIX + uid)] = isoDate }
     }
 
     suspend fun hasAskedNotifPermission(uid: String): Boolean =

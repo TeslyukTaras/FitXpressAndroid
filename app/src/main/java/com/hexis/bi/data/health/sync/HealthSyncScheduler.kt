@@ -13,6 +13,7 @@ import androidx.work.workDataOf
 import java.util.concurrent.TimeUnit
 import com.hexis.bi.data.telemetry.SyncTrigger
 import com.hexis.bi.utils.constants.HealthSyncWorkConstants
+import com.hexis.bi.utils.constants.SubscriptionConstants
 import com.hexis.bi.utils.constants.TelemetryWorkData
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -27,6 +28,7 @@ enum class HealthSyncTrigger(
     Launch("launch", ExistingWorkPolicy.KEEP, SyncTrigger.Launch),
     Foreground("foreground", ExistingWorkPolicy.KEEP, SyncTrigger.Foreground),
     SignIn("sign_in", ExistingWorkPolicy.KEEP, SyncTrigger.Launch),
+    AccessGranted(SubscriptionConstants.TERRA_ACCESS_GRANTED_REASON, ExistingWorkPolicy.APPEND_OR_REPLACE, SyncTrigger.Foreground),
     SourceConnected("source_connected", ExistingWorkPolicy.APPEND_OR_REPLACE, SyncTrigger.NewConnection),
     HealthConnectReadable(
         "health_connect_readable",

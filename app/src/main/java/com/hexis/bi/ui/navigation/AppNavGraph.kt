@@ -59,6 +59,8 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
     var mainStartDestination by remember { mutableStateOf(Route.Main.HOME) }
     // PROFILE_ONBOARDING for a fresh sign-up, MAIN when resuming verification.
     var postVerifyDestination by remember { mutableStateOf(Route.MAIN) }
+    var startScanOnLaunch by remember { mutableStateOf(false) }
+    var homeMessage by remember { mutableStateOf<String?>(null) }
 
     NavHost(
         navController = navController,
@@ -78,6 +80,8 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
                 tween(NAV_ANIM_DURATION_MS)
             )
         },
+        predictivePopEnterTransition = { slideIntoContainer(SlideDirection.Right, tween(NAV_ANIM_DURATION_MS)) },
+        predictivePopExitTransition = { slideOutOfContainer(SlideDirection.Right, tween(NAV_ANIM_DURATION_MS)) },
     ) {
         composable(Route.APP_INFO) {
             AppInfoScreen(
@@ -100,6 +104,20 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
                 },
                 onFinish = {
                     mainStartDestination = Route.Main.HOME
+                    navController.navigate(Route.MAIN) {
+                        popUpTo(Route.PROFILE_ONBOARDING) { inclusive = true }
+                    }
+                },
+                onStartFreeScan = {
+                    mainStartDestination = Route.Main.HOME
+                    startScanOnLaunch = true
+                    navController.navigate(Route.MAIN) {
+                        popUpTo(Route.PROFILE_ONBOARDING) { inclusive = true }
+                    }
+                },
+                onFreeScanUnavailable = { message ->
+                    mainStartDestination = Route.Main.HOME
+                    homeMessage = message
                     navController.navigate(Route.MAIN) {
                         popUpTo(Route.PROFILE_ONBOARDING) { inclusive = true }
                     }
@@ -165,6 +183,10 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
         composable(Route.MAIN) {
             MainScreen(
                 startDestination = mainStartDestination,
+                startScan = startScanOnLaunch,
+                onStartScanHandled = { startScanOnLaunch = false },
+                startMessage = homeMessage,
+                onStartMessageShown = { homeMessage = null },
                 onLogout = {
                     scope.launch { sessionCleaner.signOut() }
                     mainStartDestination = Route.Main.HOME

@@ -53,6 +53,8 @@ import com.hexis.bi.ui.main.settings.deleteaccount.AuthProvider
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountDialog
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountEvent
 import com.hexis.bi.ui.main.settings.deleteaccount.DeleteAccountViewModel
+import com.hexis.bi.ui.main.subscription.SubscriptionViewModel
+import com.hexis.bi.ui.main.subscription.openManageSubscription
 import com.hexis.bi.ui.theme.NocturnePulseTheme
 import com.hexis.bi.ui.theme.screenBackground
 import com.hexis.bi.utils.legal.LegalUrls
@@ -84,11 +86,14 @@ fun SettingsScreen(
     onNavigateToScanPreferences: () -> Unit = {},
     onNavigateToMySuit: () -> Unit = {},
     onNavigateToHowToScan: () -> Unit = {},
+    onNavigateToSubscription: () -> Unit = {},
     viewModel: DeleteAccountViewModel = koinViewModel(),
+    subscriptionViewModel: SubscriptionViewModel = koinViewModel(),
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val subscriptionState by subscriptionViewModel.state.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
 
@@ -155,6 +160,17 @@ fun SettingsScreen(
             },
         ) {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
+                item {
+                    SettingsPlanCard(
+                        status = subscriptionState.status,
+                        onClick = onNavigateToSubscription,
+                        modifier = Modifier.padding(
+                            start = dimensionResource(R.dimen.padding_medium),
+                            end = dimensionResource(R.dimen.padding_medium),
+                            top = dimensionResource(R.dimen.spacer_xxs),
+                        ),
+                    )
+                }
                 items(groups) { group -> SettingsGroupSection(group) }
                 item { Spacer(Modifier.height(dimensionResource(R.dimen.spacer_2xl))) }
             }
@@ -170,6 +186,9 @@ fun SettingsScreen(
                 onTogglePasswordVisibility = viewModel::togglePasswordVisibility,
                 onCancel = viewModel::dismissDialog,
                 onDelete = onDelete,
+                onManageSubscription = {
+                    state.renewingSubscription?.let { openManageSubscription(context, it.platform) }
+                },
             )
         }
 

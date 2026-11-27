@@ -53,7 +53,7 @@ internal class RunIntelligenceUseCase(
     private val _updates = MutableSharedFlow<IntelligenceRunUpdate>(extraBufferCapacity = 1)
     val updates = _updates.asSharedFlow()
 
-    suspend operator fun invoke(): Result<IntelligenceRun> {
+    suspend operator fun invoke(asOf: LocalDate? = null): Result<IntelligenceRun> {
         val loadedConfig = configRepository.config().getOrElse { return Result.failure(it) }
         val config = loadedConfig
         val historyDays = config.windows.trendDays.maxOrNull() ?: config.windows.analysisDays
@@ -61,6 +61,7 @@ internal class RunIntelligenceUseCase(
             analysisDays = config.windows.analysisDays,
             baselineDays = config.windows.baselineDays,
             historyDays = historyDays,
+            asOf = asOf,
         )
             .getOrElse { return Result.failure(it) }
         val copy = wordingRepository.config().map { it.copy }.getOrElse {

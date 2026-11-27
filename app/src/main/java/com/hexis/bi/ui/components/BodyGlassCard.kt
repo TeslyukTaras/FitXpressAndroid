@@ -41,6 +41,7 @@ fun BodyGlassCard(
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
     onClick: (() -> Unit)? = null,
     highlighted: Boolean = false,
+    glow: Boolean = false,
     loading: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -74,6 +75,9 @@ fun BodyGlassCard(
                 } else {
                     Modifier
                 }
+            )
+            .then(
+                if (glow) Modifier.bodyGlassGlow(colors.glassCardHighlightBottomEnd) else Modifier
             )
             .then(
                 if (highlighted) Modifier.bodyGlassHighlight(
@@ -139,6 +143,43 @@ private fun Modifier.bodyGlassHighlight(
         ),
     )
 }
+
+private fun Modifier.bodyGlassGlow(color: Color): Modifier = drawBehind {
+    val center = Offset(
+        x = size.width - BodyGlassGlowCenterInsetX.toPx(),
+        y = size.height + BodyGlassGlowCenterOverflowY.toPx(),
+    )
+    drawRect(
+        brush = Brush.radialGradient(
+            0f to color,
+            GlassConstants.BODY_GLOW_MID_STOP to color.copy(alpha = color.alpha * GlassConstants.BODY_GLOW_MID_ALPHA),
+            1f to Color.Transparent,
+            center = center,
+            radius = BodyGlassGlowRadius.toPx(),
+        ),
+    )
+    BodyGlassGlowRings.forEach { (radius, alpha) ->
+        val radiusPx = radius.toPx()
+        val ringColor = color.copy(alpha = color.alpha * alpha)
+        drawCircle(
+            brush = Brush.radialGradient(
+                0f to ringColor,
+                ((radiusPx - BodyGlassGlowFeather.toPx()) / radiusPx).coerceAtLeast(0f) to ringColor,
+                1f to Color.Transparent,
+                center = center,
+                radius = radiusPx,
+            ),
+            radius = radiusPx,
+            center = center,
+        )
+    }
+}
+
+private val BodyGlassGlowCenterInsetX = 40.dp
+private val BodyGlassGlowCenterOverflowY = 10.dp
+private val BodyGlassGlowRadius = 165.dp
+private val BodyGlassGlowFeather = 22.dp
+private val BodyGlassGlowRings = listOf(110.dp to 0.12f, 160.dp to 0.12f)
 
 private val BodyGlassHighlightTopStartRadius = 80.dp
 private val BodyGlassHighlightBottomEndRadius = 45.dp

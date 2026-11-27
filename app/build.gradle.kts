@@ -1,4 +1,7 @@
 import java.util.Properties
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
+import java.util.zip.ZipOutputStream
 
 plugins {
     alias(libs.plugins.android.application)
@@ -31,15 +34,19 @@ val validateProductionConfig = tasks.register("validateProductionConfig") {
 
 android {
     namespace = "com.hexis.bi"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 1
+        }
+    }
 
     defaultConfig {
         applicationId = "com.hexis.bi"
         // Terra Android SDK requires minSdk 28 (Samsung Health / Health Connect).
         minSdk = 28
         targetSdk = 37
-        versionCode = 29
-        versionName = "1.2.0"
+        versionCode = 44
+        versionName = "1.2.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -123,7 +130,49 @@ kotlin {
     }
 }
 
+val purchaseConnectorSource = configurations.create("purchaseConnectorSource") {
+    isTransitive = false
+}
+
+val patchPurchaseConnector = tasks.register("patchPurchaseConnector") {
+    val source = purchaseConnectorSource
+    val patched = layout.buildDirectory.file("patched/purchase-connector.aar")
+    inputs.files(source)
+    outputs.file(patched)
+    doLast {
+        val target = patched.get().asFile
+        target.parentFile.mkdirs()
+        ZipFile(source.singleFile).use { zip ->
+            ZipOutputStream(target.outputStream()).use { out ->
+                zip.entries().asSequence().forEach { entry ->
+                    out.putNextEntry(ZipEntry(entry.name))
+                    val bytes = zip.getInputStream(entry).readBytes()
+                    out.write(
+                        if (entry.name == "AndroidManifest.xml") {
+                            val manifest = String(bytes)
+                            val original = "package=\"com.appsflyer\""
+                            check(manifest.contains(original)) {
+                                "purchase-connector manifest no longer declares package com.appsflyer; " +
+                                        "the namespace patch is obsolete, remove patchPurchaseConnector"
+                            }
+                            manifest.replace(
+                                original,
+                                "package=\"com.appsflyer.purchaseconnector\""
+                            ).toByteArray()
+                        } else bytes
+                    )
+                    out.closeEntry()
+                }
+            }
+        }
+    }
+}
+
 dependencies {
+    purchaseConnectorSource(libs.purchase.connector)
+    implementation(files(patchPurchaseConnector.map { it.outputs.files }))
+    implementation(libs.appsflyer.android)
+    implementation(libs.install.referrer)
     implementation(project(":intelligence"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -149,6 +198,7 @@ dependencies {
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.config)
+    implementation(libs.billing.ktx)
     implementation(libs.firebase.appcheck.playintegrity)
     implementation(libs.firebase.appcheck.debug)
     implementation(libs.androidx.navigation.compose)
@@ -174,6 +224,7 @@ dependencies {
     implementation(libs.libphonenumber)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation("io.mockk:mockk:1.13.13")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

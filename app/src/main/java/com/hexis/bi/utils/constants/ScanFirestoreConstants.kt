@@ -39,5 +39,4 @@ object ScanFirestoreConstants {
 
     const val SCAN_HISTORY_MAX_SCANS = 100L
     const val SCAN_HISTORY_DEFAULT_LIMIT = 20L
-    const val SCAN_HISTORY_TIMESTAMP_LOOKBACK = 50L
 }

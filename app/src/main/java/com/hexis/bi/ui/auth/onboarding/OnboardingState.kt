@@ -15,6 +15,12 @@ sealed interface OnboardingEvent : UiEvent {
     data object Finished : OnboardingEvent
 
     data object BuySuitScan : OnboardingEvent
+
+    data object ProfileSaved : OnboardingEvent
+
+    data object StartFreeScan : OnboardingEvent
+
+    data class FreeScanUnavailable(val message: String) : OnboardingEvent
 }
 
 data class OnboardingState(
@@ -25,6 +31,7 @@ data class OnboardingState(
     val heightCm: Float = ProfileConstants.DEFAULT_HEIGHT_CM,
     val weightKg: Float = ProfileConstants.DEFAULT_WEIGHT_KG,
     val showDatePicker: Boolean = false,
+    val showFreeScanPage: Boolean = false,
 
     // Suit (step 2)
     val suitIdInput: String = "",

@@ -56,6 +56,24 @@ object ScanReminderAlarms {
     }
 }
 
+object ScanReminderRules {
+    const val DEFAULT_HOUR: Int = 14
+    const val END_BUFFER_DAYS: Long = 3L
+    const val FREE_SCAN_REMINDER_DAYS: Long = 7L
+    const val MISSED_AFTER_DAYS: Long = 6L
+    const val MIN_MISSED_AFTER_DAYS: Long = 2L
+    const val NEXT_DAY_OFFSET: Long = 1L
+    const val STALE_EVENT_HOURS: Long = 24L
+    const val FIRE_TOLERANCE_MINUTES: Long = 1L
+    const val LATE_FIRE_GRACE_HOURS: Long = 2L
+    const val RENEWAL_SETTLE_HOURS: Long = 1L
+    const val PICKER_EXTRA_DAYS: Long = 14L
+    const val STATUS_WAIT_MS: Long = 5_000L
+    const val KEY_PLAN: String = "plan"
+    const val KEY_FREE: String = "free"
+    const val SENT_SEPARATOR: String = "|"
+}
+
 object NotificationPendingIntent {
     const val FOR_LAUNCH_ACTIVITY: Int =
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE

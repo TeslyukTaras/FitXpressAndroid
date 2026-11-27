@@ -1,6 +1,15 @@
 package com.hexis.bi.ui.main
 
+import android.Manifest
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +40,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.R
 import com.hexis.bi.config.AppConfig
 import com.hexis.bi.data.preferences.UserPreferencesRepository
@@ -68,8 +78,17 @@ import com.hexis.bi.ui.main.settings.healthconnections.HealthConnectionsScreen
 import com.hexis.bi.ui.main.settings.mysuit.MySuitScreen
 import com.hexis.bi.ui.main.settings.notifications.NotificationsSettingsScreen
 import com.hexis.bi.ui.main.settings.scanpreferences.ScanPreferencesScreen
+import com.hexis.bi.domain.subscription.PlanId
+import com.hexis.bi.ui.main.subscription.SubscriptionScreen
+import com.hexis.bi.ui.main.subscription.scansused.ScansUsedScreen
+import com.hexis.bi.ui.main.subscription.confirm.ConfirmPlanScreen
+import com.hexis.bi.ui.main.subscription.plans.PlanSelectionScreen
 import com.hexis.bi.ui.navigation.Route
 import com.hexis.bi.ui.navigation.popBackStackOnce
+import com.hexis.bi.ui.theme.screenBackground
+import com.hexis.bi.utils.constants.AnimationConstants
+import com.hexis.bi.utils.permissions.NotificationPermissionCoordinator
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
@@ -80,12 +99,28 @@ fun MainScreen(
     onDeleteAccount: () -> Unit,
     modifier: Modifier = Modifier,
     startDestination: String = Route.Main.HOME,
+    startScan: Boolean = false,
+    onStartScanHandled: () -> Unit = {},
+    startMessage: String? = null,
+    onStartMessageShown: () -> Unit = {},
 ) {
     val navController = rememberNavController()
     val currentBackStack by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStack?.destination?.route
     val showBottomBar = currentRoute in Route.Main.tabRoutes
 
+    val returnToSubscription: () -> Unit = {
+        if (!navController.popBackStack(Route.Main.SUBSCRIPTION, inclusive = false)) {
+            navController.navigate(Route.Main.SUBSCRIPTION) {
+                popUpTo(Route.Main.SUBSCRIPTION_PLANS) { inclusive = true }
+            }
+        }
+    }
+    val closeSubscription: () -> Unit = {
+        if (!navController.popBackStack(Route.Main.SUBSCRIPTION, inclusive = true)) {
+            navController.popBackStack(Route.Main.SUBSCRIPTION_PLANS, inclusive = true)
+        }
+    }
     val goHome: () -> Unit = {
         navController.navigate(Route.Main.HOME) {
             popUpTo(navController.graph.id) { inclusive = true }
@@ -108,10 +143,32 @@ fun MainScreen(
     val scope = rememberCoroutineScope()
     var showProfileIncompleteDialog by remember { mutableStateOf(false) }
     var showBuySuitDialog by remember { mutableStateOf(false) }
-    var showDisclaimerAcknowledgement by remember { mutableStateOf(false) }
+    var disclaimerPending by remember { mutableStateOf(false) }
+    var disclaimerResolved by remember { mutableStateOf(false) }
+    var scanLaunching by remember { mutableStateOf(startScan) }
+    val homeVisible = currentRoute == Route.Main.HOME && !scanLaunching
+    val showDisclaimerAcknowledgement = disclaimerPending && homeVisible
 
     LaunchedEffect(Unit) {
-        showDisclaimerAcknowledgement = !preferencesRepository.isMedicalDisclaimerAcknowledged()
+        disclaimerPending = !preferencesRepository.isMedicalDisclaimerAcknowledged()
+        disclaimerResolved = true
+    }
+
+    val notificationPermissionCoordinator: NotificationPermissionCoordinator = koinInject()
+    val firebaseAuth: FirebaseAuth = koinInject()
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        val uid = firebaseAuth.currentUser?.uid ?: return@rememberLauncherForActivityResult
+        scope.launch { notificationPermissionCoordinator.onPermissionResult(uid, granted) }
+    }
+    LaunchedEffect(homeVisible, disclaimerResolved, disclaimerPending) {
+        val uid = firebaseAuth.currentUser?.uid ?: return@LaunchedEffect
+        if (homeVisible && disclaimerResolved && !disclaimerPending &&
+            notificationPermissionCoordinator.shouldPromptOnSignIn(uid)
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
     val startSuitSizeScan: () -> Unit = {
         if (AppConfig.suitVisible) scope.launch {
@@ -147,7 +204,24 @@ fun MainScreen(
                 }
             } else {
                 showProfileIncompleteDialog = true
+                scanLaunching = false
             }
+        }
+    }
+
+    LaunchedEffect(startScan) {
+        if (startScan) {
+            onStartScanHandled()
+            launchScan()
+        }
+    }
+    LaunchedEffect(currentRoute) {
+        if (currentRoute == Route.Main.SCAN) scanLaunching = false
+    }
+    LaunchedEffect(scanLaunching) {
+        if (scanLaunching) {
+            delay(AnimationConstants.SCAN_LAUNCH_OVERLAY_TIMEOUT_MS)
+            scanLaunching = false
         }
     }
 
@@ -165,9 +239,23 @@ fun MainScreen(
                 .then(dialogBlurModifier),
             navController = navController,
             startDestination = Route.Main.availableDestination(startDestination),
+            predictivePopEnterTransition = { fadeIn(tween(AnimationConstants.NAV_DEFAULT_FADE_MS)) },
+            predictivePopExitTransition = { fadeOut(tween(AnimationConstants.NAV_DEFAULT_FADE_MS)) },
         ) {
-            composable(Route.Main.HOME) {
+            composable(
+                Route.Main.HOME,
+                exitTransition = {
+                    if (targetState.destination.route == Route.Main.SCAN) ExitTransition.None
+                    else fadeOut(tween(AnimationConstants.NAV_DEFAULT_FADE_MS))
+                },
+                popEnterTransition = {
+                    if (initialState.destination.route == Route.Main.SCAN) fadeIn(tween(AnimationConstants.SCAN_ENTER_FADE_MS))
+                    else fadeIn(tween(AnimationConstants.NAV_DEFAULT_FADE_MS))
+                },
+            ) {
                 HomeScreen(
+                    message = startMessage,
+                    onMessageShown = onStartMessageShown,
                     onLogout = onLogout,
                     onNotificationClick = { navController.navigate(Route.Main.NOTIFICATIONS) },
                     onSettingsClick = { navController.navigate(Route.Main.SETTINGS) },
@@ -203,12 +291,21 @@ fun MainScreen(
                 PaceOfAgingScreen(onBack = { navController.popBackStackOnce() })
             }
             composable(Route.Main.INSIGHTS) {
-                InsightsScreen(onBack = { navController.popBackStackOnce() })
+                InsightsScreen(
+                    onBack = { navController.popBackStackOnce() },
+                    onChoosePlan = { navController.navigate(Route.Main.SUBSCRIPTION_PLANS) },
+                )
             }
             composable(Route.Main.ACTIVITY) {
                 ActivityScreen(onBack = { navController.popBackStackOnce() })
             }
-            composable(Route.Main.SCAN) {
+            composable(
+                Route.Main.SCAN,
+                enterTransition = { fadeIn(tween(AnimationConstants.SCAN_ENTER_FADE_MS)) },
+                exitTransition = { fadeOut(tween(AnimationConstants.SCAN_EXIT_FADE_MS)) },
+                popEnterTransition = { fadeIn(tween(AnimationConstants.SCAN_ENTER_FADE_MS)) },
+                popExitTransition = { fadeOut(tween(AnimationConstants.SCAN_EXIT_FADE_MS)) },
+            ) {
                 ScanScreen(
                     onBack = { navController.popBackStackOnce() },
                     onScanComplete = {
@@ -220,6 +317,16 @@ fun MainScreen(
                     onBuySuit = { if (AppConfig.suitVisible) showBuySuitDialog = true },
                     onShowHowToScan = { navController.navigate(Route.Main.HOW_TO_SCAN) },
                     onOpenScanPreferences = { navController.navigate(Route.Main.SCAN_PREFERENCES) },
+                    onChoosePlan = {
+                        navController.navigate(Route.Main.SUBSCRIPTION_PLANS) {
+                            popUpTo(Route.Main.SCAN) { inclusive = true }
+                        }
+                    },
+                    onScansUsed = {
+                        navController.navigate(Route.Main.SCANS_USED) {
+                            popUpTo(Route.Main.SCAN) { inclusive = true }
+                        }
+                    },
                 )
             }
             composable(Route.Main.SUIT_SIZE_SCAN) {
@@ -237,6 +344,16 @@ fun MainScreen(
                         onBuySuit = { if (AppConfig.suitVisible) showBuySuitDialog = true },
                         onShowHowToScan = { navController.navigate(Route.Main.HOW_TO_SCAN) },
                         onOpenScanPreferences = { navController.navigate(Route.Main.SCAN_PREFERENCES) },
+                        onChoosePlan = {
+                            navController.navigate(Route.Main.SUBSCRIPTION_PLANS) {
+                                popUpTo(Route.Main.SUIT_SIZE_SCAN) { inclusive = true }
+                            }
+                        },
+                        onScansUsed = {
+                            navController.navigate(Route.Main.SCANS_USED) {
+                                popUpTo(Route.Main.SUIT_SIZE_SCAN) { inclusive = true }
+                            }
+                        },
                         scanPurpose = ScanPurpose.SuitSizeScan,
                         requireConnectedSuit = false,
                     )
@@ -330,7 +447,48 @@ fun MainScreen(
                     onNavigateToScanPreferences = { navController.navigate(Route.Main.SCAN_PREFERENCES) },
                     onNavigateToMySuit = { if (AppConfig.suitVisible) navController.navigate(Route.Main.MY_SUIT) },
                     onNavigateToHowToScan = { navController.navigate(Route.Main.HOW_TO_SCAN) },
+                    onNavigateToSubscription = { navController.navigate(Route.Main.SUBSCRIPTION) },
                 )
+            }
+            composable(Route.Main.SUBSCRIPTION) {
+                SubscriptionScreen(
+                    onBack = { navController.popBackStackOnce() },
+                    onChoosePlan = { navController.navigate(Route.Main.SUBSCRIPTION_PLANS) },
+                )
+            }
+            composable(Route.Main.SCANS_USED) {
+                ScansUsedScreen(
+                    onBack = { navController.popBackStackOnce() },
+                    onUpgrade = { navController.navigate(Route.Main.SUBSCRIPTION_PLANS) },
+                )
+            }
+            composable(Route.Main.SUBSCRIPTION_PLANS) {
+                PlanSelectionScreen(
+                    onBack = { navController.popBackStackOnce() },
+                    onClose = closeSubscription,
+                    onContinue = { plan ->
+                        navController.navigate(Route.Main.subscriptionConfirm(plan.name))
+                    },
+                    onRestored = returnToSubscription,
+                )
+            }
+            composable(
+                Route.Main.SUBSCRIPTION_CONFIRM,
+                arguments = listOf(
+                    navArgument(Route.Main.ARG_PLAN_ID) { type = NavType.StringType },
+                ),
+            ) { backStackEntry ->
+                val planId = backStackEntry.arguments?.getString(Route.Main.ARG_PLAN_ID)
+                    ?.let { name -> PlanId.entries.firstOrNull { it.name == name } }
+                if (planId == null) {
+                    LaunchedEffect(Unit) { navController.popBackStackOnce() }
+                } else {
+                    ConfirmPlanScreen(
+                        planId = planId,
+                        onBack = { navController.popBackStackOnce() },
+                        onCompleted = returnToSubscription,
+                    )
+                }
             }
             composable(Route.Main.HOW_TO_SCAN) {
                 HowToScanScreen(onBack = { navController.popBackStackOnce() })
@@ -404,6 +562,14 @@ fun MainScreen(
             )
         }
 
+        AnimatedVisibility(
+            visible = scanLaunching,
+            enter = EnterTransition.None,
+            exit = fadeOut(tween(AnimationConstants.SCAN_LAUNCH_OVERLAY_FADE_MS)),
+        ) {
+            Box(modifier = Modifier.fillMaxSize().screenBackground())
+        }
+
         if (AppConfig.suitVisible && showBuySuitDialog) {
             BuySuitDialog(
                 onDismiss = { showBuySuitDialog = false },
@@ -415,7 +581,7 @@ fun MainScreen(
             MedicalDisclaimerSheet(
                 requireAcknowledgement = true,
                 onDismiss = {
-                    showDisclaimerAcknowledgement = false
+                    disclaimerPending = false
                     scope.launch { preferencesRepository.setMedicalDisclaimerAcknowledged() }
                 },
             )

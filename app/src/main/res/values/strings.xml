@@ -56,29 +56,23 @@
     <string name="notif_scan_today_body">It\'s time for your scheduled body scan.</string>
     <string name="notif_finish_scan_today_title">It\'s time for your scheduled body scan.</string>
     <string name="notif_finish_scan_today_body">Finish your body scan today to keep your progress on track.</string>
-    <string name="notif_missed_title">You missed this week\'s scan</string>
-    <string name="notif_missed_body">Come back next %1$s for your next scheduled scan.</string>
+    <string name="notif_missed_title">You missed your scheduled scan</string>
+    <string name="notif_missed_body">Scan when you\'re ready to keep your progress on track.</string>
+    <string name="notif_free_scan_title">Ready for your next scan?</string>
+    <string name="notif_free_scan_body">Pick a plan to keep tracking your body progress.</string>
     <string name="notif_body_scan_done_title">Body scan completed</string>
     <string name="notif_body_scan_done_body">Your scan was saved successfully.</string>
     <string name="notifications_empty">No notifications yet</string>
     <string name="notifications_toggle">Notifications</string>
     <string name="notifications_voice">Voice</string>
     <string name="notifications_remind_to_scan">Remind Me To Scan</string>
-    <string name="notifications_remind_to_scan_subtitle">Get reminders to do your next body scan.</string>
-    <string name="notifications_day">Day:</string>
+    <string name="notifications_remind_to_scan_subtitle">Get reminders for your next recommended scan.</string>
+    <string name="notifications_next_reminder">Next reminder</string>
+    <string name="notifications_not_scheduled">Not scheduled</string>
     <string name="notifications_time">Time:</string>
     <string name="notifications_select_time">Select time</string>
     <string name="error_notifications_permission_denied">Enable notifications in system settings to receive scan reminders.</string>
     <string name="error_camera_permission_denied">Enable camera access in system settings to take a scan.</string>
-
-    <!-- Days of the week -->
-    <string name="day_monday">Monday</string>
-    <string name="day_tuesday">Tuesday</string>
-    <string name="day_wednesday">Wednesday</string>
-    <string name="day_thursday">Thursday</string>
-    <string name="day_friday">Friday</string>
-    <string name="day_saturday">Saturday</string>
-    <string name="day_sunday">Sunday</string>
 
     <!-- Edit profile screen -->
     <string name="edit_profile_title">Edit Profile</string>
@@ -158,7 +152,7 @@
     <string name="settings_how_scanning_works">How Scanning Works</string>
     <string name="settings_help">Help &amp; Support</string>
     <string name="settings_terms_privacy">Terms &amp; Privacy</string>
-    <string name="settings_medical_disclaimer">Medical disclaimer</string>
+    <string name="settings_medical_disclaimer">Medical Disclaimer</string>
     <string name="settings_report_problem">Report a Problem</string>
     <string name="support_email_address" translatable="false">support@hexis-bi.com</string>
     <string name="support_email_subject">Hexis-BI Support Request</string>
@@ -172,6 +166,9 @@
     <string name="delete_account_dialog_body_password">For security reasons, enter your password to continue.</string>
     <string name="delete_account_dialog_body_confirm">Are you sure you want to delete your account? This action cannot be undone.</string>
     <string name="delete_account_dialog_action_delete">Delete</string>
+    <string name="delete_account_subscription_note_play">Deleting your account does not cancel your subscription. Cancel it in Google Play first, or you will keep being charged.</string>
+    <string name="delete_account_subscription_note_app_store">Deleting your account does not cancel your subscription. Cancel it in the App Store first, or you will keep being charged.</string>
+    <string name="delete_account_manage_subscription">Manage subscription</string>
 
     <!-- Home screen -->
     <string name="home_latest_scan">Latest Scan · %1$s</string>
@@ -290,8 +287,9 @@
     <string name="body_proportion_status_fit">Fit</string>
     <string name="body_proportion_status_strong_calves">Strong calves</string>
     <string name="body_proportion_status_hourglass">Hourglass</string>
-    <string name="body_proportion_status_pear">Pear</string>
-    <string name="body_proportion_status_inverted_triangle">Inverted Triangle</string>
+    <string name="body_proportion_status_shoulder_dominant">Shoulder Dominant</string>
+    <string name="body_proportion_status_balanced_proportions">Balanced Proportions</string>
+    <string name="body_proportion_status_hip_dominant">Hip Dominant</string>
     <!-- Body Proportion info sheet -->
     <string name="body_proportion_info_title">Body Proportion</string>
     <string name="body_proportion_info_intro">See how your upper body, midsection, and lower body compare using ratios from your latest scan. Each value is shown against a reference range to help you understand your current proportions.</string>
@@ -1106,6 +1104,9 @@
     <string name="engine_findings_value_separator">" · "</string>
     <string name="engine_findings_label_separator">": "</string>
     <string name="insights_screen_title">Insights</string>
+    <string name="health_banner_free_history">Free plan includes %1$d days of data history</string>
+    <string name="health_banner_frozen_history">New history data require an active subscription</string>
+    <string name="health_banner_frozen_insights">New insights require an active subscription</string>
     <string name="insights_subtitle">Based on Latest Scan · %1$s</string>
     <string name="insights_updating">Updating</string>
     <string name="insights_updating_body">We\'re analyzing your latest data.</string>
@@ -1140,4 +1141,116 @@
     <string name="update_required_title">Update required</string>
     <string name="update_required_body">Please update %1$s to continue.</string>
     <string name="action_update_now">Update now</string>
+
+    <!-- Subscriptions -->
+    <string name="subscription_title">Subscription</string>
+    <string name="plans_change_heading">Choose Your HEXIS-BI Plan</string>
+    <string name="plans_title">Choose Your\nHEXIS-BI Plan</string>
+    <string name="plans_subtitle">Full access to Body Intelligence is included with every plan. Plans differ only by the number of scans per month.</string>
+    <string name="plans_feature_scan">3D\nBody Scan</string>
+    <string name="plans_feature_trends">Measurements\n&amp; Trends</string>
+    <string name="plans_feature_insights">Insights\n&amp; Progress</string>
+    <string name="plan_name_essential">Essential</string>
+    <string name="plan_name_progress">Progress</string>
+    <string name="plan_name_transformation">Transformation</string>
+    <string name="plan_scans_per_month">%1$d scans per month</string>
+    <string name="plan_per_month">/ month</string>
+    <string name="plan_badge_most_popular">Most Popular</string>
+    <string name="plan_badge_current">Current plan</string>
+    <string name="plans_auto_renew">Auto-renews monthly until cancelled.</string>
+    <string name="plans_continue_with_plan">Continue with plan</string>
+    <string name="plans_continue_with">Continue with %1$s</string>
+    <string name="plans_review_change">Review Plan Change</string>
+    <string name="plans_cancel_anytime">Cancel anytime in Google Play.</string>
+    <string name="plans_restore">Restore Purchases</string>
+    <string name="plans_terms">Terms of Service</string>
+    <string name="plans_privacy">Privacy Policy</string>
+    <string name="plans_change_title">Change plan</string>
+    <string name="confirm_plan_title">Confirm Your Plan</string>
+    <string name="confirm_change_title">Confirm Plan Change</string>
+    <string name="confirm_plan_name">%1$s Plan</string>
+    <string name="confirm_change_to">Change to</string>
+    <string name="confirm_what_you_get">What you get</string>
+    <string name="confirm_feature_scans">%1$d scans per month</string>
+    <string name="confirm_feature_full_scan">Full 3D body scan experience</string>
+    <string name="confirm_feature_measurements">Measurements, proportions, and comparison tools</string>
+    <string name="confirm_feature_insights">Deeper progress tracking and body insights</string>
+    <string name="confirm_scans_note">Use your scans anytime during your monthly billing cycle.\nUnused scans don\'t roll over to the next billing period.</string>
+    <plurals name="confirm_remaining_scans_note">
+        <item quantity="one">You have %1$d scan remaining on your current plan.\nUnused scans don\'t roll over to the next billing period.</item>
+        <item quantity="other">You have %1$d scans remaining on your current plan.\nUnused scans don\'t roll over to the next billing period.</item>
+    </plurals>
+    <string name="confirm_upgrade_note">Your new plan starts today.\nYour renewal date stays %1$s.</string>
+    <string name="confirm_upgrade_scans_note">Scans you\'ve already used this month stay counted. You\'ll have %1$d of %2$d scans left on the new plan.\nUnused scans don\'t roll over to the next billing period.</string>
+    <string name="confirm_downgrade_note">Your current plan remains active until %1$s.\n%2$s will start on %1$s.</string>
+    <string name="confirm_subscribe">Subscribe for %1$s / month</string>
+    <string name="confirm_switch">Switch to %1$s</string>
+    <string name="confirm_footer_subscribe">Secure payment via Google Play.\nAuto-renews monthly until cancelled.</string>
+    <string name="confirm_footer_change">Secure payment via Google Play. Cancel anytime.</string>
+    <string name="subscription_active_plan">Active Plan</string>
+    <string name="subscription_inactive_label">Subscription inactive</string>
+    <string name="subscription_scans_this_month">Scans this month</string>
+    <string name="subscription_scans_used">%1$d of %2$d used</string>
+    <string name="subscription_all_scans_used">All scans used for this billing period</string>
+    <string name="subscription_renews_on">Renews on</string>
+    <string name="subscription_ends_on">Ends on</string>
+    <string name="subscription_changes_to">Changes to %1$s on</string>
+    <string name="subscription_view_details">View plan details</string>
+    <string name="subscription_change_plan">Change plan</string>
+    <string name="subscription_manage">Manage subscription</string>
+    <string name="subscription_payment_issue">Payment issue</string>
+    <string name="subscription_grace_message">We couldn\'t renew your subscription. You\'re in a billing grace period until %1$s.</string>
+    <string name="subscription_resolve_payment">Resolve Payment Issue</string>
+    <string name="subscription_error_unavailable">Subscriptions are unavailable right now. Please try again later.</string>
+    <string name="subscription_error_pending">Your payment is pending. Your plan will activate once it completes.</string>
+    <string name="subscription_error_signed_out">Sign in to manage your subscription.</string>
+    <string name="subscription_error_other_platform">Your subscription was bought on another platform. Manage it in the App Store.</string>
+    <string name="subscription_error_no_purchase">We couldn\'t find your current subscription in Google Play.</string>
+    <string name="subscription_expired_message">Your subscription has expired. You can still access your account and previous data, but new scans and new Body Intelligence insights require an active plan.</string>
+    <string name="subscription_renew">Renew Plan</string>
+    <string name="subscription_none_title">No active plan</string>
+    <string name="subscription_none_message">Choose a plan to continue scanning and receive new Body Intelligence insights.\nYour previous scans and historical data remain available.</string>
+    <string name="subscription_choose_plan">Choose a Plan</string>
+    <string name="plan_details_title">Plan Details</string>
+    <string name="plan_details_full_access">Full access to HEXIS-BI</string>
+    <string name="plan_details_insights">Body Intelligence insights and progress tracking</string>
+    <string name="restore_success_title">Subscription Restored</string>
+    <string name="restore_success_message">Your %1$s Plan has been restored successfully.</string>
+    <string name="restore_none_title">No Active Subscription</string>
+    <string name="restore_none_message">We couldn\'t find an active HEXIS-BI subscription associated with your store account.</string>
+    <string name="restore_failed_title">Unable to Restore Purchases</string>
+    <string name="restore_failed_message">Something went wrong.\nPlease try again.</string>
+    <string name="action_done">Done</string>
+    <string name="action_try_again">Try Again</string>
+    <string name="settings_your_plan">Your Plan</string>
+    <string name="subscription_no_rollover">Unused scans don\'t roll over to the next billing period.</string>
+
+    <string name="action_maybe_later">Maybe Later</string>
+    <string name="scan_view_guide">View Scanning Guide</string>
+    <string name="onboarding_free_scan_subtitle">Complete your first HEXIS-BI body scan at no cost and see your personalized results.</string>
+    <string name="onboarding_free_scan_item_phone">Scan using your phone</string>
+    <string name="onboarding_free_scan_item_clothing">Wear form-fitting clothing</string>
+    <string name="onboarding_free_scan_item_shoes">No shoes or socks</string>
+    <string name="onboarding_free_scan_item_frame">Keep your full body in frame</string>
+    <string name="onboarding_free_scan_note">After your free scan, an active subscription is required for future scans, new advanced insights, and premium analytics.</string>
+    <string name="onboarding_free_scan_unavailable">Your free scan is not available right now.</string>
+    <string name="action_start_free_scan">Start Free Scan</string>
+    <string name="scan_first_free_title">Your First Scan Is Free</string>
+    <string name="scan_first_free_message">Complete your first HEXIS-BI scan for free and see your results.</string>
+    <string name="scan_first_free_note">A subscription is required for future scans and new insights.</string>
+    <string name="scan_subscription_required_title">Subscription Required to Scan</string>
+    <string name="scan_subscription_required_message">Your previous scans and results remain available.\nChoose a plan to continue scanning.</string>
+    <string name="scans_used_title">You\'ve used all your scans this month</string>
+    <string name="scans_used_plan">Your %1$s plan includes %2$s.</string>
+    <string name="scans_used_reset">Your scan allowance resets on %1$s.</string>
+    <string name="scans_used_upgrade">Upgrade Plan</string>
+    <string name="subscription_on_hold_message">We couldn\'t process your payment, so your subscription is on hold. Update your payment method in the store to restore access. Your account and previous data remain available.</string>
+    <string name="subscription_error_payment_issue">Resolve the payment issue with your current subscription in the store before choosing a new plan.</string>
+    <string name="scan_payment_issue_title">Payment Issue</string>
+    <string name="scan_payment_issue_resolve">Resolve Issue</string>
+    <string name="scan_payment_issue_message">Your subscription is on hold because of a payment problem. Resolve it to continue scanning. Your previous scans and results remain available.</string>
+    <string name="scan_error_connection_retry">We lost the connection. We\'ll send your scan again.</string>
+    <string name="confirm_pending_note">Your payment went through. We\'re still confirming your plan, which can take a moment. You can leave this screen.</string>
+    <string name="insights_blocked_title">No insights yet</string>
+    <string name="insights_blocked_message">Subscribe to receive Body Intelligence insights based on your scan and health data.</string>
 </resources>

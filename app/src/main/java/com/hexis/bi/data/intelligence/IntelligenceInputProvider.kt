@@ -25,11 +25,12 @@ internal class IntelligenceInputProvider(
         analysisDays: Int,
         baselineDays: Int,
         historyDays: Int = analysisDays,
+        asOf: LocalDate? = null,
     ): Result<EngineInput> = withContext(io) {
         val uid = auth.currentUser?.uid
             ?: return@withContext Result.failure(IllegalStateException("Not authenticated"))
         runCatching {
-            val runDate = LocalDate.now(clock)
+            val runDate = asOf ?: LocalDate.now(clock)
             val days = observationWindow(runDate, historyDays, baselineDays)
             val identities = local.storedIdentityOrder(uid)
                 .mapNotNull(::decodeTerraRestIdentity)

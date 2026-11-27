@@ -29,18 +29,33 @@ import com.hexis.bi.data.notification.NotificationInboxRepository
 import com.hexis.bi.data.order.FirestoreOrderRepository
 import com.hexis.bi.data.order.OrderDraftHolder
 import com.hexis.bi.data.preferences.UserPreferencesRepository
+import com.hexis.bi.data.subscription.FirestoreSubscriptionRepository
+import com.hexis.bi.data.subscription.PlanCatalog
+import com.hexis.bi.data.subscription.FirstFreeScanConsent
+import com.hexis.bi.data.subscription.ScanGateConfig
+import com.hexis.bi.data.subscription.billing.CurrentActivityProvider
+import com.hexis.bi.data.subscription.billing.PlayBilling
+import com.hexis.bi.data.subscription.SubscriptionRepository
+import com.hexis.bi.domain.subscription.PlanId
+import com.hexis.bi.ui.main.scan.access.ScanAccessViewModel
+import com.hexis.bi.ui.main.subscription.SubscriptionViewModel
+import com.hexis.bi.ui.main.subscription.confirm.ConfirmPlanViewModel
+import com.hexis.bi.ui.main.subscription.plans.PlanSelectionViewModel
 import com.hexis.bi.data.recovery.RecoveryRepository
 import com.hexis.bi.data.recovery.DefaultRecoveryRepository
+import com.hexis.bi.data.reminder.ScanReminderResolver
 import com.hexis.bi.data.reminder.ScanReminderScheduler
 import com.hexis.bi.data.reminder.ScanReminderSchedulerImpl
 import com.hexis.bi.data.reminder.ScanReminderWorkRunner
 import com.hexis.bi.data.body.PhysiquePredictionRepository
 import com.hexis.bi.data.scan.ScanHistoryRepository
 import com.hexis.bi.data.scan.ScanResultRepository
+import com.hexis.bi.data.health.access.HealthDataGate
 import com.hexis.bi.data.health.remote.HealthRemoteDataSource
 import com.hexis.bi.data.intelligence.AssetIntelligenceConfigSource
 import com.hexis.bi.data.intelligence.RemoteIntelligenceConfigSource
 import com.hexis.bi.utils.constants.AppUpdateRemoteConfig
+import com.hexis.bi.utils.constants.SubscriptionConstants
 import com.hexis.bi.utils.constants.IntelligenceRemoteConfig
 import com.hexis.bi.data.telemetry.FirebaseTelemetry
 import com.hexis.bi.data.telemetry.Telemetry
@@ -105,6 +120,9 @@ import com.hexis.bi.ui.main.settings.scanpreferences.ScanPreferencesViewModel
 import com.hexis.bi.utils.constants.NetworkConstants.HTTP_TIMEOUT_SECONDS
 import com.hexis.bi.utils.permissions.NotificationPermissionCoordinator
 import okhttp3.OkHttpClient
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
@@ -125,6 +143,22 @@ val appModule = module {
     single { HealthLocalDataSource(get(), BuildConfig.ENVIRONMENT) }
     single<CanonicalUserCacheCleaner> { get<HealthLocalDataSource>() }
     single { UserPreferencesRepository(get()) }
+    single { CurrentActivityProvider() }
+    single { PlayBilling(androidContext(), get()) }
+    single { PlanCatalog(get(), planCatalogFetchInterval()) }
+    single { ScanGateConfig(get(), scanGateFetchInterval()) }
+    single { FirstFreeScanConsent() }
+    single<SubscriptionRepository>(createdAtStart = true) {
+        FirestoreSubscriptionRepository(
+            androidContext(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            CoroutineScope(SupervisorJob() + Dispatchers.Default),
+        )
+    }
     single { NotificationInboxRepository(androidContext(), get()) }
     single {
         ScanReminderWorkRunner(
@@ -137,13 +171,15 @@ val appModule = module {
             get(),
         )
     }
-    single<ScanReminderScheduler> { ScanReminderSchedulerImpl(androidContext(), get(), get()) }
+    single { ScanReminderResolver(get(), get(), get()) }
+    single<ScanReminderScheduler> { ScanReminderSchedulerImpl(androidContext(), get(), get(), get(), get()) }
     single { NotificationPermissionCoordinator(androidContext(), get(), get(), get(), get()) }
     single { EmailVerificationApi(get()) }
     single { AccountDeletionApi(get()) }
     single<AuthRepository> { FirebaseAuthRepository(get(), get(), get(), androidContext()) }
     single { HealthConnectPermissionChecker(androidContext()) }
-    single { HealthRemoteDataSource(get(), get(), get()) }
+    single { HealthDataGate(get(), get(), get(), get()) }
+    single { HealthRemoteDataSource(get(), get(), get(), get()) }
     single { HealthSyncCoordinator(get(), get(), get(), get(), get(), get(), get()) }
     single { FirebaseRemoteConfig.getInstance() }
     single {
@@ -181,7 +217,7 @@ val appModule = module {
     single { RunIntelligenceUseCase(get(), get(), get(), get(), get()) }
     single { WorkManager.getInstance(androidContext()) }
     single<HealthSyncScheduler> { WorkManagerHealthSyncScheduler(get()) }
-    single { IntelligenceCoordinator(get(), get(), get(), get(), get()) }
+    single { IntelligenceCoordinator(get(), get(), get(), get(), get(), get(), get()) }
     single { SessionCleaner(get(), get(), get(), get(), get(), get(), get(), get(), androidContext()) }
     single<SuitRepository> { UserProfileSuitRepository(get()) }
     single<UserRepository> { FirestoreUserRepository(get(), get(), androidContext()) }
@@ -249,9 +285,14 @@ val appModule = module {
     viewModel { ForgotPasswordViewModel(get(), androidApplication()) }
     viewModel { VerifyEmailViewModel(get(), androidApplication()) }
     viewModel { ScanPreferencesViewModel(androidApplication(), get(), get()) }
+    viewModel { SubscriptionViewModel(androidApplication(), get()) }
+    viewModel { ScanAccessViewModel(androidApplication(), get(), get(), get()) }
+    viewModel { PlanSelectionViewModel(androidApplication(), get()) }
+    viewModel { (planId: PlanId) -> ConfirmPlanViewModel(androidApplication(), get(), planId) }
     viewModel {
         HealthConnectionsViewModel(
             androidApplication(),
+            get(),
             get(),
             get(),
             get(),
@@ -265,26 +306,26 @@ val appModule = module {
         )
     }
     viewModel { MySuitViewModel(androidApplication(), get()) }
-    viewModel { NotificationsSettingsViewModel(androidApplication(), get(), get(), get(), get()) }
+    viewModel { NotificationsSettingsViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { NotificationsViewModel(androidApplication(), get()) }
-    viewModel { BodyViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
+    viewModel { BodyViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { SleepViewModel(androidApplication(), get(), get(), get(), get(), get()) }
     viewModel { ActivityViewModel(androidApplication(), get(), get(), get(), get(), get()) }
     viewModel { RecoveryViewModel(androidApplication(), get()) }
     viewModel { LongevityViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
     viewModel { PaceOfAgingViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { PhysiqueDriftViewModel(androidApplication(), get(), get(), get(), get(), get()) }
-    viewModel { InsightsViewModel(androidApplication(), get(), get()) }
+    viewModel { InsightsViewModel(androidApplication(), get(), get(), get()) }
     viewModel { RecompositionViewModel(androidApplication(), get(), get()) }
     viewModel { ScanViewModel(androidApplication(), get()) }
-    viewModel { StartScanViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { StartScanViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { ResultsViewModel(androidApplication(), get(), get(), get(), get(), get()) }
     viewModel { SuitSizeResultsViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { ShippingDetailsViewModel(androidApplication(), get(), get(), get()) }
     viewModel { (orderId: String) -> EditAddressViewModel(androidApplication(), get(), orderId) }
     viewModel { ScanHistoryViewModel(androidApplication(), get(), get()) }
-    viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get(), get()) }
-    viewModel { OnboardingViewModel(androidApplication(), get(), get()) }
+    viewModel { DeleteAccountViewModel(androidApplication(), get(), get(), get(), get(), get()) }
+    viewModel { OnboardingViewModel(androidApplication(), get(), get(), get(), get(), get()) }
 }
 
 private const val FIREBASE_FUNCTIONS_REGION = "us-central1"
@@ -293,6 +334,18 @@ private fun intelligenceFetchInterval(): Long = if (BuildConfig.DEBUG) {
     IntelligenceRemoteConfig.DEBUG_FETCH_INTERVAL_SECONDS
 } else {
     IntelligenceRemoteConfig.RELEASE_FETCH_INTERVAL_SECONDS
+}
+
+private fun scanGateFetchInterval(): Long = if (BuildConfig.DEBUG) {
+    SubscriptionConstants.SCAN_GATE_DEBUG_FETCH_INTERVAL_SECONDS
+} else {
+    SubscriptionConstants.SCAN_GATE_RELEASE_FETCH_INTERVAL_SECONDS
+}
+
+private fun planCatalogFetchInterval(): Long = if (BuildConfig.DEBUG) {
+    SubscriptionConstants.PLANS_DEBUG_FETCH_INTERVAL_SECONDS
+} else {
+    SubscriptionConstants.PLANS_RELEASE_FETCH_INTERVAL_SECONDS
 }
 
 private fun appUpdateFetchInterval(): Long = if (BuildConfig.DEBUG) {

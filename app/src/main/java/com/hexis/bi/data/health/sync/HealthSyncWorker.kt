@@ -5,7 +5,9 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.google.firebase.auth.FirebaseAuth
 import com.hexis.bi.data.health.local.HealthLocalDataSource
+import com.hexis.bi.data.health.access.HealthDataGate
 import com.hexis.bi.data.telemetry.SyncOutcome
+import com.hexis.bi.domain.subscription.HealthDataAccess
 import com.hexis.bi.data.telemetry.SyncStage
 import com.hexis.bi.data.telemetry.SyncTrigger
 import com.hexis.bi.data.telemetry.Telemetry
@@ -27,6 +29,7 @@ internal class HealthSyncWorker(
     private val auth: FirebaseAuth by inject()
     private val local: HealthLocalDataSource by inject()
     private val telemetry: Telemetry by inject()
+    private val healthDataGate: HealthDataGate by inject()
 
     private val trigger: SyncTrigger
         get() = SyncTrigger.ofWire(inputData.getString(TelemetryWorkData.KEY_TRIGGER))
@@ -53,7 +56,21 @@ internal class HealthSyncWorker(
         val syncTrigger = trigger
         var failedOperations = 0
 
-        val quickSyncFailures = runCatching { coordinator.syncRecentWindow() }
+        val access = healthDataGate.access()
+        if (access == HealthDataAccess.FROZEN ||
+            (access == HealthDataAccess.FIRST_WEEK && syncTrigger != SyncTrigger.NewConnection)
+        ) {
+            Timber.d("Health sync worker: no subscription (%s), new data is not fetched", access)
+            return Result.success()
+        }
+        if (access == HealthDataAccess.FIRST_WEEK && !healthDataGate.openFreeWeek()) {
+            Timber.d("Health sync worker: the free week was already used, new data is not fetched")
+            return Result.success()
+        }
+
+        val recentWindow = runCatching {
+            if (access == HealthDataAccess.FIRST_WEEK) coordinator.syncFreeWeek() else coordinator.syncRecentWindowResult()
+        }
             .getOrElse { error ->
                 if (error is CancellationException) throw error
                 Timber.w(error, "Health sync worker: recent window failed")
@@ -61,8 +78,17 @@ internal class HealthSyncWorker(
                 report(syncTrigger, elapsed(), SyncOutcome.Failed, QUICK_SYNC_SOURCES)
                 return giveUpOrRetry()
             }
-        quickSyncFailures.forEach { telemetry.healthSyncFailed(syncTrigger, SyncStage.QuickSyncSource, it) }
-        failedOperations += quickSyncFailures.size
+        recentWindow.failures.forEach { telemetry.healthSyncFailed(syncTrigger, SyncStage.QuickSyncSource, it) }
+        failedOperations += recentWindow.failures.size
+
+        if (access == HealthDataAccess.FIRST_WEEK) {
+            report(syncTrigger, elapsed(), outcomeOf(BackfillOutcome.Skipped, failedOperations), failedOperations)
+            if (failedOperations > 0 || recentWindow.rows == 0 || !healthDataGate.recordFreeWeekImport(recentWindow.rows)) {
+                Timber.d("Health sync worker: the free week is still arriving (%d rows), trying again", recentWindow.rows)
+                return giveUpOrRetry()
+            }
+            return Result.success()
+        }
 
         coordinator.prewarmScans().onFailure { error ->
             telemetry.healthSyncFailed(syncTrigger, SyncStage.ScanSync, error)

@@ -3,28 +3,49 @@ package com.hexis.bi.ui.auth.onboarding
 import android.app.Application
 import com.hexis.bi.R
 import com.hexis.bi.config.AppConfig
+import com.hexis.bi.data.subscription.FirstFreeScanConsent
+import com.hexis.bi.data.subscription.ScanGateConfig
+import com.hexis.bi.data.subscription.SubscriptionRepository
 import com.hexis.bi.data.user.UserRepository
 import com.hexis.bi.domain.enums.GenderOption
+import com.hexis.bi.domain.subscription.ScanAccess
+import com.hexis.bi.domain.subscription.SubscriptionStatus
+import com.hexis.bi.domain.subscription.toScanAccess
 import com.hexis.bi.domain.suit.SuitRepository
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.constants.MeasurementConstants
 import com.hexis.bi.utils.constants.ProfileConstants
+import com.hexis.bi.utils.constants.SubscriptionConstants
 import com.hexis.bi.utils.inchesToCm
 import com.hexis.bi.utils.lbToKg
 import com.hexis.bi.utils.parseDob
 import com.hexis.bi.utils.persistedUserMeasurements
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 class OnboardingViewModel(
     application: Application,
     private val userRepository: UserRepository,
     private val suitRepository: SuitRepository,
+    private val gateConfig: ScanGateConfig,
+    private val subscriptionRepository: SubscriptionRepository,
+    private val firstFreeScanConsent: FirstFreeScanConsent,
 ) : BaseViewModel(application) {
 
     private val _state = MutableStateFlow(OnboardingState())
     val state = _state.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            gateConfig.refresh()
+            _state.update { it.copy(showFreeScanPage = gateConfig.enabled) }
+        }
+    }
 
     // Personal info actions
     fun updateDateOfBirth(value: String) = _state.update { it.copy(dateOfBirth = value) }
@@ -82,6 +103,33 @@ class OnboardingViewModel(
 
     fun dismissSuitCareSheet() = _state.update { it.copy(showSuitCareSheet = false) }
 
+    fun skip() = emitEvent(OnboardingEvent.Finished)
+
+    fun saveAndContinue() = launch {
+        saveProfile()
+            .onSuccess { emitEvent(OnboardingEvent.ProfileSaved) }
+            .onFailure { setError(it.message) }
+    }
+
+    fun startFreeScan() {
+        viewModelScope.launch {
+            val status = withTimeoutOrNull(SubscriptionConstants.STATUS_WAIT_MS) {
+                subscriptionRepository.status.first { it !is SubscriptionStatus.Loading }
+            }
+            val access = status?.toScanAccess()
+            if (status == null || access == ScanAccess.FirstFreeScan || access == ScanAccess.Allowed) {
+                firstFreeScanConsent.grant()
+                emitEvent(OnboardingEvent.StartFreeScan)
+            } else {
+                emitEvent(
+                    OnboardingEvent.FreeScanUnavailable(
+                        appContext.getString(R.string.onboarding_free_scan_unavailable),
+                    ),
+                )
+            }
+        }
+    }
+
     fun finish() = launch {
         saveProfile()
             .onSuccess { emitEvent(OnboardingEvent.Finished) }
@@ -120,6 +168,8 @@ class OnboardingViewModel(
         if (AppConfig.suitVisible && s.isSuitConnected && s.connectedSuitId.isNotBlank()) {
             fields["suitId"] = s.connectedSuitId
         }
-        return userRepository.updateFields(fields)
+        return userRepository.updateFields(fields).onSuccess {
+            com.hexis.bi.data.telemetry.MarketingAnalytics.profileSaved(appContext)
+        }
     }
 }

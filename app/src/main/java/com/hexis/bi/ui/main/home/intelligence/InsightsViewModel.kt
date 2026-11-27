@@ -3,6 +3,7 @@ package com.hexis.bi.ui.main.home.intelligence
 import android.app.Application
 import androidx.lifecycle.viewModelScope
 import com.hexis.bi.data.scan.ScanHistoryRepository
+import com.hexis.bi.data.telemetry.Telemetry
 import com.hexis.bi.domain.intelligence.IntelligenceCoordinator
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.utils.millisToShortMonthDay
@@ -17,17 +18,20 @@ data class InsightsState(
     val updating: Boolean = false,
     val latestScanDate: String? = null,
     val showInfoSheet: Boolean = false,
+    val blocked: Boolean = false,
 )
 
 class InsightsViewModel internal constructor(
     application: Application,
     private val intelligenceCoordinator: IntelligenceCoordinator,
     private val scanHistoryRepository: ScanHistoryRepository,
+    private val telemetry: Telemetry,
 ) : BaseViewModel(application, initialLoading = false) {
 
     private val _state = MutableStateFlow(InsightsState())
     val state = _state.asStateFlow()
     private val scanDateJob = LatestJobController()
+    private var viewReported = false
 
     init {
         intelligenceCoordinator.refreshIfStale()
@@ -42,10 +46,15 @@ class InsightsViewModel internal constructor(
                         isMetric = run.isMetric,
                     )
                 }
+                if (!viewReported && !reportState.blocked && !cards.isNullOrEmpty()) {
+                    viewReported = true
+                    telemetry.insightsViewed()
+                }
                 _state.update {
                     it.copy(
                         cards = cards ?: it.cards,
                         updating = reportState.updating,
+                        blocked = reportState.blocked,
                     )
                 }
             }

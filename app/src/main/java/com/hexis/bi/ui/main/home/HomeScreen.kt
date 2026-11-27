@@ -64,6 +64,8 @@ fun HomeScreen(
     onInsightsClick: () -> Unit = {},
     onBuySuitClick: () -> Unit = {},
     onEditOrderAddress: (orderId: String) -> Unit = {},
+    message: String? = null,
+    onMessageShown: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -102,6 +104,8 @@ fun HomeScreen(
             isLoading = isLoading,
             error = error,
             onDismissError = viewModel::clearError,
+            message = message,
+            onDismissMessage = onMessageShown,
             topBar = {
                 MedicalDisclaimerBar(onClick = viewModel::showMedicalDisclaimer)
             },

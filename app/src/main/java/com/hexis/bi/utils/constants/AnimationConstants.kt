@@ -5,6 +5,18 @@ package com.hexis.bi.utils.constants
  * through individual screen/component files.
  */
 internal object AnimationConstants {
+    const val SCAN_ENTER_FADE_MS = 220
+    const val CAMERA_HANDOFF_DELAY_MS = 200L
+    const val CAMERA_HANDOFF_CANCEL_HOLD_MS = 1_200L
+    const val CAMERA_HANDOFF_FADE_IN_MS = 180
+    const val CAMERA_HANDOFF_FADE_OUT_MS = 250
+    const val SDK_CAMERA_COVER_HOLD_MS = 800L
+    const val SDK_CAMERA_COVER_FADE_MS = 300L
+    const val SCAN_EXIT_FADE_MS = 160
+    const val SCAN_GATE_FADE_MS = 220
+    const val NAV_DEFAULT_FADE_MS = 700
+    const val SCAN_LAUNCH_OVERLAY_TIMEOUT_MS = 5_000L
+    const val SCAN_LAUNCH_OVERLAY_FADE_MS = 250
 
     /** Loading scrim (BaseScreen) shown above screen content while a load is in flight. */
     const val SCRIM_FADE_IN_MS = 150
@@ -41,4 +53,7 @@ internal object AnimationConstants {
     /** Forced-update screen fading in above the app once Remote Config reports it is required. */
     const val UPDATE_GATE_FADE_IN_MS = 300
     const val UPDATE_GATE_FADE_OUT_MS = 200
+
+    const val SEGMENT_FILL_MS = 400
+    const val CONTENT_SWAP_FADE_MS = 250
 }

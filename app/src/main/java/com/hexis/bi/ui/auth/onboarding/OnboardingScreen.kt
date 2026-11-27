@@ -1,6 +1,7 @@
 package com.hexis.bi.ui.auth.onboarding
 
 import androidx.compose.animation.core.tween
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,6 +38,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -62,7 +64,6 @@ import com.hexis.bi.ui.base.BaseScreen
 import com.hexis.bi.ui.base.BaseTopBar
 import com.hexis.bi.ui.components.AppDatePicker
 import com.hexis.bi.ui.components.AppDialog
-import com.hexis.bi.ui.components.AppLogo
 import com.hexis.bi.ui.components.AppOutlinedButton
 import com.hexis.bi.ui.components.AppOutlinedTextField
 import com.hexis.bi.ui.components.AppPrimaryButton
@@ -84,9 +85,8 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import java.time.LocalDate
 
-private const val PAGE_PERSONAL_INFO = 0
-private const val PAGE_MY_SUIT = 1
-private const val PAGE_COUNT = 2
+private enum class OnboardingPage { PersonalInfo, FreeScan, MySuit }
+
 private const val PAGE_SCROLL_DURATION_MS = 350
 
 private const val DROPDOWN_ARROW_ROTATION_EXPANDED = 270f
@@ -98,17 +98,27 @@ fun OnboardingScreen(
     onFinish: () -> Unit,
     modifier: Modifier = Modifier,
     onBuySuitScanRequested: () -> Unit = {},
+    onStartFreeScan: () -> Unit = {},
+    onFreeScanUnavailable: (message: String) -> Unit = {},
     viewModel: OnboardingViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
 
-    val pageCount = if (AppConfig.suitVisible) PAGE_COUNT else 1
-    val pagerState = rememberPagerState { pageCount }
+    val pages = remember(state.showFreeScanPage) {
+        buildList {
+            add(OnboardingPage.PersonalInfo)
+            if (state.showFreeScanPage) add(OnboardingPage.FreeScan)
+            if (AppConfig.suitVisible) add(OnboardingPage.MySuit)
+        }
+    }
+    val pagerState = rememberPagerState { pages.size }
+    val currentPages by rememberUpdatedState(pages)
     val scope = rememberCoroutineScope()
     var showBuySuitDialog by remember { mutableStateOf(false) }
-    val isLastPage = pagerState.currentPage == pageCount - 1
+    val currentPage = pages[pagerState.currentPage.coerceIn(pages.indices)]
+    val isLastPage = pagerState.currentPage == pages.size - 1
     val goToPage: (Int) -> Unit = { page ->
         scope.launch {
             pagerState.animateScrollToPage(page, animationSpec = tween(PAGE_SCROLL_DURATION_MS))
@@ -122,6 +132,12 @@ fun OnboardingScreen(
             when (event) {
                 is OnboardingEvent.Finished -> onFinish()
                 is OnboardingEvent.BuySuitScan -> onBuySuitScanRequested()
+                is OnboardingEvent.ProfileSaved -> {
+                    val target = currentPages.indexOf(OnboardingPage.FreeScan)
+                    if (target >= 0) goToPage(target) else onFinish()
+                }
+                is OnboardingEvent.StartFreeScan -> onStartFreeScan()
+                is OnboardingEvent.FreeScanUnavailable -> onFreeScanUnavailable(event.message)
             }
         }
     }
@@ -172,22 +188,40 @@ fun OnboardingScreen(
                 error = error,
                 onDismissError = viewModel::clearError,
                 topBar = {
-                    if (AppConfig.suitVisible && pagerState.currentPage != PAGE_PERSONAL_INFO) BaseTopBar(
+                    if (AppConfig.suitVisible && currentPage == OnboardingPage.MySuit) BaseTopBar(
                         title = stringResource(R.string.my_suit_title),
                         background = Color.Transparent,
-                        onBack = { goToPage(PAGE_PERSONAL_INFO) },
+                        onBack = { goToPage(pagerState.currentPage - 1) },
                     )
                 },
                 bottomBar = {
-                    OnboardingBottomBar(
-                        currentPage = pagerState.currentPage,
-                        pageCount = pageCount,
-                        isLastPage = isLastPage,
-                        nextEnabled = pagerState.currentPage != PAGE_PERSONAL_INFO || state.isPersonalInfoValid,
-                        onBack = if (pagerState.currentPage > PAGE_PERSONAL_INFO) ({ goToPage(PAGE_PERSONAL_INFO) }) else null,
-                        onNext = { goToPage(pagerState.currentPage + 1) },
-                        onFinish = viewModel::finish,
-                    )
+                    when (currentPage) {
+                        OnboardingPage.PersonalInfo -> OnboardingActionBar(
+                            secondaryText = stringResource(R.string.action_skip),
+                            onSecondary = viewModel::skip,
+                            primaryText = stringResource(R.string.action_next),
+                            onPrimary = viewModel::saveAndContinue,
+                            primaryEnabled = state.isPersonalInfoValid,
+                            primaryIcon = R.drawable.ic_arrow,
+                        )
+
+                        OnboardingPage.FreeScan -> OnboardingActionBar(
+                            secondaryText = stringResource(R.string.action_maybe_later),
+                            onSecondary = viewModel::skip,
+                            primaryText = stringResource(R.string.action_start_free_scan),
+                            onPrimary = viewModel::startFreeScan,
+                        )
+
+                        OnboardingPage.MySuit -> OnboardingBottomBar(
+                            currentPage = pagerState.currentPage,
+                            pageCount = pages.size,
+                            isLastPage = isLastPage,
+                            nextEnabled = true,
+                            onBack = { goToPage(pagerState.currentPage - 1) },
+                            onNext = { goToPage(pagerState.currentPage + 1) },
+                            onFinish = viewModel::finish,
+                        )
+                    }
                 },
             ) {
                 HorizontalPager(
@@ -195,13 +229,15 @@ fun OnboardingScreen(
                     modifier = Modifier.fillMaxSize(),
                     userScrollEnabled = false,
                 ) { page ->
-                    when (page) {
-                        PAGE_PERSONAL_INFO -> PersonalInfoPage(state = state, viewModel = viewModel)
-                        PAGE_MY_SUIT -> MySuitPage(
+                    when (pages.getOrNull(page)) {
+                        OnboardingPage.PersonalInfo -> PersonalInfoPage(state = state, viewModel = viewModel)
+                        OnboardingPage.FreeScan -> FreeScanPage(onBack = { goToPage(page - 1) })
+                        OnboardingPage.MySuit -> MySuitPage(
                             state = state,
                             viewModel = viewModel,
                             onBuyOne = { showBuySuitDialog = true },
                         )
+                        null -> Unit
                     }
                 }
             }
@@ -228,6 +264,38 @@ fun OnboardingScreen(
                 },
             )
         }
+    }
+}
+
+@Composable
+private fun OnboardingActionBar(
+    secondaryText: String,
+    onSecondary: () -> Unit,
+    primaryText: String,
+    onPrimary: () -> Unit,
+    modifier: Modifier = Modifier,
+    primaryEnabled: Boolean = true,
+    @DrawableRes primaryIcon: Int? = null,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(
+                start = dimensionResource(R.dimen.padding_medium),
+                end = dimensionResource(R.dimen.padding_medium),
+                bottom = dimensionResource(R.dimen.padding_auth_vertical),
+            ),
+        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacer_l)),
+    ) {
+        AppOutlinedButton(text = secondaryText, onClick = onSecondary, modifier = Modifier.weight(1f))
+        AppPrimaryButton(
+            text = primaryText,
+            onClick = onPrimary,
+            modifier = Modifier.weight(1f),
+            enabled = primaryEnabled,
+            trailingIcon = primaryIcon,
+        )
     }
 }
 
@@ -312,19 +380,7 @@ private fun PersonalInfoPage(
                 .navigationBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        top = dimensionResource(R.dimen.spacer_2xl),
-                        bottom = dimensionResource(R.dimen.spacer_xxl),
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                AppLogo()
-            }
-
-            Spacer(Modifier.weight(1f))
+            OnboardingHeader()
 
             Column(
                 modifier = Modifier

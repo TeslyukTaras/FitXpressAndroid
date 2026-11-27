@@ -3,10 +3,15 @@ package com.hexis.bi.data.scan
 import android.net.Uri
 import androidx.annotation.StringRes
 import com.google.firebase.functions.FirebaseFunctionsException
+import com.google.firebase.storage.StorageException
 import com.hexis.bi.R
+import com.hexis.bi.domain.subscription.ScanBlockReason
+import com.hexis.bi.utils.constants.ScanPhotoConstants
+import com.hexis.bi.utils.constants.SubscriptionConstants
 import com.hexis.bi.data.scan.api.MeasurementResponse
 import com.hexis.bi.data.scan.api.ThreeDLookApi
 import com.hexis.bi.utils.constants.MeasurementConstants
+import java.io.IOException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -18,6 +23,7 @@ sealed interface ScanProgress {
     data object Submitting : ScanProgress
     data object Processing : ScanProgress
     data class Success(val response: MeasurementResponse) : ScanProgress
+    data class Blocked(val reason: ScanBlockReason) : ScanProgress
 
     /**
      * @param messageRes user-facing fallback message (resolved at the VM boundary)
@@ -27,6 +33,8 @@ sealed interface ScanProgress {
     data class Failed(
         @StringRes val messageRes: Int,
         val detail: String? = null,
+        val retryable: Boolean = false,
+        val measurementId: String? = null,
     ) : ScanProgress
 }
 
@@ -39,17 +47,20 @@ class ThreeDLookRepository(
     private val colorAnalysisProgressIdCache = mutableMapOf<Pair<String, String>, String>()
 
     fun submitScan(
+        scanId: String,
         frontPhoto: Uri,
         sidePhoto: Uri,
         heightCm: Float,
         weightKg: Float?,
         gender: String,
         age: Int,
+        resumeMeasurementId: String? = null,
     ): Flow<ScanProgress> = flow {
         Timber.d("submitScan: emitting Submitting")
         emit(ScanProgress.Submitting)
 
-        val id = api.createMeasurement(
+        val id = resumeMeasurementId ?: api.createMeasurement(
+            scanId = scanId,
             frontPhoto = frontPhoto,
             sidePhoto = sidePhoto,
             heightCm = heightCm,
@@ -57,8 +68,13 @@ class ThreeDLookRepository(
             gender = gender,
             age = age,
         ).getOrElse { e ->
+            e.scanBlockReason()?.let {
+                Timber.w(e, "submitScan: scan blocked, reason=%s", it)
+                emit(ScanProgress.Blocked(it))
+                return@flow
+            }
             Timber.e(e, "submitScan: createMeasurement failed")
-            emit(ScanProgress.Failed(R.string.scan_error_submit_failed, e.scanFailureDetail()))
+            emit(ScanProgress.Failed(R.string.scan_error_submit_failed, e.scanFailureDetail(), retryable = e.isTransientScanFailure()))
             return@flow
         }
         Timber.d("submitScan: created measurement id=%s", id)
@@ -72,7 +88,14 @@ class ThreeDLookRepository(
 
             val measurement = api.getMeasurement(id).getOrElse { e ->
                 Timber.e(e, "submitScan: poll #%d failed", attempts)
-                emit(ScanProgress.Failed(R.string.scan_error_retrieve_failed, e.scanFailureDetail()))
+                emit(
+                    ScanProgress.Failed(
+                        R.string.scan_error_retrieve_failed,
+                        e.scanFailureDetail(),
+                        retryable = e.isTransientScanFailure(),
+                        measurementId = id,
+                    ),
+                )
                 return@flow
             }
 
@@ -95,7 +118,7 @@ class ThreeDLookRepository(
             }
         }
         Timber.e("submitScan: timed out after %d polls", MAX_POLL_ATTEMPTS)
-        emit(ScanProgress.Failed(R.string.scan_error_timeout))
+        emit(ScanProgress.Failed(R.string.scan_error_timeout, retryable = true, measurementId = id))
     }
 
     private fun Throwable.scanFailureDetail(): String? {
@@ -183,4 +206,24 @@ class ThreeDLookRepository(
         private const val STATUS_FAILED = "failed"
         private const val STATUS_ERROR = "error"
     }
+}
+
+private fun Throwable.scanBlockReason(): ScanBlockReason? {
+    val failure = this as? FirebaseFunctionsException ?: return null
+    if (failure.code != FirebaseFunctionsException.Code.FAILED_PRECONDITION) return null
+    val reason = (failure.details as? Map<*, *>)?.get(SubscriptionConstants.FIELD_REASON) as? String ?: return null
+    return when (reason) {
+        SubscriptionConstants.SCAN_BLOCK_NO_SUBSCRIPTION -> ScanBlockReason.NO_SUBSCRIPTION
+        SubscriptionConstants.SCAN_BLOCK_ALL_SCANS_USED -> ScanBlockReason.ALL_SCANS_USED
+        SubscriptionConstants.SCAN_BLOCK_ON_HOLD -> ScanBlockReason.ON_HOLD
+        SubscriptionConstants.SCAN_BLOCK_PENDING -> ScanBlockReason.PENDING
+        else -> null
+    }
+}
+
+private fun Throwable.isTransientScanFailure(): Boolean = when (this) {
+    is FirebaseFunctionsException -> code in ScanPhotoConstants.TRANSIENT_FUNCTION_CODES
+    is StorageException -> errorCode == StorageException.ERROR_RETRY_LIMIT_EXCEEDED
+    is IOException -> true
+    else -> false
 }

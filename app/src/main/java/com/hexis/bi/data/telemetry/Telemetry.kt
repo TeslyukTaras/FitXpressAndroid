@@ -49,5 +49,19 @@ internal interface Telemetry {
         metricsTotal: Int,
     )
 
+    fun scanStarted()
+
+    fun firstScanCompleted()
+
+    fun scanCompleted()
+
+    fun scanComparisonViewed()
+
+    fun insightsViewed()
+
+    fun bodyModelViewed()
+
+    fun wearableConnected()
+
     fun identify(userId: String?)
 }

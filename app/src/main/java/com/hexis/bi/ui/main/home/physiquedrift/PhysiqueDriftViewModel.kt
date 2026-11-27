@@ -15,8 +15,9 @@ import com.hexis.bi.domain.body.physiqueScoreBreakdown
 import com.hexis.bi.ui.base.BaseViewModel
 import com.hexis.bi.domain.intelligence.IntelligenceCoordinator
 import com.hexis.bi.intelligence.engine.Domains
-import com.hexis.bi.ui.main.home.intelligence.EngineFindingsMapper
+import com.hexis.bi.ui.main.home.intelligence.AreaFindings
 import com.hexis.bi.ui.main.home.intelligence.BackfillTransition
+import com.hexis.bi.ui.main.home.intelligence.areaFindings
 import com.hexis.bi.ui.main.home.intelligence.backfillTransition
 import com.hexis.bi.utils.millisToShortMonthDayYear
 import kotlinx.coroutines.async
@@ -43,7 +44,7 @@ class PhysiqueDriftViewModel internal constructor(
         if (!BuildConfig.INTELLIGENCE_ENGINE_ENABLED) {
             _state.update {
                 it.copy(
-                    findings = com.hexis.bi.ui.main.home.intelligence.AreaFindings.completed(),
+                    findings = AreaFindings.completed(),
                     insightsUpdating = if (clearUpdatingOnComplete) false else it.insightsUpdating,
                 )
             }
@@ -54,20 +55,8 @@ class PhysiqueDriftViewModel internal constructor(
 
     private fun observeFindings() {
         intelligenceCoordinator.state.onEach { reportState ->
-            val run = reportState.run ?: return@onEach
-            val resolved = EngineFindingsMapper.forAreas(
-                report = run.report,
-                copy = run.copy,
-                areas = setOf(Domains.BODY),
-                isMetric = run.isMetric,
-                analysisWindowDays = run.config.windows.analysisDays,
-            )
-            _state.update {
-                it.copy(
-                    findings = resolved,
-                    insightsUpdating = reportState.updating,
-                )
-            }
+            val findings = reportState.areaFindings(setOf(Domains.BODY)) ?: return@onEach
+            _state.update { it.copy(findings = findings, insightsUpdating = reportState.updating) }
         }.launchIn(viewModelScope)
     }
 

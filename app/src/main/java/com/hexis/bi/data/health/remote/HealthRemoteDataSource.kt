@@ -1,5 +1,8 @@
 package com.hexis.bi.data.health.remote
 
+import com.hexis.bi.data.health.access.HealthDataGate
+import com.hexis.bi.data.health.access.HealthDataGated
+import com.hexis.bi.data.health.sync.HealthSourceUnavailable
 import com.hexis.bi.data.healthconnect.HealthConnectPermissionChecker
 import com.hexis.bi.data.healthconnections.HealthConnectionsRepository
 import com.hexis.bi.data.terra.MergedSourceResult
@@ -25,6 +28,7 @@ internal class HealthRemoteDataSource(
     private val sourceResolver: TerraRestSourceResolver,
     private val healthConnectPermissions: HealthConnectPermissionChecker,
     private val healthConnections: HealthConnectionsRepository,
+    private val healthDataGate: HealthDataGate,
 ) {
 
     private val gate = Semaphore(TerraSyncConstants.MAX_CONCURRENT_SOURCES)
@@ -40,15 +44,23 @@ internal class HealthRemoteDataSource(
         end: LocalDate,
         fetchJson: suspend (terraUserId: String, LocalDate, LocalDate) -> Result<List<Any?>>,
         parse: (List<Any?>) -> List<T>,
-    ): Result<MergedSourceResult<T>> = fetchMergedFromAllSources(
-        identities = identities,
-        gate = gate,
-        start = start,
-        end = end,
-        fetchJson = fetchJson,
-        parse = parse,
-        onIdentityRejected = ::retireRejectedIdentity,
-    )
+    ): Result<MergedSourceResult<T>> {
+        val bounds = healthDataGate.allowedBounds() ?: return Result.failure(HealthDataGated())
+        val from = maxOf(start, bounds.start)
+        val to = minOf(end, bounds.endInclusive)
+        if (from.isAfter(to)) return Result.failure(HealthDataGated())
+        return fetchMergedFromAllSources(
+            identities = identities,
+            gate = gate,
+            start = from,
+            end = to,
+            fetchJson = fetchJson,
+            parse = parse,
+            onIdentityRejected = ::retireRejectedIdentity,
+        )
+    }
+
+    suspend fun allowedBounds(): ClosedRange<LocalDate>? = healthDataGate.allowedBounds()
 
     fun fetchableIdentities(identities: List<TerraRestIdentity>): List<TerraRestIdentity> {
         val queryable = identities.filterNot { it.terraUserId in rejectedByTerra }

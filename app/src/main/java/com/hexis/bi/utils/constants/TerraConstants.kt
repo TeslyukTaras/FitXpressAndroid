@@ -188,6 +188,9 @@ internal object TerraSyncConstants {
     val PENDING_RANGE_BACKOFF: Duration = Duration.ofSeconds(2)
 
     const val SDK_IDENTITY_LOOKUP_ATTEMPTS = 4
+    const val PERMISSION_SETTLE_ATTEMPTS = 10
+    const val PERMISSION_SETTLE_DELAY_MS = 500L
+    const val POST_CONNECT_RETRY_DELAY_MS = 4_000L
     val SDK_IDENTITY_LOOKUP_BACKOFF: Duration = Duration.ofSeconds(2)
 
     const val UNKNOWN_USER_ID_MARKER = "HTTP 404"
