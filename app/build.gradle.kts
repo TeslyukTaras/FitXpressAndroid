@@ -45,8 +45,8 @@ android {
         // Terra Android SDK requires minSdk 28 (Samsung Health / Health Connect).
         minSdk = 28
         targetSdk = 37
-        versionCode = 43
-        versionName = "1.2.0"
+        versionCode = 44
+        versionName = "1.2.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -153,9 +153,12 @@ val patchPurchaseConnector = tasks.register("patchPurchaseConnector") {
                             val original = "package=\"com.appsflyer\""
                             check(manifest.contains(original)) {
                                 "purchase-connector manifest no longer declares package com.appsflyer; " +
-                                    "the namespace patch is obsolete, remove patchPurchaseConnector"
+                                        "the namespace patch is obsolete, remove patchPurchaseConnector"
                             }
-                            manifest.replace(original, "package=\"com.appsflyer.purchaseconnector\"").toByteArray()
+                            manifest.replace(
+                                original,
+                                "package=\"com.appsflyer.purchaseconnector\""
+                            ).toByteArray()
                         } else bytes
                     )
                     out.closeEntry()
